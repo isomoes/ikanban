@@ -124,10 +124,11 @@ impl App {
     pub fn get_keyboard_shortcuts(&self) -> Vec<(String, String)> {
         match self.view {
             View::Projects => vec![
+                ("n".to_string(), "New project".to_string()),
+                ("e".to_string(), "Edit project".to_string()),
+                ("d".to_string(), "Delete project".to_string()),
                 ("j / k".to_string(), "Navigate projects".to_string()),
                 ("Enter".to_string(), "Open tasks".to_string()),
-                ("n".to_string(), "New project".to_string()),
-                ("d".to_string(), "Delete project".to_string()),
                 ("?".to_string(), "Show help".to_string()),
                 ("q".to_string(), "Quit".to_string()),
             ],
@@ -162,7 +163,8 @@ impl App {
             View::ProjectDetail => "Project Detail Shortcuts",
             View::Tasks => "Tasks View Shortcuts",
             View::TaskDetail => "Task Detail Shortcuts",
-        }.to_string()
+        }
+        .to_string()
     }
 
     /// Compare two TaskStatus values for sorting
@@ -202,7 +204,10 @@ impl App {
             event_tx,
         ));
         self.current_project_id = Some(project_id);
-        self.set_status(&format!("Connected to tasks stream for project {}", project_id));
+        self.set_status(&format!(
+            "Connected to tasks stream for project {}",
+            project_id
+        ));
     }
 
     /// Disconnect from tasks WebSocket stream
@@ -297,7 +302,10 @@ impl App {
             WsEvent::Connected => {
                 self.set_status("WebSocket connected");
             }
-            WsEvent::Log { execution_id: _, content } => {
+            WsEvent::Log {
+                execution_id: _,
+                content,
+            } => {
                 tracing::info!("Log: {}", content);
             }
             // Session, Execution, Merge events - log them for now
@@ -426,7 +434,12 @@ impl App {
         Ok(())
     }
 
-    pub async fn update_project_detail(&mut self, name: Option<String>, description: Option<String>, repo_path: Option<String>) -> anyhow::Result<()> {
+    pub async fn update_project_detail(
+        &mut self,
+        name: Option<String>,
+        description: Option<String>,
+        repo_path: Option<String>,
+    ) -> anyhow::Result<()> {
         if let Some(project) = &self.project_detail {
             use crate::models::UpdateProject;
             let payload = UpdateProject {
@@ -490,7 +503,11 @@ impl App {
         Ok(())
     }
 
-    pub async fn update_task_detail(&mut self, title: Option<String>, description: Option<String>) -> anyhow::Result<()> {
+    pub async fn update_task_detail(
+        &mut self,
+        title: Option<String>,
+        description: Option<String>,
+    ) -> anyhow::Result<()> {
         let task = if let Some(t) = &self.task_detail {
             t.clone()
         } else {
@@ -508,7 +525,7 @@ impl App {
         let updated = self.api.update_task(task.id, &payload).await?;
         self.task_detail = Some(updated);
         self.load_tasks(task.project_id).await?;
-        
+
         Ok(())
     }
 
