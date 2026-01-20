@@ -2,7 +2,7 @@ use std::io;
 use std::time::Duration;
 
 use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind},
+    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind, KeyModifiers},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -82,7 +82,7 @@ async fn run_app(
                             break;
                         }
                     } else {
-                        if !handle_normal_mode(app, key.code).await? {
+                        if !handle_normal_mode(app, key.code, key.modifiers).await? {
                             break;
                         }
                     }
@@ -101,9 +101,19 @@ async fn run_app(
     Ok(())
 }
 
-async fn handle_normal_mode(app: &mut App, key: KeyCode) -> anyhow::Result<bool> {
+async fn handle_normal_mode(app: &mut App, key_code: KeyCode, key_modifiers: KeyModifiers) -> anyhow::Result<bool> {
+    // Check for Ctrl+R (refresh)
+    if key_code == KeyCode::Char('r') && key_modifiers.contains(KeyModifiers::CONTROL) {
+        if let Err(e) = app.load_projects().await {
+            app.set_status(&format!("Error: {}", e));
+        } else {
+            app.set_status("Refreshed");
+        }
+        return Ok(true);
+    }
+
     match app.view {
-        View::Projects => match key {
+        View::Projects => match key_code {
             KeyCode::Char('q') => return Ok(false),
             KeyCode::Char('j') | KeyCode::Down => app.next_project(),
             KeyCode::Char('k') | KeyCode::Up => app.previous_project(),
@@ -125,19 +135,9 @@ async fn handle_normal_mode(app: &mut App, key: KeyCode) -> anyhow::Result<bool>
                     app.set_status("Project deleted");
                 }
             }
-            KeyCode::Ctrl('r') => {
-                if let Err(e) = app.load_projects().await {
-                    app.set_status(&format!("Error: {}", e));
-                } else {
-                    app.set_status("Refreshed");
-                }
-            }
-            KeyCode::Char('?') => {
-                app.toggle_help_modal();
-            }
             _ => {}
         },
-        View::ProjectDetail => match key {
+        View::ProjectDetail => match key_code {
             KeyCode::Char('q') | KeyCode::Esc => {
                 app.enter_project_view();
             }
@@ -164,12 +164,9 @@ async fn handle_normal_mode(app: &mut App, key: KeyCode) -> anyhow::Result<bool>
                     app.start_input(InputField::ProjectRepoPath);
                 }
             }
-            KeyCode::Char('?') => {
-                app.toggle_help_modal();
-            }
             _ => {}
         },
-        View::Tasks => match key {
+        View::Tasks => match key_code {
             KeyCode::Esc => {
                 app.enter_project_view();
             }
@@ -193,25 +190,12 @@ async fn handle_normal_mode(app: &mut App, key: KeyCode) -> anyhow::Result<bool>
                     app.set_status("Task deleted");
                 }
             }
-            KeyCode::Char('r') => {
-                if let Some(project) = app.selected_project() {
-                    let project_id = project.id;
-                    if let Err(e) = app.load_tasks(project_id).await {
-                        app.set_status(&format!("Error: {}", e));
-                    } else {
-                        app.set_status("Refreshed");
-                    }
-                }
-            }
             KeyCode::Enter => {
                 app.enter_task_detail_view();
             }
-            KeyCode::Char('?') => {
-                app.toggle_help_modal();
-            }
             _ => {}
         },
-        View::TaskDetail => match key {
+        View::TaskDetail => match key_code {
             KeyCode::Char('q') | KeyCode::Esc => {
                 if let Err(e) = app.enter_task_view().await {
                     app.set_status(&format!("Error: {}", e));
@@ -228,9 +212,6 @@ async fn handle_normal_mode(app: &mut App, key: KeyCode) -> anyhow::Result<bool>
                     app.input = task.description.as_deref().unwrap_or("").to_string();
                     app.start_input(InputField::TaskDescription);
                 }
-            }
-            KeyCode::Char('?') => {
-                app.toggle_help_modal();
             }
             _ => {}
         },
