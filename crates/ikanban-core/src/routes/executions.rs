@@ -1,19 +1,22 @@
 use axum::{
-    extract::{Path, State, WebSocketUpgrade, ws::{Message, WebSocket}},
+    Router,
+    extract::{
+        Path, State, WebSocketUpgrade,
+        ws::{Message, WebSocket},
+    },
     response::{Json, Response},
     routing::{get, post},
-    Router,
 };
 use uuid::Uuid;
 
 use crate::{
-    error::AppError,
-    entities::{
-        response::{ApiResponse, WsEvent},
-        execution_process::{CreateExecutionProcess, Model as ExecutionProcess},
-        session::{Model as Session},
-    },
     AppState,
+    entities::{
+        execution_process::{CreateExecutionProcess, Model as ExecutionProcess},
+        response::{ApiResponse, WsEvent},
+        session::Model as Session,
+    },
+    error::AppError,
 };
 
 /// GET /api/sessions/{session_id}/executions - List executions for a session
@@ -122,8 +125,11 @@ async fn handle_socket(mut socket: WebSocket, state: AppState, execution_id: Uui
 
 pub fn router() -> Router<AppState> {
     Router::new()
-        .route("/sessions/:session_id/executions", get(list_executions).post(create_execution))
-        .route("/executions/:id", get(get_execution))
-        .route("/executions/:id/stop", post(stop_execution))
-        .route("/executions/:id/logs/stream", get(logs_stream))
+        .route(
+            "/sessions/{session_id}/executions",
+            get(list_executions).post(create_execution),
+        )
+        .route("/executions/{id}", get(get_execution))
+        .route("/executions/{id}/stop", post(stop_execution))
+        .route("/executions/{id}/logs/stream", get(logs_stream))
 }

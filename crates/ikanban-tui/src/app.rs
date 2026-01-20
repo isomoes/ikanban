@@ -13,6 +13,7 @@ pub enum View {
     Projects,
     ProjectDetail,
     Tasks,
+    TaskDetail,
 }
 
 /// Input mode for text entry
@@ -39,6 +40,7 @@ pub struct App {
     pub tasks: Vec<Task>,
     pub selected_task_index: usize,
     pub selected_column: TaskStatus,
+    pub task_detail: Option<Task>,
 
     // Status message
     pub status_message: Option<String>,
@@ -61,6 +63,7 @@ pub enum InputField {
     ProjectName,
     ProjectDescription,
     TaskTitle,
+    TaskDescription,
 }
 
 impl App {
@@ -80,6 +83,7 @@ impl App {
             tasks: Vec::new(),
             selected_task_index: 0,
             selected_column: TaskStatus::Todo,
+            task_detail: None,
             status_message: None,
             running: true,
             ws_event_rx: Some(ws_event_rx),
@@ -104,7 +108,9 @@ impl App {
             match status {
                 TaskStatus::Todo => 0,
                 TaskStatus::InProgress => 1,
-                TaskStatus::Done => 2,
+                TaskStatus::InReview => 2,
+                TaskStatus::Done => 3,
+                TaskStatus::Cancelled => 4,
             }
         }
         order(a).cmp(&order(b))
@@ -308,6 +314,7 @@ impl App {
             TaskStatus::Todo => TaskStatus::InProgress,
             TaskStatus::InProgress => TaskStatus::Done,
             TaskStatus::Done => TaskStatus::Todo,
+            _ => TaskStatus::Todo,
         };
         self.selected_task_index = 0;
     }
@@ -317,6 +324,7 @@ impl App {
             TaskStatus::Todo => TaskStatus::Done,
             TaskStatus::InProgress => TaskStatus::Todo,
             TaskStatus::Done => TaskStatus::InProgress,
+            _ => TaskStatus::Todo,
         };
         self.selected_task_index = 0;
     }
@@ -381,6 +389,9 @@ impl App {
                 title,
                 description: None,
                 status: Some(self.selected_column),
+                branch: None,
+                working_dir: None,
+                parent_task_id: None,
             };
             self.api.create_task(&payload).await?;
             self.load_tasks(project.id).await?;
@@ -408,10 +419,35 @@ impl App {
                 title: None,
                 description: None,
                 status: Some(new_status),
+                branch: None,
+                working_dir: None,
+                parent_task_id: None,
             };
             self.api.update_task(id, &payload).await?;
             self.load_tasks(project_id).await?;
         }
+        Ok(())
+    }
+
+    pub async fn update_task_detail(&mut self, title: Option<String>, description: Option<String>) -> anyhow::Result<()> {
+        let task = if let Some(t) = &self.task_detail {
+            t.clone()
+        } else {
+            return Ok(());
+        };
+
+        let payload = UpdateTask {
+            title,
+            description,
+            status: None,
+            branch: None,
+            working_dir: None,
+            parent_task_id: None,
+        };
+        let updated = self.api.update_task(task.id, &payload).await?;
+        self.task_detail = Some(updated);
+        self.load_tasks(task.project_id).await?;
+        
         Ok(())
     }
 
@@ -420,6 +456,7 @@ impl App {
         self.selected_task_index = 0;
         self.selected_column = TaskStatus::Todo;
         self.project_detail = None;
+        self.task_detail = None;
         // Disconnect from tasks WebSocket
         self.disconnect_tasks_ws();
         // Connect to projects WebSocket
@@ -441,11 +478,19 @@ impl App {
         if let Some(project) = self.selected_project() {
             let project_id = project.id;
             self.view = View::Tasks;
+            self.task_detail = None;
             self.load_tasks(project_id).await?;
             // Connect to tasks WebSocket stream for real-time updates
             self.connect_tasks_ws(project_id);
         }
         Ok(())
+    }
+
+    pub fn enter_task_detail_view(&mut self) {
+        if let Some(task) = self.selected_task() {
+            self.task_detail = Some(task.clone());
+            self.view = View::TaskDetail;
+        }
     }
 
     pub fn start_input(&mut self, field: InputField) {
@@ -481,7 +526,16 @@ impl App {
                 self.set_status("Project description updated");
             }
             InputField::TaskTitle => {
-                self.create_task(input).await?;
+                if self.view == View::Tasks {
+                    self.create_task(input).await?;
+                } else if self.view == View::TaskDetail {
+                    self.update_task_detail(Some(input), None).await?;
+                    self.set_status("Task title updated");
+                }
+            }
+            InputField::TaskDescription => {
+                self.update_task_detail(None, Some(input)).await?;
+                self.set_status("Task description updated");
             }
             InputField::None => {}
         }

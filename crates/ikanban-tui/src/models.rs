@@ -16,15 +16,19 @@ impl TaskStatusExt for TaskStatus {
         match self {
             TaskStatus::Todo => "Todo",
             TaskStatus::InProgress => "In Progress",
+            TaskStatus::InReview => "In Review",
             TaskStatus::Done => "Done",
+            TaskStatus::Cancelled => "Cancelled",
         }
     }
 
     fn next(&self) -> TaskStatus {
         match self {
             TaskStatus::Todo => TaskStatus::InProgress,
-            TaskStatus::InProgress => TaskStatus::Done,
+            TaskStatus::InProgress => TaskStatus::InReview,
+            TaskStatus::InReview => TaskStatus::Done,
             TaskStatus::Done => TaskStatus::Todo,
+            TaskStatus::Cancelled => TaskStatus::Todo,
         }
     }
 }

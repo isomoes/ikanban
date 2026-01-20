@@ -13,7 +13,8 @@ use crate::{
     entities::{
         response::{ApiResponse, WsEvent},
         project::{Model as Project},
-        task::{CreateTask, Model as Task, TaskQuery, UpdateTask},
+        task::{CreateTask, Model as Task, TaskQuery, UpdateTask, TaskWithSessionStatus},
+        session::{Model as Session},
     },
     AppState,
 };
@@ -22,14 +23,30 @@ use crate::{
 pub async fn list_tasks(
     State(state): State<AppState>,
     Query(query): Query<TaskQuery>,
-) -> Result<Json<ApiResponse<Vec<Task>>>, AppError> {
+) -> Result<Json<ApiResponse<Vec<TaskWithSessionStatus>>>, AppError> {
     // Verify project exists
     let _ = Project::find_by_id(&state.db, query.project_id)
         .await?
         .ok_or_else(|| AppError::NotFound(format!("Project {} not found", query.project_id)))?;
 
     let tasks = Task::find_by_project_id(&state.db, query.project_id).await?;
-    Ok(Json(ApiResponse::success(tasks)))
+    
+    let mut tasks_with_status = Vec::new();
+    for task in tasks {
+        let sessions = Session::find_by_task_id(&state.db, task.id).await?;
+        let session_count = sessions.len() as i64;
+        let has_running_session = sessions.iter().any(|s| s.status == "running");
+        let last_session_failed = sessions.first().map(|s| s.status == "failed").unwrap_or(false);
+
+        tasks_with_status.push(TaskWithSessionStatus {
+            task,
+            session_count,
+            has_running_session,
+            last_session_failed,
+        });
+    }
+
+    Ok(Json(ApiResponse::success(tasks_with_status)))
 }
 
 /// POST /api/tasks - Create a new task
@@ -64,12 +81,24 @@ pub async fn create_task(
 pub async fn get_task(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
-) -> Result<Json<ApiResponse<Task>>, AppError> {
+) -> Result<Json<ApiResponse<TaskWithSessionStatus>>, AppError> {
     let task = Task::find_by_id(&state.db, id)
         .await?
         .ok_or_else(|| AppError::NotFound(format!("Task {} not found", id)))?;
 
-    Ok(Json(ApiResponse::success(task)))
+    let sessions = Session::find_by_task_id(&state.db, task.id).await?;
+    let session_count = sessions.len() as i64;
+    let has_running_session = sessions.iter().any(|s| s.status == "running");
+    let last_session_failed = sessions.first().map(|s| s.status == "failed").unwrap_or(false);
+
+    let task_with_status = TaskWithSessionStatus {
+        task,
+        session_count,
+        has_running_session,
+        last_session_failed,
+    };
+
+    Ok(Json(ApiResponse::success(task_with_status)))
 }
 
 /// PUT /api/tasks/{id} - Update task

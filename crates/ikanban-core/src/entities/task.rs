@@ -14,8 +14,12 @@ pub enum TaskStatus {
     Todo,
     #[sea_orm(string_value = "inprogress")]
     InProgress,
+    #[sea_orm(string_value = "inreview")]
+    InReview,
     #[sea_orm(string_value = "done")]
     Done,
+    #[sea_orm(string_value = "cancelled")]
+    Cancelled,
 }
 
 impl Default for TaskStatus {
@@ -33,6 +37,9 @@ pub struct Model {
     pub title: String,
     pub description: Option<String>,
     pub status: TaskStatus,
+    pub branch: Option<String>,
+    pub working_dir: Option<String>,
+    pub parent_task_id: Option<Uuid>,
     pub created_at: DateTimeUtc,
     pub updated_at: DateTimeUtc,
 }
@@ -46,11 +53,29 @@ pub enum Relation {
         on_delete = "Cascade"
     )]
     Project,
+    #[sea_orm(
+        belongs_to = "Entity",
+        from = "Column::ParentTaskId",
+        to = "Column::Id",
+        on_delete = "SetNull"
+    )]
+    ParentTask,
 }
 
 impl Related<super::project::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Project.def()
+    }
+}
+
+pub struct ParentTaskLink;
+
+impl Linked for ParentTaskLink {
+    type FromEntity = Entity;
+    type ToEntity = Entity;
+
+    fn link(&self) -> Vec<RelationDef> {
+        vec![Relation::ParentTask.def()]
     }
 }
 
@@ -64,6 +89,9 @@ pub struct CreateTask {
     pub title: String,
     pub description: Option<String>,
     pub status: Option<TaskStatus>,
+    pub branch: Option<String>,
+    pub working_dir: Option<String>,
+    pub parent_task_id: Option<Uuid>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -71,11 +99,23 @@ pub struct UpdateTask {
     pub title: Option<String>,
     pub description: Option<String>,
     pub status: Option<TaskStatus>,
+    pub branch: Option<String>,
+    pub working_dir: Option<String>,
+    pub parent_task_id: Option<Uuid>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct TaskQuery {
     pub project_id: Uuid,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TaskWithSessionStatus {
+    #[serde(flatten)]
+    pub task: Model,
+    pub session_count: i64,
+    pub has_running_session: bool,
+    pub last_session_failed: bool,
 }
 
 impl Model {
@@ -102,6 +142,9 @@ impl Model {
             title: Set(payload.title.clone()),
             description: Set(payload.description.clone()),
             status: Set(payload.status.unwrap_or_default()),
+            branch: Set(payload.branch.clone()),
+            working_dir: Set(payload.working_dir.clone()),
+            parent_task_id: Set(payload.parent_task_id),
             created_at: Set(now),
             updated_at: Set(now),
         };
@@ -129,6 +172,15 @@ impl Model {
         }
         if let Some(status) = payload.status {
             model.status = Set(status);
+        }
+        if let Some(branch) = &payload.branch {
+            model.branch = Set(Some(branch.clone()));
+        }
+        if let Some(working_dir) = &payload.working_dir {
+            model.working_dir = Set(Some(working_dir.clone()));
+        }
+        if let Some(parent_task_id) = payload.parent_task_id {
+            model.parent_task_id = Set(Some(parent_task_id));
         }
         model.updated_at = Set(Utc::now());
 

@@ -25,6 +25,7 @@ pub fn draw(frame: &mut Frame, app: &App) {
         View::Projects => draw_projects_view(frame, app, chunks[1]),
         View::ProjectDetail => draw_project_detail_view(frame, app, chunks[1]),
         View::Tasks => draw_tasks_view(frame, app, chunks[1]),
+        View::TaskDetail => draw_task_detail_view(frame, app, chunks[1]),
     }
 
     draw_status_bar(frame, app, chunks[2]);
@@ -50,6 +51,13 @@ fn draw_header(frame: &mut Frame, app: &App, area: Rect) {
                 format!(" iKanban - {} ", project.name)
             } else {
                 " iKanban - Tasks ".to_string()
+            }
+        }
+        View::TaskDetail => {
+            if let Some(task) = &app.task_detail {
+                format!(" iKanban - Task: {} ", task.title)
+            } else {
+                " iKanban - Task Details ".to_string()
             }
         }
     };
@@ -181,6 +189,86 @@ fn draw_project_detail_view(frame: &mut Frame, app: &App, area: Rect) {
     }
 }
 
+fn draw_task_detail_view(frame: &mut Frame, app: &App, area: Rect) {
+    if let Some(task) = &app.task_detail {
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Length(3), // Title
+                Constraint::Min(0),    // Description
+                Constraint::Length(3), // Status & Branch
+                Constraint::Length(3), // Metadata
+            ])
+            .split(area);
+
+        // Title
+        let title_block = Block::default()
+            .title(" Title ")
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Cyan));
+        let title = Paragraph::new(task.title.as_str())
+            .style(
+                Style::default()
+                    .fg(Color::White)
+                    .add_modifier(Modifier::BOLD),
+            )
+            .block(title_block);
+        frame.render_widget(title, chunks[0]);
+
+        // Description
+        let description_text = task.description.as_deref().unwrap_or("No description");
+        let desc_block = Block::default()
+            .title(" Description ")
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Cyan));
+        let description = Paragraph::new(description_text)
+            .style(Style::default().fg(Color::White))
+            .wrap(ratatui::widgets::Wrap { trim: true })
+            .block(desc_block);
+        frame.render_widget(description, chunks[1]);
+
+        // Status & Branch
+        let status_text = format!("Status: {:?}", task.status);
+        let branch_text = task.branch.as_deref().unwrap_or("No branch");
+        let working_dir_text = task.working_dir.as_deref().unwrap_or("No working dir");
+
+        let info_text = format!(
+            "{} | Branch: {} | Dir: {}",
+            status_text, branch_text, working_dir_text
+        );
+
+        let info_block = Block::default()
+            .title(" Info ")
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Cyan));
+        let info = Paragraph::new(info_text)
+            .style(Style::default().fg(Color::White))
+            .block(info_block);
+        frame.render_widget(info, chunks[2]);
+
+        // Metadata
+        let metadata = format!(
+            "ID: {} | Created: {} | Updated: {}",
+            task.id,
+            task.created_at.format("%Y-%m-%d %H:%M"),
+            task.updated_at.format("%Y-%m-%d %H:%M")
+        );
+        let meta_block = Block::default()
+            .title(" Metadata ")
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Cyan));
+        let meta = Paragraph::new(metadata)
+            .style(Style::default().fg(Color::Gray))
+            .block(meta_block);
+        frame.render_widget(meta, chunks[3]);
+    } else {
+        let error = Paragraph::new("No task selected")
+            .style(Style::default().fg(Color::Red))
+            .block(Block::default().borders(Borders::ALL));
+        frame.render_widget(error, area);
+    }
+}
+
 fn draw_tasks_view(frame: &mut Frame, app: &App, area: Rect) {
     let columns = Layout::default()
         .direction(Direction::Horizontal)
@@ -247,7 +335,10 @@ fn draw_status_bar(frame: &mut Frame, app: &App, area: Rect) {
             "Esc: Back | Enter: Open Tasks | e: Edit Name | d: Edit Description | j/k: Navigate"
         }
         View::Tasks => {
-            "Esc: Back | n: New Task | d: Delete | Space: Move Status | h/l: Columns | j/k: Navigate"
+            "Esc: Back | n: New Task | d: Delete | Space: Move Status | Enter: Details | h/l: Columns | j/k: Navigate"
+        }
+        View::TaskDetail => {
+            "Esc: Back | e: Edit Title | d: Edit Description"
         }
     };
 
@@ -278,7 +369,14 @@ fn draw_input_popup(frame: &mut Frame, app: &App) {
             }
         }
         InputField::ProjectDescription => "Edit Project Description",
-        InputField::TaskTitle => "New Task Title",
+        InputField::TaskTitle => {
+            if app.view == View::Tasks {
+                "New Task Title"
+            } else {
+                "Edit Task Title"
+            }
+        }
+        InputField::TaskDescription => "Edit Task Description",
         InputField::None => "Input",
     };
 

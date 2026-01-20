@@ -184,6 +184,29 @@ async fn handle_normal_mode(app: &mut App, key: KeyCode) -> anyhow::Result<bool>
                     }
                 }
             }
+            KeyCode::Enter => {
+                app.enter_task_detail_view();
+            }
+            _ => {}
+        },
+        View::TaskDetail => match key {
+            KeyCode::Char('q') | KeyCode::Esc => {
+                if let Err(e) = app.enter_task_view().await {
+                    app.set_status(&format!("Error: {}", e));
+                }
+            }
+            KeyCode::Char('e') => {
+                if let Some(task) = &app.task_detail {
+                    app.input = task.title.clone();
+                    app.start_input(InputField::TaskTitle);
+                }
+            }
+            KeyCode::Char('d') => {
+                if let Some(task) = &app.task_detail {
+                    app.input = task.description.as_deref().unwrap_or("").to_string();
+                    app.start_input(InputField::TaskDescription);
+                }
+            }
             _ => {}
         },
     }

@@ -42,12 +42,12 @@ _Combines Core-8 and TUI-2_
 
 _Combines Core-3 and TUI-3_
 
-- [ ] **Core**: Add `branch` and `working_dir` fields
-- [ ] **Core**: Add `InReview` and `Cancelled` status variants
-- [ ] **Core**: Add `parent_task_id` for subtasks
-- [ ] **Core**: Implement `TaskWithSessionStatus` view struct + API endpoint
-- [ ] **TUI**: Create TaskDetailView component
-- [ ] **TUI**: Implement task editing & status quick-change
+- [x] **Core**: Add `branch` and `working_dir` fields
+- [x] **Core**: Add `InReview` and `Cancelled` status variants
+- [x] **Core**: Add `parent_task_id` for subtasks
+- [x] **Core**: Implement `TaskWithSessionStatus` view struct + API endpoint
+- [x] **TUI**: Create TaskDetailView component
+- [x] **TUI**: Implement task editing & status quick-change
 
 ### Feature: Session Management
 
