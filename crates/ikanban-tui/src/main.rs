@@ -125,7 +125,7 @@ async fn handle_normal_mode(app: &mut App, key: KeyCode) -> anyhow::Result<bool>
                     app.set_status("Project deleted");
                 }
             }
-            KeyCode::Char('r') => {
+            KeyCode::Ctrl('r') => {
                 if let Err(e) = app.load_projects().await {
                     app.set_status(&format!("Error: {}", e));
                 } else {

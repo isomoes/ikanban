@@ -72,8 +72,9 @@ _Combines Core-5 and TUI-6_
 
 _TUI-4 (Core support completed)_
 
-- [ ] **TUI**: Create ProjectDetailView component
-- [ ] **TUI**: Implement project editing
+- [x] **TUI**: Create ProjectDetailView component (`ui.rs:112-190`)
+- [x] **TUI**: Implement project editing (`main.rs:139-156`, `app.rs:515-530`)
+- [x] **TUI**: Fixed key binding conflict (refresh is now Ctrl+R)
 
 ### Feature: Merge Tracking
 
