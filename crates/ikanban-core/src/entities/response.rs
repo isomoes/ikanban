@@ -1,3 +1,4 @@
+use crate::entities::{project, task};
 use serde::{Deserialize, Serialize};
 
 /// Standard API response wrapper
@@ -33,13 +34,13 @@ impl<T> ApiResponse<T> {
 #[serde(tag = "type", content = "payload")]
 pub enum WsEvent {
     // Project events
-    ProjectCreated(super::Project),
-    ProjectUpdated(super::Project),
+    ProjectCreated(project::Model),
+    ProjectUpdated(project::Model),
     ProjectDeleted { id: uuid::Uuid },
 
     // Task events
-    TaskCreated(super::Task),
-    TaskUpdated(super::Task),
+    TaskCreated(task::Model),
+    TaskUpdated(task::Model),
     TaskDeleted { id: uuid::Uuid },
 
     // Connection events

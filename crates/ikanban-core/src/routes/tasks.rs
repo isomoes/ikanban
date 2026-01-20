@@ -10,7 +10,11 @@ use uuid::Uuid;
 
 use crate::{
     error::AppError,
-    models::{ApiResponse, CreateTask, Project, Task, TaskQuery, UpdateTask, WsEvent},
+    entities::{
+        response::{ApiResponse, WsEvent},
+        project::{Model as Project},
+        task::{CreateTask, Model as Task, TaskQuery, UpdateTask},
+    },
     AppState,
 };
 

@@ -9,7 +9,11 @@ use uuid::Uuid;
 
 use crate::{
     error::AppError,
-    models::{ApiResponse, CreateProject, Project, ProjectWithStatus, UpdateProject, WsEvent},
+    entities::{
+        response::{ApiResponse, WsEvent},
+        project::{CreateProject, Model as Project, ProjectWithStatus, UpdateProject},
+        task::{Model as Task},
+    },
     AppState,
 };
 
@@ -82,7 +86,7 @@ pub async fn delete_project(
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<()>>, AppError> {
     // First delete all tasks associated with this project
-    let tasks_deleted = crate::models::Task::delete_by_project_id(&state.db, id).await?;
+    let tasks_deleted = Task::delete_by_project_id(&state.db, id).await?;
     tracing::debug!("Deleted {} tasks for project {}", tasks_deleted, id);
 
     let deleted = Project::delete(&state.db, id).await?;

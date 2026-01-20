@@ -1,7 +1,7 @@
 use sea_orm::DatabaseConnection;
 use tokio::sync::broadcast;
 
-use crate::models::WsEvent;
+use crate::entities::response::WsEvent;
 
 /// Application state shared across all handlers
 #[derive(Clone)]

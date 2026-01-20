@@ -4,7 +4,7 @@ use axum::{
 };
 use thiserror::Error;
 
-use crate::models::ApiResponse;
+use crate::entities::response::ApiResponse;
 
 #[derive(Debug, Error)]
 pub enum AppError {
