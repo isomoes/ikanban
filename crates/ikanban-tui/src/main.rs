@@ -76,8 +76,15 @@ async fn run_app(
 
             match app.input_mode {
                 InputMode::Normal => {
-                    if !handle_normal_mode(app, key.code).await? {
-                        break;
+                    // Handle help modal separately from normal mode
+                    if app.show_help_modal {
+                        if !handle_help_modal(app, key.code).await? {
+                            break;
+                        }
+                    } else {
+                        if !handle_normal_mode(app, key.code).await? {
+                            break;
+                        }
                     }
                 }
                 InputMode::Editing => {
@@ -125,6 +132,9 @@ async fn handle_normal_mode(app: &mut App, key: KeyCode) -> anyhow::Result<bool>
                     app.set_status("Refreshed");
                 }
             }
+            KeyCode::Char('?') => {
+                app.toggle_help_modal();
+            }
             _ => {}
         },
         View::ProjectDetail => match key {
@@ -153,6 +163,9 @@ async fn handle_normal_mode(app: &mut App, key: KeyCode) -> anyhow::Result<bool>
                     app.input = project.repo_path.as_deref().unwrap_or("").to_string();
                     app.start_input(InputField::ProjectRepoPath);
                 }
+            }
+            KeyCode::Char('?') => {
+                app.toggle_help_modal();
             }
             _ => {}
         },
@@ -193,6 +206,9 @@ async fn handle_normal_mode(app: &mut App, key: KeyCode) -> anyhow::Result<bool>
             KeyCode::Enter => {
                 app.enter_task_detail_view();
             }
+            KeyCode::Char('?') => {
+                app.toggle_help_modal();
+            }
             _ => {}
         },
         View::TaskDetail => match key {
@@ -212,6 +228,9 @@ async fn handle_normal_mode(app: &mut App, key: KeyCode) -> anyhow::Result<bool>
                     app.input = task.description.as_deref().unwrap_or("").to_string();
                     app.start_input(InputField::TaskDescription);
                 }
+            }
+            KeyCode::Char('?') => {
+                app.toggle_help_modal();
             }
             _ => {}
         },
@@ -240,4 +259,28 @@ async fn handle_editing_mode(app: &mut App, key: KeyCode) -> anyhow::Result<()> 
     }
 
     Ok(())
+}
+
+async fn handle_help_modal(app: &mut App, key: KeyCode) -> anyhow::Result<bool> {
+    let shortcuts = app.get_keyboard_shortcuts();
+    let max_index = shortcuts.len().saturating_sub(1);
+
+    match key {
+        KeyCode::Esc | KeyCode::Char('q') | KeyCode::Enter => {
+            app.close_help_modal();
+        }
+        KeyCode::Char('j') | KeyCode::Down => {
+            if max_index > 0 {
+                app.help_modal_selected = (app.help_modal_selected + 1).min(max_index);
+            }
+        }
+        KeyCode::Char('k') | KeyCode::Up => {
+            if max_index > 0 {
+                app.help_modal_selected = app.help_modal_selected.saturating_sub(1);
+            }
+        }
+        _ => {}
+    }
+
+    Ok(true)
 }

@@ -34,6 +34,11 @@ pub fn draw(frame: &mut Frame, app: &App) {
     if app.input_mode == InputMode::Editing {
         draw_input_popup(frame, app);
     }
+
+    // Draw help modal if active
+    if app.show_help_modal {
+        draw_help_modal(frame, app);
+    }
 }
 
 fn draw_header(frame: &mut Frame, app: &App, area: Rect) {
@@ -329,16 +334,16 @@ fn draw_task_column(frame: &mut Frame, app: &App, area: Rect, status: TaskStatus
 fn draw_status_bar(frame: &mut Frame, app: &App, area: Rect) {
     let help_text = match app.view {
         View::Projects => {
-            "q: Quit | n: New Project | d: Delete | Enter: Open | j/k: Navigate"
+            "q: Quit | n: New Project | d: Delete | Enter: Open | j/k: Navigate | ?: Help"
         }
         View::ProjectDetail => {
-            "Esc: Back | Enter: Open Tasks | e: Edit Name | d: Edit Description | r: Edit Repo Path | j/k: Navigate"
+            "Esc: Back | Enter: Open Tasks | e: Edit Name | d: Edit Description | r: Edit Repo Path | j/k: Navigate | ?: Help"
         }
         View::Tasks => {
-            "Esc: Back | n: New Task | d: Delete | Space: Move Status | Enter: Details | h/l: Columns | j/k: Navigate"
+            "Esc: Back | n: New Task | d: Delete | Space: Move Status | Enter: Details | h/l: Columns | j/k: Navigate | ?: Help"
         }
         View::TaskDetail => {
-            "Esc: Back | e: Edit Title | d: Edit Description"
+            "Esc: Back | e: Edit Title | d: Edit Description | ?: Help"
         }
     };
 
@@ -399,6 +404,87 @@ fn draw_input_popup(frame: &mut Frame, app: &App) {
 
     // Set cursor position
     frame.set_cursor_position((area.x + app.input.len() as u16 + 1, area.y + 1));
+}
+
+fn draw_help_modal(frame: &mut Frame, app: &App) {
+    let shortcuts = app.get_keyboard_shortcuts();
+    let title = app.get_keyboard_shortcuts_title();
+
+    // Calculate modal size based on content
+    let max_key_width = shortcuts
+        .iter()
+        .map(|(key, _)| key.len())
+        .max()
+        .unwrap_or(0);
+    let max_desc_width = shortcuts
+        .iter()
+        .map(|(_, desc)| desc.len())
+        .max()
+        .unwrap_or(0);
+
+    let content_width = max_key_width + max_desc_width + 7; // +7 for " | " and padding
+    let content_height = shortcuts.len() + 4; // +4 for title, borders, and footer
+
+    let area = centered_rect(
+        (content_width as u16).min(80).max(50),
+        (content_height as u16).min(25).max(10),
+        frame.area(),
+    );
+
+    // Clear the background
+    frame.render_widget(Clear, area);
+
+    // Create the list items for shortcuts
+    let items: Vec<ListItem> = shortcuts
+        .iter()
+        .enumerate()
+        .map(|(i, (key, desc))| {
+            let is_selected = i == app.help_modal_selected;
+            let key_style = if is_selected {
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD)
+            } else {
+                Style::default().fg(Color::Cyan)
+            };
+            let desc_style = if is_selected {
+                Style::default().fg(Color::White)
+            } else {
+                Style::default().fg(Color::Gray)
+            };
+
+            ListItem::new(Line::from(vec![
+                Span::styled(
+                    format!("{:>width$} | ", key, width = max_key_width),
+                    key_style,
+                ),
+                Span::styled(desc.clone(), desc_style),
+            ]))
+        })
+        .collect();
+
+    let list = List::new(items)
+        .block(
+            Block::default()
+                .title(format!(" {} ", title))
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(Color::Magenta)),
+        )
+        .highlight_style(Style::default().add_modifier(Modifier::REVERSED));
+
+    frame.render_widget(list, area);
+
+    // Draw footer with close hint
+    let footer_area = Rect {
+        x: area.x + 1,
+        y: area.y + area.height - 2,
+        width: area.width - 2,
+        height: 1,
+    };
+    let footer = Paragraph::new(" Press j/k to navigate, Enter or Esc to close ")
+        .style(Style::default().fg(Color::DarkGray))
+        .block(Block::default());
+    frame.render_widget(footer, footer_area);
 }
 
 /// Helper function to create a centered rect

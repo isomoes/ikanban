@@ -54,6 +54,10 @@ pub struct App {
     pub projects_ws: Option<WebSocketClient>,
     pub tasks_ws: Option<WebSocketClient>,
     pub current_project_id: Option<Uuid>,
+
+    // Help modal state
+    pub show_help_modal: bool,
+    pub help_modal_selected: usize,
 }
 
 /// Which field is being edited
@@ -92,6 +96,8 @@ impl App {
             projects_ws: None,
             tasks_ws: None,
             current_project_id: None,
+            show_help_modal: false,
+            help_modal_selected: 0,
         }
     }
 
@@ -101,6 +107,74 @@ impl App {
 
     pub fn clear_status(&mut self) {
         self.status_message = None;
+    }
+
+    // Help modal methods
+
+    pub fn toggle_help_modal(&mut self) {
+        self.show_help_modal = !self.show_help_modal;
+        self.help_modal_selected = 0;
+    }
+
+    pub fn close_help_modal(&mut self) {
+        self.show_help_modal = false;
+    }
+
+    /// Get the keyboard shortcuts for the current view
+    pub fn get_keyboard_shortcuts(&self) -> Vec<(String, String)> {
+        match self.view {
+            View::Projects => vec![
+                ("q".to_string(), "Quit application".to_string()),
+                ("j / Down".to_string(), "Next project".to_string()),
+                ("k / Up".to_string(), "Previous project".to_string()),
+                ("Enter".to_string(), "Open project tasks".to_string()),
+                ("e".to_string(), "View project details".to_string()),
+                ("n".to_string(), "Create new project".to_string()),
+                ("d".to_string(), "Delete selected project".to_string()),
+                ("r".to_string(), "Refresh projects list".to_string()),
+                ("?".to_string(), "Show this help".to_string()),
+            ],
+            View::ProjectDetail => vec![
+                ("Esc / q".to_string(), "Back to projects".to_string()),
+                ("Enter".to_string(), "Open project tasks".to_string()),
+                ("e".to_string(), "Edit project name".to_string()),
+                ("d".to_string(), "Edit description".to_string()),
+                ("r".to_string(), "Edit repository path".to_string()),
+                ("j / Down".to_string(), "Next project".to_string()),
+                ("k / Up".to_string(), "Previous project".to_string()),
+                ("?".to_string(), "Show this help".to_string()),
+            ],
+            View::Tasks => vec![
+                ("Esc".to_string(), "Back to projects".to_string()),
+                ("q".to_string(), "Quit application".to_string()),
+                ("j / Down".to_string(), "Next task".to_string()),
+                ("k / Up".to_string(), "Previous task".to_string()),
+                ("h / Left".to_string(), "Previous column".to_string()),
+                ("l / Right".to_string(), "Next column".to_string()),
+                ("Space".to_string(), "Move task to next status".to_string()),
+                ("n".to_string(), "Create new task".to_string()),
+                ("d".to_string(), "Delete selected task".to_string()),
+                ("r".to_string(), "Refresh tasks list".to_string()),
+                ("Enter".to_string(), "View task details".to_string()),
+                ("?".to_string(), "Show this help".to_string()),
+            ],
+            View::TaskDetail => vec![
+                ("Esc / q".to_string(), "Back to tasks".to_string()),
+                ("e".to_string(), "Edit task title".to_string()),
+                ("d".to_string(), "Edit task description".to_string()),
+                ("?".to_string(), "Show this help".to_string()),
+            ],
+        }
+    }
+
+    /// Get keyboard shortcuts title for current view
+    pub fn get_keyboard_shortcuts_title(&self) -> String {
+        match self.view {
+            View::Projects => "Projects View Shortcuts",
+            View::ProjectDetail => "Project Detail Shortcuts",
+            View::Tasks => "Tasks View Shortcuts",
+            View::TaskDetail => "Task Detail Shortcuts",
+        }.to_string()
     }
 
     /// Compare two TaskStatus values for sorting
