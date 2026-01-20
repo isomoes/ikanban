@@ -27,17 +27,19 @@ A Rust-based multi-agent task management system with a core server and multiple 
 ```
 Project (1:1 with Repo)
     │
-    ├── repo_path, branch, working_dir
+    ├── repo_path
     │
     └── Tasks (1:N)
+            │
+            ├── branch, working_dir  // Bound to each task
             │
             └── Sessions (1:N per Task, each run is a session)
                     │
                     └── ExecutionProcess (1:N per Session)
 ```
 
-- **Project**: One project = one repository. Contains repo path, branch, working directory.
-- **Task**: A unit of work within a project. Can have multiple sessions (attempts/runs).
+- **Project**: One project = one repository. Contains repo path.
+- **Task**: A unit of work within a project. Contains branch and working directory for context. Can have multiple sessions (attempts/runs).
 - **Session**: One execution attempt of a task. Each time you run a task, a new session is created.
 - **ExecutionProcess**: The actual process running within a session (agent, script, etc.).
 
@@ -149,12 +151,12 @@ Project (1:1 with Repo)
 
 - [ ] Extended Project model (1:1 with repo)
   - [ ] Add `repo_path` field (repository path)
-  - [ ] Add `branch` field
-  - [ ] Add `working_dir` field
   - [ ] Add `archived/pinned` flags
   - [ ] Add `find_most_active()` query for project sorting
   - [ ] `ProjectWithStatus` view with is_running/is_errored
 - [ ] Extended Task model
+  - [ ] Add `branch` field (context branch for this task)
+  - [ ] Add `working_dir` field (working directory within repo for this task)
   - [ ] Add `InReview` and `Cancelled` status variants
   - [ ] Add `parent_task_id` field for task hierarchy
   - [ ] Implement `TaskWithSessionStatus` view struct
@@ -267,8 +269,6 @@ pub struct Project {
     pub name: String,
     // Repo info (one project = one repo)
     pub repo_path: String,              // Repository path
-    pub branch: Option<String>,         // Current branch
-    pub working_dir: Option<String>,    // Working directory within repo
     // Status
     pub archived: bool,
     pub pinned: bool,
@@ -287,14 +287,10 @@ pub struct ProjectWithStatus {
 pub struct CreateProject {
     pub name: String,
     pub repo_path: String,
-    pub branch: Option<String>,
-    pub working_dir: Option<String>,
 }
 
 pub struct UpdateProject {
     pub name: Option<String>,
-    pub branch: Option<String>,
-    pub working_dir: Option<String>,
     pub archived: Option<bool>,
     pub pinned: Option<bool>,
 }
@@ -317,6 +313,8 @@ pub struct Task {
     pub title: String,
     pub description: Option<String>,
     pub status: TaskStatus,
+    pub branch: Option<String>,         // Context branch for this task
+    pub working_dir: Option<String>,    // Working directory within repo for this task
     pub parent_task_id: Option<Uuid>,   // For subtasks
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -334,6 +332,8 @@ pub struct CreateTask {
     pub title: String,
     pub description: Option<String>,
     pub status: Option<TaskStatus>,
+    pub branch: Option<String>,
+    pub working_dir: Option<String>,
     pub parent_task_id: Option<Uuid>,
 }
 
@@ -341,6 +341,8 @@ pub struct UpdateTask {
     pub title: Option<String>,
     pub description: Option<String>,
     pub status: Option<TaskStatus>,
+    pub branch: Option<String>,
+    pub working_dir: Option<String>,
     pub parent_task_id: Option<Uuid>,
 }
 ```
