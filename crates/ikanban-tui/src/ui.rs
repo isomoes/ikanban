@@ -333,18 +333,12 @@ fn draw_task_column(frame: &mut Frame, app: &App, area: Rect, status: TaskStatus
 
 fn draw_status_bar(frame: &mut Frame, app: &App, area: Rect) {
     let help_text = match app.view {
-        View::Projects => {
-            "q: Quit | n: New Project | d: Delete | Enter: Open | j/k: Navigate | ?: Help"
-        }
-        View::ProjectDetail => {
-            "Esc: Back | Enter: Open Tasks | e: Edit Name | d: Edit Description | r: Edit Repo Path | j/k: Navigate | ?: Help"
-        }
+        View::Projects => "j/k: Navigate | Enter: Open | n: New | d: Delete | ?: Help",
+        View::ProjectDetail => "Enter: Open | e/d/r: Edit | j/k: Navigate | ?: Help",
         View::Tasks => {
-            "Esc: Back | n: New Task | d: Delete | Space: Move Status | Enter: Details | h/l: Columns | j/k: Navigate | ?: Help"
+            "h/l: Columns | j/k: Tasks | Space: Move | n: New | Enter: Details | ?: Help"
         }
-        View::TaskDetail => {
-            "Esc: Back | e: Edit Title | d: Edit Description | ?: Help"
-        }
+        View::TaskDetail => "e/d: Edit | ?: Help",
     };
 
     let status = if let Some(msg) = &app.status_message {

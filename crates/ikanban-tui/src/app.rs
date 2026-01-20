@@ -120,49 +120,37 @@ impl App {
         self.show_help_modal = false;
     }
 
-    /// Get the keyboard shortcuts for the current view
+    /// Get the keyboard shortcuts for the current view (major keys only)
     pub fn get_keyboard_shortcuts(&self) -> Vec<(String, String)> {
         match self.view {
             View::Projects => vec![
-                ("q".to_string(), "Quit application".to_string()),
-                ("j / Down".to_string(), "Next project".to_string()),
-                ("k / Up".to_string(), "Previous project".to_string()),
-                ("Enter".to_string(), "Open project tasks".to_string()),
-                ("e".to_string(), "View project details".to_string()),
-                ("n".to_string(), "Create new project".to_string()),
-                ("d".to_string(), "Delete selected project".to_string()),
-                ("r".to_string(), "Refresh projects list".to_string()),
-                ("?".to_string(), "Show this help".to_string()),
+                ("j / k".to_string(), "Navigate projects".to_string()),
+                ("Enter".to_string(), "Open tasks".to_string()),
+                ("n".to_string(), "New project".to_string()),
+                ("d".to_string(), "Delete project".to_string()),
+                ("?".to_string(), "Show help".to_string()),
+                ("q".to_string(), "Quit".to_string()),
             ],
             View::ProjectDetail => vec![
-                ("Esc / q".to_string(), "Back to projects".to_string()),
-                ("Enter".to_string(), "Open project tasks".to_string()),
-                ("e".to_string(), "Edit project name".to_string()),
-                ("d".to_string(), "Edit description".to_string()),
-                ("r".to_string(), "Edit repository path".to_string()),
-                ("j / Down".to_string(), "Next project".to_string()),
-                ("k / Up".to_string(), "Previous project".to_string()),
-                ("?".to_string(), "Show this help".to_string()),
+                ("Enter".to_string(), "Open tasks".to_string()),
+                ("e / d / r".to_string(), "Edit fields".to_string()),
+                ("j / k".to_string(), "Navigate".to_string()),
+                ("?".to_string(), "Show help".to_string()),
+                ("Esc".to_string(), "Go back".to_string()),
             ],
             View::Tasks => vec![
-                ("Esc".to_string(), "Back to projects".to_string()),
-                ("q".to_string(), "Quit application".to_string()),
-                ("j / Down".to_string(), "Next task".to_string()),
-                ("k / Up".to_string(), "Previous task".to_string()),
-                ("h / Left".to_string(), "Previous column".to_string()),
-                ("l / Right".to_string(), "Next column".to_string()),
-                ("Space".to_string(), "Move task to next status".to_string()),
-                ("n".to_string(), "Create new task".to_string()),
-                ("d".to_string(), "Delete selected task".to_string()),
-                ("r".to_string(), "Refresh tasks list".to_string()),
-                ("Enter".to_string(), "View task details".to_string()),
-                ("?".to_string(), "Show this help".to_string()),
+                ("h / l".to_string(), "Switch column".to_string()),
+                ("j / k".to_string(), "Navigate tasks".to_string()),
+                ("Space".to_string(), "Move status".to_string()),
+                ("n".to_string(), "New task".to_string()),
+                ("Enter".to_string(), "Task details".to_string()),
+                ("?".to_string(), "Show help".to_string()),
+                ("Esc".to_string(), "Go back".to_string()),
             ],
             View::TaskDetail => vec![
-                ("Esc / q".to_string(), "Back to tasks".to_string()),
-                ("e".to_string(), "Edit task title".to_string()),
-                ("d".to_string(), "Edit task description".to_string()),
-                ("?".to_string(), "Show this help".to_string()),
+                ("e / d".to_string(), "Edit fields".to_string()),
+                ("?".to_string(), "Show help".to_string()),
+                ("Esc".to_string(), "Go back".to_string()),
             ],
         }
     }
