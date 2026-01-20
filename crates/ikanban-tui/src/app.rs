@@ -150,9 +150,7 @@ impl App {
 
     /// Get the event transmitter for WebSocket clients
     fn ws_event_tx(&self) -> Option<mpsc::UnboundedSender<WsEvent>> {
-        // Create a new channel and update the receiver if needed
-        // This is a bit of a hack - in a real app we'd want better channel management
-        None
+        self.ws_event_tx.clone()
     }
 
     /// Process incoming WebSocket events
