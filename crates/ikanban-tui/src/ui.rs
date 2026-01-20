@@ -422,14 +422,25 @@ fn draw_help_modal(frame: &mut Frame, app: &App) {
         .max()
         .unwrap_or(0);
 
-    let content_width = max_key_width + max_desc_width + 7; // +7 for " | " and padding
-    let content_height = shortcuts.len() + 4; // +4 for title, borders, and footer
+    // Calculate required width and height
+    let content_width = (max_key_width + max_desc_width + 7) as u16; // +7 for " | " and padding
+    let content_height = (shortcuts.len() + 4) as u16; // +4 for title, borders, and footer
 
-    let area = centered_rect(
-        (content_width as u16).min(80).max(50),
-        (content_height as u16).min(25).max(10),
-        frame.area(),
-    );
+    // Get terminal size
+    let term_size = frame.size();
+    let modal_width = content_width.min(term_size.width - 4).max(40);
+    let modal_height = content_height.min(term_size.height - 4).max(10);
+
+    // Calculate centered position
+    let x = (term_size.width - modal_width) / 2;
+    let y = (term_size.height - modal_height) / 2;
+
+    let area = Rect {
+        x,
+        y,
+        width: modal_width,
+        height: modal_height,
+    };
 
     // Clear the background
     frame.render_widget(Clear, area);
