@@ -22,6 +22,25 @@ A Rust-based multi-agent task management system with a core server and multiple 
                     +---------------------------+
 ```
 
+## Data Model Hierarchy
+
+```
+Project (1:1 with Repo)
+    │
+    ├── repo_path, branch, working_dir
+    │
+    └── Tasks (1:N)
+            │
+            └── Sessions (1:N per Task, each run is a session)
+                    │
+                    └── ExecutionProcess (1:N per Session)
+```
+
+- **Project**: One project = one repository. Contains repo path, branch, working directory.
+- **Task**: A unit of work within a project. Can have multiple sessions (attempts/runs).
+- **Session**: One execution attempt of a task. Each time you run a task, a new session is created.
+- **ExecutionProcess**: The actual process running within a session (agent, script, etc.).
+
 ## MVP Core API Specification
 
 ### Health Check
@@ -50,26 +69,13 @@ A Rust-based multi-agent task management system with a core server and multiple 
 | DELETE | `/api/tasks/{id}`                      | Delete task                       |
 | GET    | `/api/tasks/stream/ws?project_id={id}` | WebSocket stream for task updates |
 
-### Workspaces API (Planned)
-
-| Method | Endpoint                                                   | Description                     |
-| ------ | ---------------------------------------------------------- | ------------------------------- |
-| GET    | `/api/projects/{pid}/tasks/{tid}/workspaces`               | List workspaces for a task      |
-| POST   | `/api/projects/{pid}/tasks/{tid}/workspaces`               | Create a new workspace          |
-| GET    | `/api/projects/{pid}/tasks/{tid}/workspaces/{wid}`         | Get workspace by ID             |
-| PATCH  | `/api/projects/{pid}/tasks/{tid}/workspaces/{wid}`         | Update workspace                |
-| DELETE | `/api/projects/{pid}/tasks/{tid}/workspaces/{wid}`         | Delete workspace                |
-| POST   | `/api/projects/{pid}/tasks/{tid}/workspaces/{wid}/archive` | Archive/unarchive workspace     |
-| GET    | `/api/workspaces`                                          | List all workspaces (global)    |
-| GET    | `/api/workspaces/{wid}/context`                            | Get workspace with full context |
-
 ### Sessions API (Planned)
 
-| Method | Endpoint                                                          | Description                 |
-| ------ | ----------------------------------------------------------------- | --------------------------- |
-| GET    | `/api/projects/{pid}/tasks/{tid}/workspaces/{wid}/sessions`       | List sessions for workspace |
-| POST   | `/api/projects/{pid}/tasks/{tid}/workspaces/{wid}/sessions`       | Create a new session        |
-| GET    | `/api/projects/{pid}/tasks/{tid}/workspaces/{wid}/sessions/{sid}` | Get session by ID           |
+| Method | Endpoint                                    | Description                |
+| ------ | ------------------------------------------- | -------------------------- |
+| GET    | `/api/tasks/{tid}/sessions`                 | List sessions for a task   |
+| POST   | `/api/tasks/{tid}/sessions`                 | Create a new session (run) |
+| GET    | `/api/tasks/{tid}/sessions/{sid}`           | Get session by ID          |
 
 ### Execution API (Planned)
 
@@ -83,25 +89,14 @@ A Rust-based multi-agent task management system with a core server and multiple 
 | GET    | `.../sessions/{sid}/executions/{eid}/logs/stream` | Stream execution logs (WS/SSE) |
 | POST   | `.../sessions/{sid}/restore/{eid}`                | Restore to execution state     |
 
-### Repos API (Planned)
-
-| Method | Endpoint                          | Description               |
-| ------ | --------------------------------- | ------------------------- |
-| GET    | `/api/repos`                      | List all repos            |
-| GET    | `/api/repos/{id}`                 | Get repo by ID            |
-| PATCH  | `/api/repos/{id}`                 | Update repo configuration |
-| GET    | `/api/projects/{pid}/repos`       | List repos for project    |
-| POST   | `/api/projects/{pid}/repos`       | Add repo to project       |
-| DELETE | `/api/projects/{pid}/repos/{rid}` | Remove repo from project  |
-
 ### Merge API (Planned)
 
-| Method | Endpoint                             | Description               |
-| ------ | ------------------------------------ | ------------------------- |
-| GET    | `.../workspaces/{wid}/merges`        | List merges for workspace |
-| POST   | `.../workspaces/{wid}/merges/direct` | Create direct merge       |
-| POST   | `.../workspaces/{wid}/merges/pr`     | Create PR                 |
-| GET    | `.../workspaces/{wid}/merges/{mid}`  | Get merge by ID           |
+| Method | Endpoint                             | Description             |
+| ------ | ------------------------------------ | ----------------------- |
+| GET    | `/api/projects/{pid}/merges`         | List merges for project |
+| POST   | `/api/projects/{pid}/merges/direct`  | Create direct merge     |
+| POST   | `/api/projects/{pid}/merges/pr`      | Create PR               |
+| GET    | `/api/projects/{pid}/merges/{mid}`   | Get merge by ID         |
 
 ### Events API (SSE)
 
@@ -150,47 +145,27 @@ A Rust-based multi-agent task management system with a core server and multiple 
   - [ ] Task detail/edit view
 - [x] Keyboard navigation
 
-### Phase 4: Enhanced Data Models (Based on Reference)
+### Phase 4: Enhanced Data Models
 
+- [ ] Extended Project model (1:1 with repo)
+  - [ ] Add `repo_path` field (repository path)
+  - [ ] Add `branch` field
+  - [ ] Add `working_dir` field
+  - [ ] Add `archived/pinned` flags
+  - [ ] Add `find_most_active()` query for project sorting
+  - [ ] `ProjectWithStatus` view with is_running/is_errored
 - [ ] Extended Task model
   - [ ] Add `InReview` and `Cancelled` status variants
-  - [ ] Add `parent_workspace_id` field for task hierarchy
-  - [ ] Add `shared_task_id` for cross-project task sharing
-  - [ ] Implement `TaskWithAttemptStatus` view struct
-  - [ ] Add `TaskRelationships` for parent/child navigation
-- [ ] Extended Project model
-  - [ ] Add `default_agent_working_dir` field
-  - [ ] Add `remote_project_id` for remote project linking
-  - [ ] Add `find_most_active()` query for project sorting
-- [ ] Repo entity
-  - [ ] Create `repos` table migration
-  - [ ] Model with path, name, display_name
-  - [ ] Configuration: setup_script, cleanup_script, copy_files
-  - [ ] dev_server_script support
-  - [ ] parallel_setup_script flag
-  - [ ] find_or_create() for upsert pattern
-- [ ] ProjectRepo junction table
-  - [ ] Link projects to multiple repositories
-  - [ ] Default branch configuration per project-repo
+  - [ ] Add `parent_task_id` field for task hierarchy
+  - [ ] Implement `TaskWithSessionStatus` view struct
 
-### Phase 5: Workspace & Session Management
+### Phase 5: Session Management
 
-- [ ] Workspace entity
-  - [ ] Create `workspaces` table migration
-  - [ ] Fields: task_id, container_ref, branch, agent_working_dir
-  - [ ] setup_completed_at timestamp
-  - [ ] archived/pinned flags
-  - [ ] Auto-generated name from first prompt
-  - [ ] `WorkspaceWithStatus` view with is_running/is_errored
-  - [ ] Container cleanup for expired workspaces
-  - [ ] Branch name updates
-- [ ] WorkspaceRepo junction
-  - [ ] Link workspaces to repos
-  - [ ] target_branch per workspace-repo
 - [ ] Session entity
   - [ ] Create `sessions` table migration
-  - [ ] Fields: workspace_id, executor (profile)
-  - [ ] Find sessions by workspace, ordered by last used
+  - [ ] Fields: task_id, executor (profile)
+  - [ ] Find sessions by task, ordered by last used
+  - [ ] Each session = one run/attempt of a task
 
 ### Phase 6: Execution Process System
 
@@ -205,8 +180,7 @@ A Rust-based multi-agent task management system with a core server and multiple 
   - [ ] Streaming log storage
   - [ ] Log retrieval for UI display
 - [ ] ExecutionProcessRepoState
-  - [ ] Track before/after head commits per repo
-  - [ ] Support for multi-repo workspaces
+  - [ ] Track before/after head commits
 - [ ] CodingAgentTurn entity
   - [ ] Track agent session interactions
   - [ ] prompt and summary storage
@@ -234,13 +208,12 @@ A Rust-based multi-agent task management system with a core server and multiple 
 
 ### Phase 8: API Extensions
 
-- [ ] Workspace API endpoints
-  - [ ] CRUD for workspaces
-  - [ ] Workspace context loading (with task, project, repos)
+- [ ] Extended Project API endpoints
+  - [ ] Project context loading (with tasks, sessions)
   - [ ] Archive/unarchive, pin/unpin
 - [ ] Session API endpoints
-  - [ ] Create session for workspace
-  - [ ] List sessions by workspace
+  - [ ] Create session for task
+  - [ ] List sessions by task
 - [ ] Execution API endpoints
   - [ ] Start execution process
   - [ ] Stream execution logs
@@ -249,16 +222,12 @@ A Rust-based multi-agent task management system with a core server and multiple 
 - [ ] Merge API endpoints
   - [ ] Create PR / direct merge
   - [ ] Get merge status
-  - [ ] List merges by workspace
-- [ ] Repository API endpoints
-  - [ ] CRUD for repos
-  - [ ] Project-repo associations
-  - [ ] Repo configuration updates
+  - [ ] List merges by project
 
 ### Phase 9: Real-time Features
 
 - [ ] Enhanced WebSocket events
-  - [ ] Workspace events (created, updated, archived)
+  - [ ] Project events (created, updated, archived)
   - [ ] Session events
   - [ ] Execution process events (started, completed, failed)
   - [ ] Log streaming via WebSocket
@@ -270,10 +239,10 @@ A Rust-based multi-agent task management system with a core server and multiple 
 ### Phase 10: TUI Enhancements
 
 - [ ] Task detail/edit view
-- [ ] Workspace list view
+- [ ] Project detail view (with branch, status)
+- [ ] Session list view (task run history)
 - [ ] Execution log viewer
 - [ ] Real-time status indicators
-- [ ] Multi-repo support in UI
 - [ ] Keyboard shortcuts for common actions
 
 ### Phase 11: Polish & Testing
@@ -290,25 +259,44 @@ A Rust-based multi-agent task management system with a core server and multiple 
 
 ## Data Models
 
-### Project
+### Project (1:1 with Repo)
 
 ```rust
 pub struct Project {
     pub id: Uuid,
     pub name: String,
-    pub default_agent_working_dir: Option<String>,
-    pub remote_project_id: Option<Uuid>,  // For remote project linking
+    // Repo info (one project = one repo)
+    pub repo_path: String,              // Repository path
+    pub branch: Option<String>,         // Current branch
+    pub working_dir: Option<String>,    // Working directory within repo
+    // Status
+    pub archived: bool,
+    pub pinned: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
 
+pub struct ProjectWithStatus {
+    pub project: Project,
+    pub is_running: bool,      // Has running session
+    pub is_errored: bool,      // Last session failed
+    pub task_count: i32,
+    pub active_task_count: i32,
+}
+
 pub struct CreateProject {
     pub name: String,
-    pub repositories: Vec<CreateProjectRepo>,
+    pub repo_path: String,
+    pub branch: Option<String>,
+    pub working_dir: Option<String>,
 }
 
 pub struct UpdateProject {
     pub name: Option<String>,
+    pub branch: Option<String>,
+    pub working_dir: Option<String>,
+    pub archived: Option<bool>,
+    pub pinned: Option<bool>,
 }
 ```
 
@@ -318,9 +306,9 @@ pub struct UpdateProject {
 pub enum TaskStatus {
     Todo,
     InProgress,
-    InReview,   // New: for code review stage
+    InReview,
     Done,
-    Cancelled,  // New: for cancelled tasks
+    Cancelled,
 }
 
 pub struct Task {
@@ -329,17 +317,16 @@ pub struct Task {
     pub title: String,
     pub description: Option<String>,
     pub status: TaskStatus,
-    pub parent_workspace_id: Option<Uuid>,  // For task hierarchy
-    pub shared_task_id: Option<Uuid>,       // For cross-project sharing
+    pub parent_task_id: Option<Uuid>,   // For subtasks
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
 
-pub struct TaskWithAttemptStatus {
+pub struct TaskWithSessionStatus {
     pub task: Task,
-    pub has_in_progress_attempt: bool,
-    pub last_attempt_failed: bool,
-    pub executor: String,
+    pub session_count: i32,         // Total runs
+    pub has_running_session: bool,  // Currently running
+    pub last_session_failed: bool,  // Last run failed
 }
 
 pub struct CreateTask {
@@ -347,88 +334,40 @@ pub struct CreateTask {
     pub title: String,
     pub description: Option<String>,
     pub status: Option<TaskStatus>,
-    pub parent_workspace_id: Option<Uuid>,
-    pub image_ids: Option<Vec<Uuid>>,
+    pub parent_task_id: Option<Uuid>,
 }
 
 pub struct UpdateTask {
     pub title: Option<String>,
     pub description: Option<String>,
     pub status: Option<TaskStatus>,
-    pub parent_workspace_id: Option<Uuid>,
-    pub image_ids: Option<Vec<Uuid>>,
+    pub parent_task_id: Option<Uuid>,
 }
 ```
 
-### Workspace
-
-```rust
-pub struct Workspace {
-    pub id: Uuid,
-    pub task_id: Uuid,
-    pub container_ref: Option<String>,     // Container/worktree path
-    pub branch: String,
-    pub agent_working_dir: Option<String>,
-    pub setup_completed_at: Option<DateTime<Utc>>,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
-    pub archived: bool,
-    pub pinned: bool,
-    pub name: Option<String>,  // Auto-generated from first prompt
-}
-
-pub struct WorkspaceWithStatus {
-    pub workspace: Workspace,
-    pub is_running: bool,
-    pub is_errored: bool,
-}
-
-pub struct CreateWorkspace {
-    pub branch: String,
-    pub agent_working_dir: Option<String>,
-}
-```
-
-### Session
+### Session (one run/attempt of a Task)
 
 ```rust
 pub struct Session {
     pub id: Uuid,
-    pub workspace_id: Uuid,
-    pub executor: Option<String>,  // Executor profile name
+    pub task_id: Uuid,              // Belongs to task
+    pub executor: Option<String>,   // Executor profile name
+    pub status: SessionStatus,
+    pub started_at: DateTime<Utc>,
+    pub completed_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+}
+
+pub enum SessionStatus {
+    Running,
+    Completed,
+    Failed,
+    Cancelled,
 }
 
 pub struct CreateSession {
     pub executor: Option<String>,
-}
-```
-
-### Repo
-
-```rust
-pub struct Repo {
-    pub id: Uuid,
-    pub path: PathBuf,
-    pub name: String,
-    pub display_name: String,
-    pub setup_script: Option<String>,
-    pub cleanup_script: Option<String>,
-    pub copy_files: Option<String>,
-    pub parallel_setup_script: bool,
-    pub dev_server_script: Option<String>,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
-}
-
-pub struct UpdateRepo {
-    pub display_name: Option<Option<String>>,
-    pub setup_script: Option<Option<String>>,
-    pub cleanup_script: Option<Option<String>>,
-    pub copy_files: Option<Option<String>>,
-    pub parallel_setup_script: Option<Option<bool>>,
-    pub dev_server_script: Option<Option<String>>,
 }
 ```
 
@@ -496,28 +435,21 @@ pub enum Merge {
 
 pub struct DirectMerge {
     pub id: Uuid,
-    pub workspace_id: Uuid,
-    pub repo_id: Uuid,
+    pub project_id: Uuid,
     pub merge_commit: String,
-    pub target_branch_name: String,
+    pub target_branch: String,
     pub created_at: DateTime<Utc>,
 }
 
 pub struct PrMerge {
     pub id: Uuid,
-    pub workspace_id: Uuid,
-    pub repo_id: Uuid,
-    pub created_at: DateTime<Utc>,
-    pub target_branch_name: String,
-    pub pr_info: PullRequestInfo,
-}
-
-pub struct PullRequestInfo {
-    pub number: i64,
-    pub url: String,
+    pub project_id: Uuid,
+    pub target_branch: String,
+    pub pr_number: i64,
+    pub pr_url: String,
     pub status: MergeStatus,
     pub merged_at: Option<DateTime<Utc>>,
-    pub merge_commit_sha: Option<String>,
+    pub created_at: DateTime<Utc>,
 }
 ```
 
@@ -551,22 +483,16 @@ pub enum WsMessage {
     TaskUpdated(Task),
     TaskDeleted { id: Uuid },
 
-    // Workspace events
-    WorkspaceCreated(Workspace),
-    WorkspaceUpdated(Workspace),
-    WorkspaceDeleted { id: Uuid },
-    WorkspaceArchived { id: Uuid, archived: bool },
-
-    // Session events
+    // Session events (task runs)
     SessionCreated(Session),
     SessionUpdated(Session),
+    SessionCompleted { id: Uuid, status: SessionStatus },
 
     // Execution events
-    ExecutionProcessStarted(ExecutionProcess),
-    ExecutionProcessCompleted(ExecutionProcess),
-    ExecutionProcessFailed(ExecutionProcess),
-    ExecutionProcessKilled(ExecutionProcess),
-    ExecutionLogChunk { process_id: Uuid, data: String },
+    ExecutionStarted(ExecutionProcess),
+    ExecutionCompleted(ExecutionProcess),
+    ExecutionFailed(ExecutionProcess),
+    ExecutionLog { process_id: Uuid, data: String },
 
     // Merge events
     MergeCreated(Merge),
