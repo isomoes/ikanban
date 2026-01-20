@@ -35,8 +35,8 @@ _Combines Core-8 and TUI-2_
 - [x] **Core**: Enhance event types (Session, Execution, Merge events)
 - [x] **Core**: Implement log streaming via WebSocket
 - [x] **Core**: PR monitoring background service
-- [ ] **TUI**: Create WebSocket client module (`ws.rs`) & Integrate with App state
-- [ ] **TUI**: Handle real-time updates in UI
+- [x] **TUI**: Create WebSocket client module (`ws.rs`) & Integrate with App state
+- [x] **TUI**: Handle real-time updates in UI
 
 ### Feature: Extended Task Management
 

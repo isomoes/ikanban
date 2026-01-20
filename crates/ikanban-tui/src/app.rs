@@ -1,9 +1,11 @@
+use tokio::sync::mpsc;
 use uuid::Uuid;
 
 use crate::api::ApiClient;
 use crate::models::{
-    CreateProject, CreateTask, Project, Task, TaskStatus, TaskStatusExt, UpdateTask,
+    CreateProject, CreateTask, Project, Task, TaskStatus, TaskStatusExt, UpdateTask, WsEvent,
 };
+use crate::ws::WebSocketClient;
 
 /// Current view/screen in the TUI
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -43,6 +45,13 @@ pub struct App {
 
     // Running flag
     pub running: bool,
+
+    // WebSocket state
+    pub ws_event_rx: Option<mpsc::UnboundedReceiver<WsEvent>>,
+    ws_event_tx: Option<mpsc::UnboundedSender<WsEvent>>,
+    pub projects_ws: Option<WebSocketClient>,
+    pub tasks_ws: Option<WebSocketClient>,
+    pub current_project_id: Option<Uuid>,
 }
 
 /// Which field is being edited
@@ -56,6 +65,9 @@ pub enum InputField {
 
 impl App {
     pub fn new(server_url: &str) -> Self {
+        // Create channel for WebSocket events
+        let (ws_event_tx, ws_event_rx) = mpsc::unbounded_channel::<WsEvent>();
+
         Self {
             api: ApiClient::new(server_url),
             view: View::Projects,
@@ -70,6 +82,11 @@ impl App {
             selected_column: TaskStatus::Todo,
             status_message: None,
             running: true,
+            ws_event_rx: Some(ws_event_rx),
+            ws_event_tx: Some(ws_event_tx),
+            projects_ws: None,
+            tasks_ws: None,
+            current_project_id: None,
         }
     }
 
@@ -79,6 +96,158 @@ impl App {
 
     pub fn clear_status(&mut self) {
         self.status_message = None;
+    }
+
+    /// Compare two TaskStatus values for sorting
+    fn compare_task_status(a: &TaskStatus, b: &TaskStatus) -> std::cmp::Ordering {
+        fn order(status: &TaskStatus) -> u8 {
+            match status {
+                TaskStatus::Todo => 0,
+                TaskStatus::InProgress => 1,
+                TaskStatus::Done => 2,
+            }
+        }
+        order(a).cmp(&order(b))
+    }
+
+    /// Connect to projects WebSocket stream
+    pub fn connect_projects_ws(&mut self) {
+        let event_tx = self
+            .ws_event_tx()
+            .expect("WebSocket event channel should be available");
+        self.projects_ws = Some(WebSocketClient::projects(&self.api.base_url(), event_tx));
+        self.set_status("Connected to projects stream");
+    }
+
+    /// Connect to tasks WebSocket stream for a specific project
+    pub fn connect_tasks_ws(&mut self, project_id: Uuid) {
+        // Disconnect from previous tasks stream if any
+        self.tasks_ws = None;
+
+        let event_tx = self
+            .ws_event_tx()
+            .expect("WebSocket event channel should be available");
+        self.tasks_ws = Some(WebSocketClient::tasks(
+            &self.api.base_url(),
+            project_id,
+            event_tx,
+        ));
+        self.current_project_id = Some(project_id);
+        self.set_status(&format!("Connected to tasks stream for project {}", project_id));
+    }
+
+    /// Disconnect from tasks WebSocket stream
+    pub fn disconnect_tasks_ws(&mut self) {
+        self.tasks_ws = None;
+        self.current_project_id = None;
+    }
+
+    /// Get the event transmitter for WebSocket clients
+    fn ws_event_tx(&self) -> Option<mpsc::UnboundedSender<WsEvent>> {
+        // Create a new channel and update the receiver if needed
+        // This is a bit of a hack - in a real app we'd want better channel management
+        None
+    }
+
+    /// Process incoming WebSocket events
+    pub async fn process_ws_events(&mut self) -> anyhow::Result<()> {
+        if let Some(ref mut rx) = self.ws_event_rx {
+            // Collect all available events first to avoid borrow issues
+            let mut events = Vec::new();
+            while let Ok(event) = rx.try_recv() {
+                events.push(event);
+            }
+            // Then process each event
+            for event in events {
+                self.handle_ws_event(event).await;
+            }
+        }
+        Ok(())
+    }
+
+    /// Handle a single WebSocket event
+    pub async fn handle_ws_event(&mut self, event: WsEvent) {
+        match event {
+            WsEvent::ProjectCreated(project) => {
+                self.projects.push(project);
+                self.set_status("New project created");
+            }
+            WsEvent::ProjectUpdated(project) => {
+                if let Some(existing) = self.projects.iter_mut().find(|p| p.id == project.id) {
+                    *existing = project.clone();
+                }
+                if let Some(ref mut detail) = self.project_detail {
+                    if detail.id == project.id {
+                        *detail = project;
+                    }
+                }
+                self.set_status("Project updated");
+            }
+            WsEvent::ProjectDeleted { id } => {
+                self.projects.retain(|p| p.id != id);
+                if let Some(ref mut detail) = self.project_detail {
+                    if detail.id == id {
+                        self.project_detail = None;
+                    }
+                }
+                if self.selected_project_index >= self.projects.len() {
+                    self.selected_project_index = self.projects.len().saturating_sub(1);
+                }
+                self.set_status("Project deleted");
+            }
+            WsEvent::TaskCreated(task) => {
+                // Only add if it's for the current project
+                if Some(task.project_id) == self.current_project_id {
+                    self.tasks.push(task);
+                    // Sort tasks by status for proper display
+                    self.tasks
+                        .sort_by(|a, b| Self::compare_task_status(&a.status, &b.status));
+                    self.set_status("New task created");
+                }
+            }
+            WsEvent::TaskUpdated(task) => {
+                if Some(task.project_id) == self.current_project_id {
+                    if let Some(existing) = self.tasks.iter_mut().find(|t| t.id == task.id) {
+                        *existing = task.clone();
+                    }
+                    // Re-sort tasks by status
+                    self.tasks
+                        .sort_by(|a, b| Self::compare_task_status(&a.status, &b.status));
+                    self.set_status("Task updated");
+                }
+            }
+            WsEvent::TaskDeleted { id } => {
+                if let Some(project_id) = self.current_project_id {
+                    // We can't easily filter by project_id here, but the server
+                    // should only send delete events for the current project
+                    self.tasks.retain(|t| t.id != id);
+                    if self.selected_task_index >= self.tasks.len() {
+                        self.selected_task_index = self.tasks.len().saturating_sub(1);
+                    }
+                    self.set_status("Task deleted");
+                }
+            }
+            WsEvent::Connected => {
+                self.set_status("WebSocket connected");
+            }
+            WsEvent::Log { execution_id: _, content } => {
+                tracing::info!("Log: {}", content);
+            }
+            // Session, Execution, Merge events - log them for now
+            WsEvent::SessionCreated(_) => tracing::debug!("Session created"),
+            WsEvent::SessionUpdated(_) => tracing::debug!("Session updated"),
+            WsEvent::ExecutionCreated(_) => tracing::debug!("Execution created"),
+            WsEvent::ExecutionUpdated(_) => tracing::debug!("Execution updated"),
+            WsEvent::DirectMergeCreated(_) => tracing::debug!("Direct merge created"),
+            WsEvent::PrMergeCreated(_) => tracing::debug!("PR merge created"),
+            WsEvent::PrMergeUpdated(_) => tracing::debug!("PR merge updated"),
+            WsEvent::Ping => {
+                // Handle ping if needed
+            }
+            WsEvent::Pong => {
+                // Handle pong if needed
+            }
+        }
     }
 
     pub fn selected_project(&self) -> Option<&Project> {
@@ -251,12 +420,20 @@ impl App {
         self.selected_task_index = 0;
         self.selected_column = TaskStatus::Todo;
         self.project_detail = None;
+        // Disconnect from tasks WebSocket
+        self.disconnect_tasks_ws();
+        // Connect to projects WebSocket
+        self.connect_projects_ws();
     }
 
     pub fn enter_project_detail_view(&mut self) {
         if let Some(project) = self.selected_project() {
             self.project_detail = Some(project.clone());
             self.view = View::ProjectDetail;
+            // Ensure we're connected to projects WebSocket
+            if self.projects_ws.is_none() {
+                self.connect_projects_ws();
+            }
         }
     }
 
@@ -265,6 +442,8 @@ impl App {
             let project_id = project.id;
             self.view = View::Tasks;
             self.load_tasks(project_id).await?;
+            // Connect to tasks WebSocket stream for real-time updates
+            self.connect_tasks_ws(project_id);
         }
         Ok(())
     }

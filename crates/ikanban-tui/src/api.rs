@@ -18,6 +18,11 @@ impl ApiClient {
         }
     }
 
+    /// Get the base URL for WebSocket connections
+    pub fn base_url(&self) -> &str {
+        &self.base_url
+    }
+
     // Project endpoints
 
     pub async fn list_projects(&self) -> anyhow::Result<Vec<Project>> {

@@ -30,6 +30,9 @@ async fn main() -> anyhow::Result<()> {
     // Initial data load
     if let Err(e) = app.load_projects().await {
         app.set_status(&format!("Failed to connect: {}", e));
+    } else {
+        // Connect to projects WebSocket for real-time updates
+        app.connect_projects_ws();
     }
 
     let result = run_app(&mut terminal, &mut app).await;
@@ -55,6 +58,11 @@ async fn run_app(
     app: &mut App,
 ) -> anyhow::Result<()> {
     loop {
+        // Process any pending WebSocket events
+        if let Err(e) = app.process_ws_events().await {
+            app.set_status(&format!("WebSocket error: {}", e));
+        }
+
         terminal.draw(|f| ui::draw(f, app))?;
 
         // Poll for events with timeout to allow async operations
