@@ -350,7 +350,7 @@ impl App {
             repo_path: None,
         };
         self.api.create_project(&payload).await?;
-        self.load_projects().await?;
+        // Don't reload - WebSocket event will add the new project
         Ok(())
     }
 
@@ -392,7 +392,7 @@ impl App {
                 parent_task_id: None,
             };
             self.api.create_task(&payload).await?;
-            self.load_tasks(project.id).await?;
+            // Don't reload - WebSocket event will add the new task
         }
         Ok(())
     }
