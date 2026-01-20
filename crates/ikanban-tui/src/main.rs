@@ -58,22 +58,22 @@ async fn run_app(
         terminal.draw(|f| ui::draw(f, app))?;
 
         // Poll for events with timeout to allow async operations
-        if event::poll(Duration::from_millis(100))? {
-            if let Event::Key(key) = event::read()? {
-                // Only handle key press events (not release)
-                if key.kind != KeyEventKind::Press {
-                    continue;
-                }
+        if event::poll(Duration::from_millis(100))?
+            && let Event::Key(key) = event::read()?
+        {
+            // Only handle key press events (not release)
+            if key.kind != KeyEventKind::Press {
+                continue;
+            }
 
-                match app.input_mode {
-                    InputMode::Normal => {
-                        if !handle_normal_mode(app, key.code).await? {
-                            break;
-                        }
+            match app.input_mode {
+                InputMode::Normal => {
+                    if !handle_normal_mode(app, key.code).await? {
+                        break;
                     }
-                    InputMode::Editing => {
-                        handle_editing_mode(app, key.code).await?;
-                    }
+                }
+                InputMode::Editing => {
+                    handle_editing_mode(app, key.code).await?;
                 }
             }
         }
@@ -97,6 +97,9 @@ async fn handle_normal_mode(app: &mut App, key: KeyCode) -> anyhow::Result<bool>
                     app.set_status(&format!("Error: {}", e));
                 }
             }
+            KeyCode::Char('e') => {
+                app.enter_project_detail_view();
+            }
             KeyCode::Char('n') => {
                 app.start_input(InputField::ProjectName);
             }
@@ -112,6 +115,29 @@ async fn handle_normal_mode(app: &mut App, key: KeyCode) -> anyhow::Result<bool>
                     app.set_status(&format!("Error: {}", e));
                 } else {
                     app.set_status("Refreshed");
+                }
+            }
+            _ => {}
+        },
+        View::ProjectDetail => match key {
+            KeyCode::Char('q') | KeyCode::Esc => {
+                app.enter_project_view();
+            }
+            KeyCode::Enter => {
+                if let Err(e) = app.enter_task_view().await {
+                    app.set_status(&format!("Error: {}", e));
+                }
+            }
+            KeyCode::Char('e') => {
+                if let Some(project) = &app.project_detail {
+                    app.input = project.name.clone();
+                    app.start_input(InputField::ProjectName);
+                }
+            }
+            KeyCode::Char('d') => {
+                if let Some(project) = &app.project_detail {
+                    app.input = project.description.as_deref().unwrap_or("").to_string();
+                    app.start_input(InputField::ProjectDescription);
                 }
             }
             _ => {}

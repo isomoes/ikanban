@@ -7,6 +7,7 @@ use crate::models::{CreateProject, CreateTask, Project, Task, TaskStatus, Update
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum View {
     Projects,
+    ProjectDetail,
     Tasks,
 }
 
@@ -28,6 +29,7 @@ pub struct App {
     // Projects
     pub projects: Vec<Project>,
     pub selected_project_index: usize,
+    pub project_detail: Option<Project>,
 
     // Tasks
     pub tasks: Vec<Task>,
@@ -46,6 +48,7 @@ pub struct App {
 pub enum InputField {
     None,
     ProjectName,
+    ProjectDescription,
     TaskTitle,
 }
 
@@ -59,6 +62,7 @@ impl App {
             input_field: InputField::None,
             projects: Vec::new(),
             selected_project_index: 0,
+            project_detail: None,
             tasks: Vec::new(),
             selected_task_index: 0,
             selected_column: TaskStatus::Todo,
@@ -181,6 +185,20 @@ impl App {
         Ok(())
     }
 
+    pub async fn update_project_detail(&mut self, name: Option<String>, description: Option<String>) -> anyhow::Result<()> {
+        if let Some(project) = &self.project_detail {
+            use crate::models::UpdateProject;
+            let payload = UpdateProject {
+                name,
+                description,
+            };
+            let updated = self.api.update_project(project.id, &payload).await?;
+            self.project_detail = Some(updated);
+            self.load_projects().await?;
+        }
+        Ok(())
+    }
+
     pub async fn create_task(&mut self, title: String) -> anyhow::Result<()> {
         if let Some(project) = self.selected_project() {
             let payload = CreateTask {
@@ -226,6 +244,14 @@ impl App {
         self.view = View::Projects;
         self.selected_task_index = 0;
         self.selected_column = TaskStatus::Todo;
+        self.project_detail = None;
+    }
+
+    pub fn enter_project_detail_view(&mut self) {
+        if let Some(project) = self.selected_project() {
+            self.project_detail = Some(project.clone());
+            self.view = View::ProjectDetail;
+        }
     }
 
     pub async fn enter_task_view(&mut self) -> anyhow::Result<()> {
@@ -258,7 +284,16 @@ impl App {
 
         match self.input_field {
             InputField::ProjectName => {
-                self.create_project(input).await?;
+                if self.view == View::Projects {
+                    self.create_project(input).await?;
+                } else if self.view == View::ProjectDetail {
+                    self.update_project_detail(Some(input), None).await?;
+                    self.set_status("Project name updated");
+                }
+            }
+            InputField::ProjectDescription => {
+                self.update_project_detail(None, Some(input)).await?;
+                self.set_status("Project description updated");
             }
             InputField::TaskTitle => {
                 self.create_task(input).await?;

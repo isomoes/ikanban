@@ -23,6 +23,7 @@ pub fn draw(frame: &mut Frame, app: &App) {
 
     match app.view {
         View::Projects => draw_projects_view(frame, app, chunks[1]),
+        View::ProjectDetail => draw_project_detail_view(frame, app, chunks[1]),
         View::Tasks => draw_tasks_view(frame, app, chunks[1]),
     }
 
@@ -37,6 +38,13 @@ pub fn draw(frame: &mut Frame, app: &App) {
 fn draw_header(frame: &mut Frame, app: &App, area: Rect) {
     let title = match app.view {
         View::Projects => " iKanban - Projects ".to_string(),
+        View::ProjectDetail => {
+            if let Some(project) = &app.project_detail {
+                format!(" iKanban - {} ", project.name)
+            } else {
+                " iKanban - Project Details ".to_string()
+            }
+        }
         View::Tasks => {
             if let Some(project) = app.selected_project() {
                 format!(" iKanban - {} ", project.name)
@@ -47,7 +55,11 @@ fn draw_header(frame: &mut Frame, app: &App, area: Rect) {
     };
 
     let header = Paragraph::new(title)
-        .style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
+        .style(
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        )
         .block(Block::default().borders(Borders::ALL));
 
     frame.render_widget(header, area);
@@ -89,6 +101,66 @@ fn draw_projects_view(frame: &mut Frame, app: &App, area: Rect) {
     frame.render_widget(list, area);
 }
 
+fn draw_project_detail_view(frame: &mut Frame, app: &App, area: Rect) {
+    if let Some(project) = &app.project_detail {
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Length(3), // Project name
+                Constraint::Min(0),    // Description
+                Constraint::Length(3), // Metadata
+            ])
+            .split(area);
+
+        // Project name
+        let name_block = Block::default()
+            .title(" Name ")
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Cyan));
+        let name = Paragraph::new(project.name.as_str())
+            .style(
+                Style::default()
+                    .fg(Color::White)
+                    .add_modifier(Modifier::BOLD),
+            )
+            .block(name_block);
+        frame.render_widget(name, chunks[0]);
+
+        // Description
+        let description_text = project.description.as_deref().unwrap_or("No description");
+        let desc_block = Block::default()
+            .title(" Description ")
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Cyan));
+        let description = Paragraph::new(description_text)
+            .style(Style::default().fg(Color::White))
+            .wrap(ratatui::widgets::Wrap { trim: true })
+            .block(desc_block);
+        frame.render_widget(description, chunks[1]);
+
+        // Metadata
+        let metadata = format!(
+            "ID: {} | Created: {} | Updated: {}",
+            project.id,
+            project.created_at.format("%Y-%m-%d %H:%M"),
+            project.updated_at.format("%Y-%m-%d %H:%M")
+        );
+        let meta_block = Block::default()
+            .title(" Metadata ")
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Cyan));
+        let meta = Paragraph::new(metadata)
+            .style(Style::default().fg(Color::Gray))
+            .block(meta_block);
+        frame.render_widget(meta, chunks[2]);
+    } else {
+        let error = Paragraph::new("No project selected")
+            .style(Style::default().fg(Color::Red))
+            .block(Block::default().borders(Borders::ALL));
+        frame.render_widget(error, area);
+    }
+}
+
 fn draw_tasks_view(frame: &mut Frame, app: &App, area: Rect) {
     let columns = Layout::default()
         .direction(Direction::Horizontal)
@@ -100,7 +172,13 @@ fn draw_tasks_view(frame: &mut Frame, app: &App, area: Rect) {
         .split(area);
 
     draw_task_column(frame, app, columns[0], TaskStatus::Todo, "Todo");
-    draw_task_column(frame, app, columns[1], TaskStatus::InProgress, "In Progress");
+    draw_task_column(
+        frame,
+        app,
+        columns[1],
+        TaskStatus::InProgress,
+        "In Progress",
+    );
     draw_task_column(frame, app, columns[2], TaskStatus::Done, "Done");
 }
 
@@ -145,6 +223,9 @@ fn draw_status_bar(frame: &mut Frame, app: &App, area: Rect) {
         View::Projects => {
             "q: Quit | n: New Project | d: Delete | Enter: Open | j/k: Navigate"
         }
+        View::ProjectDetail => {
+            "Esc: Back | Enter: Open Tasks | e: Edit Name | d: Edit Description | j/k: Navigate"
+        }
         View::Tasks => {
             "Esc: Back | n: New Task | d: Delete | Space: Move Status | h/l: Columns | j/k: Navigate"
         }
@@ -169,7 +250,14 @@ fn draw_status_bar(frame: &mut Frame, app: &App, area: Rect) {
 
 fn draw_input_popup(frame: &mut Frame, app: &App) {
     let title = match app.input_field {
-        InputField::ProjectName => "New Project Name",
+        InputField::ProjectName => {
+            if app.view == View::Projects {
+                "New Project Name"
+            } else {
+                "Edit Project Name"
+            }
+        }
+        InputField::ProjectDescription => "Edit Project Description",
         InputField::TaskTitle => "New Task Title",
         InputField::None => "Input",
     };
@@ -191,10 +279,7 @@ fn draw_input_popup(frame: &mut Frame, app: &App) {
     frame.render_widget(input, area);
 
     // Set cursor position
-    frame.set_cursor_position((
-        area.x + app.input.len() as u16 + 1,
-        area.y + 1,
-    ));
+    frame.set_cursor_position((area.x + app.input.len() as u16 + 1, area.y + 1));
 }
 
 /// Helper function to create a centered rect
