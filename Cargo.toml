@@ -38,6 +38,7 @@ tracing-subscriber = { version = "0.3", features = [
     "env-filter",
 ], optional = true }
 agent-client-protocol = { version = "0.9", optional = true }
+dirs = { version = "5.0", optional = true }
 
 # Hydrate-only dependencies
 wasm-bindgen = { version = "0.2", optional = true }
@@ -59,6 +60,7 @@ ssr = [
     "dep:tracing",
     "dep:tracing-subscriber",
     "dep:agent-client-protocol",
+    "dep:dirs",
 ]
 
 # cargo-leptos configuration

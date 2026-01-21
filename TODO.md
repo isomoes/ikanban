@@ -2,29 +2,29 @@
 
 ## Phase 1: Project Setup
 
-- [ ] Initialize Cargo workspace with proper feature flags (hydrate, ssr)
-- [ ] Configure `Cargo.toml` with all dependencies:
+- [x] Initialize Cargo workspace with proper feature flags (hydrate, ssr)
+- [x] Configure `Cargo.toml` with all dependencies:
   - leptos, leptos_axum
   - axum, tokio, tower, tower-http
   - sqlx (sqlite, runtime-tokio)
   - serde, tracing, thiserror, anyhow
   - agent-client-protocol
-- [ ] Set up cargo-leptos configuration in `Cargo.toml`
-- [ ] Create project directory structure
-- [ ] Set up Tailwind CSS v4 with `style/main.css`
-- [ ] Configure SQLx and create initial migration
+- [x] Set up cargo-leptos configuration in `Cargo.toml`
+- [x] Create project directory structure
+- [x] Set up Tailwind CSS v4 with `style/main.css`
+- [x] Configure SQLx and create initial migration
 
 ## Phase 2: Database Schema
 
-- [ ] Create `projects` table migration
+- [x] Create `projects` table migration
   - id, name, repo_path, description, created_at, updated_at
-- [ ] Create `tasks` table migration
+- [x] Create `tasks` table migration
   - id, project_id, title, description, status (Todo/InProgress/InReview/Done), priority, created_at, updated_at
-- [ ] Create `sessions` table migration
+- [x] Create `sessions` table migration
   - id, task_id, worktree_path, branch_name, status (Running/Completed/Failed), created_at, ended_at
-- [ ] Create `execution_processes` table migration
+- [x] Create `execution_processes` table migration
   - id, session_id, run_reason, pid, status, started_at, ended_at
-- [ ] Create `coding_agent_turns` table migration
+- [x] Create `coding_agent_turns` table migration
   - id, execution_id, turn_number, input, output, created_at
 
 ## Phase 3: Backend - Core Server
