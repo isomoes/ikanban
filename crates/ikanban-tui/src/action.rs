@@ -57,6 +57,7 @@ pub enum Action {
     // API operations
     LoadProjects,
     LoadTasks,
+    SetTasks(Vec<crate::models::Task>),
     CreateProject(String),
     UpdateProject,
     DeleteSelectedProject,

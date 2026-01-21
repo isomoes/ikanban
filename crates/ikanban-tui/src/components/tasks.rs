@@ -108,15 +108,17 @@ impl Component for Tasks {
         let columns = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([
-                Constraint::Percentage(33),
-                Constraint::Percentage(34),
-                Constraint::Percentage(33),
+                Constraint::Percentage(25),
+                Constraint::Percentage(25),
+                Constraint::Percentage(25),
+                Constraint::Percentage(25),
             ])
             .split(area);
 
         self.draw_column(frame, columns[0], TaskStatus::Todo, "Todo");
         self.draw_column(frame, columns[1], TaskStatus::InProgress, "In Progress");
-        self.draw_column(frame, columns[2], TaskStatus::Done, "Done");
+        self.draw_column(frame, columns[2], TaskStatus::InReview, "In Review");
+        self.draw_column(frame, columns[3], TaskStatus::Done, "Done");
 
         Ok(())
     }

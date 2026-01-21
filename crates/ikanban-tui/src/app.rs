@@ -158,6 +158,7 @@ impl App {
         let action_tx = self.action_tx.clone();
         loop {
             self.handle_events(&mut tui).await?;
+            self.process_ws_events().await?;
             self.handle_actions(&mut tui)?;
             if self.should_suspend {
                 tui.suspend()?;
@@ -284,6 +285,21 @@ impl App {
             if action != Action::Tick && action != Action::Render {
                 debug!("{action:?}");
             }
+            
+            // Special handling for non-cloneable actions
+            match &action {
+                Action::SetTasks(_) => {
+                    // Handle SetTasks specially since it contains Vec which can't be cheaply cloned
+                    if let Action::SetTasks(tasks) = action {
+                        self.tasks = tasks;
+                        self.tasks.sort_by(|a, b| a.status.cmp(&b.status));
+                        self.tasks_component.set_tasks(self.tasks.clone());
+                    }
+                    continue; // Skip the rest of the loop since we can't clone this action
+                }
+                _ => {}
+            }
+            
             match action {
                 Action::Tick => {
                     self.last_tick_key_events.drain(..);
@@ -319,6 +335,19 @@ impl App {
                             self.mode = Mode::Tasks;
                             self.update_help_shortcuts();
                             self.connect_tasks_ws(project_id);
+                            // Load tasks asynchronously
+                            let api = self.api.clone();
+                            let action_tx = self.action_tx.clone();
+                            tokio::spawn(async move {
+                                match api.list_tasks(project_id).await {
+                                    Ok(tasks) => {
+                                        let _ = action_tx.send(Action::SetTasks(tasks));
+                                    }
+                                    Err(e) => {
+                                        let _ = action_tx.send(Action::Error(format!("Failed to load tasks: {}", e)));
+                                    }
+                                }
+                            });
                         }
                     }
                 }
@@ -327,198 +356,6 @@ impl App {
                         self.disconnect_tasks_ws();
                         self.mode = Mode::Projects;
                         self.update_help_shortcuts();
-                    }
-                }
-                
-                // Input actions
-                Action::StartInput(field) => {
-                    self.input_component.start(field, format!("{:?}", self.mode));
-                }
-                Action::StartInputForNew(field) => {
-                    self.is_editing = false;
-                    self.input_component.start(field, format!("{:?}", self.mode));
-                }
-                Action::StartInputForEdit(field) => {
-                    self.is_editing = true;
-                    // Pre-fill with current value
-                    match field {
-                        InputField::ProjectName => {
-                            if let Some(project) = self.projects_component.selected_project() {
-                                self.input_component.start(field, format!("{:?}", self.mode));
-                                // TODO: Pre-fill the input with project.name
-                            }
-                        }
-                        InputField::TaskTitle => {
-                            if let Some(task) = self.tasks_component.selected_task() {
-                                self.input_component.start(field, format!("{:?}", self.mode));
-                                // TODO: Pre-fill the input with task.title
-                            }
-                        }
-                        _ => {
-                            self.input_component.start(field, format!("{:?}", self.mode));
-                        }
-                    }
-                }
-                Action::SubmitInput => {
-                    let input = self.input_component.input().to_string();
-                    let field = self.input_component.field();
-                    self.input_component.cancel();
-                    
-                    if input.trim().is_empty() {
-                        return Ok(());
-                    }
-                    
-                    match field {
-                        InputField::ProjectName => {
-                            if self.mode == Mode::Projects {
-                                // Check if we're editing or creating
-                                if self.is_editing {
-                                    // Editing existing project
-                                    if let Some(project) = self.projects_component.selected_project() {
-                                        let project_id = project.id;
-                                        let api = self.api.clone();
-                                        let action_tx = self.action_tx.clone();
-                                        let payload = crate::models::UpdateProject {
-                                            name: Some(input),
-                                            description: None,
-                                            repo_path: None,
-                                            archived: None,
-                                            pinned: None,
-                                        };
-                                        tokio::spawn(async move {
-                                            if let Err(e) = api.update_project(project_id, &payload).await {
-                                                let _ = action_tx.send(Action::Error(format!("Failed to update project: {}", e)));
-                                            }
-                                        });
-                                    }
-                                } else {
-                                    // Creating new project
-                                    let api = self.api.clone();
-                                    let action_tx = self.action_tx.clone();
-                                    let payload = crate::models::CreateProject {
-                                        name: input,
-                                        description: None,
-                                        repo_path: None,
-                                    };
-                                    tokio::spawn(async move {
-                                        if let Err(e) = api.create_project(&payload).await {
-                                            let _ = action_tx.send(Action::Error(format!("Failed to create project: {}", e)));
-                                        }
-                                    });
-                                }
-                            }
-                        }
-                        InputField::TaskTitle => {
-                            if self.mode == Mode::Tasks {
-                                if let Some(project_id) = self.current_project_id {
-                                    // Check if we're editing or creating
-                                    if self.is_editing {
-                                        // Editing existing task
-                                        if let Some(task) = self.tasks_component.selected_task() {
-                                            let task_id = task.id;
-                                            let api = self.api.clone();
-                                            let action_tx = self.action_tx.clone();
-                                            let payload = crate::models::UpdateTask {
-                                                title: Some(input),
-                                                description: None,
-                                                status: None,
-                                                branch: None,
-                                                working_dir: None,
-                                                parent_task_id: None,
-                                            };
-                                            tokio::spawn(async move {
-                                                if let Err(e) = api.update_task(task_id, &payload).await {
-                                                    let _ = action_tx.send(Action::Error(format!("Failed to update task: {}", e)));
-                                                }
-                                            });
-                                        }
-                                    } else {
-                                        // Creating new task
-                                        let api = self.api.clone();
-                                        let action_tx = self.action_tx.clone();
-                                        let payload = crate::models::CreateTask {
-                                            project_id,
-                                            title: input,
-                                            description: None,
-                                            status: None,
-                                            branch: None,
-                                            working_dir: None,
-                                            parent_task_id: None,
-                                        };
-                                        tokio::spawn(async move {
-                                            if let Err(e) = api.create_task(&payload).await {
-                                                let _ = action_tx.send(Action::Error(format!("Failed to create task: {}", e)));
-                                            }
-                                        });
-                                    }
-                                }
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-                Action::CancelInput => {
-                    self.input_component.cancel();
-                }
-                
-                // Delete actions
-                Action::DeleteSelectedProject => {
-                    if self.mode == Mode::Projects {
-                        if let Some(project) = self.projects_component.selected_project() {
-                            let project_id = project.id;
-                            let api = self.api.clone();
-                            let action_tx = self.action_tx.clone();
-                            tokio::spawn(async move {
-                                if let Err(e) = api.delete_project(project_id).await {
-                                    let _ = action_tx.send(Action::Error(format!("Failed to delete project: {}", e)));
-                                }
-                            });
-                        }
-                    }
-                }
-                Action::DeleteSelectedTask => {
-                    if self.mode == Mode::Tasks {
-                        if let Some(task) = self.tasks_component.selected_task() {
-                            let task_id = task.id;
-                            let api = self.api.clone();
-                            let action_tx = self.action_tx.clone();
-                            tokio::spawn(async move {
-                                if let Err(e) = api.delete_task(task_id).await {
-                                    let _ = action_tx.send(Action::Error(format!("Failed to delete task: {}", e)));
-                                }
-                            });
-                        }
-                    }
-                }
-                
-                // Move task to next status
-                Action::MoveTaskToNextStatus => {
-                    if self.mode == Mode::Tasks {
-                        if let Some(task) = self.tasks_component.selected_task() {
-                            let task_id = task.id;
-                            let next_status = match task.status {
-                                crate::models::TaskStatus::Todo => crate::models::TaskStatus::InProgress,
-                                crate::models::TaskStatus::InProgress => crate::models::TaskStatus::InReview,
-                                crate::models::TaskStatus::InReview => crate::models::TaskStatus::Done,
-                                crate::models::TaskStatus::Done => crate::models::TaskStatus::Todo,
-                                crate::models::TaskStatus::Cancelled => crate::models::TaskStatus::Todo,
-                            };
-                            let api = self.api.clone();
-                            let action_tx = self.action_tx.clone();
-                            let payload = crate::models::UpdateTask {
-                                title: None,
-                                description: None,
-                                status: Some(next_status),
-                                branch: None,
-                                working_dir: None,
-                                parent_task_id: None,
-                            };
-                            tokio::spawn(async move {
-                                if let Err(e) = api.update_task(task_id, &payload).await {
-                                    let _ = action_tx.send(Action::Error(format!("Failed to move task: {}", e)));
-                                }
-                            });
-                        }
                     }
                 }
                 
@@ -687,7 +524,7 @@ impl App {
         self.ws_event_tx.clone()
     }
 
-    pub async fn process_ws_events(&mut self) -> anyhow::Result<()> {
+    pub async fn process_ws_events(&mut self) -> color_eyre::Result<()> {
         if let Some(ref mut rx) = self.ws_event_rx {
             let mut events = Vec::new();
             while let Ok(event) = rx.try_recv() {
