@@ -1,0 +1,15 @@
+{
+  "name": "ikanban-ts",
+  "version": "0.0.1",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "bun run --filter '*' dev",
+    "build": "bun run --filter '*' build",
+    "test": "bun run --filter '*' test"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}

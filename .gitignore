@@ -26,3 +26,10 @@ Thumbs.db
 .env
 .env.local
 .termdbms
+
+# Bun
+node_modules/
+.bun-install/
+bun.lockb
+dist/
+.cache/

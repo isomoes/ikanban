@@ -9,12 +9,12 @@ A Rust-based multi-agent task management system with a core server and multiple 
 |   TUI Client     |     |   Web Client     |     |  Other Clients   |
 +--------+---------+     +--------+---------+     +--------+---------+
          |                        |                        |
-         |    HTTP/WebSocket      |    HTTP/WebSocket      |
+         |         WebSocket      |         WebSocket      |
          +------------------------+------------------------+
                                   |
                     +-------------+-------------+
                     |      iKanban Core         |
-                    |   (HTTP + WebSocket API)  |
+                    |     (WebSocket API)       |
                     +-------------+-------------+
                                   |
                     +-------------+-------------+
