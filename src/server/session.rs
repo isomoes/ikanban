@@ -1,5 +1,5 @@
-use crate::server::db::DbPool;
-use crate::server::models::{AgentConfig, ExecutionProcess, ExecutionStatus, Session, SessionStatus, Task};
+use crate::server::db::{DbPool, ExecutionProcess, ExecutionStatus, Project, Session, SessionStatus, Task};
+use crate::server::models::AgentConfig;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::process::Stdio;
@@ -268,8 +268,8 @@ impl SessionManager {
             .ok_or_else(|| SessionError::TaskNotFound(task_id.to_string()))
     }
 
-    async fn get_project(&self, project_id: &str) -> SessionResult<crate::server::models::Project> {
-        sqlx::query_as::<_, crate::server::models::Project>("SELECT * FROM projects WHERE id = ?")
+    async fn get_project(&self, project_id: &str) -> SessionResult<Project> {
+        sqlx::query_as::<_, Project>("SELECT * FROM projects WHERE id = ?")
             .bind(project_id)
             .fetch_optional(&self.pool)
             .await?
