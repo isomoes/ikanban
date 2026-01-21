@@ -61,21 +61,6 @@ impl Config {
             .set_default("data_dir", data_dir.to_str().unwrap())?
             .set_default("config_dir", config_dir.to_str().unwrap())?;
 
-        // Add default keybindings
-        let default_bindings: HashMap<String, Action> = [
-            ("q".to_string(), Action::Quit),
-            ("?".to_string(), Action::Help),
-            ("<Esc>".to_string(), Action::CancelInput),
-            ("<Enter>".to_string(), Action::SubmitInput),
-            ("j".to_string(), Action::NextTask),
-            ("k".to_string(), Action::PreviousTask),
-            ("h".to_string(), Action::PreviousColumn),
-            ("l".to_string(), Action::NextColumn),
-        ]
-        .iter()
-        .cloned()
-        .collect();
-
         // Try to load config files
         let config_files = [
             ("config.json5", config::FileFormat::Json5),
@@ -98,7 +83,65 @@ impl Config {
             error!("No configuration file found. Using default settings.");
         }
 
-        let cfg: Self = builder.build()?.try_deserialize()?;
+        let mut cfg: Self = builder.build()?.try_deserialize()?;
+
+        // Add default keybindings if none are configured
+        if cfg.keybindings.0.is_empty() {
+            let default_bindings: HashMap<Vec<KeyEvent>, Action> = [
+                (
+                    parse_key_sequence("q").map_err(|e| config::ConfigError::Message(e))?,
+                    Action::Quit,
+                ),
+                (
+                    parse_key_sequence("?").map_err(|e| config::ConfigError::Message(e))?,
+                    Action::Help,
+                ),
+                (
+                    parse_key_sequence("<Esc>").map_err(|e| config::ConfigError::Message(e))?,
+                    Action::CancelInput,
+                ),
+                (
+                    parse_key_sequence("<Enter>").map_err(|e| config::ConfigError::Message(e))?,
+                    Action::SubmitInput,
+                ),
+                (
+                    parse_key_sequence("j").map_err(|e| config::ConfigError::Message(e))?,
+                    Action::NextTask,
+                ),
+                (
+                    parse_key_sequence("k").map_err(|e| config::ConfigError::Message(e))?,
+                    Action::PreviousTask,
+                ),
+                (
+                    parse_key_sequence("h").map_err(|e| config::ConfigError::Message(e))?,
+                    Action::PreviousColumn,
+                ),
+                (
+                    parse_key_sequence("l").map_err(|e| config::ConfigError::Message(e))?,
+                    Action::NextColumn,
+                ),
+            ]
+            .into_iter()
+            .collect();
+
+            // Add default bindings to all modes
+            cfg.keybindings
+                .0
+                .insert(Mode::Projects, default_bindings.clone());
+            cfg.keybindings
+                .0
+                .insert(Mode::Tasks, default_bindings.clone());
+            cfg.keybindings
+                .0
+                .insert(Mode::ProjectDetail, default_bindings.clone());
+            cfg.keybindings
+                .0
+                .insert(Mode::TaskDetail, default_bindings.clone());
+            cfg.keybindings
+                .0
+                .insert(Mode::ExecutionLogs, default_bindings.clone());
+        }
+
         Ok(cfg)
     }
 }
