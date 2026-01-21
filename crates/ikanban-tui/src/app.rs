@@ -51,7 +51,6 @@ pub struct App {
     pub selected_task_index: usize,
     pub selected_column: crate::models::TaskStatus,
     pub status_message: Option<String>,
-    pub view: Mode,
     pub help_shortcuts: Vec<(String, String)>,
     pub help_title: String,
     pub current_project_id: Option<uuid::Uuid>,
@@ -104,7 +103,6 @@ impl App {
             selected_task_index: 0,
             selected_column: crate::models::TaskStatus::Todo,
             status_message: None,
-            view: Mode::Projects,
             help_shortcuts: Vec::new(),
             help_title: String::new(),
             current_project_id: None,
@@ -206,6 +204,60 @@ impl App {
 
     fn handle_key_event(&mut self, key: KeyEvent) -> color_eyre::Result<()> {
         let action_tx = self.action_tx.clone();
+        
+        // If input modal is visible, handle input-specific keys
+        if self.input_component.is_visible() {
+            use crossterm::event::KeyCode;
+            match key.code {
+                KeyCode::Esc => {
+                    action_tx.send(Action::CancelInput)?;
+                    return Ok(());
+                }
+                KeyCode::Enter if key.modifiers.is_empty() => {
+                    action_tx.send(Action::SubmitInput)?;
+                    return Ok(());
+                }
+                KeyCode::Char(c) => {
+                    action_tx.send(Action::InsertChar(c))?;
+                    return Ok(());
+                }
+                KeyCode::Backspace => {
+                    action_tx.send(Action::DeleteBackward)?;
+                    return Ok(());
+                }
+                KeyCode::Delete => {
+                    action_tx.send(Action::DeleteForward)?;
+                    return Ok(());
+                }
+                KeyCode::Left => {
+                    action_tx.send(Action::MoveCursorLeft)?;
+                    return Ok(());
+                }
+                KeyCode::Right => {
+                    action_tx.send(Action::MoveCursorRight)?;
+                    return Ok(());
+                }
+                KeyCode::Up => {
+                    action_tx.send(Action::MoveCursorUp)?;
+                    return Ok(());
+                }
+                KeyCode::Down => {
+                    action_tx.send(Action::MoveCursorDown)?;
+                    return Ok(());
+                }
+                KeyCode::Home => {
+                    action_tx.send(Action::MoveCursorHome)?;
+                    return Ok(());
+                }
+                KeyCode::End => {
+                    action_tx.send(Action::MoveCursorEnd)?;
+                    return Ok(());
+                }
+                _ => {}
+            }
+        }
+        
+        // Normal mode keybindings
         let Some(keymap) = self.config.keybindings.0.get(&self.mode) else {
             return Ok(());
         };
@@ -242,15 +294,57 @@ impl App {
                 Action::Render => self.render(tui)?,
                 Action::Help => self.toggle_help(),
                 Action::CloseHelpModal => self.close_help(),
+                
+                // Navigation actions
+                Action::NextProject => {
+                    if self.mode == Mode::Projects {
+                        self.projects_component.next();
+                        self.selected_project_index = self.projects_component.selected_index;
+                    }
+                }
+                Action::PreviousProject => {
+                    if self.mode == Mode::Projects {
+                        self.projects_component.previous();
+                        self.selected_project_index = self.projects_component.selected_index;
+                    }
+                }
+                
+                // View switching actions
+                Action::EnterTasksView => {
+                    if self.mode == Mode::Projects {
+                        if let Some(project) = self.projects_component.selected_project() {
+                            let project_id = project.id;
+                            self.mode = Mode::Tasks;
+                            self.update_help_shortcuts();
+                            self.connect_tasks_ws(project_id);
+                        }
+                    }
+                }
+                Action::EnterProjectsView => {
+                    if self.mode == Mode::Tasks {
+                        self.disconnect_tasks_ws();
+                        self.mode = Mode::Projects;
+                        self.update_help_shortcuts();
+                    }
+                }
+                
                 _ => {}
             }
-            // Update all components
-            if let Some(action) = self.projects_component.update(action.clone())? {
-                self.action_tx.send(action)?;
+            // Update only the active component based on mode
+            match self.mode {
+                Mode::Projects => {
+                    if let Some(action) = self.projects_component.update(action.clone())? {
+                        self.action_tx.send(action)?;
+                    }
+                }
+                Mode::Tasks => {
+                    if let Some(action) = self.tasks_component.update(action.clone())? {
+                        self.action_tx.send(action)?;
+                    }
+                }
+                _ => {}
             }
-            if let Some(action) = self.tasks_component.update(action.clone())? {
-                self.action_tx.send(action)?;
-            }
+            // Always update modals
             if let Some(action) = self.input_component.update(action.clone())? {
                 self.action_tx.send(action)?;
             }
@@ -270,13 +364,23 @@ impl App {
     fn render(&mut self, tui: &mut Tui) -> color_eyre::Result<()> {
         tui.draw(|frame| {
             let area = frame.area();
-            // Draw components in order
-            if let Err(err) = self.projects_component.draw(frame, area) {
-                let _ = self.action_tx.send(Action::Error(format!("Failed to draw projects: {:?}", err)));
+            // Draw only the component for the current mode
+            match self.mode {
+                Mode::Projects => {
+                    if let Err(err) = self.projects_component.draw(frame, area) {
+                        let _ = self.action_tx.send(Action::Error(format!("Failed to draw projects: {:?}", err)));
+                    }
+                }
+                Mode::Tasks => {
+                    if let Err(err) = self.tasks_component.draw(frame, area) {
+                        let _ = self.action_tx.send(Action::Error(format!("Failed to draw tasks: {:?}", err)));
+                    }
+                }
+                Mode::ProjectDetail | Mode::TaskDetail | Mode::ExecutionLogs => {
+                    // TODO: Implement these views
+                }
             }
-            if let Err(err) = self.tasks_component.draw(frame, area) {
-                let _ = self.action_tx.send(Action::Error(format!("Failed to draw tasks: {:?}", err)));
-            }
+            // Always draw modals on top if visible
             if let Err(err) = self.input_component.draw(frame, area) {
                 let _ = self.action_tx.send(Action::Error(format!("Failed to draw input: {:?}", err)));
             }
@@ -302,7 +406,7 @@ impl App {
     }
 
     fn update_help_shortcuts(&mut self) {
-        self.help_shortcuts = match self.view {
+        self.help_shortcuts = match self.mode {
             Mode::Projects => vec![
                 ("n".to_string(), "New project".to_string()),
                 ("j/k".to_string(), "Navigate".to_string()),
@@ -325,7 +429,7 @@ impl App {
                 ("?".to_string(), "Help".to_string()),
             ],
         };
-        self.help_title = match self.view {
+        self.help_title = match self.mode {
             Mode::Projects => "Projects View",
             Mode::Tasks => "Tasks View",
             Mode::ProjectDetail => "Project Detail",

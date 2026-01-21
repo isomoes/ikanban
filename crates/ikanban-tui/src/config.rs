@@ -87,7 +87,8 @@ impl Config {
 
         // Add default keybindings if none are configured
         if cfg.keybindings.0.is_empty() {
-            let default_bindings: HashMap<Vec<KeyEvent>, Action> = [
+            // Common bindings for all modes
+            let common_bindings: HashMap<Vec<KeyEvent>, Action> = [
                 (
                     parse_key_sequence("q").map_err(|e| config::ConfigError::Message(e))?,
                     Action::Quit,
@@ -96,14 +97,30 @@ impl Config {
                     parse_key_sequence("?").map_err(|e| config::ConfigError::Message(e))?,
                     Action::Help,
                 ),
+            ]
+            .into_iter()
+            .collect();
+
+            // Projects mode bindings
+            let mut projects_bindings = common_bindings.clone();
+            projects_bindings.extend([
                 (
-                    parse_key_sequence("<Esc>").map_err(|e| config::ConfigError::Message(e))?,
-                    Action::CancelInput,
+                    parse_key_sequence("j").map_err(|e| config::ConfigError::Message(e))?,
+                    Action::NextProject,
+                ),
+                (
+                    parse_key_sequence("k").map_err(|e| config::ConfigError::Message(e))?,
+                    Action::PreviousProject,
                 ),
                 (
                     parse_key_sequence("<Enter>").map_err(|e| config::ConfigError::Message(e))?,
-                    Action::SubmitInput,
+                    Action::EnterTasksView,
                 ),
+            ]);
+
+            // Tasks mode bindings
+            let mut tasks_bindings = common_bindings.clone();
+            tasks_bindings.extend([
                 (
                     parse_key_sequence("j").map_err(|e| config::ConfigError::Message(e))?,
                     Action::NextTask,
@@ -120,26 +137,23 @@ impl Config {
                     parse_key_sequence("l").map_err(|e| config::ConfigError::Message(e))?,
                     Action::NextColumn,
                 ),
-            ]
-            .into_iter()
-            .collect();
+                (
+                    parse_key_sequence("<Esc>").map_err(|e| config::ConfigError::Message(e))?,
+                    Action::EnterProjectsView,
+                ),
+            ]);
 
-            // Add default bindings to all modes
+            cfg.keybindings.0.insert(Mode::Projects, projects_bindings);
+            cfg.keybindings.0.insert(Mode::Tasks, tasks_bindings);
             cfg.keybindings
                 .0
-                .insert(Mode::Projects, default_bindings.clone());
+                .insert(Mode::ProjectDetail, common_bindings.clone());
             cfg.keybindings
                 .0
-                .insert(Mode::Tasks, default_bindings.clone());
+                .insert(Mode::TaskDetail, common_bindings.clone());
             cfg.keybindings
                 .0
-                .insert(Mode::ProjectDetail, default_bindings.clone());
-            cfg.keybindings
-                .0
-                .insert(Mode::TaskDetail, default_bindings.clone());
-            cfg.keybindings
-                .0
-                .insert(Mode::ExecutionLogs, default_bindings.clone());
+                .insert(Mode::ExecutionLogs, common_bindings);
         }
 
         Ok(cfg)

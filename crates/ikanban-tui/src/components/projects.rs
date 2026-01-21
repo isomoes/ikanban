@@ -10,7 +10,7 @@ pub struct Projects {
     command_tx: Option<UnboundedSender<Action>>,
     config: Config,
     projects: Vec<Project>,
-    selected_index: usize,
+    pub selected_index: usize,
 }
 
 impl Projects {
