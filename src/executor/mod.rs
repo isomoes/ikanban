@@ -75,3 +75,4 @@ pub mod msg_store;
 pub mod opencode;
 
 pub use msg_store::{LogMsg, MsgStore};
+pub use opencode::OpenCodeExecutor;
