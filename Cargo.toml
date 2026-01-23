@@ -4,14 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [lib]
-crate-type = ["cdylib", "rlib"]
+crate-type = ["rlib"]
 
 [dependencies]
-# Leptos
-leptos = { version = "0.8", features = ["nightly"] }
-leptos_meta = { version = "0.8" }
-leptos_router = { version = "0.8" }
-
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -35,7 +30,6 @@ tower-http = { version = "0.6", features = [
     "cors",
     "compression-gzip",
 ], optional = true }
-leptos_axum = { version = "0.8", optional = true }
 sqlx = { version = "0.8", features = [
     "runtime-tokio",
     "sqlite",
@@ -53,22 +47,13 @@ reqwest = { version = "0.12", features = ["json", "stream"], optional = true }
 eventsource-stream = { version = "0.2", optional = true }
 futures = { version = "0.3", optional = true }
 
-# Hydrate-only dependencies
-wasm-bindgen = { version = "0.2", optional = true }
-console_error_panic_hook = { version = "0.1", optional = true }
-
 [features]
-default = []
-hydrate = ["leptos/hydrate", "dep:wasm-bindgen", "dep:console_error_panic_hook"]
-ssr = [
-    "leptos/ssr",
-    "leptos_meta/ssr",
-    "leptos_router/ssr",
+default = ["server"]
+server = [
     "dep:axum",
     "dep:tokio",
     "dep:tower",
     "dep:tower-http",
-    "dep:leptos_axum",
     "dep:sqlx",
     "dep:tracing",
     "dep:tracing-subscriber",
@@ -79,50 +64,6 @@ ssr = [
     "dep:eventsource-stream",
     "dep:futures",
 ]
-
-# cargo-leptos configuration
-[package.metadata.leptos]
-# Name of the output binary
-output-name = "ikanban"
-
-# The site root folder
-site-root = "target/site"
-
-# The site-pkg-dir is the directory in which the site packages are put
-site-pkg-dir = "pkg"
-
-# Assets source directory
-assets-dir = "public"
-
-# The IP and port to listen on
-site-addr = "127.0.0.1:3000"
-
-# The port to use for automatic reload monitoring
-reload-port = 3001
-
-# Watch additional files for changes
-watch-additional-files = ["style"]
-
-# Browser query used for testing
-browserquery = "defaults"
-
-# Features to use when building for WASM hydration
-bin-features = ["ssr"]
-lib-features = ["hydrate"]
-
-# bin-target-triple for Cargo
-bin-target-triple = "x86_64-unknown-linux-gnu"
-
-# lib-target-triple for Cargo
-lib-target-triple = "wasm32-unknown-unknown"
-
-# Tailwind configuration
-style-file = "style/main.css"
-tailwind-input-file = "style/main.css"
-tailwind-config-file = "tailwind.config.js"
-
-# Separator used by cargo-leptos watch to detect when the server should be restarted
-end-path-separator = ""
 
 [profile.release]
 lto = true

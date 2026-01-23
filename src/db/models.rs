@@ -10,7 +10,7 @@ pub struct Project {
     pub created_at: DateTime<Utc>,
 }
 
-#[cfg(feature = "ssr")]
+#[cfg(feature = "server")]
 impl sqlx::FromRow<'_, sqlx::sqlite::SqliteRow> for Project {
     fn from_row(row: &sqlx::sqlite::SqliteRow) -> Result<Self, sqlx::Error> {
         use sqlx::Row;
@@ -24,8 +24,8 @@ impl sqlx::FromRow<'_, sqlx::sqlite::SqliteRow> for Project {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ssr", derive(sqlx::Type))]
-#[cfg_attr(feature = "ssr", sqlx(type_name = "TEXT"))]
+#[cfg_attr(feature = "server", derive(sqlx::Type))]
+#[cfg_attr(feature = "server", sqlx(type_name = "TEXT"))]
 pub enum TaskStatus {
     Todo,
     InProgress,
@@ -68,7 +68,7 @@ pub struct Task {
     pub created_at: DateTime<Utc>,
 }
 
-#[cfg(feature = "ssr")]
+#[cfg(feature = "server")]
 impl sqlx::FromRow<'_, sqlx::sqlite::SqliteRow> for Task {
     fn from_row(row: &sqlx::sqlite::SqliteRow) -> Result<Self, sqlx::Error> {
         use sqlx::Row;
@@ -87,8 +87,8 @@ impl sqlx::FromRow<'_, sqlx::sqlite::SqliteRow> for Task {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ssr", derive(sqlx::Type))]
-#[cfg_attr(feature = "ssr", sqlx(type_name = "TEXT"))]
+#[cfg_attr(feature = "server", derive(sqlx::Type))]
+#[cfg_attr(feature = "server", sqlx(type_name = "TEXT"))]
 pub enum SessionStatus {
     Running,
     Completed,
@@ -141,7 +141,7 @@ pub struct Session {
     pub finished_at: Option<DateTime<Utc>>,
 }
 
-#[cfg(feature = "ssr")]
+#[cfg(feature = "server")]
 impl sqlx::FromRow<'_, sqlx::sqlite::SqliteRow> for Session {
     fn from_row(row: &sqlx::sqlite::SqliteRow) -> Result<Self, sqlx::Error> {
         use sqlx::Row;
@@ -166,8 +166,8 @@ impl sqlx::FromRow<'_, sqlx::sqlite::SqliteRow> for Session {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ssr", derive(sqlx::Type))]
-#[cfg_attr(feature = "ssr", sqlx(type_name = "TEXT"))]
+#[cfg_attr(feature = "server", derive(sqlx::Type))]
+#[cfg_attr(feature = "server", sqlx(type_name = "TEXT"))]
 pub enum LogType {
     Stdout,
     Stderr,
@@ -206,7 +206,7 @@ pub struct LogEntry {
     pub content: String,
 }
 
-#[cfg(feature = "ssr")]
+#[cfg(feature = "server")]
 impl sqlx::FromRow<'_, sqlx::sqlite::SqliteRow> for LogEntry {
     fn from_row(row: &sqlx::sqlite::SqliteRow) -> Result<Self, sqlx::Error> {
         use sqlx::Row;

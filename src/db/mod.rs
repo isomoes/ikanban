@@ -1,6 +1,6 @@
 pub mod models;
 
-#[cfg(feature = "ssr")]
+#[cfg(feature = "server")]
 pub mod connection {
     use anyhow::Result;
     use sqlx::sqlite::{SqliteConnectOptions, SqlitePool, SqlitePoolOptions};
