@@ -4,9 +4,9 @@
 
 | Task                                                        | Status | Deps |
 | ----------------------------------------------------------- | ------ | ---- |
-| 1.1 Setup Cargo.toml with dependencies                      | [ ]    | -    |
-| 1.2 Create db/models.rs (Project, Task, Session, Execution) | [ ]    | 1.1  |
-| 1.3 Create db/mod.rs (SQLite connection, migrations)        | [ ]    | 1.2  |
+| 1.1 Setup Cargo.toml with dependencies                      | [x]    | -    |
+| 1.2 Create db/models.rs (Project, Task, Session, Execution) | [x]    | 1.1  |
+| 1.3 Create db/mod.rs (SQLite connection, migrations)        | [x]    | 1.2  |
 
 ### 1.2 Database Models (MVP - Simplified)
 
