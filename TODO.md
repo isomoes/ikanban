@@ -62,9 +62,9 @@ pub struct LogEntry {
 
 | Task                                           | Status | Deps | Parallel Group |
 | ---------------------------------------------- | ------ | ---- | -------------- |
-| 2.1 worktree/manager.rs - WorktreeManager      | [ ]    | 1.3  | A              |
-| 2.2 session/manager.rs - SessionManager (base) | [ ]    | 1.3  | A              |
-| 2.3 executor/mod.rs - Executor trait + types   | [ ]    | 1.3  | A              |
+| 2.1 worktree/manager.rs - WorktreeManager      | [x]    | 1.3  | A              |
+| 2.2 session/manager.rs - SessionManager (base) | [x]    | 1.3  | A              |
+| 2.3 executor/mod.rs - Executor trait + types   | [x]    | 1.3  | A              |
 
 ### 2.1 WorktreeManager
 
