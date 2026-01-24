@@ -344,6 +344,7 @@ pub struct KanbanApp {
     keyboard_state: KeyboardState,
     show_create_project_dialog: bool,
     show_create_task_dialog: bool,
+    show_help_dialog: bool,
     project_name_input: String,
     project_path_input: String,
     task_title_input: String,
@@ -366,6 +367,7 @@ impl KanbanApp {
             keyboard_state: KeyboardState::new(),
             show_create_project_dialog: false,
             show_create_task_dialog: false,
+            show_help_dialog: false,
             project_name_input: String::new(),
             project_path_input: String::new(),
             task_title_input: String::new(),
@@ -486,6 +488,7 @@ impl KanbanApp {
 
         self.show_create_project_dialog(ctx);
         self.show_create_task_dialog(ctx);
+        self.show_help_dialog(ctx);
     }
 
     fn show_project_view(&mut self, ui: &mut egui::Ui) {
@@ -606,6 +609,70 @@ impl KanbanApp {
             });
     }
 
+    fn show_help_dialog(&mut self, ctx: &egui::Context) {
+        if !self.show_help_dialog {
+            return;
+        }
+
+        egui::Window::new("Keyboard Shortcuts")
+            .collapsible(false)
+            .resizable(false)
+            .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+            .show(ctx, |ui| {
+                ui.vertical(|ui| {
+                    ui.heading(match self.keyboard_state.view_level {
+                        ViewLevel::Project => "Project View Shortcuts",
+                        ViewLevel::Task => "Task View Shortcuts",
+                        ViewLevel::Session => "Session View Shortcuts",
+                    });
+                    ui.add_space(10.0);
+
+                    match self.keyboard_state.view_level {
+                        ViewLevel::Project => {
+                            ui.label("Navigation:");
+                            ui.label("  j/k - Move up/down");
+                            ui.label("  Enter - Open project");
+                            ui.add_space(5.0);
+                            ui.label("Actions:");
+                            ui.label("  n - Create new project");
+                            ui.label("  dd - Delete project");
+                            ui.label("  ? - Toggle this help");
+                            ui.add_space(5.0);
+                            ui.label("Esc - Cancel / Go back");
+                        }
+                        ViewLevel::Task => {
+                            ui.label("Navigation:");
+                            ui.label("  h/j/k/l - Move left/down/up/right");
+                            ui.label("  Enter - Open task");
+                            ui.label("  1-4 - Jump to column");
+                            ui.add_space(5.0);
+                            ui.label("Actions:");
+                            ui.label("  n - Create new task");
+                            ui.label("  e - Edit task");
+                            ui.label("  dd - Delete task");
+                            ui.label("  ? - Toggle this help");
+                            ui.add_space(5.0);
+                            ui.label("Esc - Cancel / Go back");
+                        }
+                        ViewLevel::Session => {
+                            ui.label("Navigation:");
+                            ui.label("  j/k - Move up/down");
+                            ui.add_space(5.0);
+                            ui.label("Actions:");
+                            ui.label("  s - Start new session");
+                            ui.label("  x - Stop session");
+                            ui.label("  ? - Toggle this help");
+                            ui.add_space(5.0);
+                            ui.label("Esc - Cancel / Go back");
+                        }
+                    }
+
+                    ui.add_space(15.0);
+                    ui.label("Press ? or Esc to close");
+                });
+            });
+    }
+
     fn handle_keyboard_input(&mut self, ctx: &egui::Context) {
         ctx.input(|i| {
             let modifiers = i.modifiers;
@@ -661,7 +728,11 @@ impl KanbanApp {
                 self.handle_drill_down();
             }
             Action::GoBack => {
-                self.keyboard_state.go_back();
+                if self.show_help_dialog {
+                    self.show_help_dialog = false;
+                } else {
+                    self.keyboard_state.go_back();
+                }
             }
             Action::Quit => {
                 std::process::exit(0);
@@ -671,6 +742,9 @@ impl KanbanApp {
             }
             Action::CreateTask => {
                 self.show_create_task_dialog = true;
+            }
+            Action::ToggleHelp => {
+                self.show_help_dialog = !self.show_help_dialog;
             }
             _ => {}
         }
