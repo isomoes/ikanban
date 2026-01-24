@@ -119,6 +119,7 @@ impl KeyboardState {
 
             Key::Slash => Action::Search,
             Key::Q => Action::Quit,
+            Key::Questionmark => Action::ToggleHelp,
             Key::Escape => Action::GoBack,
 
             _ => Action::None,
