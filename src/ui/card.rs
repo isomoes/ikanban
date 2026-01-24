@@ -20,9 +20,7 @@ impl TaskCard {
             ui.visuals().window_fill()
         };
 
-        let mut clicked = false;
-
-        egui::Frame::none()
+        let response = egui::Frame::none()
             .fill(fill)
             .stroke(stroke)
             .rounding(4.0)
@@ -39,17 +37,16 @@ impl TaskCard {
                         ui.label(format!("Status: {:?}", task.status));
                         ui.label(format!("Created: {}", task.created_at.format("%Y-%m-%d")));
                     });
-
-                    if ui
-                        .interact(ui.min_rect(), ui.id().with(&task.id), egui::Sense::click())
-                        .clicked()
-                    {
-                        clicked = true;
-                    }
                 });
             });
 
-        if clicked {
+        let interaction = ui.interact(
+            response.response.rect,
+            egui::Id::new(&task.id),
+            egui::Sense::click(),
+        );
+
+        if interaction.clicked() {
             Some(task.id.clone())
         } else {
             None
