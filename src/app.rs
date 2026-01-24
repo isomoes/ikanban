@@ -4,7 +4,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use crate::db::connection::create_pool;
-use crate::db::models::{LogEntry, LogType, Project, Session, Task, TaskStatus};
+use crate::db::models::{LogEntry, LogType, Project, Session, SessionStatus, Task, TaskStatus};
 use crate::executor::{Executor, LogMsg, OpenCodeExecutor};
 use crate::session::SessionManager;
 use chrono::Utc;
@@ -456,18 +456,26 @@ impl KanbanApp {
                     ui.label(":");
                     ui.label(&self.keyboard_state.command_buffer);
                 } else {
-                    let help_text = match self.keyboard_state.view_level {
-                        ViewLevel::Project => {
-                            "j/k - navigate | Enter - open project | n - new | dd - delete | q - quit"
-                        }
-                        ViewLevel::Task => {
-                            "h/j/k/l - navigate | Enter - open task | n - new | e - edit | dd - delete | 1-4 - columns | Esc - back"
-                        }
-                        ViewLevel::Session => {
-                            "j/k - sessions | s - start | x - stop | Esc - back"
-                        }
-                    };
-                    ui.label(help_text);
+                    let projects = self.projects.blocking_read();
+                    let tasks = self.tasks.blocking_read();
+                    let sessions = self.sessions.blocking_read();
+
+                    ui.label(format!("Projects: {}", projects.len()));
+                    ui.separator();
+                    ui.label(format!("Tasks: {}", tasks.len()));
+                    ui.separator();
+                    ui.label(format!("Sessions: {}", sessions.len()));
+
+                    let running_sessions: usize = sessions.iter()
+                        .filter(|s| s.status == SessionStatus::Running)
+                        .count();
+                    if running_sessions > 0 {
+                        ui.separator();
+                        ui.colored_label(
+                            egui::Color32::from_rgb(100, 255, 100),
+                            format!("Running: {}", running_sessions),
+                        );
+                    }
                 }
             });
         });
