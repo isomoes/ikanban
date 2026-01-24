@@ -344,6 +344,7 @@ pub struct KanbanApp {
     keyboard_state: KeyboardState,
     show_create_project_dialog: bool,
     show_create_task_dialog: bool,
+    show_edit_task_dialog: bool,
     show_help_dialog: bool,
     project_name_input: String,
     project_path_input: String,
@@ -367,6 +368,7 @@ impl KanbanApp {
             keyboard_state: KeyboardState::new(),
             show_create_project_dialog: false,
             show_create_task_dialog: false,
+            show_edit_task_dialog: false,
             show_help_dialog: false,
             project_name_input: String::new(),
             project_path_input: String::new(),
@@ -478,6 +480,7 @@ impl KanbanApp {
 
         self.show_create_project_dialog(ctx);
         self.show_create_task_dialog(ctx);
+        self.show_edit_task_dialog(ctx);
         self.show_help_dialog(ctx);
     }
 
@@ -550,7 +553,7 @@ impl KanbanApp {
                     
                     ui.horizontal(|ui| {
                         if ui.button("Create").clicked() {
-                            self.show_create_project_dialog = false;
+                            self.handle_save();
                         }
                         
                         if ui.button("Cancel").clicked() {
@@ -586,11 +589,133 @@ impl KanbanApp {
                     
                     ui.horizontal(|ui| {
                         if ui.button("Create").clicked() {
-                            self.show_create_task_dialog = false;
+                            self.handle_save();
                         }
                         
                         if ui.button("Cancel").clicked() {
                             self.show_create_task_dialog = false;
+                            self.task_title_input.clear();
+                            self.task_description_input.clear();
+                        }
+                    });
+                });
+            });
+    }
+
+    fn prepare_edit_task(&mut self) {
+        let tasks = self.tasks.blocking_read();
+        if let Some(task) = self.task_view.get_selected_task(&tasks, &self.keyboard_state) {
+            self.task_title_input = task.title.clone();
+            self.task_description_input = task.description.clone().unwrap_or_default();
+            self.show_edit_task_dialog = true;
+        }
+    }
+
+    fn handle_save(&mut self) {
+        if self.show_create_project_dialog {
+            self.create_project_internal();
+            self.show_create_project_dialog = false;
+            self.project_name_input.clear();
+            self.project_path_input.clear();
+        } else if self.show_create_task_dialog {
+            self.create_task_internal();
+            self.show_create_task_dialog = false;
+            self.task_title_input.clear();
+            self.task_description_input.clear();
+        } else if self.show_edit_task_dialog {
+            self.update_task_internal();
+            self.show_edit_task_dialog = false;
+            self.task_title_input.clear();
+            self.task_description_input.clear();
+        }
+    }
+
+    fn create_project_internal(&mut self) {
+        let name = self.project_name_input.trim().to_string();
+        let path = PathBuf::from(self.project_path_input.trim());
+        if name.is_empty() {
+            return;
+        }
+
+        let project = Project {
+            id: Uuid::new_v4().to_string(),
+            name,
+            path,
+            created_at: Utc::now(),
+        };
+
+        self.projects.blocking_write().push(project);
+    }
+
+    fn create_task_internal(&mut self) {
+        let title = self.task_title_input.trim().to_string();
+        let description = self.task_description_input.trim().to_string();
+        if title.is_empty() {
+            return;
+        }
+
+        let project_id = self.selected_project.blocking_read().clone();
+        if let Some(project_id) = project_id {
+            let task = Task {
+                id: Uuid::new_v4().to_string(),
+                project_id,
+                title,
+                description: if description.is_empty() { None } else { Some(description) },
+                status: TaskStatus::Todo,
+                created_at: Utc::now(),
+            };
+            self.tasks.blocking_write().push(task);
+        }
+    }
+
+    fn update_task_internal(&mut self) {
+        let title = self.task_title_input.trim().to_string();
+        let description = self.task_description_input.trim().to_string();
+        if title.is_empty() {
+            return;
+        }
+
+        let tasks_guard = self.tasks.blocking_read();
+        let selected_task_id = self.task_view.get_selected_task(&tasks_guard, &self.keyboard_state).map(|t| t.id.clone());
+        drop(tasks_guard);
+
+        if let Some(task_id) = selected_task_id {
+            let mut tasks = self.tasks.blocking_write();
+            if let Some(task) = tasks.iter_mut().find(|t| t.id == task_id) {
+                task.title = title;
+                task.description = if description.is_empty() { None } else { Some(description) };
+            }
+        }
+    }
+
+    fn show_edit_task_dialog(&mut self, ctx: &egui::Context) {
+        if !self.show_edit_task_dialog {
+            return;
+        }
+
+        egui::Window::new("Edit Task")
+            .collapsible(false)
+            .resizable(false)
+            .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+            .show(ctx, |ui| {
+                ui.vertical(|ui| {
+                    ui.label("Task Title:");
+                    ui.text_edit_singleline(&mut self.task_title_input);
+                    
+                    ui.add_space(10.0);
+                    
+                    ui.label("Description (optional):");
+                    ui.text_edit_multiline(&mut self.task_description_input);
+                    
+                    ui.add_space(15.0);
+                    
+                    ui.horizontal(|ui| {
+                        if ui.button("Save").clicked() {
+                            self.handle_save();
+                        }
+                        
+                        if ui.button("Cancel").clicked() {
+                            self.show_edit_task_dialog = false;
                             self.task_title_input.clear();
                             self.task_description_input.clear();
                         }
@@ -664,11 +789,22 @@ impl KanbanApp {
     }
 
     fn handle_keyboard_input(&mut self, ctx: &egui::Context) {
+        let wants_input = ctx.wants_keyboard_input();
         ctx.input(|i| {
             let modifiers = i.modifiers;
             
             for event in &i.events {
                 if let egui::Event::Key { key, pressed: true, .. } = event {
+                    if wants_input {
+                        if modifiers.ctrl {
+                            if *key != egui::Key::S {
+                                continue;
+                            }
+                        } else if *key != egui::Key::Escape {
+                            continue;
+                        }
+                    }
+
                     let action = self.keyboard_state.handle_key(*key, &modifiers);
                     self.execute_action(action);
                 }
@@ -715,6 +851,12 @@ impl KanbanApp {
             }
             Action::CreateTask => {
                 self.show_create_task_dialog = true;
+            }
+            Action::EditTask => {
+                self.prepare_edit_task();
+            }
+            Action::Save => {
+                self.handle_save();
             }
             Action::ToggleHelp => {
                 self.show_help_dialog = !self.show_help_dialog;

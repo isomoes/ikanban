@@ -31,6 +31,7 @@ pub enum Action {
     JumpToBottom,
     JumpToColumn(usize),
     Search,
+    Save,
     Quit,
     DrillDown,
     GoBack,
@@ -141,6 +142,7 @@ impl KeyboardState {
             Key::K => Action::MoveTask(Direction::Up),
             Key::L => Action::MoveTask(Direction::Right),
             Key::C => Action::Quit,
+            Key::S => Action::Save,
             _ => Action::None,
         }
     }
