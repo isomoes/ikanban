@@ -243,11 +243,11 @@ impl Executor for OpenCodeExecutor {
 
 | Task                                              | Status | Deps     | Parallel Group |
 | ------------------------------------------------- | ------ | -------- | -------------- |
-| 3.0 ui/mod.rs - UI module setup                   | [ ]    | 1.1      | -              |
-| 3.1 ui/card.rs - Task card component              | [ ]    | 3.0      | C              |
-| 3.2 ui/column.rs - Kanban column component        | [ ]    | 3.0      | C              |
-| 3.3 ui/board.rs - Kanban board view               | [ ]    | 3.1, 3.2 | -              |
-| 3.4 ui/session_panel.rs - Session/execution panel | [ ]    | 3.0      | C              |
+| 3.0 ui/mod.rs - UI module setup                   | [x]    | 1.1      | -              |
+| 3.1 ui/card.rs - Task card component              | [x]    | 3.0      | C              |
+| 3.2 ui/column.rs - Kanban column component        | [x]    | 3.0      | C              |
+| 3.3 ui/board.rs - Kanban board view               | [x]    | 3.1, 3.2 | -              |
+| 3.4 ui/session_panel.rs - Session/execution panel | [x]    | 3.0      | C              |
 
 ## Phase 4: App Integration
 
