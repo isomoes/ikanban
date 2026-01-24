@@ -9,4 +9,4 @@ pub mod keyboard;
 pub use app::AppState;
 pub use app::KanbanApp;
 pub use db::models::{LogEntry, LogType, Project, Session, Task, TaskStatus};
-pub use keyboard::{KeyboardState, Mode, Action, Direction};
+pub use keyboard::{KeyboardState, Action, Direction};

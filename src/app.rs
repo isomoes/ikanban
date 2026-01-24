@@ -11,7 +11,7 @@ use chrono::Utc;
 use sqlx::SqlitePool;
 use uuid::Uuid;
 use crate::ui::{ProjectView, SessionView, TaskView};
-use crate::keyboard::{KeyboardState, Action, Direction, Mode, ViewLevel};
+use crate::keyboard::{KeyboardState, Action, Direction, ViewLevel};
 use eframe;
 use egui;
 
@@ -416,11 +416,6 @@ impl KanbanApp {
                         .strong(),
                 );
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    let mode_color = self.keyboard_state.get_mode_color();
-                    ui.colored_label(
-                        mode_color,
-                        format!("-- {} --", self.keyboard_state.get_mode_string()),
-                    );
                     match self.keyboard_state.view_level {
                         ViewLevel::Project => {
                             let projects = self.projects.blocking_read();
@@ -452,31 +447,18 @@ impl KanbanApp {
 
         egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
-                if self.keyboard_state.mode == Mode::Command {
-                    ui.label(":");
-                    ui.label(&self.keyboard_state.command_buffer);
-                } else {
-                    let projects = self.projects.blocking_read();
-                    let tasks = self.tasks.blocking_read();
-                    let sessions = self.sessions.blocking_read();
-
-                    ui.label(format!("Projects: {}", projects.len()));
-                    ui.separator();
-                    ui.label(format!("Tasks: {}", tasks.len()));
-                    ui.separator();
-                    ui.label(format!("Sessions: {}", sessions.len()));
-
-                    let running_sessions: usize = sessions.iter()
-                        .filter(|s| s.status == SessionStatus::Running)
-                        .count();
-                    if running_sessions > 0 {
-                        ui.separator();
-                        ui.colored_label(
-                            egui::Color32::from_rgb(100, 255, 100),
-                            format!("Running: {}", running_sessions),
-                        );
-                    }
-                }
+                let help_text = match self.keyboard_state.view_level {
+                        ViewLevel::Project => {
+                            "j/k - navigate | Enter - open project | n - new | dd - delete | q - quit"
+                        }
+                        ViewLevel::Task => {
+                            "h/j/k/l - navigate | Enter - open task | n - new | e - edit | dd - delete | 1-4 - columns | Esc - back"
+                        }
+                        ViewLevel::Session => {
+                            "j/k - sessions | s - start | x - stop | Esc - back"
+                        }
+                    };
+                    ui.label(help_text);
             });
         });
 
@@ -687,20 +669,6 @@ impl KanbanApp {
             
             for event in &i.events {
                 if let egui::Event::Key { key, pressed: true, .. } = event {
-                    if self.keyboard_state.mode == Mode::Command {
-                        if let Some(text) = i.events.iter().find_map(|e| {
-                            if let egui::Event::Text(t) = e {
-                                Some(t.clone())
-                            } else {
-                                None
-                            }
-                        }) {
-                            if *key != egui::Key::Enter && *key != egui::Key::Escape {
-                                self.keyboard_state.command_buffer.push_str(&text);
-                            }
-                        }
-                    }
-
                     let action = self.keyboard_state.handle_key(*key, &modifiers);
                     self.execute_action(action);
                 }
@@ -728,9 +696,6 @@ impl KanbanApp {
                     let column_sizes = self.get_column_sizes(&tasks);
                     self.keyboard_state.jump_to_column(col, 4, &column_sizes);
                 }
-            }
-            Action::ToggleMode(mode) => {
-                self.keyboard_state.mode = mode;
             }
             Action::DrillDown => {
                 self.handle_drill_down();

@@ -1,14 +1,6 @@
 use egui::Key;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Mode {
-    Normal,
-    Insert,
-    Visual,
-    Command,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Direction {
     Left,
     Right,
@@ -35,7 +27,6 @@ pub enum Action {
     EditTask,
     StartSession,
     StopSession,
-    ToggleMode(Mode),
     JumpToTop,
     JumpToBottom,
     JumpToColumn(usize),
@@ -47,28 +38,24 @@ pub enum Action {
 }
 
 pub struct KeyboardState {
-    pub mode: Mode,
     pub view_level: ViewLevel,
     pub selected_column: usize,
     pub selected_row: usize,
     pub selected_project_index: usize,
     pub selected_session_index: usize,
     pub pending_key: Option<Key>,
-    pub command_buffer: String,
     pub last_action: Action,
 }
 
 impl Default for KeyboardState {
     fn default() -> Self {
         Self {
-            mode: Mode::Normal,
             view_level: ViewLevel::Project,
             selected_column: 0,
             selected_row: 0,
             selected_project_index: 0,
             selected_session_index: 0,
             pending_key: None,
-            command_buffer: String::new(),
             last_action: Action::None,
         }
     }
@@ -80,12 +67,7 @@ impl KeyboardState {
     }
 
     pub fn handle_key(&mut self, key: Key, modifiers: &egui::Modifiers) -> Action {
-        match self.mode {
-            Mode::Normal => self.handle_normal_mode(key, modifiers),
-            Mode::Insert => self.handle_insert_mode(key),
-            Mode::Visual => self.handle_visual_mode(key),
-            Mode::Command => self.handle_command_mode(key),
-        }
+        self.handle_normal_mode(key, modifiers)
     }
 
     fn handle_normal_mode(&mut self, key: Key, modifiers: &egui::Modifiers) -> Action {
@@ -125,10 +107,6 @@ impl KeyboardState {
             Key::Num3 => Action::JumpToColumn(2),
             Key::Num4 => Action::JumpToColumn(3),
 
-            Key::I => Action::ToggleMode(Mode::Insert),
-            Key::V => Action::ToggleMode(Mode::Visual),
-            Key::Colon => Action::ToggleMode(Mode::Command),
-
             Key::Enter => Action::DrillDown,
             Key::N => match self.view_level {
                 ViewLevel::Project => Action::CreateProject,
@@ -141,7 +119,7 @@ impl KeyboardState {
 
             Key::Slash => Action::Search,
             Key::Q => Action::Quit,
-            Key::Questionmark => Action::ToggleHelp,
+            Key::Escape => Action::GoBack,
 
             _ => Action::None,
         }
@@ -162,49 +140,6 @@ impl KeyboardState {
             Key::K => Action::MoveTask(Direction::Up),
             Key::L => Action::MoveTask(Direction::Right),
             Key::C => Action::Quit,
-            _ => Action::None,
-        }
-    }
-
-    fn handle_insert_mode(&mut self, key: Key) -> Action {
-        match key {
-            Key::Escape => Action::GoBack,
-            _ => Action::None,
-        }
-    }
-
-    fn handle_visual_mode(&mut self, key: Key) -> Action {
-        match key {
-            Key::Escape => Action::ToggleMode(Mode::Normal),
-            Key::H => Action::MoveSelection(Direction::Left),
-            Key::J => Action::MoveSelection(Direction::Down),
-            Key::K => Action::MoveSelection(Direction::Up),
-            Key::L => Action::MoveSelection(Direction::Right),
-            _ => Action::None,
-        }
-    }
-
-    fn handle_command_mode(&mut self, key: Key) -> Action {
-        match key {
-            Key::Escape => {
-                self.command_buffer.clear();
-                Action::ToggleMode(Mode::Normal)
-            }
-            Key::Enter => {
-                let action = self.execute_command();
-                self.command_buffer.clear();
-                Action::ToggleMode(Mode::Normal);
-                action
-            }
-            _ => Action::None,
-        }
-    }
-
-    fn execute_command(&self) -> Action {
-        match self.command_buffer.trim() {
-            "q" | "quit" => Action::Quit,
-            "w" | "write" => Action::None,
-            "wq" => Action::Quit,
             _ => Action::None,
         }
     }
@@ -262,24 +197,6 @@ impl KeyboardState {
         }
     }
 
-    pub fn get_mode_string(&self) -> &str {
-        match self.mode {
-            Mode::Normal => "NORMAL",
-            Mode::Insert => "INSERT",
-            Mode::Visual => "VISUAL",
-            Mode::Command => "COMMAND",
-        }
-    }
-
-    pub fn get_mode_color(&self) -> egui::Color32 {
-        match self.mode {
-            Mode::Normal => egui::Color32::from_rgb(100, 150, 255),
-            Mode::Insert => egui::Color32::from_rgb(100, 255, 100),
-            Mode::Visual => egui::Color32::from_rgb(255, 150, 100),
-            Mode::Command => egui::Color32::from_rgb(255, 255, 100),
-        }
-    }
-
     pub fn get_view_string(&self) -> &str {
         match self.view_level {
             ViewLevel::Project => "PROJECT",
@@ -303,11 +220,6 @@ impl KeyboardState {
     }
 
     pub fn go_back(&mut self) -> bool {
-        if self.mode != Mode::Normal {
-            self.mode = Mode::Normal;
-            self.command_buffer.clear();
-            return true;
-        }
         match self.view_level {
             ViewLevel::Project => false,
             ViewLevel::Task => {
