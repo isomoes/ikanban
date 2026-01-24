@@ -4,6 +4,188 @@
 
 iKanban is a Kanban board system that supports multiple AI coding agents working in parallel using git worktrees for isolation. Each task can have its own isolated workspace where an agent works independently without conflicts.
 
+## UI Design
+
+### Navigation Model
+
+Three-level view hierarchy with vim-like keyboard navigation:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Project View → Task View → Session View                        │
+│       ↓              ↓              ↓                           │
+│  Select repo    Kanban board   Agent interaction                │
+│  as project     CRUD tasks     Send prompts, view logs          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Keyboard Navigation (Vim-like)
+
+| Key | Action |
+|-----|--------|
+| `h` | Move left / Go back to previous view |
+| `j` | Move down / Select next item |
+| `k` | Move up / Select previous item |
+| `l` | Move right / Enter selected item |
+| `Enter` | Confirm / Enter selected item |
+| `Esc` | Cancel / Go back |
+| `n` | New (create task/project) |
+| `d` | Delete selected item |
+| `e` | Edit selected item |
+| `r` | Refresh |
+| `?` | Show help |
+
+### View 1: Project View
+
+Select a repository path as a project.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  iKanban - Projects                                    [?] Help │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  > /home/user/myproject          [3 tasks]                      │
+│    /home/user/webapp             [5 tasks]                      │
+│    /home/user/api-server         [2 tasks]                      │
+│                                                                 │
+│  [n] New Project   [d] Delete   [Enter/l] Open                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Actions:**
+- `j/k` - Navigate project list
+- `l/Enter` - Open selected project → Go to Task View
+- `n` - Add new project (file picker for repo path)
+- `d` - Delete project
+
+### View 2: Task View (Kanban Board)
+
+Shows all tasks grouped by status columns.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  myproject                                      [h] Back  [?]   │
+├───────────────┬───────────────┬───────────────┬─────────────────┤
+│  Todo         │  InProgress   │  InReview     │  Done           │
+├───────────────┼───────────────┼───────────────┼─────────────────┤
+│               │               │               │                 │
+│ > Fix login   │  Add dark     │  Refactor     │  Setup CI       │
+│   bug         │  mode         │  auth         │                 │
+│               │               │               │  Update deps    │
+│   Add tests   │               │               │                 │
+│               │               │               │                 │
+├───────────────┴───────────────┴───────────────┴─────────────────┤
+│  [n] New Task  [e] Edit  [d] Delete  [Enter/l] Open Session     │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Actions:**
+- `h` - Go back to Project View
+- `j/k` - Navigate tasks within column
+- `l/Enter` - Open selected task → Go to Session View
+- `n` - Create new task
+- `e` - Edit task (title, description)
+- `d` - Delete task
+- `Tab` - Move to next column
+- `Shift+Tab` - Move to previous column
+
+### View 3: Session View
+
+Shows agent run status, messages, and allows interaction.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Task: Fix login bug                            [h] Back  [?]   │
+│  Status: Running                                                │
+├─────────────────────────────────────────────────────────────────┤
+│  Agent Messages                                    [L] Logs     │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  [User] Fix the login bug in auth.rs                            │
+│                                                                 │
+│  [Agent] I'll analyze the login function...                     │
+│                                                                 │
+│  [Tool] Reading file: src/auth.rs                               │
+│                                                                 │
+│  [Agent] Found the issue. The session token                     │
+│          validation is missing...                               │
+│                                                                 │
+│  [Tool] Editing file: src/auth.rs                               │
+│                                                                 │
+├─────────────────────────────────────────────────────────────────┤
+│  > Type message...                                              │
+│                                                                 │
+│  [Enter] Send  [Ctrl+C] Stop Agent  [L] Toggle Logs             │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Log Panel (Toggle with `L`):**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Task: Fix login bug                            [h] Back  [?]   │
+│  Status: Running                                                │
+├─────────────────────────────────────────────────────────────────┤
+│  Agent Messages                    │  Logs                      │
+├────────────────────────────────────┼────────────────────────────┤
+│                                    │ [stdout] Server started    │
+│  [User] Fix the login bug          │ [event] SessionStatus:Busy │
+│                                    │ [event] ToolPart:Read      │
+│  [Agent] I'll analyze...           │ [stdout] Reading auth.rs   │
+│                                    │ [event] ToolPart:Complete  │
+│  [Tool] Reading: src/auth.rs       │ [event] MessageUpdated     │
+│                                    │ [stderr] Warning: unused   │
+│                                    │                            │
+├────────────────────────────────────┴────────────────────────────┤
+│  > Type message...                                              │
+│  [Enter] Send  [Ctrl+C] Stop  [L] Hide Logs                     │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Actions:**
+- `h/Esc` - Go back to Task View
+- `j/k` - Scroll messages
+- `L` - Toggle log panel (for debugging agent runs)
+- `Enter` - Focus input / Send message
+- `Ctrl+C` - Stop/interrupt running agent
+- `i` - Focus input field (vim insert mode)
+
+### State Machine
+
+```
+                    ┌──────────────┐
+                    │ Project View │
+                    └──────┬───────┘
+                           │ l/Enter (select project)
+                           ↓
+                    ┌──────────────┐
+            ┌───────│  Task View   │───────┐
+            │       └──────┬───────┘       │
+            │ h/Esc        │ l/Enter       │ h/Esc
+            ↓              ↓               ↓
+     ┌──────────────┐ ┌──────────────┐
+     │ Project View │ │ Session View │
+     └──────────────┘ └──────────────┘
+```
+
+### Focus Management
+
+```rust
+pub enum AppView {
+    Projects,
+    Tasks { project_id: String },
+    Session { task_id: String, session_id: String },
+}
+
+pub struct AppState {
+    pub view: AppView,
+    pub selected_index: usize,
+    pub column_index: usize,  // For Task View
+    pub show_logs: bool,      // For Session View
+    pub input_focused: bool,  // For Session View input
+}
+```
+
 ### MVP Architecture Highlights
 
 **Simplifications for MVP:**
