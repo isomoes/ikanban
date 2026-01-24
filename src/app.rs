@@ -1064,9 +1064,14 @@ mod tests {
         assert!(tasks.is_empty());
     }
 
-    #[test]
-    fn test_kanban_app_creation() {
-        let app = KanbanApp::new();
-        assert!(app.tasks.blocking_read().is_empty());
+    #[tokio::test]
+    async fn test_kanban_app_creation() {
+        use tempfile::TempDir;
+        let dir = TempDir::new().unwrap();
+        let db_path = dir.path().join("test.db");
+        let app_state = Arc::new(AppState::new(db_path).await.unwrap());
+        
+        let app = KanbanApp::new(app_state);
+        assert!(app.tasks.read().await.is_empty());
     }
 }
