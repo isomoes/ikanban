@@ -13,3 +13,11 @@ pub mod session;
 pub mod ui;
 
 pub mod app;
+
+#[cfg(feature = "server")]
+pub use app::AppState;
+
+#[cfg(feature = "ui")]
+pub use app::KanbanApp;
+
+pub use db::models::{LogEntry, LogType, Project, Session, Task, TaskStatus};

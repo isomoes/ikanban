@@ -6,6 +6,11 @@ edition = "2024"
 [lib]
 crate-type = ["rlib"]
 
+[[bin]]
+name = "ikanban"
+path = "src/main.rs"
+required-features = ["ui"]
+
 [dependencies]
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
@@ -49,6 +54,7 @@ futures = { version = "0.3", optional = true }
 
 # UI dependencies
 egui = { version = "0.29", optional = true }
+eframe = { version = "0.29", optional = true }
 
 [features]
 default = ["server"]
@@ -69,6 +75,7 @@ server = [
 ]
 ui = [
     "dep:egui",
+    "dep:eframe",
 ]
 
 [profile.release]

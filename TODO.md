@@ -253,9 +253,9 @@ impl Executor for OpenCodeExecutor {
 
 | Task                                              | Status | Deps                    |
 | ------------------------------------------------- | ------ | ----------------------- |
-| 4.1 app.rs - Application state & message handling | [ ]    | 2.1, 2.2, 2.7, 3.3, 3.4 |
-| 4.2 main.rs - Entry point, eframe setup           | [ ]    | 4.1                     |
-| 4.3 lib.rs - Public API exports                   | [ ]    | 4.1                     |
+| 4.1 app.rs - Application state & message handling | [x]    | 2.1, 2.2, 2.7, 3.3, 3.4 |
+| 4.2 main.rs - Entry point, eframe setup           | [x]    | 4.1                     |
+| 4.3 lib.rs - Public API exports                   | [x]    | 4.1                     |
 
 ## Phase 5: Request Actions
 

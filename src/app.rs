@@ -24,6 +24,10 @@ use crate::db::models::{Project, Session, Task, TaskStatus};
 use crate::db::models::LogEntry;
 #[cfg(feature = "ui")]
 use crate::ui::{Board, SessionPanel};
+#[cfg(feature = "ui")]
+use eframe;
+#[cfg(feature = "ui")]
+use egui;
 
 #[cfg(feature = "server")]
 pub struct AppState {
@@ -369,6 +373,13 @@ impl KanbanApp {
 impl Default for KanbanApp {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(feature = "ui")]
+impl eframe::App for KanbanApp {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        self.show(ctx);
     }
 }
 
