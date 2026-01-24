@@ -19,42 +19,72 @@ impl Board {
         }
     }
 
-    pub fn show(&mut self, ui: &mut egui::Ui, tasks: &[Task], keyboard_state: &KeyboardState) {
+    pub fn show(
+        &mut self,
+        ui: &mut egui::Ui,
+        tasks: &[Task],
+        keyboard_state: &KeyboardState,
+    ) -> Option<String> {
+        let mut selected_task_id = None;
+
+        ui.heading("Task Manager");
+        ui.separator();
+
         ui.horizontal(|ui| {
             ui.vertical(|ui| {
-                ui.set_min_width(250.0);
+                ui.set_min_width(120.0);
                 let is_selected = keyboard_state.selected_column == 0;
-                self.todo_column
-                    .show(ui, tasks, is_selected, keyboard_state.selected_row);
+                if let Some(task_id) =
+                    self.todo_column
+                        .show(ui, tasks, is_selected, keyboard_state.selected_row)
+                {
+                    selected_task_id = Some(task_id);
+                }
             });
 
             ui.separator();
 
             ui.vertical(|ui| {
-                ui.set_min_width(250.0);
+                ui.set_min_width(120.0);
                 let is_selected = keyboard_state.selected_column == 1;
-                self.in_progress_column
-                    .show(ui, tasks, is_selected, keyboard_state.selected_row);
+                if let Some(task_id) = self.in_progress_column.show(
+                    ui,
+                    tasks,
+                    is_selected,
+                    keyboard_state.selected_row,
+                ) {
+                    selected_task_id = Some(task_id);
+                }
             });
 
             ui.separator();
 
             ui.vertical(|ui| {
-                ui.set_min_width(250.0);
+                ui.set_min_width(120.0);
                 let is_selected = keyboard_state.selected_column == 2;
-                self.in_review_column
-                    .show(ui, tasks, is_selected, keyboard_state.selected_row);
+                if let Some(task_id) =
+                    self.in_review_column
+                        .show(ui, tasks, is_selected, keyboard_state.selected_row)
+                {
+                    selected_task_id = Some(task_id);
+                }
             });
 
             ui.separator();
 
             ui.vertical(|ui| {
-                ui.set_min_width(250.0);
+                ui.set_min_width(120.0);
                 let is_selected = keyboard_state.selected_column == 3;
-                self.done_column
-                    .show(ui, tasks, is_selected, keyboard_state.selected_row);
+                if let Some(task_id) =
+                    self.done_column
+                        .show(ui, tasks, is_selected, keyboard_state.selected_row)
+                {
+                    selected_task_id = Some(task_id);
+                }
             });
         });
+
+        selected_task_id
     }
 }
 

@@ -7,7 +7,7 @@ impl TaskCard {
         Self
     }
 
-    pub fn show(&mut self, ui: &mut egui::Ui, task: &Task, is_selected: bool) {
+    pub fn show(&mut self, ui: &mut egui::Ui, task: &Task, is_selected: bool) -> Option<String> {
         let stroke = if is_selected {
             egui::Stroke::new(2.0, egui::Color32::from_rgb(100, 150, 255))
         } else {
@@ -19,6 +19,8 @@ impl TaskCard {
         } else {
             ui.visuals().window_fill()
         };
+
+        let mut clicked = false;
 
         egui::Frame::none()
             .fill(fill)
@@ -37,8 +39,21 @@ impl TaskCard {
                         ui.label(format!("Status: {:?}", task.status));
                         ui.label(format!("Created: {}", task.created_at.format("%Y-%m-%d")));
                     });
+
+                    if ui
+                        .interact(ui.min_rect(), ui.id().with(&task.id), egui::Sense::click())
+                        .clicked()
+                    {
+                        clicked = true;
+                    }
                 });
             });
+
+        if clicked {
+            Some(task.id.clone())
+        } else {
+            None
+        }
     }
 }
 

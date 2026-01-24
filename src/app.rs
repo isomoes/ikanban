@@ -10,7 +10,7 @@ use crate::session::SessionManager;
 use chrono::Utc;
 use sqlx::SqlitePool;
 use uuid::Uuid;
-use crate::ui::{Board, SessionPanel};
+use crate::ui::{Board, ProjectPanel, TaskExecutionPanel};
 use crate::keyboard::{KeyboardState, Action, Mode};
 use eframe;
 use egui;
@@ -331,24 +331,30 @@ impl AppState {
 }
 
 pub struct KanbanApp {
+    project_panel: ProjectPanel,
     board: Board,
-    session_panel: SessionPanel,
+    task_execution_panel: TaskExecutionPanel,
+    projects: Arc<RwLock<Vec<Project>>>,
     tasks: Arc<RwLock<Vec<Task>>>,
     current_session: Arc<RwLock<Option<Session>>>,
     logs: Arc<RwLock<Vec<LogEntry>>>,
     selected_project: Arc<RwLock<Option<String>>>,
+    selected_task: Arc<RwLock<Option<String>>>,
     keyboard_state: KeyboardState,
 }
 
 impl KanbanApp {
     pub fn new() -> Self {
         Self {
+            project_panel: ProjectPanel::new(),
             board: Board::new(),
-            session_panel: SessionPanel::new(),
+            task_execution_panel: TaskExecutionPanel::new(),
+            projects: Arc::new(RwLock::new(Vec::new())),
             tasks: Arc::new(RwLock::new(Vec::new())),
             current_session: Arc::new(RwLock::new(None)),
             logs: Arc::new(RwLock::new(Vec::new())),
             selected_project: Arc::new(RwLock::new(None)),
+            selected_task: Arc::new(RwLock::new(None)),
             keyboard_state: KeyboardState::new(),
         }
     }
@@ -367,6 +373,14 @@ impl KanbanApp {
 
     pub async fn set_project(&self, project_id: Option<String>) {
         *self.selected_project.write().await = project_id;
+    }
+
+    pub async fn set_projects(&self, projects: Vec<Project>) {
+        *self.projects.write().await = projects;
+    }
+
+    pub async fn set_selected_task(&self, task_id: Option<String>) {
+        *self.selected_task.write().await = task_id;
     }
 
     pub fn show(&mut self, ctx: &egui::Context) {
@@ -399,20 +413,43 @@ impl KanbanApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
-                    ui.set_min_width(800.0);
+                    ui.set_min_width(250.0);
+                    ui.set_max_width(300.0);
 
-                    let tasks = self.tasks.blocking_read();
-                    self.board.show(ui, &tasks, &self.keyboard_state);
+                    let projects = self.projects.blocking_read();
+                    let selected_project = self.selected_project.blocking_read();
+                    if let Some(new_project_id) = self.project_panel.show(ui, &projects, selected_project.as_ref()) {
+                        drop(selected_project);
+                        drop(projects);
+                        *self.selected_project.blocking_write() = Some(new_project_id);
+                    }
                 });
 
                 ui.separator();
 
                 ui.vertical(|ui| {
-                    ui.set_min_width(400.0);
+                    ui.set_min_width(500.0);
 
+                    let tasks = self.tasks.blocking_read();
+                    if let Some(task_id) = self.board.show(ui, &tasks, &self.keyboard_state) {
+                        drop(tasks);
+                        *self.selected_task.blocking_write() = Some(task_id);
+                    }
+                });
+
+                ui.separator();
+
+                ui.vertical(|ui| {
+                    ui.set_min_width(350.0);
+
+                    let selected_task_id = self.selected_task.blocking_read();
+                    let tasks = self.tasks.blocking_read();
+                    let selected_task = selected_task_id.as_ref()
+                        .and_then(|id| tasks.iter().find(|t| &t.id == id));
+                    
                     let session = self.current_session.blocking_read();
                     let logs = self.logs.blocking_read();
-                    self.session_panel.show(ui, session.as_ref(), &logs);
+                    self.task_execution_panel.show(ui, selected_task, session.as_ref(), &logs);
                 });
             });
         });

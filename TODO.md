@@ -261,9 +261,9 @@ impl Executor for OpenCodeExecutor {
 
 | Task                                                            | Status | Deps | Parallel Group |
 | --------------------------------------------------------------- | ------ | ---- | -------------- |
-| 5.1 Project CRUD (List, Get, Create, Update, Delete)            | [ ]    | 4.1  | D              |
-| 5.2 Task CRUD (List, Get, Create, Update, Delete)               | [ ]    | 4.1  | D              |
-| 5.3 Session actions (List, Get, Create, Stop, GetLogs, Cleanup) | [ ]    | 4.1  | D              |
+| 5.1 Project CRUD (List, Get, Create, Update, Delete)            | [x]    | 4.1  | D              |
+| 5.2 Task CRUD (List, Get, Create, Update, Delete)               | [x]    | 4.1  | D              |
+| 5.3 Session actions (List, Get, Create, Stop, GetLogs, Cleanup) | [x]    | 4.1  | D              |
 
 ## Phase 6: Worktree Lifecycle Integration
 
