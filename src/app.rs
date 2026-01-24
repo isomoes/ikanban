@@ -5,15 +5,15 @@ use std::sync::RwLock;
 
 use crate::db::models::{LogEntry, LogType, Project, Session, SessionStatus, Task, TaskStatus};
 use crate::executor::{Executor, LogMsg, OpenCodeExecutor};
-use crate::session::SessionManager;
-use chrono::Utc;
-use sqlx::SqlitePool;
-use uuid::Uuid;
-use crate::ui::{ProjectView, SessionView, TaskView};
-use crate::keyboard::{KeyboardState, Action, Direction, ViewLevel};
+use crate::keyboard::{Action, Direction, KeyboardState, ViewLevel};
 use crate::service::AppState;
+use crate::session::SessionManager;
+use crate::ui::{ProjectView, SessionView, TaskView};
+use chrono::Utc;
 use eframe;
 use egui;
+use sqlx::SqlitePool;
+use uuid::Uuid;
 
 pub struct KanbanApp {
     project_view: ProjectView,
@@ -115,8 +115,9 @@ impl KanbanApp {
                         .color(egui::Color32::from_rgb(100, 200, 150))
                         .strong(),
                 );
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    match self.keyboard_state.view_level {
+                ui.with_layout(
+                    egui::Layout::right_to_left(egui::Align::Center),
+                    |ui| match self.keyboard_state.view_level {
                         ViewLevel::Project => {
                             let projects = self.projects.read().unwrap();
                             ui.label(format!(
@@ -140,8 +141,8 @@ impl KanbanApp {
                                 sessions.len().max(1)
                             ));
                         }
-                    }
-                });
+                    },
+                );
             });
         });
 
@@ -162,17 +163,15 @@ impl KanbanApp {
             });
         });
 
-        egui::CentralPanel::default().show(ctx, |ui| {
-            match self.keyboard_state.view_level {
-                ViewLevel::Project => {
-                    self.show_project_view(ui);
-                }
-                ViewLevel::Task => {
-                    self.show_task_view(ui);
-                }
-                ViewLevel::Session => {
-                    self.show_session_view(ui);
-                }
+        egui::CentralPanel::default().show(ctx, |ui| match self.keyboard_state.view_level {
+            ViewLevel::Project => {
+                self.show_project_view(ui);
+            }
+            ViewLevel::Task => {
+                self.show_task_view(ui);
+            }
+            ViewLevel::Session => {
+                self.show_session_view(ui);
             }
         });
 
@@ -199,7 +198,10 @@ impl KanbanApp {
             .and_then(|id| projects.iter().find(|p| &p.id == id));
 
         let tasks = self.tasks.read().unwrap();
-        if let Some(task_id) = self.task_view.show(ui, project, &tasks, &self.keyboard_state) {
+        if let Some(task_id) = self
+            .task_view
+            .show(ui, project, &tasks, &self.keyboard_state)
+        {
             drop(tasks);
             drop(projects);
             drop(selected_project_id);
@@ -241,25 +243,11 @@ impl KanbanApp {
                 ui.vertical(|ui| {
                     ui.label("Project Name:");
                     ui.text_edit_singleline(&mut self.project_name_input);
-                    
+
                     ui.add_space(10.0);
-                    
+
                     ui.label("Project Path:");
                     ui.text_edit_singleline(&mut self.project_path_input);
-                    
-                    ui.add_space(15.0);
-                    
-                    ui.horizontal(|ui| {
-                        if ui.button("Create").clicked() {
-                            self.handle_save();
-                        }
-                        
-                        if ui.button("Cancel").clicked() {
-                            self.show_create_project_dialog = false;
-                            self.project_name_input.clear();
-                            self.project_path_input.clear();
-                        }
-                    });
                 });
             });
     }
@@ -277,32 +265,21 @@ impl KanbanApp {
                 ui.vertical(|ui| {
                     ui.label("Task Title:");
                     ui.text_edit_singleline(&mut self.task_title_input);
-                    
+
                     ui.add_space(10.0);
-                    
+
                     ui.label("Description (optional):");
                     ui.text_edit_multiline(&mut self.task_description_input);
-                    
-                    ui.add_space(15.0);
-                    
-                    ui.horizontal(|ui| {
-                        if ui.button("Create").clicked() {
-                            self.handle_save();
-                        }
-                        
-                        if ui.button("Cancel").clicked() {
-                            self.show_create_task_dialog = false;
-                            self.task_title_input.clear();
-                            self.task_description_input.clear();
-                        }
-                    });
                 });
             });
     }
 
     fn prepare_edit_task(&mut self) {
         let tasks = self.tasks.read().unwrap();
-        if let Some(task) = self.task_view.get_selected_task(&tasks, &self.keyboard_state) {
+        if let Some(task) = self
+            .task_view
+            .get_selected_task(&tasks, &self.keyboard_state)
+        {
             self.task_title_input = task.title.clone();
             self.task_description_input = task.description.clone().unwrap_or_default();
             self.show_edit_task_dialog = true;
@@ -366,7 +343,11 @@ impl KanbanApp {
 
         let app_state = self.app_state.clone();
         let tasks = self.tasks.clone();
-        let description = if description.is_empty() { None } else { Some(description) };
+        let description = if description.is_empty() {
+            None
+        } else {
+            Some(description)
+        };
 
         tokio::spawn(async move {
             match app_state.create_task(project_id, title, description).await {
@@ -388,17 +369,27 @@ impl KanbanApp {
         }
 
         let tasks_guard = self.tasks.read().unwrap();
-        let selected_task = self.task_view.get_selected_task(&tasks_guard, &self.keyboard_state).cloned();
+        let selected_task = self
+            .task_view
+            .get_selected_task(&tasks_guard, &self.keyboard_state)
+            .cloned();
         drop(tasks_guard);
 
         if let Some(task) = selected_task {
             let app_state = self.app_state.clone();
             let tasks = self.tasks.clone();
-            let description = if description.is_empty() { None } else { Some(description) };
+            let description = if description.is_empty() {
+                None
+            } else {
+                Some(description)
+            };
             let status = task.status;
 
             tokio::spawn(async move {
-                match app_state.update_task(&task.id, title, description, status).await {
+                match app_state
+                    .update_task(&task.id, title, description, status)
+                    .await
+                {
                     Ok(updated_task) => {
                         let mut tasks_write = tasks.write().unwrap();
                         if let Some(t) = tasks_write.iter_mut().find(|t| t.id == updated_task.id) {
@@ -426,19 +417,19 @@ impl KanbanApp {
                 ui.vertical(|ui| {
                     ui.label("Task Title:");
                     ui.text_edit_singleline(&mut self.task_title_input);
-                    
+
                     ui.add_space(10.0);
-                    
+
                     ui.label("Description (optional):");
                     ui.text_edit_multiline(&mut self.task_description_input);
-                    
+
                     ui.add_space(15.0);
-                    
+
                     ui.horizontal(|ui| {
                         if ui.button("Save").clicked() {
                             self.handle_save();
                         }
-                        
+
                         if ui.button("Cancel").clicked() {
                             self.show_edit_task_dialog = false;
                             self.task_title_input.clear();
@@ -517,9 +508,12 @@ impl KanbanApp {
         let wants_input = ctx.wants_keyboard_input();
         ctx.input(|i| {
             let modifiers = i.modifiers;
-            
+
             for event in &i.events {
-                if let egui::Event::Key { key, pressed: true, .. } = event {
+                if let egui::Event::Key {
+                    key, pressed: true, ..
+                } = event
+                {
                     if wants_input {
                         if modifiers.ctrl {
                             if *key != egui::Key::S {
@@ -600,7 +594,8 @@ impl KanbanApp {
             ViewLevel::Task => {
                 let tasks = self.tasks.read().unwrap();
                 let column_sizes = self.get_column_sizes(&tasks);
-                self.keyboard_state.move_selection(direction, 4, &column_sizes);
+                self.keyboard_state
+                    .move_selection(direction, 4, &column_sizes);
             }
             ViewLevel::Session => {
                 let sessions = self.sessions.read().unwrap();
@@ -623,7 +618,10 @@ impl KanbanApp {
             }
             ViewLevel::Task => {
                 let tasks = self.tasks.read().unwrap();
-                if let Some(task) = self.task_view.get_selected_task(&tasks, &self.keyboard_state) {
+                if let Some(task) = self
+                    .task_view
+                    .get_selected_task(&tasks, &self.keyboard_state)
+                {
                     let task_id = task.id.clone();
                     drop(tasks);
                     *self.selected_task.write().unwrap() = Some(task_id);
@@ -660,8 +658,6 @@ impl eframe::App for KanbanApp {
         self.show(ctx);
     }
 }
-
-
 
 #[cfg(test)]
 mod tests {
@@ -755,7 +751,7 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let db_path = dir.path().join("test.db");
         let app_state = Arc::new(AppState::new(db_path).await.unwrap());
-        
+
         let app = KanbanApp::new(app_state);
         assert!(app.tasks.read().unwrap().is_empty());
     }

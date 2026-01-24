@@ -35,6 +35,7 @@ impl Column {
             ui.separator();
 
             egui::ScrollArea::vertical()
+                .id_salt(format!("column_{:?}", self.status))
                 .auto_shrink([false; 2])
                 .show(ui, |ui| {
                     let mut row_index = 0;
