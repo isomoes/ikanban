@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use std::path::PathBuf;
 use std::sync::Arc;
-use tokio::sync::RwLock;
+use std::sync::RwLock;
 
 use crate::db::connection::create_pool;
 use crate::db::models::{LogEntry, LogType, Project, Session, SessionStatus, Task, TaskStatus};
@@ -383,7 +383,7 @@ impl KanbanApp {
         let state = app.app_state.clone();
         tokio::spawn(async move {
             if let Ok(p) = state.list_projects().await {
-                *projects.write().await = p;
+                *projects.write().unwrap() = p;
             }
         });
 
@@ -391,31 +391,31 @@ impl KanbanApp {
     }
 
     pub async fn set_tasks(&self, tasks: Vec<Task>) {
-        *self.tasks.write().await = tasks;
+        *self.tasks.write().unwrap() = tasks;
     }
 
     pub async fn set_session(&self, session: Option<Session>) {
-        *self.current_session.write().await = session;
+        *self.current_session.write().unwrap() = session;
     }
 
     pub async fn set_logs(&self, logs: Vec<LogEntry>) {
-        *self.logs.write().await = logs;
+        *self.logs.write().unwrap() = logs;
     }
 
     pub async fn set_project(&self, project_id: Option<String>) {
-        *self.selected_project.write().await = project_id;
+        *self.selected_project.write().unwrap() = project_id;
     }
 
     pub async fn set_projects(&self, projects: Vec<Project>) {
-        *self.projects.write().await = projects;
+        *self.projects.write().unwrap() = projects;
     }
 
     pub async fn set_selected_task(&self, task_id: Option<String>) {
-        *self.selected_task.write().await = task_id;
+        *self.selected_task.write().unwrap() = task_id;
     }
 
     pub async fn set_sessions(&self, sessions: Vec<Session>) {
-        *self.sessions.write().await = sessions;
+        *self.sessions.write().unwrap() = sessions;
     }
 
     pub fn show(&mut self, ctx: &egui::Context) {
@@ -433,7 +433,7 @@ impl KanbanApp {
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     match self.keyboard_state.view_level {
                         ViewLevel::Project => {
-                            let projects = self.projects.blocking_read();
+                            let projects = self.projects.read().unwrap();
                             ui.label(format!(
                                 "Project: {}/{}",
                                 self.keyboard_state.selected_project_index + 1,
@@ -448,7 +448,7 @@ impl KanbanApp {
                             ));
                         }
                         ViewLevel::Session => {
-                            let sessions = self.sessions.blocking_read();
+                            let sessions = self.sessions.read().unwrap();
                             ui.label(format!(
                                 "Session: {}/{}",
                                 self.keyboard_state.selected_session_index + 1,
@@ -498,40 +498,40 @@ impl KanbanApp {
     }
 
     fn show_project_view(&mut self, ui: &mut egui::Ui) {
-        let projects = self.projects.blocking_read();
+        let projects = self.projects.read().unwrap();
         if let Some(project_id) = self.project_view.show(ui, &projects, &self.keyboard_state) {
             drop(projects);
-            *self.selected_project.blocking_write() = Some(project_id);
+            *self.selected_project.write().unwrap() = Some(project_id);
             self.keyboard_state.drill_down();
         }
     }
 
     fn show_task_view(&mut self, ui: &mut egui::Ui) {
-        let projects = self.projects.blocking_read();
-        let selected_project_id = self.selected_project.blocking_read();
+        let projects = self.projects.read().unwrap();
+        let selected_project_id = self.selected_project.read().unwrap();
         let project = selected_project_id
             .as_ref()
             .and_then(|id| projects.iter().find(|p| &p.id == id));
 
-        let tasks = self.tasks.blocking_read();
+        let tasks = self.tasks.read().unwrap();
         if let Some(task_id) = self.task_view.show(ui, project, &tasks, &self.keyboard_state) {
             drop(tasks);
             drop(projects);
             drop(selected_project_id);
-            *self.selected_task.blocking_write() = Some(task_id);
+            *self.selected_task.write().unwrap() = Some(task_id);
         }
     }
 
     fn show_session_view(&mut self, ui: &mut egui::Ui) {
-        let selected_task_id = self.selected_task.blocking_read();
-        let tasks = self.tasks.blocking_read();
+        let selected_task_id = self.selected_task.read().unwrap();
+        let tasks = self.tasks.read().unwrap();
         let task = selected_task_id
             .as_ref()
             .and_then(|id| tasks.iter().find(|t| &t.id == id));
 
-        let sessions = self.sessions.blocking_read();
-        let current_session = self.current_session.blocking_read();
-        let logs = self.logs.blocking_read();
+        let sessions = self.sessions.read().unwrap();
+        let current_session = self.current_session.read().unwrap();
+        let logs = self.logs.read().unwrap();
 
         let _action = self.session_view.show(
             ui,
@@ -616,7 +616,7 @@ impl KanbanApp {
     }
 
     fn prepare_edit_task(&mut self) {
-        let tasks = self.tasks.blocking_read();
+        let tasks = self.tasks.read().unwrap();
         if let Some(task) = self.task_view.get_selected_task(&tasks, &self.keyboard_state) {
             self.task_title_input = task.title.clone();
             self.task_description_input = task.description.clone().unwrap_or_default();
@@ -656,7 +656,7 @@ impl KanbanApp {
         tokio::spawn(async move {
             match app_state.create_project(name, path).await {
                 Ok(project) => {
-                    projects.write().await.push(project);
+                    projects.write().unwrap().push(project);
                 }
                 Err(e) => {
                     eprintln!("Failed to create project: {}", e);
@@ -672,7 +672,7 @@ impl KanbanApp {
             return;
         }
 
-        let project_id_guard = self.selected_project.blocking_read();
+        let project_id_guard = self.selected_project.read().unwrap();
         let project_id = match project_id_guard.clone() {
             Some(id) => id,
             None => return,
@@ -686,7 +686,7 @@ impl KanbanApp {
         tokio::spawn(async move {
             match app_state.create_task(project_id, title, description).await {
                 Ok(task) => {
-                    tasks.write().await.push(task);
+                    tasks.write().unwrap().push(task);
                 }
                 Err(e) => {
                     eprintln!("Failed to create task: {}", e);
@@ -702,7 +702,7 @@ impl KanbanApp {
             return;
         }
 
-        let tasks_guard = self.tasks.blocking_read();
+        let tasks_guard = self.tasks.read().unwrap();
         let selected_task = self.task_view.get_selected_task(&tasks_guard, &self.keyboard_state).cloned();
         drop(tasks_guard);
 
@@ -715,7 +715,7 @@ impl KanbanApp {
             tokio::spawn(async move {
                 match app_state.update_task(&task.id, title, description, status).await {
                     Ok(updated_task) => {
-                        let mut tasks_write = tasks.write().await;
+                        let mut tasks_write = tasks.write().unwrap();
                         if let Some(t) = tasks_write.iter_mut().find(|t| t.id == updated_task.id) {
                             *t = updated_task;
                         }
@@ -861,14 +861,14 @@ impl KanbanApp {
                 self.keyboard_state.jump_to_top();
             }
             Action::JumpToBottom => {
-                let tasks = self.tasks.blocking_read();
+                let tasks = self.tasks.read().unwrap();
                 let column_sizes = self.get_column_sizes(&tasks);
                 let column_size = column_sizes[self.keyboard_state.selected_column];
                 self.keyboard_state.jump_to_bottom(column_size);
             }
             Action::JumpToColumn(col) => {
                 if self.keyboard_state.view_level == ViewLevel::Task {
-                    let tasks = self.tasks.blocking_read();
+                    let tasks = self.tasks.read().unwrap();
                     let column_sizes = self.get_column_sizes(&tasks);
                     self.keyboard_state.jump_to_column(col, 4, &column_sizes);
                 }
@@ -908,17 +908,17 @@ impl KanbanApp {
     fn handle_move_selection(&mut self, direction: Direction) {
         match self.keyboard_state.view_level {
             ViewLevel::Project => {
-                let projects = self.projects.blocking_read();
+                let projects = self.projects.read().unwrap();
                 self.keyboard_state
                     .move_project_selection(direction, projects.len());
             }
             ViewLevel::Task => {
-                let tasks = self.tasks.blocking_read();
+                let tasks = self.tasks.read().unwrap();
                 let column_sizes = self.get_column_sizes(&tasks);
                 self.keyboard_state.move_selection(direction, 4, &column_sizes);
             }
             ViewLevel::Session => {
-                let sessions = self.sessions.blocking_read();
+                let sessions = self.sessions.read().unwrap();
                 self.keyboard_state
                     .move_session_selection(direction, sessions.len());
             }
@@ -928,20 +928,20 @@ impl KanbanApp {
     fn handle_drill_down(&mut self) {
         match self.keyboard_state.view_level {
             ViewLevel::Project => {
-                let projects = self.projects.blocking_read();
+                let projects = self.projects.read().unwrap();
                 if let Some(project) = projects.get(self.keyboard_state.selected_project_index) {
                     let project_id = project.id.clone();
                     drop(projects);
-                    *self.selected_project.blocking_write() = Some(project_id);
+                    *self.selected_project.write().unwrap() = Some(project_id);
                     self.keyboard_state.drill_down();
                 }
             }
             ViewLevel::Task => {
-                let tasks = self.tasks.blocking_read();
+                let tasks = self.tasks.read().unwrap();
                 if let Some(task) = self.task_view.get_selected_task(&tasks, &self.keyboard_state) {
                     let task_id = task.id.clone();
                     drop(tasks);
-                    *self.selected_task.blocking_write() = Some(task_id);
+                    *self.selected_task.write().unwrap() = Some(task_id);
                     self.keyboard_state.drill_down();
                 }
             }
@@ -1072,6 +1072,6 @@ mod tests {
         let app_state = Arc::new(AppState::new(db_path).await.unwrap());
         
         let app = KanbanApp::new(app_state);
-        assert!(app.tasks.read().await.is_empty());
+        assert!(app.tasks.read().unwrap().is_empty());
     }
 }
