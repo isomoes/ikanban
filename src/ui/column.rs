@@ -14,18 +14,33 @@ impl Column {
         }
     }
 
-    pub fn show(&mut self, ui: &mut egui::Ui, tasks: &[Task]) {
+    pub fn show(
+        &mut self,
+        ui: &mut egui::Ui,
+        tasks: &[Task],
+        is_selected_column: bool,
+        selected_row: usize,
+    ) {
         ui.vertical(|ui| {
-            ui.heading(format!("{:?}", self.status));
+            let heading_color = if is_selected_column {
+                egui::Color32::from_rgb(100, 150, 255)
+            } else {
+                ui.style().visuals.text_color()
+            };
+
+            ui.colored_label(heading_color, format!("{:?}", self.status));
 
             ui.separator();
 
             egui::ScrollArea::vertical()
                 .auto_shrink([false; 2])
                 .show(ui, |ui| {
+                    let mut row_index = 0;
                     for task in tasks.iter().filter(|t| t.status == self.status) {
-                        self.card.show(ui, task);
+                        let is_selected = is_selected_column && row_index == selected_row;
+                        self.card.show(ui, task, is_selected);
                         ui.add_space(8.0);
+                        row_index += 1;
                     }
                 });
         });

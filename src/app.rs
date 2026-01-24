@@ -11,6 +11,7 @@ use chrono::Utc;
 use sqlx::SqlitePool;
 use uuid::Uuid;
 use crate::ui::{Board, SessionPanel};
+use crate::keyboard::{KeyboardState, Action, Mode};
 use eframe;
 use egui;
 
@@ -336,6 +337,7 @@ pub struct KanbanApp {
     current_session: Arc<RwLock<Option<Session>>>,
     logs: Arc<RwLock<Vec<LogEntry>>>,
     selected_project: Arc<RwLock<Option<String>>>,
+    keyboard_state: KeyboardState,
 }
 
 impl KanbanApp {
@@ -347,6 +349,7 @@ impl KanbanApp {
             current_session: Arc::new(RwLock::new(None)),
             logs: Arc::new(RwLock::new(Vec::new())),
             selected_project: Arc::new(RwLock::new(None)),
+            keyboard_state: KeyboardState::new(),
         }
     }
 
@@ -367,17 +370,39 @@ impl KanbanApp {
     }
 
     pub fn show(&mut self, ctx: &egui::Context) {
+        self.handle_keyboard_input(ctx);
+
+        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
+            ui.horizontal(|ui| {
+                ui.heading("iKanban - AI-Powered Task Management");
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    let mode_color = self.keyboard_state.get_mode_color();
+                    ui.colored_label(mode_color, format!("-- {} --", self.keyboard_state.get_mode_string()));
+                    ui.label(format!("Column: {} Row: {}", 
+                        self.keyboard_state.selected_column + 1, 
+                        self.keyboard_state.selected_row + 1));
+                });
+            });
+        });
+
+        egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {
+            ui.horizontal(|ui| {
+                if self.keyboard_state.mode == Mode::Command {
+                    ui.label(":");
+                    ui.label(&self.keyboard_state.command_buffer);
+                } else {
+                    ui.label("Keyboard shortcuts: h/j/k/l - navigate | n - new task | e - edit | s - start session | dd - delete | gg/G - jump | 1-4 - columns | i - insert | v - visual | : - command | q - quit");
+                }
+            });
+        });
+
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading("iKanban - AI-Powered Task Management");
-
-            ui.separator();
-
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
                     ui.set_min_width(800.0);
 
                     let tasks = self.tasks.blocking_read();
-                    self.board.show(ui, &tasks);
+                    self.board.show(ui, &tasks, &self.keyboard_state);
                 });
 
                 ui.separator();
@@ -391,6 +416,76 @@ impl KanbanApp {
                 });
             });
         });
+    }
+
+    fn handle_keyboard_input(&mut self, ctx: &egui::Context) {
+        ctx.input(|i| {
+            let modifiers = i.modifiers;
+            
+            for event in &i.events {
+                if let egui::Event::Key { key, pressed: true, .. } = event {
+                    if self.keyboard_state.mode == Mode::Command {
+                        if let Some(text) = i.events.iter().find_map(|e| {
+                            if let egui::Event::Text(t) = e {
+                                Some(t.clone())
+                            } else {
+                                None
+                            }
+                        }) {
+                            if *key != egui::Key::Enter && *key != egui::Key::Escape {
+                                self.keyboard_state.command_buffer.push_str(&text);
+                            }
+                        }
+                    }
+
+                    let action = self.keyboard_state.handle_key(*key, &modifiers);
+                    self.execute_action(action);
+                }
+            }
+        });
+    }
+
+    fn execute_action(&mut self, action: Action) {
+        let tasks = self.tasks.blocking_read();
+        let column_sizes = self.get_column_sizes(&tasks);
+        drop(tasks);
+
+        match action {
+            Action::MoveSelection(direction) => {
+                self.keyboard_state.move_selection(direction, 4, &column_sizes);
+            }
+            Action::JumpToTop => {
+                self.keyboard_state.jump_to_top();
+            }
+            Action::JumpToBottom => {
+                let column_size = column_sizes[self.keyboard_state.selected_column];
+                self.keyboard_state.jump_to_bottom(column_size);
+            }
+            Action::JumpToColumn(col) => {
+                self.keyboard_state.jump_to_column(col, 4, &column_sizes);
+            }
+            Action::ToggleMode(mode) => {
+                self.keyboard_state.mode = mode;
+            }
+            Action::Quit => {
+                std::process::exit(0);
+            }
+            _ => {}
+        }
+    }
+
+    fn get_column_sizes(&self, tasks: &[Task]) -> Vec<usize> {
+        let mut sizes = vec![0; 4];
+        for task in tasks {
+            let idx = match task.status {
+                TaskStatus::Todo => 0,
+                TaskStatus::InProgress => 1,
+                TaskStatus::InReview => 2,
+                TaskStatus::Done => 3,
+            };
+            sizes[idx] += 1;
+        }
+        sizes.iter().map(|&s| s.max(1)).collect()
     }
 }
 

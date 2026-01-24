@@ -7,10 +7,22 @@ impl TaskCard {
         Self
     }
 
-    pub fn show(&mut self, ui: &mut egui::Ui, task: &Task) {
+    pub fn show(&mut self, ui: &mut egui::Ui, task: &Task, is_selected: bool) {
+        let stroke = if is_selected {
+            egui::Stroke::new(2.0, egui::Color32::from_rgb(100, 150, 255))
+        } else {
+            ui.visuals().window_stroke()
+        };
+
+        let fill = if is_selected {
+            egui::Color32::from_rgb(40, 50, 70)
+        } else {
+            ui.visuals().window_fill()
+        };
+
         egui::Frame::none()
-            .fill(ui.visuals().window_fill())
-            .stroke(ui.visuals().window_stroke())
+            .fill(fill)
+            .stroke(stroke)
             .rounding(4.0)
             .inner_margin(8.0)
             .show(ui, |ui| {
