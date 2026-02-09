@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from "react"
-import { Box, Text, useInput } from "ink"
+import { Box, Text, useInput, useStdout } from "ink"
 import { LogPanel } from "./components/LogPanel.tsx"
 import { store, useStore } from "./state/store.ts"
 import { TASK_COLUMNS, type AppView } from "./state/types.ts"
@@ -26,6 +26,7 @@ function goBack(view: AppView) {
 }
 
 export function App() {
+  const { stdout } = useStdout()
   const { view, projects, selectedIndex, columnIndex, showLogs, inputFocused } =
     useStore()
 
@@ -91,8 +92,11 @@ export function App() {
     return "Session"
   }, [view])
 
+  const viewportWidth = stdout?.columns ?? 80
+  const viewportHeight = stdout?.rows ?? 24
+
   return (
-    <Box flexDirection="column" width="100%" height="100%">
+    <Box flexDirection="column" width={viewportWidth} height={viewportHeight}>
       <Box borderStyle="round" borderColor="cyan" paddingX={1} justifyContent="center">
         <Text bold color="cyan">
           iKanban
