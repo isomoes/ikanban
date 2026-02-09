@@ -67,9 +67,6 @@ export function App() {
     if (selectedIndex !== 0) {
       store.setSelectedIndex(0)
     }
-    if (inputFocused) {
-      store.setInputFocused(false)
-    }
   }, [view, projects.length, selectedIndex, columnIndex, inputFocused])
 
   useInput((input, key) => {
