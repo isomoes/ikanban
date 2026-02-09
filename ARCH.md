@@ -170,39 +170,146 @@ Main Repo (e.g., /home/user/myproject)
 └── Task D → Worktree D (branch: task/012-refactor-d) → Agent 4
 ```
 
-## Session & Workspace via `@opencode-ai/sdk`
+## `@opencode-ai/sdk` Integration
 
-All session management, worktree lifecycle, and agent communication are handled through `@opencode-ai/sdk`. The SDK provides:
+`@opencode-ai/sdk@1.1.53` — iKanban is a UI layer on top of this SDK. No custom executor, HTTP client, or SSE parser needed.
 
-- Session creation and management
-- Worktree creation/cleanup
-- Agent spawning and communication
-- Event streaming (SSE)
-- Message sending and receiving
+### SDK Entry Points
 
-iKanban acts as a UI layer on top of the SDK — it does not implement its own executor, HTTP client, or worktree manager.
+```typescript
+import { createOpencode } from "@opencode-ai/sdk"
+import { createOpencodeClient } from "@opencode-ai/sdk/client"
+import { createOpencodeServer } from "@opencode-ai/sdk/server"
+```
+
+| Import | Use Case |
+|--------|----------|
+| `createOpencode(opts?)` | All-in-one: spawns server + returns `{ client, server }` |
+| `createOpencodeServer(opts?)` | Server only: `{ url, close() }` |
+| `createOpencodeClient(config?)` | Client only: connect to existing server |
+
+Per-worktree pattern: call `createOpencode()` for each worktree directory to get an isolated server+client pair.
+
+### OpencodeClient API Surface
+
+The SDK client (`OpencodeClient`) exposes these namespaced sub-clients:
+
+| Namespace | Key Methods | iKanban Usage |
+|-----------|-------------|---------------|
+| `client.session` | `create`, `list`, `get`, `delete`, `update`, `status`, `prompt`, `promptAsync`, `messages`, `message`, `abort`, `fork`, `diff`, `summarize`, `todo`, `children`, `share`, `unshare`, `shell`, `command`, `init`, `revert`, `unrevert` | Core: create sessions, send prompts, read messages, abort |
+| `client.event` | `subscribe` | Core: SSE stream for real-time UI updates |
+| `client.project` | `list`, `current` | Project discovery |
+| `client.path` | `get` | Get `{ state, config, worktree, directory }` paths |
+| `client.vcs` | `get` | Get current branch info |
+| `client.config` | `get`, `update`, `providers` | Config read/write |
+| `client.app` | `log`, `agents` | List available agents |
+| `client.file` | `list`, `read`, `status` | File browsing |
+| `client.find` | `text`, `files`, `symbols` | Code search |
+| `client.tool` | `ids`, `list` | Tool introspection |
+| `client.provider` | `list`, `auth`, `oauth.*` | Provider/auth |
+| `client.mcp` | `status`, `add`, `connect`, `disconnect`, `auth.*` | MCP servers |
+| `client.pty` | `list`, `create`, `remove`, `get`, `update`, `connect` | Terminal sessions |
+| `client.instance` | `dispose` | Shutdown server |
+| `client.global` | `event` | Global SSE (cross-directory) |
+| `client.lsp` | `status` | LSP status |
+| `client.formatter` | `status` | Formatter status |
+| `client.tui` | `appendPrompt`, `submitPrompt`, `clearPrompt`, `executeCommand`, `showToast`, `publish`, `control.*` | TUI control |
+| `client.command` | `list` | List slash commands |
+
+### SDK Types Used by iKanban
+
+```typescript
+// from @opencode-ai/sdk
+import type {
+  Session,           // { id, projectID, directory, parentID?, title, version, time, summary?, share?, revert? }
+  SessionStatus,     // { type: "idle" } | { type: "busy" } | { type: "retry", attempt, message, next }
+  Message,           // UserMessage | AssistantMessage
+  UserMessage,       // { id, sessionID, role: "user", time, agent, model, ... }
+  AssistantMessage,  // { id, sessionID, role: "assistant", time, parentID, modelID, cost, tokens, error?, ... }
+  Part,              // TextPart | ToolPart | ReasoningPart | FilePart | StepStartPart | StepFinishPart | ...
+  TextPart,          // { type: "text", text, ... }
+  ToolPart,          // { type: "tool", tool, callID, state: ToolState, ... }
+  ToolState,         // ToolStatePending | ToolStateRunning | ToolStateCompleted | ToolStateError
+  Event,             // Union of 30+ event types
+  Permission,        // { id, type, sessionID, messageID, title, metadata, ... }
+  Todo,              // { id, content, status, priority }
+  FileDiff,          // { file, before, after, additions, deletions }
+  Project,           // { id, worktree, vcsDir?, vcs?, time }
+  Config,            // Full opencode config shape
+} from "@opencode-ai/sdk"
+```
+
+### Key SSE Events for UI
+
+```typescript
+// Subscribe to real-time updates
+const stream = await client.event.subscribe()
+
+// Events iKanban cares about:
+type RelevantEvents =
+  | EventSessionStatus      // "session.status" → idle/busy/retry
+  | EventMessageUpdated     // "message.updated" → new/updated message
+  | EventMessagePartUpdated // "message.part.updated" → streaming text/tool parts + delta
+  | EventPermissionUpdated  // "permission.updated" → tool needs approval
+  | EventPermissionReplied  // "permission.replied" → approval given
+  | EventTodoUpdated        // "todo.updated" → agent todo list changed
+  | EventSessionCreated     // "session.created"
+  | EventSessionUpdated     // "session.updated"
+  | EventSessionError       // "session.error"
+  | EventFileEdited         // "file.edited"
+```
 
 ### Worktree Lifecycle
 
 ```
 1. User Creates Task in "Todo" column
-   → Store task in local state
+   → Store task in iKanban local state
 
-2. User Starts Task → SDK creates session
-   → sdk.session.create({ directory: worktreePath })
-   → Worktree created, agent spawned
+2. User Starts Task
+   → git worktree add <path> -b task/<id>-<slug>   (iKanban runs this)
+   → const { client, server } = await createOpencode({ config: { directory: worktreePath } })
+   → const session = await client.session.create()
+   → await client.session.prompt({ path: { id: session.id }, body: { parts: [{ type: "text", text: prompt }] } })
    → Task status → InProgress
 
 3. Agent Execution (in worktree)
-   → Events streamed via SDK
-   → UI renders messages and tool calls in real time
+   → const stream = await client.event.subscribe()
+   → UI renders EventMessagePartUpdated (streaming text + tool calls)
+   → EventSessionStatus { type: "busy" } while working
+   → EventPermissionUpdated when tool needs approval
+     → client.postSessionIdPermissionsPermissionId({ path: { id, permissionId }, body: "allow" })
 
 4. Session Complete
-   → Agent finishes, SDK emits idle/complete
+   → EventSessionStatus { type: "idle" } → agent done
+   → await client.session.diff({ path: { id } }) → show file changes
    → Task status → InReview or Done
 
-5. Cleanup
-   → SDK handles worktree removal
+5. Follow-up Prompt
+   → await client.session.prompt({ path: { id }, body: { parts: [...] } })
+   → or fork: await client.session.fork({ path: { id }, body: { messageID } })
+
+6. Cleanup
+   → await client.session.abort({ path: { id } })   (if running)
+   → server.close()
+   → git worktree remove <path>                       (iKanban runs this)
+```
+
+### Multi-Agent Pattern
+
+Each task gets its own opencode server+client pair, isolated by worktree directory:
+
+```typescript
+// Per-task agent instance
+interface AgentInstance {
+  taskId: string
+  worktreePath: string
+  client: OpencodeClient
+  server: { url: string; close(): void }
+  sessionId: string
+}
+
+// iKanban manages a Map<taskId, AgentInstance>
+// Each instance is fully independent — different directory, different server, different port
 ```
 
 ## Project Structure
@@ -212,24 +319,28 @@ ikanban/
 ├── package.json
 ├── tsconfig.json
 ├── src/
-│   ├── index.tsx            # entry point
-│   ├── app.tsx              # root Ink component, view router
+│   ├── index.tsx
+│   ├── app.tsx
 │   ├── state/
-│   │   ├── store.ts         # app state (zustand or useReducer)
-│   │   └── types.ts         # AppView, Task, Project types
+│   │   ├── store.ts
+│   │   └── types.ts
 │   ├── views/
 │   │   ├── ProjectView.tsx
 │   │   ├── TaskView.tsx
 │   │   └── SessionView.tsx
 │   ├── components/
-│   │   ├── Board.tsx        # kanban columns layout
-│   │   ├── Column.tsx       # single column
-│   │   ├── Card.tsx         # task card
-│   │   ├── LogPanel.tsx     # session log viewer
-│   │   └── Input.tsx        # prompt input
-│   └── hooks/
-│       ├── useKeyboard.ts   # vim keybindings
-│       └── useSession.ts    # wraps @opencode-ai/sdk session
+│   │   ├── Board.tsx
+│   │   ├── Column.tsx
+│   │   ├── Card.tsx
+│   │   ├── LogPanel.tsx
+│   │   └── Input.tsx
+│   ├── hooks/
+│   │   ├── useKeyboard.ts
+│   │   ├── useSession.ts    # wraps client.session + client.event.subscribe
+│   │   └── useAgent.ts      # manages createOpencode() lifecycle per task
+│   └── agent/
+│       ├── instance.ts       # AgentInstance type + create/destroy helpers
+│       └── registry.ts       # Map<taskId, AgentInstance> management
 ```
 
 ## Dependencies
@@ -239,7 +350,7 @@ ikanban/
   "dependencies": {
     "ink": "^5",
     "react": "^18",
-    "@opencode-ai/sdk": "latest"
+    "@opencode-ai/sdk": "^1.1.53"
   },
   "devDependencies": {
     "typescript": "^5",
@@ -250,45 +361,49 @@ ikanban/
 
 ## Data Model
 
+iKanban owns task/project data. Session data comes from the SDK.
+
 ```typescript
-interface Project {
+// iKanban-owned (stored locally)
+interface IKanbanProject {
   id: string
   name: string
   path: string
-  createdAt: Date
+  createdAt: number
 }
 
 type TaskStatus = "Todo" | "InProgress" | "InReview" | "Done"
 
-interface Task {
+interface IKanbanTask {
   id: string
   projectId: string
   title: string
   description?: string
   status: TaskStatus
-  createdAt: Date
-}
-
-interface Session {
-  id: string
-  taskId: string
+  sessionId?: string       // links to SDK Session.id
   worktreePath?: string
   branchName?: string
-  status: "Running" | "Completed" | "Failed" | "Killed"
-  createdAt: Date
-  startedAt?: Date
-  finishedAt?: Date
+  createdAt: number
 }
+
+// SDK-owned (queried via client.session.get / client.session.messages)
+// Session, Message, Part, SessionStatus, Todo, FileDiff — all from @opencode-ai/sdk
 ```
 
 ## Storage
 
-Local JSON file or SQLite via `better-sqlite3` (TBD). For MVP, a simple JSON file at `~/.ikanban/data.json` is sufficient.
+Local JSON file at `~/.ikanban/data.json` for MVP. Only stores iKanban-owned data (projects, tasks). Session/message history lives in the SDK's own storage.
 
-## App Actions
+## iKanban Responsibilities vs SDK
 
-| Category | Actions |
-|----------|---------|
-| Projects | List, Get, Create, Update, Delete |
-| Tasks | List, Get, Create, Update, Delete |
-| Sessions | List, Get, Create (via SDK), Stop (via SDK), GetLogs, Cleanup |
+| Concern | Owner |
+|---------|-------|
+| Task CRUD, kanban columns, project list | iKanban |
+| Git worktree add/remove | iKanban (shell commands) |
+| Agent server spawn/shutdown | SDK (`createOpencode` / `server.close`) |
+| Session create/prompt/abort | SDK (`client.session.*`) |
+| Real-time event streaming | SDK (`client.event.subscribe`) |
+| Message & part storage | SDK |
+| Permission handling | SDK (`client.postSessionIdPermissionsPermissionId`) |
+| Tool execution | SDK |
+| Terminal UI rendering | iKanban (Ink) |
