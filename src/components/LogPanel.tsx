@@ -67,40 +67,46 @@ export function LogPanel() {
   return (
     <Box
       position="absolute"
-      right={0}
+      width="100%"
       height="100%"
-      flexDirection="column"
-      width={50}
-      borderStyle="single"
-      borderColor="gray"
-      paddingX={1}
+      justifyContent="center"
+      alignItems="center"
     >
-      <Box justifyContent="center" marginBottom={1}>
-        <Text bold color="magenta">
-          Logs
-        </Text>
-      </Box>
-
-      {logs.length === 0 ? (
-        <Text color="gray" dimColor>
-          No log entries yet.
-        </Text>
-      ) : (
-        <Box flexDirection="column" overflow="hidden">
-          {logs.slice(-30).map((entry: LogEntry, i: number) => {
-            const time = new Date(entry.timestamp)
-              .toLocaleTimeString("en-US", { hour12: false })
-            const color = entry.kind === "stdout" ? "white" : "cyan"
-            return (
-              <Box key={i} justifyContent="center" width="100%">
-                <Text color={color} wrap="wrap">
-                  <Text color="gray">{time}</Text> {entry.text}
-                </Text>
-              </Box>
-            )
-          })}
+      <Box
+        flexDirection="column"
+        width="80%"
+        height="80%"
+        borderStyle="double"
+        borderColor="yellow"
+        paddingX={1}
+      >
+        <Box justifyContent="center" marginBottom={1}>
+          <Text bold color="yellow">
+            Logs
+          </Text>
         </Box>
-      )}
+
+        {logs.length === 0 ? (
+          <Text color="gray" dimColor>
+            No log entries yet.
+          </Text>
+        ) : (
+          <Box flexDirection="column" overflow="hidden">
+            {logs.slice(-30).map((entry: LogEntry, i: number) => {
+              const time = new Date(entry.timestamp)
+                .toLocaleTimeString("en-US", { hour12: false })
+              const color = entry.kind === "stdout" ? "white" : "cyan"
+              return (
+                <Box key={i} width="100%">
+                  <Text color={color} wrap="wrap">
+                    <Text color="gray">{time}</Text> {entry.text}
+                  </Text>
+                </Box>
+              )
+            })}
+          </Box>
+        )}
+      </Box>
     </Box>
   )
 }
