@@ -27,7 +27,7 @@ export function LogPanel() {
 
     function pushLog(kind: LogEntry["kind"], text: string) {
       setLogs((prev: LogEntry[]) => [
-        ...prev.slice(-200), // keep last 200 entries
+        ...prev.slice(-500), // keep last 500 entries
         { timestamp: Date.now(), kind, text },
       ])
     }
@@ -46,7 +46,7 @@ export function LogPanel() {
           if (controller.signal.aborted) break
           const summary =
             typeof event === "object" && event !== null
-              ? JSON.stringify(event).slice(0, 200)
+              ? JSON.stringify(event)
               : String(event)
           pushLog("event", summary)
         }
@@ -66,12 +66,14 @@ export function LogPanel() {
 
   return (
     <Box
+      position="absolute"
+      right={0}
+      height="100%"
       flexDirection="column"
       width={50}
       borderStyle="single"
       borderColor="gray"
       paddingX={1}
-      flexShrink={0}
     >
       <Box justifyContent="center" marginBottom={1}>
         <Text bold color="magenta">
@@ -85,14 +87,16 @@ export function LogPanel() {
         </Text>
       ) : (
         <Box flexDirection="column" overflow="hidden">
-          {logs.slice(-20).map((entry: LogEntry, i: number) => {
+          {logs.slice(-30).map((entry: LogEntry, i: number) => {
             const time = new Date(entry.timestamp)
               .toLocaleTimeString("en-US", { hour12: false })
             const color = entry.kind === "stdout" ? "white" : "cyan"
             return (
-              <Text key={i} color={color} wrap="truncate">
-                <Text color="gray">{time}</Text> {entry.text}
-              </Text>
+              <Box key={i} justifyContent="center" width="100%">
+                <Text color={color} wrap="wrap">
+                  <Text color="gray">{time}</Text> {entry.text}
+                </Text>
+              </Box>
             )
           })}
         </Box>
