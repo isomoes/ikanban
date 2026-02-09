@@ -2,12 +2,12 @@
 
 ## Phase 1: Project Setup
 
-- [ ] Initialize Bun project with `package.json`
-- [ ] Configure `tsconfig.json` for TypeScript + JSX (Ink/React)
-- [ ] Install dependencies: `ink@^5`, `react@^18`, `@opencode-ai/sdk@^1.1.53`
-- [ ] Install dev dependencies: `typescript@^5`, `@types/react@^18`
-- [ ] Create project directory structure (`src/`, `src/state/`, `src/views/`, `src/components/`, `src/hooks/`, `src/agent/`)
-- [ ] Create entry point `src/index.tsx`
+- [x] Initialize Bun project with `package.json`
+- [x] Configure `tsconfig.json` for TypeScript + JSX (Ink/React)
+- [x] Install dependencies: `ink@^5`, `react@^18`, `@opencode-ai/sdk@^1.1.53`
+- [x] Install dev dependencies: `typescript@^5`, `@types/react@^18`
+- [x] Create project directory structure (`src/`, `src/state/`, `src/views/`, `src/components/`, `src/hooks/`, `src/agent/`)
+- [x] Create entry point `src/index.tsx`
 
 ## Phase 2: State & Data Model
 
