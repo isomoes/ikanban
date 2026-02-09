@@ -68,6 +68,7 @@ export function ProjectView() {
     onEdit: () => {},
     onMoveTaskRight: () => {},
     onToggleHelp: () => store.toggleLogs(),
+    onQuit: () => process.exit(0),
   })
 
   return (
@@ -115,7 +116,7 @@ export function ProjectView() {
 
       <Box marginTop={1}>
         <Text color="gray" dimColor>
-          [n] new  [d] delete  [Enter/l] open  [?] help
+          [n] new  [d] delete  [Enter/l] open  [q] quit  [?] help
         </Text>
       </Box>
     </Box>
