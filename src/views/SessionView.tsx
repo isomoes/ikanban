@@ -405,10 +405,15 @@ export function SessionView() {
     diffs: sseDiffs,
     error: sessionError,
   } = sessionState
+  const activeSessionId = sessionState.session?.id ?? view.sessionId
   const sessionErrorMessage = (() => {
     if (sessionError?.type !== "session.error") return null
     const err = sessionError.properties.error
     if (!err) return null
+
+    if ("message" in err && typeof err.message === "string") {
+      return err.message
+    }
 
     const data = "data" in err ? err.data : undefined
     if (
@@ -443,7 +448,7 @@ export function SessionView() {
     prevStatusRef.current = status.type
 
     if (!wasBusy || status.type !== "idle") return
-    if (!agent.client || !view.sessionId) return
+    if (!agent.client || !activeSessionId) return
 
     // Agent just finished working – fetch the diff
     const directory = task?.worktreePath
@@ -452,7 +457,7 @@ export function SessionView() {
     void (async () => {
       try {
         const result = await agent.client!.session.diff({
-          path: { id: view.sessionId },
+          path: { id: activeSessionId },
           query: q,
         })
         const fileDiffs = result.data ?? []
@@ -469,7 +474,7 @@ export function SessionView() {
         // diff fetch failed – non-critical
       }
     })()
-  }, [status.type, agent.client, view.sessionId, task?.worktreePath, task?.id])
+  }, [status.type, agent.client, activeSessionId, task?.worktreePath, task?.id])
 
   // Auto-scroll to bottom when new messages arrive
   const prevMessageCount = useRef(messages.length)
@@ -502,12 +507,12 @@ export function SessionView() {
   // Fork session at a specific message
   const handleFork = useCallback(
     async (messageId?: string) => {
-      if (!agent.client || !view.sessionId) return
+      if (!agent.client || !activeSessionId) return
       const directory = task?.worktreePath
       const q = directory ? { directory } : undefined
       try {
         const result = await agent.client.session.fork({
-          path: { id: view.sessionId },
+          path: { id: activeSessionId },
           body: messageId ? { messageID: messageId } : {},
           query: q,
         })
@@ -524,7 +529,7 @@ export function SessionView() {
         // fork failed
       }
     },
-    [agent.client, view.sessionId, task?.worktreePath, taskId],
+    [agent.client, activeSessionId, task?.worktreePath, taskId],
   )
 
   // Mark task as Done

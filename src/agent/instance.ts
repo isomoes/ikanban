@@ -3,6 +3,7 @@ import type { OpencodeClient } from "@opencode-ai/sdk"
 
 export interface AgentInstance {
   taskId: string
+  projectPath: string
   worktreePath: string
   branchName: string
   sessionId: string
@@ -12,6 +13,7 @@ export interface AgentInstance {
 
 export async function createAgent(
   taskId: string,
+  projectPath: string,
   worktreePath: string,
   branchName: string,
 ): Promise<AgentInstance> {
@@ -49,6 +51,7 @@ export async function createAgent(
 
   return {
     taskId,
+    projectPath,
     worktreePath,
     branchName,
     sessionId: session.id,

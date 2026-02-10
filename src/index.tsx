@@ -54,14 +54,9 @@ async function cleanup() {
   const agents = listAgents()
   if (agents.length > 0) {
     // Give agents a grace period to shut down
-    const state = store.getState()
-    const cleanupPromises = state.projects.map((project) =>
-      stopAllAgents(project.path),
-    )
-
     // Race against a timeout so we don't hang forever
     await Promise.race([
-      Promise.allSettled(cleanupPromises),
+      stopAllAgents(),
       new Promise((resolve) => setTimeout(resolve, 5000)),
     ])
   }

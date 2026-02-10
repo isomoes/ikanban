@@ -86,14 +86,31 @@ export function useAgent(
   // On mount, check if an agent already exists for this task (e.g. after
   // navigating away and back).
   useEffect(() => {
-    if (!taskId) return
+    if (!taskId) {
+      setClient(null)
+      setSessionId(null)
+      setDirectory(undefined)
+      setError(null)
+      setPhase("idle")
+      return
+    }
+
     const existing = getAgent(taskId)
     if (existing) {
       setClient(existing.client)
       setSessionId(existing.sessionId)
       setDirectory(existing.worktreePath)
+      setError(null)
       setPhase("ready")
+      return
     }
+
+    // Task changed and no agent exists for it yet.
+    setClient(null)
+    setSessionId(null)
+    setDirectory(undefined)
+    setError(null)
+    setPhase("idle")
   }, [taskId])
 
   // Wire up the session hook
@@ -125,7 +142,7 @@ export function useAgent(
 
       if (!mountedRef.current) {
         // Component unmounted while we were starting – clean up
-        await stopAgent(projectPath, taskId)
+        await stopAgent(taskId)
         return
       }
 
@@ -174,7 +191,7 @@ export function useAgent(
     setPhase("stopping")
 
     try {
-      await stopAgent(projectPath, taskId)
+      await stopAgent(taskId)
     } catch {
       // best-effort cleanup
     }

@@ -141,7 +141,7 @@ export async function startAgent(
   )
 
   try {
-    const agent = await createAgent(taskId, worktreePath, branchName)
+    const agent = await createAgent(taskId, projectPath, worktreePath, branchName)
     agents.set(taskId, agent)
     return agent
   } catch (err) {
@@ -160,7 +160,6 @@ export async function startAgent(
 }
 
 export async function stopAgent(
-  projectPath: string,
   taskId: string,
 ): Promise<void> {
   const agent = agents.get(taskId)
@@ -169,12 +168,12 @@ export async function stopAgent(
   await destroyAgent(agent)
   agents.delete(taskId)
 
-  await removeWorktree(projectPath, agent.worktreePath, agent.branchName)
+  await removeWorktree(agent.projectPath, agent.worktreePath, agent.branchName)
 }
 
-export async function stopAllAgents(projectPath: string): Promise<void> {
+export async function stopAllAgents(): Promise<void> {
   const entries = [...agents.entries()]
   await Promise.allSettled(
-    entries.map(([taskId]) => stopAgent(projectPath, taskId)),
+    entries.map(([taskId]) => stopAgent(taskId)),
   )
 }
