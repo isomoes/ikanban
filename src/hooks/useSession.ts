@@ -435,7 +435,7 @@ export function useSession(
       if (!client || !sessionId) return
       const q = directory ? { directory } : undefined
       try {
-        await client.session.promptAsync({
+        await client.session.prompt({
           path: { id: sessionId },
           query: q,
           body: {

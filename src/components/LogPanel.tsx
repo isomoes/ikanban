@@ -38,7 +38,9 @@ export function LogPanel() {
     // Subscribe to global events via the SDK client's SSE endpoint
     void (async () => {
       try {
-        const result = await agent.client.event.subscribe()
+        const result = await agent.client.event.subscribe({
+          query: { directory: agent.worktreePath },
+        })
 
         if (controller.signal.aborted) return
 
@@ -60,7 +62,7 @@ export function LogPanel() {
     return () => {
       controller.abort()
     }
-  }, [view.kind === "session" ? view.taskId : null])
+  }, [view.kind === "session" ? `${view.taskId}:${view.sessionId}` : null])
 
   if (!showLogs) return null
 

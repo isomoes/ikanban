@@ -397,7 +397,31 @@ export function SessionView() {
 
   const agent = useAgent(taskId, project?.path ?? null)
   const { state: sessionState, actions } = agent.session
-  const { messages, status, pendingPermission, todos, diffs: sseDiffs } = sessionState
+  const {
+    messages,
+    status,
+    pendingPermission,
+    todos,
+    diffs: sseDiffs,
+    error: sessionError,
+  } = sessionState
+  const sessionErrorMessage = (() => {
+    if (sessionError?.type !== "session.error") return null
+    const err = sessionError.properties.error
+    if (!err) return null
+
+    const data = "data" in err ? err.data : undefined
+    if (
+      data &&
+      typeof data === "object" &&
+      "message" in data &&
+      typeof data.message === "string"
+    ) {
+      return data.message
+    }
+
+    return "name" in err && typeof err.name === "string" ? err.name : "Session error"
+  })()
 
   // Use SSE diffs as the primary source, with fallback to explicit fetch
   const [fetchedDiffs, setFetchedDiffs] = useState<FileDiff[]>([])
@@ -635,7 +659,7 @@ export function SessionView() {
       <StatusBar
         status={status}
         phase={agent.phase}
-        error={agent.error}
+        error={agent.error ?? sessionErrorMessage}
       />
 
       {/* Messages area */}

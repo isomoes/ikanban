@@ -145,7 +145,7 @@ export function useAgent(
       // Send the initial prompt if provided
       const prompt = initialPrompt ?? buildInitialPrompt(task)
       if (prompt) {
-        await agent.client.session.promptAsync({
+        await agent.client.session.prompt({
           path: { id: agent.sessionId },
           query: { directory: agent.worktreePath },
           body: { parts: [{ type: "text", text: prompt }] },
