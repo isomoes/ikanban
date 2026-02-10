@@ -19,7 +19,7 @@ export async function createAgent(
   let server: { url: string; close(): void }
 
   try {
-    const result = await createOpencode()
+    const result = await createOpencode({ port: 0 })
     client = result.client
     server = result.server
   } catch (err) {

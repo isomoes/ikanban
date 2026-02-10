@@ -6,7 +6,7 @@ import type {
   IKanbanTask,
   TaskStatus,
 } from "./types.ts"
-import { loadData, saveData } from "./storage.ts"
+import { appendRuntimeLog, loadData, saveData } from "./storage.ts"
 
 type Listener = () => void
 
@@ -172,6 +172,9 @@ function createStore() {
   }
 
   function setLastError(error: string | null) {
+    if (error) {
+      appendRuntimeLog("error", error, { source: "store.setLastError" })
+    }
     setState({ lastError: error })
   }
 
