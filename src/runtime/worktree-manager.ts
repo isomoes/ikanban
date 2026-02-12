@@ -57,6 +57,21 @@ export type MergeTaskWorktreeResult = {
   merged: boolean;
 };
 
+export type ReviewTaskWorktreeDiffInput = {
+  projectDirectory: string;
+  taskId: string;
+  worktreeDirectory: string;
+};
+
+export type ReviewTaskWorktreeDiffResult = {
+  taskId: string;
+  branch: string;
+  defaultBranch: string;
+  summary: string;
+  diff: string;
+  hasChanges: boolean;
+};
+
 const WORKTREE_TASK_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
 
 export class WorktreeManager {
@@ -384,6 +399,76 @@ export class WorktreeManager {
       taskId,
       branch,
       merged: true,
+    };
+  }
+
+  async getTaskWorktreeDiff(
+    input: ReviewTaskWorktreeDiffInput,
+  ): Promise<ReviewTaskWorktreeDiffResult> {
+    const taskId = normalizeTaskId(input.taskId);
+    const projectDirectory = normalizeDirectory(
+      input.projectDirectory,
+      "Project directory",
+    );
+    const worktreeDirectory = normalizeDirectory(
+      input.worktreeDirectory,
+      "Worktree directory",
+    );
+    const logSource = "worktree-manager.review-diff";
+
+    const branchResult =
+      await Bun.$`git -C ${worktreeDirectory} rev-parse --abbrev-ref HEAD`.text();
+    const branch = branchResult.trim();
+    if (!branch) {
+      throw new Error(
+        `Failed to determine branch for worktree at ${worktreeDirectory}.`,
+      );
+    }
+
+    const defaultBranchResult =
+      await Bun.$`git -C ${projectDirectory} rev-parse --abbrev-ref HEAD`.text();
+    const defaultBranch = defaultBranchResult.trim();
+    if (!defaultBranch) {
+      throw new Error(
+        `Failed to determine default branch for project at ${projectDirectory}.`,
+      );
+    }
+
+    const statusResult =
+      await Bun.$`git -C ${worktreeDirectory} status --porcelain`.text();
+    const hasUncommittedChanges = statusResult.trim().length > 0;
+
+    const summaryCommand = hasUncommittedChanges
+      ? Bun.$`git -C ${worktreeDirectory} diff --no-color --stat ${defaultBranch}`
+      : Bun.$`git -C ${projectDirectory} diff --no-color --stat ${defaultBranch}...${branch}`;
+    const diffCommand = hasUncommittedChanges
+      ? Bun.$`git -C ${worktreeDirectory} diff --no-color ${defaultBranch}`
+      : Bun.$`git -C ${projectDirectory} diff --no-color ${defaultBranch}...${branch}`;
+
+    const summary = (await summaryCommand.text()).trim();
+    const diff = (await diffCommand.text()).trim();
+    const hasChanges = summary.length > 0 || diff.length > 0;
+
+    this.logger.log({
+      level: "info",
+      source: logSource,
+      message: `Loaded review diff for task ${taskId}.`,
+      context: {
+        taskId,
+        branch,
+        defaultBranch,
+        hasUncommittedChanges,
+        hasChanges,
+      },
+    });
+
+    return {
+      taskId,
+      branch,
+      defaultBranch,
+      summary,
+      diff,
+      hasChanges,
     };
   }
 

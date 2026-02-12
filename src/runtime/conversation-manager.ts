@@ -858,6 +858,8 @@ async function waitForSessionIdle(
       childSessionIDs.add(sessionInfo.id);
       if (normalizedEvent.type === "session.deleted") {
         activeChildSessionIDs.delete(sessionInfo.id);
+      } else {
+        activeChildSessionIDs.add(sessionInfo.id);
       }
     }
 
@@ -888,7 +890,8 @@ async function waitForSessionIdle(
     const status = normalizedEvent.type === "session.status" ? asRecord(properties?.status) : undefined;
     const isIdleEvent =
       normalizedEvent.type === "session.idle" ||
-      (normalizedEvent.type === "session.status" && status?.type === "idle");
+      normalizedEvent.type === "session.completed" ||
+      (normalizedEvent.type === "session.status" && (status?.type === "idle" || status?.type === "completed" || status?.type === "done"));
 
     if (isIdleEvent) {
       if (!sawSessionActivity) {
@@ -933,7 +936,12 @@ function updateChildSessionActivity(
   event: { type: string; properties?: unknown },
   eventSessionID: string,
 ): void {
-  if (event.type === "session.idle" || event.type === "session.deleted" || event.type === "session.error") {
+  if (
+    event.type === "session.idle" ||
+    event.type === "session.completed" ||
+    event.type === "session.deleted" ||
+    event.type === "session.error"
+  ) {
     activeChildSessionIDs.delete(eventSessionID);
     return;
   }
@@ -941,7 +949,7 @@ function updateChildSessionActivity(
   if (event.type === "session.status") {
     const properties = asRecord(event.properties);
     const status = asRecord(properties?.status);
-    if (status?.type === "idle") {
+    if (status?.type === "idle" || status?.type === "completed" || status?.type === "done") {
       activeChildSessionIDs.delete(eventSessionID);
       return;
     }

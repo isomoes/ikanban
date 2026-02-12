@@ -41,6 +41,14 @@ type ModelOption = {
   model?: PromptModel;
 };
 
+type ReviewDiffState = {
+  taskId: string;
+  branch: string;
+  defaultBranch: string;
+  summary: string;
+  diff: string;
+};
+
 export type AppServices = {
   runtime: OpenCodeRuntime;
   projectRegistry: ProjectRegistry;
@@ -97,6 +105,7 @@ export function App({
   const [logViewLevel, setLogViewLevel] = useState<LogViewLevel>("info");
   const [isLogViewOpen, setIsLogViewOpen] = useState(false);
   const [logScrollOffset, setLogScrollOffset] = useState(0);
+  const [reviewDiff, setReviewDiff] = useState<ReviewDiffState>();
 
   const pushBanner = useCallback((tone: BannerTone, message: string) => {
     setStatusBanner({
@@ -533,6 +542,7 @@ export function App({
         "success",
         `Merged branch ${result.branch} for task ${task.taskId}.`,
       );
+      setReviewDiff(undefined);
     } catch (error) {
       pushBanner("error", toErrorMessage(error));
     } finally {
@@ -540,6 +550,61 @@ export function App({
       setTasks(services.orchestrator.listTasks());
     }
   }, [selectedTask, pushBanner, services.orchestrator]);
+
+  const closeReviewDiff = useCallback(() => {
+    setReviewDiff(undefined);
+  }, []);
+
+  const startReviewDiff = useCallback(async () => {
+    const task = selectedTask;
+    if (!task) {
+      pushBanner("warn", "No task selected.");
+      return;
+    }
+
+    if (task.state !== "review") {
+      pushBanner("warn", "Task must be in review state to inspect diff.");
+      return;
+    }
+
+    if (!activeProject) {
+      pushBanner("warn", "No active project selected.");
+      return;
+    }
+
+    if (!task.worktreeDirectory) {
+      pushBanner("warn", `Task ${task.taskId} has no worktree directory.`);
+      return;
+    }
+
+    setBusyMessage(`Loading review diff for ${task.taskId}...`);
+    try {
+      const result = await services.worktreeManager.getTaskWorktreeDiff({
+        projectDirectory: activeProject.rootDirectory,
+        taskId: task.taskId,
+        worktreeDirectory: task.worktreeDirectory,
+      });
+
+      setReviewDiff({
+        taskId: task.taskId,
+        branch: result.branch,
+        defaultBranch: result.defaultBranch,
+        summary: result.summary,
+        diff: result.diff,
+      });
+
+      if (!result.hasChanges) {
+        pushBanner(
+          "info",
+          `No diff detected for ${task.taskId}. You can still merge if needed.`,
+        );
+      }
+    } catch (error) {
+      pushBanner("error", toErrorMessage(error));
+    } finally {
+      setBusyMessage(undefined);
+    }
+  }, [selectedTask, pushBanner, activeProject, services.worktreeManager]);
 
   const startFollowUpPromptInput = useCallback(() => {
     const task = selectedTask;
@@ -764,6 +829,27 @@ export function App({
 
       if (input === "v" || input === "V") {
         toggleLogViewLevel();
+        return;
+      }
+
+      return;
+    }
+
+    if (reviewDiff) {
+      if (key.escape) {
+        closeReviewDiff();
+        pushBanner("info", `Closed review panel for ${reviewDiff.taskId}.`);
+        return;
+      }
+
+      if (input === "k") {
+        closeReviewDiff();
+        pushBanner("info", `Keeping ${reviewDiff.taskId} in review.`);
+        return;
+      }
+
+      if (input === "m") {
+        void mergeSelectedTask();
         return;
       }
 
@@ -1011,6 +1097,11 @@ export function App({
       return;
     }
 
+    if (input === "r") {
+      void startReviewDiff();
+      return;
+    }
+
     if (input === "m") {
       void mergeSelectedTask();
       return;
@@ -1022,6 +1113,14 @@ export function App({
   const logVisibleRows = Math.max(
     isLogViewOpen ? frameHeight - 8 : Math.floor(frameHeight / 3),
     6,
+  );
+  const reviewDiffVisibleRows = Math.max(frameHeight - 20, 8);
+  const visibleReviewDiff = useMemo(
+    () =>
+      reviewDiff
+        ? visibleDiffLines(reviewDiff.diff, reviewDiffVisibleRows)
+        : undefined,
+    [reviewDiff, reviewDiffVisibleRows],
   );
 
   return (
@@ -1095,7 +1194,35 @@ export function App({
             <Box marginTop={1} flexDirection="column" flexGrow={1}>
               <Text color="magentaBright">Details</Text>
               <Box marginTop={1} flexDirection="column">
-                {selectedTask ? (
+                {reviewDiff ? (
+                  <>
+                    <Text color="cyan">Review Panel ({reviewDiff.taskId})</Text>
+                    <Text>
+                      Branch: {reviewDiff.branch} -&gt; {reviewDiff.defaultBranch}
+                    </Text>
+                    <Text color="gray">
+                      {reviewDiff.summary || "No file summary changes."}
+                    </Text>
+                    <Text color="gray">
+                      Decide: m merge | k keep in review | Esc close panel
+                    </Text>
+                    <Box marginTop={1} flexDirection="column">
+                      <Text color="cyan">Diff</Text>
+                      {visibleReviewDiff && visibleReviewDiff.lines.length > 0 ? (
+                        visibleReviewDiff.lines.map((line, index) => (
+                          <Text key={`${index}-${line}`} color={toDiffLineColor(line)}>
+                            {line || " "}
+                          </Text>
+                        ))
+                      ) : (
+                        <Text color="yellow">No text diff available.</Text>
+                      )}
+                      {visibleReviewDiff?.truncated ? (
+                        <Text color="gray">(diff truncated for view)</Text>
+                      ) : null}
+                    </Box>
+                  </>
+                ) : selectedTask ? (
                   <>
                     <Text>Task: {selectedTask.taskId}</Text>
                     <Text>State: {selectedTask.state}</Text>
@@ -1187,6 +1314,7 @@ export function App({
             isCreatingTask: newTaskPromptInput !== undefined,
             isEditingTaskModel: modelPickerOpen,
             isFollowUpPrompt: followUpPromptInput !== undefined,
+            isReviewDiffOpen: reviewDiff !== undefined,
             logViewLevel,
             isLogViewOpen,
           })}
@@ -1209,6 +1337,7 @@ function keyboardHints(
     isCreatingTask: boolean;
     isEditingTaskModel: boolean;
     isFollowUpPrompt: boolean;
+    isReviewDiffOpen: boolean;
     logViewLevel: LogViewLevel;
     isLogViewOpen: boolean;
   },
@@ -1227,13 +1356,17 @@ function keyboardHints(
     return "Keys: type prompt | Enter send | Esc cancel";
   }
 
+  if (options.isReviewDiffOpen) {
+    return "Keys: m merge | k keep in review | Esc close | l logs | q quit";
+  }
+
   if (options.isEditingTaskModel) {
     return "Keys: type filter | Up/Down move | Backspace delete | Enter save | Esc cancel";
   }
 
   return options.isCreatingTask
     ? "Keys: type prompt | Enter run | Esc cancel"
-    : "Keys: j/k move | n new | o model | p follow-up | m merge | d delete | l logs | Tab projects | q quit";
+    : "Keys: j/k move | n new | o model | r review | p follow-up | m merge | d delete | l logs | Tab projects | q quit";
 }
 
 async function ensureDefaultProject(
@@ -1580,6 +1713,41 @@ function buildUniqueProjectID(
   }
 
   return `${base}-${Date.now()}`.slice(0, 36);
+}
+
+function visibleDiffLines(
+  diff: string,
+  maxLines: number,
+): { lines: string[]; truncated: boolean } {
+  const lines = diff.split(/\r?\n/);
+  const safeMaxLines = Math.max(1, maxLines);
+  const visibleLines = lines.slice(0, safeMaxLines);
+  return {
+    lines: visibleLines,
+    truncated: lines.length > safeMaxLines,
+  };
+}
+
+function toDiffLineColor(
+  line: string,
+): "green" | "red" | "cyan" | "gray" | undefined {
+  if (line.startsWith("+++") || line.startsWith("---")) {
+    return "gray";
+  }
+
+  if (line.startsWith("+") && !line.startsWith("+++")) {
+    return "green";
+  }
+
+  if (line.startsWith("-") && !line.startsWith("---")) {
+    return "red";
+  }
+
+  if (line.startsWith("@@") || line.startsWith("diff --git")) {
+    return "cyan";
+  }
+
+  return undefined;
 }
 
 function toErrorMessage(error: unknown): string {
