@@ -147,7 +147,7 @@ export class ConversationManager {
     const client = await this.runtime.getClient(worktreeDirectory);
     const timeoutMs = normalizeOptionalTimeout(input.timeoutMs, 45_000);
     const resolvedModel = await this.resolvePromptModel(client, worktreeDirectory, input.model);
-    const resolvedAgent = input.agent?.trim() || "build";
+    const resolvedAgent = normalizeOptionalAgent(input.agent);
     const onMessage = input.onMessage;
     const existingMessages = await this.listConversationMessages({
       sessionID,
@@ -189,7 +189,7 @@ export class ConversationManager {
     const promptResponse = await client.session.promptAsync({
       sessionID,
       parts: [{ type: "text", text: prompt }],
-      agent: resolvedAgent,
+      ...(resolvedAgent ? { agent: resolvedAgent } : {}),
       model: resolvedModel,
     });
 
@@ -260,7 +260,7 @@ export class ConversationManager {
     const client = await this.runtime.getClient(worktreeDirectory);
     const timeoutMs = normalizeOptionalTimeout(input.timeoutMs, 45_000);
     const resolvedModel = await this.resolvePromptModel(client, worktreeDirectory, input.model);
-    const resolvedAgent = input.agent?.trim() || "build";
+    const resolvedAgent = normalizeOptionalAgent(input.agent);
     const onMessage = input.onMessage;
     const existingMessages = await this.listConversationMessages({
       sessionID,
@@ -302,7 +302,7 @@ export class ConversationManager {
     const promptResponse = await client.session.promptAsync({
       sessionID,
       parts: [{ type: "text", text: prompt }],
-      agent: resolvedAgent,
+      ...(resolvedAgent ? { agent: resolvedAgent } : {}),
       model: resolvedModel,
     });
 
@@ -424,13 +424,13 @@ export class ConversationManager {
     const worktreeDirectory = this.resolveDirectoryForSession(sessionID, input.worktreeDirectory);
     const client = await this.runtime.getClient(worktreeDirectory);
     const resolvedModel = await this.resolvePromptModel(client, worktreeDirectory, input.model);
-    const resolvedAgent = input.agent?.trim() || "build";
+    const resolvedAgent = normalizeOptionalAgent(input.agent);
 
     await readDataOrThrow<unknown>(
       client.session.prompt({
         sessionID,
         parts: [{ type: "text", text: prompt }],
-        agent: resolvedAgent,
+        ...(resolvedAgent ? { agent: resolvedAgent } : {}),
         model: resolvedModel,
       }),
       failureMessage,
@@ -721,6 +721,15 @@ function normalizePrompt(prompt: string): string {
   return normalized;
 }
 
+function normalizeOptionalAgent(agent: string | undefined): string | undefined {
+  if (!agent) {
+    return undefined;
+  }
+
+  const normalized = agent.trim();
+  return normalized.length > 0 ? normalized : undefined;
+}
+
 function normalizeDirectory(directory: string, label: string): string {
   const normalizedDirectory = directory.trim();
 
@@ -822,6 +831,9 @@ async function waitForSessionIdle(
 ): Promise<{ idle: boolean; errorMessage?: string }> {
   const deadline = Date.now() + timeoutMs;
   let nextDeadline = deadline;
+  let sawSessionActivity = false;
+  const childSessionIDs = new Set<string>();
+  const activeChildSessionIDs = new Set<string>();
 
   while (Date.now() < nextDeadline) {
     const remainingMs = Math.max(1, nextDeadline - Date.now());
@@ -841,7 +853,20 @@ async function waitForSessionIdle(
       continue;
     }
 
+    const sessionInfo = extractSessionInfo(normalizedEvent);
+    if (sessionInfo?.parentID === sessionID) {
+      childSessionIDs.add(sessionInfo.id);
+      if (normalizedEvent.type === "session.deleted") {
+        activeChildSessionIDs.delete(sessionInfo.id);
+      }
+    }
+
     const eventSessionID = extractEventSessionID(normalizedEvent);
+    if (eventSessionID && childSessionIDs.has(eventSessionID)) {
+      updateChildSessionActivity(activeChildSessionIDs, normalizedEvent, eventSessionID);
+      continue;
+    }
+
     if (eventSessionID !== sessionID) {
       continue;
     }
@@ -849,18 +874,6 @@ async function waitForSessionIdle(
     const properties = asRecord(normalizedEvent.properties);
     await hooks?.onSessionEvent?.(normalizedEvent);
     nextDeadline = Date.now() + timeoutMs;
-
-    if (normalizedEvent.type === "session.idle") {
-      return { idle: true };
-    }
-
-    if (normalizedEvent.type === "session.status") {
-      const status = asRecord(properties?.status);
-      if (status?.type === "idle") {
-        return { idle: true };
-      }
-      continue;
-    }
 
     if (normalizedEvent.type === "session.error") {
       const errorLike = asRecord(properties?.error);
@@ -871,11 +884,70 @@ async function waitForSessionIdle(
         "Session execution failed.";
       return { idle: false, errorMessage: message };
     }
+
+    const status = normalizedEvent.type === "session.status" ? asRecord(properties?.status) : undefined;
+    const isIdleEvent =
+      normalizedEvent.type === "session.idle" ||
+      (normalizedEvent.type === "session.status" && status?.type === "idle");
+
+    if (isIdleEvent) {
+      if (!sawSessionActivity) {
+        continue;
+      }
+
+      if (activeChildSessionIDs.size === 0) {
+        return { idle: true };
+      }
+      continue;
+    }
+
+    sawSessionActivity = true;
   }
 
   await hooks?.onTick?.();
 
   return { idle: false };
+}
+
+function extractSessionInfo(
+  event: { type: string; properties?: unknown },
+): { id: string; parentID?: string } | undefined {
+  if (event.type !== "session.created" && event.type !== "session.updated" && event.type !== "session.deleted") {
+    return undefined;
+  }
+
+  const properties = asRecord(event.properties);
+  const info = asRecord(properties?.info);
+  if (!info || typeof info.id !== "string") {
+    return undefined;
+  }
+
+  return {
+    id: info.id,
+    parentID: typeof info.parentID === "string" ? info.parentID : undefined,
+  };
+}
+
+function updateChildSessionActivity(
+  activeChildSessionIDs: Set<string>,
+  event: { type: string; properties?: unknown },
+  eventSessionID: string,
+): void {
+  if (event.type === "session.idle" || event.type === "session.deleted" || event.type === "session.error") {
+    activeChildSessionIDs.delete(eventSessionID);
+    return;
+  }
+
+  if (event.type === "session.status") {
+    const properties = asRecord(event.properties);
+    const status = asRecord(properties?.status);
+    if (status?.type === "idle") {
+      activeChildSessionIDs.delete(eventSessionID);
+      return;
+    }
+
+    activeChildSessionIDs.add(eventSessionID);
+  }
 }
 
 function isMessageStreamEvent(type: string): boolean {
