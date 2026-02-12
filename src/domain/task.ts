@@ -2,6 +2,7 @@ export const TASK_STATES = [
   "queued",
   "creating_worktree",
   "running",
+  "review",
   "completed",
   "failed",
   "cleaning",
@@ -23,7 +24,8 @@ export type TaskRuntime = {
 export const TASK_STATE_TRANSITIONS: Record<TaskState, readonly TaskState[]> = {
   queued: ["creating_worktree", "failed"],
   creating_worktree: ["running", "failed"],
-  running: ["completed", "failed", "cleaning"],
+  running: ["review", "failed", "cleaning"],
+  review: ["running", "completed", "failed", "cleaning"],
   completed: ["cleaning"],
   failed: ["cleaning"],
   cleaning: ["completed", "failed"],
@@ -104,6 +106,7 @@ export function validateTaskRuntimeInvariants(task: TaskRuntime): string[] {
 
   if (
     (task.state === "running" ||
+      task.state === "review" ||
       task.state === "completed" ||
       task.state === "cleaning") &&
     !task.worktreeDirectory
@@ -111,7 +114,7 @@ export function validateTaskRuntimeInvariants(task: TaskRuntime): string[] {
     errors.push(`Task in ${task.state} state must have a worktreeDirectory.`);
   }
 
-  if ((task.state === "running" || task.state === "completed") && !task.sessionID) {
+  if ((task.state === "running" || task.state === "review" || task.state === "completed") && !task.sessionID) {
     errors.push(`Task in ${task.state} state must have a sessionID.`);
   }
 

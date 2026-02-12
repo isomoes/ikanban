@@ -215,6 +215,81 @@ export class ConversationManager {
     return this.sendPrompt(input, "Failed to send follow-up prompt");
   }
 
+  async sendFollowUpPromptAndAwaitMessages(
+    input: SendFollowUpPromptInput & { timeoutMs?: number },
+  ): Promise<PromptExecutionResult> {
+    const sessionID = normalizeSessionID(input.sessionID);
+    const prompt = normalizePrompt(input.prompt);
+    const worktreeDirectory = this.resolveDirectoryForSession(sessionID, input.worktreeDirectory);
+    const client = await this.runtime.getClient(worktreeDirectory);
+    const timeoutMs = normalizeOptionalTimeout(input.timeoutMs, 45_000);
+    const resolvedModel = await this.resolvePromptModel(client, worktreeDirectory, input.model);
+    const resolvedAgent = input.agent?.trim() || "build";
+
+    const subscribeResult = await client.event.subscribe({
+      directory: worktreeDirectory,
+    });
+    const eventStream = extractEventStream(subscribeResult);
+    const iterator = eventStream[Symbol.asyncIterator]();
+
+    const promptResponse = await client.session.promptAsync({
+      sessionID,
+      parts: [{ type: "text", text: prompt }],
+      agent: resolvedAgent,
+      model: resolvedModel,
+    });
+
+    if (promptResponse.error) {
+      throw new Error(`Failed to send follow-up prompt: ${formatUnknownError(promptResponse.error)}`);
+    }
+
+    const submittedAt = Date.now();
+    const existing = this.sessionsByID.get(sessionID);
+    if (existing) {
+      this.sessionsByID.set(sessionID, {
+        ...existing,
+        updatedAt: submittedAt,
+        lastMessageAt: submittedAt,
+      });
+    }
+
+    try {
+      const idleResult = await waitForSessionIdle(iterator, sessionID, timeoutMs);
+      if (idleResult.errorMessage) {
+        throw new Error(idleResult.errorMessage);
+      }
+
+      const idleReached = idleResult.idle;
+      if (!idleReached) {
+        throw new Error(
+          `No assistant response received within ${timeoutMs}ms for session ${sessionID}.`,
+        );
+      }
+    } finally {
+      await iterator.return?.();
+    }
+
+    const messages = await this.listConversationMessages({
+      sessionID,
+      worktreeDirectory,
+    });
+    const relevantMessages = messages.filter((message) => message.createdAt >= submittedAt);
+    const hasAssistantMessage = relevantMessages.some((message) => message.role === "assistant");
+
+    if (!hasAssistantMessage) {
+      throw new Error(`No assistant response received within ${timeoutMs}ms for session ${sessionID}.`);
+    }
+
+    return {
+      submission: {
+        sessionID,
+        prompt,
+        submittedAt,
+      },
+      messages: relevantMessages,
+    };
+  }
+
   async listConversationMessages(
     input: ListConversationMessagesInput,
   ): Promise<ConversationMessageMeta[]> {

@@ -74,7 +74,7 @@ export type RuntimeEventMap = {
     role: string;
   };
   "log.appended": {
-    level: "info" | "warn" | "error";
+    level: "debug" | "info" | "warn" | "error";
     message: string;
     taskId?: string;
     projectId?: string;
@@ -111,7 +111,7 @@ export type RuntimeUiUpdate = {
 export type RuntimeLogEntry = {
   sequence: number;
   emittedAt: number;
-  level: "info" | "warn" | "error";
+  level: "debug" | "info" | "warn" | "error";
   message: string;
   taskId?: string;
   projectId?: string;

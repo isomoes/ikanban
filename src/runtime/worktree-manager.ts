@@ -1,6 +1,7 @@
 import { resolve } from "node:path";
 
 import type { OpenCodeRuntime } from "./opencode-runtime";
+import { noopRuntimeLogger, type RuntimeLogger } from "./runtime-logger";
 
 type RuntimeClientProvider = Pick<OpenCodeRuntime, "getClient">;
 
@@ -44,14 +45,28 @@ export type CleanupTaskWorktreeResult = {
   removed: boolean;
 };
 
+export type MergeTaskWorktreeInput = {
+  projectDirectory: string;
+  taskId: string;
+  worktreeDirectory: string;
+};
+
+export type MergeTaskWorktreeResult = {
+  taskId: string;
+  branch: string;
+  merged: boolean;
+};
+
 const WORKTREE_TASK_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
 
 export class WorktreeManager {
   private readonly runtime: RuntimeClientProvider;
+  private readonly logger: RuntimeLogger;
   private readonly taskToWorktreeDirectory = new Map<string, string>();
 
-  constructor(runtime: RuntimeClientProvider) {
+  constructor(runtime: RuntimeClientProvider, options?: { logger?: RuntimeLogger }) {
     this.runtime = runtime;
+    this.logger = options?.logger ?? noopRuntimeLogger;
   }
 
   async createTaskWorktree(input: CreateTaskWorktreeInput): Promise<ManagedWorktree> {
@@ -177,6 +192,130 @@ export class WorktreeManager {
       taskId,
       worktreeDirectory: resolvedDirectory,
       removed,
+    };
+  }
+
+  async mergeTaskWorktree(input: MergeTaskWorktreeInput): Promise<MergeTaskWorktreeResult> {
+    const taskId = normalizeTaskId(input.taskId);
+    const projectDirectory = normalizeDirectory(input.projectDirectory, "Project directory");
+    const worktreeDirectory = normalizeDirectory(input.worktreeDirectory, "Worktree directory");
+    const logSource = "worktree-manager.merge";
+
+    this.logger.log({
+      level: "info",
+      source: logSource,
+      message: `Starting merge for task ${taskId}.`,
+      context: { taskId, projectDirectory, worktreeDirectory },
+    });
+
+    // Get the branch name of the worktree
+    const branchResult = await Bun.$`git -C ${worktreeDirectory} rev-parse --abbrev-ref HEAD`.text();
+    const branch = branchResult.trim();
+    if (!branch) {
+      throw new Error(`Failed to determine branch for worktree at ${worktreeDirectory}.`);
+    }
+
+    this.logger.log({
+      level: "info",
+      source: logSource,
+      message: `Worktree branch resolved: ${branch}.`,
+      context: { taskId, branch, worktreeDirectory },
+    });
+
+    // Get the default branch of the main worktree
+    const defaultBranchResult = await Bun.$`git -C ${projectDirectory} rev-parse --abbrev-ref HEAD`.text();
+    const defaultBranch = defaultBranchResult.trim();
+    if (!defaultBranch) {
+      throw new Error(`Failed to determine default branch for project at ${projectDirectory}.`);
+    }
+
+    this.logger.log({
+      level: "info",
+      source: logSource,
+      message: `Default branch resolved: ${defaultBranch}.`,
+      context: { taskId, defaultBranch, projectDirectory },
+    });
+
+    // Generate a diff of all changes between the default branch and the worktree (including uncommitted)
+    // Compare the default branch HEAD against the worktree working tree to capture everything
+    const defaultHead = (await Bun.$`git -C ${projectDirectory} rev-parse HEAD`.text()).trim();
+
+    this.logger.log({
+      level: "info",
+      source: logSource,
+      message: `Generating diff: ${defaultBranch} (${defaultHead}) vs worktree working tree.`,
+      context: { taskId, defaultHead, worktreeDirectory },
+    });
+
+    const diff = await Bun.$`git -C ${worktreeDirectory} diff ${defaultHead} -- .`.text();
+
+    if (!diff.trim()) {
+      this.logger.log({
+        level: "info",
+        source: logSource,
+        message: `No changes between ${defaultBranch} and worktree. Nothing to apply.`,
+        context: { taskId, branch, defaultBranch },
+      });
+
+      return {
+        taskId,
+        branch,
+        merged: false,
+      };
+    }
+
+    this.logger.log({
+      level: "info",
+      source: logSource,
+      message: `Found changes to apply from worktree to ${defaultBranch}.`,
+      context: { taskId, branch, defaultBranch, diffSize: diff.length },
+    });
+
+    // Apply the diff to the main worktree
+    try {
+      const applyProc = Bun.spawn(["git", "apply", "--index", "--3way"], {
+        cwd: projectDirectory,
+        stdin: "pipe",
+      });
+      applyProc.stdin.write(diff);
+      applyProc.stdin.end();
+      const exitCode = await applyProc.exited;
+      if (exitCode !== 0) {
+        throw new Error(`git apply exited with code ${exitCode}`);
+      }
+    } catch (error) {
+      throw new Error(
+        `Failed to apply changes from ${branch} to ${defaultBranch}: ${formatUnknownError(error)}`,
+      );
+    }
+
+    this.logger.log({
+      level: "info",
+      source: logSource,
+      message: `Applied changes to ${defaultBranch} working tree.`,
+      context: { taskId, branch, defaultBranch },
+    });
+
+    // Commit the applied changes on the default branch
+    try {
+      await Bun.$`git -C ${projectDirectory} commit -m ${"task " + taskId + ": apply changes from " + branch}`.text();
+    } catch (error) {
+      throw new Error(
+        `Failed to commit applied changes on ${defaultBranch}: ${formatUnknownError(error)}`,
+      );
+    }
+
+    this.logger.log({
+      level: "info",
+      source: logSource,
+      message: `Committed changes on ${defaultBranch} for task ${taskId}.`,
+      context: { taskId, branch, defaultBranch },
+    });
+
+    return {
+      taskId,
+      branch,
+      merged: true,
     };
   }
 

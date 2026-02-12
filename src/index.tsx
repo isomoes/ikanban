@@ -23,7 +23,7 @@ const projectRegistry = new ProjectRegistry({
 const taskRegistry = new TaskRegistry({
   stateFilePath: resolve(join(homedir(), ".ikanban", "tasks.json")),
 });
-const worktreeManager = new WorktreeManager(runtime);
+const worktreeManager = new WorktreeManager(runtime, { logger });
 const conversationManager = new ConversationManager(runtime);
 const orchestrator = new TaskOrchestrator({
   projectRegistry,

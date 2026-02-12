@@ -1,4 +1,4 @@
-export type RuntimeLogLevel = "info" | "warn" | "error";
+export type RuntimeLogLevel = "debug" | "info" | "warn" | "error";
 
 export type RuntimeLogRecord = {
   level: RuntimeLogLevel;

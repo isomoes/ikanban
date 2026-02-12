@@ -18,6 +18,7 @@ import type {
 import type {
   CleanupTaskWorktreeResult,
   ManagedWorktree,
+  MergeTaskWorktreeResult,
   WorktreeCleanupPolicy,
   WorktreeManager,
 } from "./worktree-manager";
@@ -29,12 +30,12 @@ type TaskRegistryLike = Pick<TaskRegistry, "listTasks" | "upsertTask" | "removeT
 
 type WorktreeManagerLike = Pick<
   WorktreeManager,
-  "createTaskWorktree" | "cleanupTaskWorktree" | "getTaskWorktreeDirectory"
+  "createTaskWorktree" | "cleanupTaskWorktree" | "getTaskWorktreeDirectory" | "mergeTaskWorktree"
 >;
 
 type ConversationManagerLike = Pick<
   ConversationManager,
-  "createTaskSession" | "sendInitialPromptAndAwaitMessages" | "getTaskSessionID"
+  "createTaskSession" | "sendInitialPromptAndAwaitMessages" | "sendFollowUpPromptAndAwaitMessages" | "getTaskSessionID"
 >;
 
 export type TaskOrchestratorOptions = {
@@ -126,6 +127,17 @@ export type TaskOrchestratorEvent =
       type: "task.failed";
       taskId: string;
       error: string;
+      task: TaskRuntime;
+    }
+  | {
+      type: "task.review";
+      taskId: string;
+      task: TaskRuntime;
+    }
+  | {
+      type: "task.merged";
+      taskId: string;
+      branch: string;
       task: TaskRuntime;
     };
 
@@ -259,6 +271,113 @@ export class TaskOrchestrator {
     this.tasksById.delete(normalizedTaskId);
     this.removePersistedTask(normalizedTaskId);
     return true;
+  }
+
+  async sendFollowUpPrompt(taskId: string, prompt: string): Promise<void> {
+    await this.ensureInitialized();
+
+    const normalizedTaskId = normalizeId(taskId, "Task id");
+    const normalizedPrompt = normalizePrompt(prompt);
+    const task = this.getTaskOrThrow(normalizedTaskId);
+
+    if (task.state !== "review") {
+      throw new Error(`Task ${normalizedTaskId} must be in review state to send a follow-up prompt (current: ${task.state}).`);
+    }
+
+    if (!task.sessionID || !task.worktreeDirectory) {
+      throw new Error(`Task ${normalizedTaskId} is missing session or worktree directory.`);
+    }
+
+    const runtime = this.transitionTask(normalizedTaskId, "running");
+    this.runningTaskIds.add(normalizedTaskId);
+
+    try {
+      const promptExecution = await this.conversationManager.sendFollowUpPromptAndAwaitMessages({
+        sessionID: task.sessionID,
+        prompt: normalizedPrompt,
+        worktreeDirectory: task.worktreeDirectory,
+      });
+
+      this.emit({
+        type: "task.prompt.submitted",
+        taskId: normalizedTaskId,
+        prompt: promptExecution.submission,
+      });
+
+      for (const message of promptExecution.messages) {
+        this.emit({
+          type: "task.session.message.received",
+          taskId: normalizedTaskId,
+          sessionID: task.sessionID,
+          message,
+        });
+      }
+
+      const reviewRuntime = this.transitionTask(normalizedTaskId, "review");
+      this.emit({
+        type: "task.review",
+        taskId: normalizedTaskId,
+        task: reviewRuntime,
+      });
+    } catch (error) {
+      const failureMessage = toErrorMessage(error);
+      this.logger.log({
+        level: "error",
+        source: "task-orchestrator.follow-up",
+        message: "Follow-up prompt failed.",
+        context: { taskId: normalizedTaskId },
+        error: toStructuredError(error),
+      });
+      this.transitionTaskToFailed(normalizedTaskId, failureMessage);
+    } finally {
+      this.runningTaskIds.delete(normalizedTaskId);
+    }
+  }
+
+  async mergeTask(taskId: string): Promise<MergeTaskWorktreeResult> {
+    await this.ensureInitialized();
+
+    const normalizedTaskId = normalizeId(taskId, "Task id");
+    const task = this.getTaskOrThrow(normalizedTaskId);
+
+    if (task.state !== "review") {
+      throw new Error(`Task ${normalizedTaskId} must be in review state to merge (current: ${task.state}).`);
+    }
+
+    if (!task.worktreeDirectory) {
+      throw new Error(`Task ${normalizedTaskId} is missing worktree directory.`);
+    }
+
+    const project = await this.resolveProject(task.projectId);
+
+    try {
+      const mergeResult = await this.worktreeManager.mergeTaskWorktree({
+        projectDirectory: project.rootDirectory,
+        taskId: normalizedTaskId,
+        worktreeDirectory: task.worktreeDirectory,
+      });
+
+      const completedRuntime = this.transitionTask(normalizedTaskId, "completed");
+      this.emit({
+        type: "task.merged",
+        taskId: normalizedTaskId,
+        branch: mergeResult.branch,
+        task: completedRuntime,
+      });
+
+      return mergeResult;
+    } catch (error) {
+      const failureMessage = toErrorMessage(error);
+      this.logger.log({
+        level: "error",
+        source: "task-orchestrator.merge",
+        message: "Task merge failed.",
+        context: { taskId: normalizedTaskId },
+        error: toStructuredError(error),
+      });
+      this.transitionTaskToFailed(normalizedTaskId, failureMessage);
+      throw error;
+    }
   }
 
   getTask(taskId: string): TaskRuntime | undefined {
@@ -419,17 +538,12 @@ export class TaskOrchestrator {
         });
       }
 
-      runtime = this.transitionTask(taskId, "completed");
-
-      const cleanupResult = await this.executeCleanup({
-        task: runtime,
+      runtime = this.transitionTask(taskId, "review");
+      this.emit({
+        type: "task.review",
         taskId,
-        projectDirectory: resolvedProject.rootDirectory,
-        policy: resolveCleanupPolicy(entry.input.cleanupOnSuccess, this.cleanupOnSuccess),
+        task: runtime,
       });
-
-      runtime = cleanupResult.task;
-      cleanup = cleanupResult.cleanup;
     } catch (error) {
       const failureMessage = toErrorMessage(error);
       this.logger.log({
@@ -459,7 +573,7 @@ export class TaskOrchestrator {
       }
     }
 
-    if (runtime.state === "completed" && project && worktree && session && promptSubmission) {
+    if ((runtime.state === "review" || runtime.state === "completed") && project && worktree && session && promptSubmission) {
       entry.resolve({
         task: runtime,
         project,
