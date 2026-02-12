@@ -1,15 +1,17 @@
 import { basename, resolve } from "node:path";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Box, Text, useApp, useInput } from "ink";
+import { Box, Text, useApp, useInput, useStdoutDimensions } from "ink";
 
 import type { ProjectRef } from "../domain/project";
-import type { TaskRuntime, TaskState } from "../domain/task";
+import type { TaskRuntime } from "../domain/task";
 import type { RuntimeEventMap, RuntimeLogEntry } from "../runtime/event-bus";
 import { ProjectRegistry } from "../runtime/project-registry";
 import { RuntimeEventBus } from "../runtime/event-bus";
 import { OpenCodeRuntime } from "../runtime/opencode-runtime";
 import { TaskOrchestrator, type TaskOrchestratorEvent } from "../runtime/task-orchestrator";
 import { WorktreeManager } from "../runtime/worktree-manager";
+import { ProjectSelectorView } from "./views/project-selector-view";
+import { TaskBoardView } from "./views/task-board-view";
 import { nextRoute, ROUTE_DESCRIPTORS, type AppRoute } from "./routes";
 
 type BannerTone = "info" | "success" | "warn" | "error";
@@ -45,6 +47,7 @@ const MAX_LOG_ENTRIES = 200;
 
 export function App({ services, defaultProjectDirectory, initialRoute = "project-selector" }: AppProps) {
   const { exit } = useApp();
+  const [terminalWidth, terminalHeight] = useStdoutDimensions();
   const [loading, setLoading] = useState(true);
   const [busyMessage, setBusyMessage] = useState<string>();
   const [errorMessage, setErrorMessage] = useState<string>();
@@ -59,7 +62,6 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
   const [sessionMessagesByTaskID, setSessionMessagesByTaskID] = useState<Record<string, TaskSessionMessage[]>>({});
   const [newProjectPathInput, setNewProjectPathInput] = useState<string>();
   const [newTaskPromptInput, setNewTaskPromptInput] = useState<string>();
-  const [abortRequestedTaskIds, setAbortRequestedTaskIds] = useState<Record<string, true>>({});
   const [promptByTaskID, setPromptByTaskID] = useState<Record<string, string>>({});
 
   const pushBanner = useCallback((tone: BannerTone, message: string) => {
@@ -150,6 +152,7 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
 
       try {
         await services.runtime.start();
+        await services.orchestrator.initialize();
         await ensureDefaultProject(services.projectRegistry, defaultProjectDirectory);
 
         if (cancelled) {
@@ -350,127 +353,10 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
     pushBanner("info", "Enter the first task prompt and press Enter to run.");
   }, [activeProject, pushBanner]);
 
-  const abortTask = useCallback(() => {
-    if (!selectedTask) {
-      pushBanner("warn", "No task selected.");
-      return;
-    }
-
-    if (selectedTask.state === "completed" || selectedTask.state === "failed") {
-      pushBanner("warn", `Task ${selectedTask.taskId} is already final (${selectedTask.state}).`);
-      return;
-    }
-
-    setAbortRequestedTaskIds((current) => ({
-      ...current,
-      [selectedTask.taskId]: true,
-    }));
-
-    services.eventBus.emit("log.appended", {
-      level: "warn",
-      taskId: selectedTask.taskId,
-      projectId: selectedTask.projectId,
-      source: "ui",
-      message: `Abort requested for ${selectedTask.taskId}, but orchestrator cancel API is not available yet.`,
-    });
-    pushBanner("warn", `Abort requested for ${selectedTask.taskId}.`);
-  }, [selectedTask, services.eventBus, pushBanner]);
-
-  const retryTask = useCallback(async () => {
-    if (!selectedTask) {
-      pushBanner("warn", "No task selected.");
-      return;
-    }
-
-    if (selectedTask.state !== "failed") {
-      pushBanner("warn", `Retry is only available for failed tasks.`);
-      return;
-    }
-
-    if (!activeProject) {
-      pushBanner("warn", "No active project selected.");
-      return;
-    }
-
-    const retryTaskID = createTaskID(`${selectedTask.taskId}-retry`);
-    const prompt = promptByTaskID[selectedTask.taskId] ?? buildRetryPrompt(selectedTask.taskId);
-    setPromptByTaskID((current) => ({
-      ...current,
-      [retryTaskID]: prompt,
-    }));
-
-    setBusyMessage(`Retrying ${selectedTask.taskId}...`);
-    try {
-      await services.orchestrator.runTask({
-        taskId: retryTaskID,
-        projectId: activeProject.id,
-        initialPrompt: prompt,
-        title: `Retry ${selectedTask.taskId}`,
-      });
-      pushBanner("success", `Retry submitted: ${retryTaskID}`);
-    } catch (error) {
-      pushBanner("error", toErrorMessage(error));
-    } finally {
-      setBusyMessage(undefined);
-      setTasks(services.orchestrator.listTasks());
-    }
-  }, [selectedTask, activeProject, promptByTaskID, services.orchestrator, pushBanner]);
-
-  const cleanupWorktree = useCallback(async () => {
-    if (!selectedTask) {
-      pushBanner("warn", "No task selected.");
-      return;
-    }
-
-    if (!selectedTask.worktreeDirectory) {
-      pushBanner("warn", `Task ${selectedTask.taskId} has no worktree to clean.`);
-      return;
-    }
-
-    const taskProject = projects.find((project) => project.id === selectedTask.projectId);
-    if (!taskProject) {
-      pushBanner("error", `Unknown project for task ${selectedTask.taskId}.`);
-      return;
-    }
-
-    setBusyMessage(`Cleaning worktree for ${selectedTask.taskId}...`);
-    try {
-      const cleanup = await services.worktreeManager.cleanupTaskWorktree({
-        taskId: selectedTask.taskId,
-        projectDirectory: taskProject.rootDirectory,
-        worktreeDirectory: selectedTask.worktreeDirectory,
-        policy: "remove",
-      });
-
-      services.eventBus.emit("worktree.cleanup", {
-        taskId: selectedTask.taskId,
-        projectId: selectedTask.projectId,
-        policy: cleanup.policy,
-        worktreeDirectory: cleanup.worktreeDirectory,
-        removed: cleanup.removed,
-        updatedAt: Date.now(),
-      });
-
-      if (cleanup.removed && cleanup.worktreeDirectory) {
-        services.eventBus.emit("worktree.removed", {
-          taskId: selectedTask.taskId,
-          projectId: selectedTask.projectId,
-          directory: cleanup.worktreeDirectory,
-          removedAt: Date.now(),
-        });
-      }
-
-      pushBanner("success", `Cleanup ${cleanup.removed ? "removed" : "kept"} worktree.`);
-    } catch (error) {
-      pushBanner("error", toErrorMessage(error));
-    } finally {
-      setBusyMessage(undefined);
-      setTasks(services.orchestrator.listTasks());
-    }
-  }, [selectedTask, projects, services.worktreeManager, services.eventBus, services.orchestrator, pushBanner]);
-
   useInput((input, key) => {
     const isInTextInputMode = newProjectPathInput !== undefined || newTaskPromptInput !== undefined;
+    const wantsMoveUp = (key.upArrow || input === "k") && !key.ctrl && !key.meta;
+    const wantsMoveDown = (key.downArrow || input === "j") && !key.ctrl && !key.meta;
 
     if (key.ctrl && input === "c") {
       exit();
@@ -549,12 +435,12 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
     }
 
     if (route === "project-selector") {
-      if (key.upArrow) {
+      if (wantsMoveUp) {
         setSelectedProjectIndex((current) => Math.max(0, current - 1));
         return;
       }
 
-      if (key.downArrow) {
+      if (wantsMoveDown) {
         setSelectedProjectIndex((current) => Math.min(projects.length - 1, current + 1));
         return;
       }
@@ -567,41 +453,21 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
         return;
       }
 
-      if (input === "r") {
-        void refreshProjects();
-        pushBanner("info", "Project list refreshed.");
-        return;
-      }
-
       if (input === "n") {
         startProjectCreationInput();
         return;
       }
 
-      if (input === "b") {
-        setRoute("task-board");
-      }
-
       return;
     }
 
-    if (key.upArrow) {
+    if (wantsMoveUp) {
       setSelectedTaskIndex((current) => Math.max(0, current - 1));
       return;
     }
 
-    if (key.downArrow) {
+    if (wantsMoveDown) {
       setSelectedTaskIndex((current) => Math.min(tasksForActiveProject.length - 1, current + 1));
-      return;
-    }
-
-    if (input === "p") {
-      setRoute("project-selector");
-      return;
-    }
-
-    if (input === "r") {
-      void runTask();
       return;
     }
 
@@ -610,24 +476,13 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
       return;
     }
 
-    if (input === "a") {
-      abortTask();
-      return;
-    }
-
-    if (input === "t") {
-      void retryTask();
-      return;
-    }
-
-    if (input === "x") {
-      void cleanupWorktree();
-      return;
-    }
   });
 
+  const frameWidth = Math.max(terminalWidth, 40);
+  const frameHeight = Math.max(terminalHeight, 16);
+
   return (
-    <Box flexDirection="column" padding={1}>
+    <Box flexDirection="column" width={frameWidth} height={frameHeight} paddingX={1}>
       <Box marginBottom={1}>
         <Text color="cyanBright">iKanban</Text>
         <Text> - {ROUTE_DESCRIPTORS[route].title}</Text>
@@ -648,91 +503,76 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
         </Box>
       ) : null}
 
-      {loading ? (
-        <Text color="yellow">Loading runtime and project state...</Text>
-      ) : (
-        <Box flexDirection="row" columnGap={4}>
-          <Box flexDirection="column" width={44}>
-            <Text color="magentaBright">
-              {route === "project-selector" ? "Projects" : `Tasks (${activeProject?.name ?? "none"})`}
-            </Text>
-            <Box marginTop={1} flexDirection="column">
-              {route === "project-selector" ? (
-                projects.length > 0 ? (
-                  projects.map((project, index) => (
-                    <Text key={project.id} color={index === selectedProjectIndex ? "green" : undefined}>
-                      {index === selectedProjectIndex ? ">" : " "} {project.name} ({project.id})
+      <Box flexDirection="column" flexGrow={1}>
+        {loading ? (
+          <Text color="yellow">Loading runtime and project state...</Text>
+        ) : (
+          <Box flexDirection="row" columnGap={4} flexGrow={1}>
+            <Box flexDirection="column" width={44} flexShrink={0}>
+              <Text color="magentaBright">
+                {route === "project-selector" ? "Projects" : `Tasks (${activeProject?.name ?? "none"})`}
+              </Text>
+              <Box marginTop={1} flexDirection="column">
+                {route === "project-selector" ? (
+                  <ProjectSelectorView
+                    projects={projects}
+                    selectedProjectIndex={selectedProjectIndex}
+                  />
+                ) : (
+                  <TaskBoardView
+                    tasks={tasksForActiveProject}
+                    selectedTaskIndex={selectedTaskIndex}
+                  />
+                )}
+              </Box>
+            </Box>
+
+            <Box flexDirection="column" flexGrow={1}>
+              <Text color="magentaBright">Details and Logs</Text>
+              <Box marginTop={1} flexDirection="column">
+                {selectedTask ? (
+                  <>
+                    <Text>Task: {selectedTask.taskId}</Text>
+                    <Text>State: {selectedTask.state}</Text>
+                    <Text>Project: {selectedTask.projectId}</Text>
+                    <Text>Session: {selectedTask.sessionID ?? "-"}</Text>
+                    <Text>Worktree: {selectedTask.worktreeDirectory ?? "-"}</Text>
+                    <Text>Error: {selectedTask.error ?? "-"}</Text>
+                  </>
+                ) : (
+                  <Text color="yellow">Select a task to inspect details.</Text>
+                )}
+              </Box>
+
+              <Box marginTop={1} flexDirection="column">
+                <Text color="cyan">Conversation</Text>
+                {taskMessages.length > 0 ? (
+                  taskMessages.slice(-6).map((message) => (
+                    <Text key={message.messageID} color={message.role === "assistant" ? "green" : undefined}>
+                      [{message.role}] {truncate(message.preview || "(no text preview)", 120)}
                     </Text>
                   ))
                 ) : (
-                  <Text color="yellow">No projects registered.</Text>
-                )
-              ) : tasksForActiveProject.length > 0 ? (
-                tasksForActiveProject.map((task, index) => {
-                  const isAbortRequested =
-                    abortRequestedTaskIds[task.taskId] && task.state !== "completed" && task.state !== "failed";
+                  <Text color="yellow">No conversation messages yet.</Text>
+                )}
+              </Box>
 
-                  return (
-                    <Text
-                      key={task.taskId}
-                      color={index === selectedTaskIndex ? "green" : stateColor(task.state)}
-                    >
-                      {index === selectedTaskIndex ? ">" : " "} {task.taskId} [{task.state}
-                      {isAbortRequested ? ",abort_requested" : ""}]
+              <Box marginTop={1} flexDirection="column">
+                <Text color="cyan">Recent logs</Text>
+                {taskLogs.length > 0 ? (
+                  taskLogs.map((entry) => (
+                    <Text key={`${entry.sequence}:${entry.source}`} color={entry.level === "error" ? "red" : entry.level === "warn" ? "yellow" : undefined}>
+                      [{entry.level}] {truncate(entry.message, 120)}
                     </Text>
-                  );
-                })
-              ) : (
-                <Text color="yellow">No tasks for active project.</Text>
-              )}
+                  ))
+                ) : (
+                  <Text color="yellow">No log entries yet.</Text>
+                )}
+              </Box>
             </Box>
           </Box>
-
-          <Box flexDirection="column" flexGrow={1}>
-            <Text color="magentaBright">Details and Logs</Text>
-            <Box marginTop={1} flexDirection="column">
-              {selectedTask ? (
-                <>
-                  <Text>Task: {selectedTask.taskId}</Text>
-                  <Text>State: {selectedTask.state}</Text>
-                  <Text>Project: {selectedTask.projectId}</Text>
-                  <Text>Session: {selectedTask.sessionID ?? "-"}</Text>
-                  <Text>Worktree: {selectedTask.worktreeDirectory ?? "-"}</Text>
-                  <Text>Error: {selectedTask.error ?? "-"}</Text>
-                </>
-              ) : (
-                <Text color="yellow">Select a task to inspect details.</Text>
-              )}
-            </Box>
-
-            <Box marginTop={1} flexDirection="column">
-              <Text color="cyan">Conversation</Text>
-              {taskMessages.length > 0 ? (
-                taskMessages.slice(-6).map((message) => (
-                  <Text key={message.messageID} color={message.role === "assistant" ? "green" : undefined}>
-                    [{message.role}] {truncate(message.preview || "(no text preview)", 120)}
-                  </Text>
-                ))
-              ) : (
-                <Text color="yellow">No conversation messages yet.</Text>
-              )}
-            </Box>
-
-            <Box marginTop={1} flexDirection="column">
-              <Text color="cyan">Recent logs</Text>
-              {taskLogs.length > 0 ? (
-                taskLogs.map((entry) => (
-                  <Text key={`${entry.sequence}:${entry.source}`} color={entry.level === "error" ? "red" : entry.level === "warn" ? "yellow" : undefined}>
-                    [{entry.level}] {truncate(entry.message, 120)}
-                  </Text>
-                ))
-              ) : (
-                <Text color="yellow">No log entries yet.</Text>
-              )}
-            </Box>
-          </Box>
-        </Box>
-      )}
+        )}
+      </Box>
 
       {newProjectPathInput !== undefined ? (
         <Box marginTop={1}>
@@ -747,19 +587,12 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
       ) : null}
 
       <Box marginTop={1}>
-        {route === "project-selector" ? (
-          <Text color="gray">
-            {newProjectPathInput !== undefined
-              ? "Keys: Type path | Enter create | Esc cancel"
-              : "Keys: Up/Down move | Enter select | n new project | r refresh | b board | Tab switch | q quit"}
-          </Text>
-        ) : (
-          <Text color="gray">
-            {newTaskPromptInput !== undefined
-              ? "Keys: Type prompt | Enter run | Esc cancel"
-              : "Keys: Up/Down move | n new task prompt | r quick run | a abort | t retry | x cleanup | p projects | Tab switch | q quit"}
-          </Text>
-        )}
+        <Text color="gray">
+          {keyboardHints(route, {
+            isCreatingProject: newProjectPathInput !== undefined,
+            isCreatingTask: newTaskPromptInput !== undefined,
+          })}
+        </Text>
       </Box>
 
       {busyMessage ? (
@@ -769,6 +602,21 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
       ) : null}
     </Box>
   );
+}
+
+function keyboardHints(
+  route: AppRoute,
+  options: { isCreatingProject: boolean; isCreatingTask: boolean },
+): string {
+  if (route === "project-selector") {
+    return options.isCreatingProject
+      ? "Keys: Type path | Enter create | Esc cancel"
+      : "Keys: Up/Down or k/j move | Enter select | n new project | Tab switch | q quit";
+  }
+
+  return options.isCreatingTask
+    ? "Keys: Type prompt | Enter run | Esc cancel"
+    : "Keys: Up/Down or k/j move | n new task prompt | Tab switch | q quit";
 }
 
 async function ensureDefaultProject(
@@ -964,23 +812,6 @@ function toInkColor(tone: BannerTone): "blue" | "green" | "yellow" | "red" {
       return "yellow";
     case "error":
       return "red";
-  }
-}
-
-function stateColor(state: TaskState): "yellow" | "cyan" | "green" | "red" | undefined {
-  switch (state) {
-    case "queued":
-      return "yellow";
-    case "creating_worktree":
-      return "yellow";
-    case "running":
-      return "cyan";
-    case "completed":
-      return "green";
-    case "failed":
-      return "red";
-    case "cleaning":
-      return "yellow";
   }
 }
 
