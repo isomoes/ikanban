@@ -8,7 +8,11 @@ import type { RuntimeEventMap, RuntimeLogEntry } from "../runtime/event-bus";
 import { ProjectRegistry } from "../runtime/project-registry";
 import { RuntimeEventBus } from "../runtime/event-bus";
 import { OpenCodeRuntime } from "../runtime/opencode-runtime";
-import { TaskOrchestrator, type TaskOrchestratorEvent } from "../runtime/task-orchestrator";
+import {
+  TaskOrchestrator,
+  type RunTaskInput,
+  type TaskOrchestratorEvent,
+} from "../runtime/task-orchestrator";
 import { WorktreeManager } from "../runtime/worktree-manager";
 import { LogView, type LogViewLevel } from "./views/log-view";
 import { ProjectSelectorView } from "./views/project-selector-view";
@@ -30,6 +34,13 @@ type TaskSessionMessage = {
   createdAt: number;
 };
 
+type PromptModel = NonNullable<RunTaskInput["model"]>;
+
+type ModelOption = {
+  label: string;
+  model?: PromptModel;
+};
+
 export type AppServices = {
   runtime: OpenCodeRuntime;
   projectRegistry: ProjectRegistry;
@@ -48,7 +59,11 @@ const MAX_LOG_ENTRIES = 200;
 const LOG_SCROLL_STEP = 1;
 const LOG_SCROLL_PAGE = 8;
 
-export function App({ services, defaultProjectDirectory, initialRoute = "project-selector" }: AppProps) {
+export function App({
+  services,
+  defaultProjectDirectory,
+  initialRoute = "project-selector",
+}: AppProps) {
   const { exit } = useApp();
   const { stdout } = useStdout();
   const [loading, setLoading] = useState(true);
@@ -62,10 +77,22 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
   const [tasks, setTasks] = useState<TaskRuntime[]>([]);
   const [selectedTaskIndex, setSelectedTaskIndex] = useState(0);
   const [logs, setLogs] = useState<RuntimeLogEntry[]>([]);
-  const [sessionMessagesByTaskID, setSessionMessagesByTaskID] = useState<Record<string, TaskSessionMessage[]>>({});
+  const [sessionMessagesByTaskID, setSessionMessagesByTaskID] = useState<
+    Record<string, TaskSessionMessage[]>
+  >({});
   const [newProjectPathInput, setNewProjectPathInput] = useState<string>();
   const [newTaskPromptInput, setNewTaskPromptInput] = useState<string>();
-  const [promptByTaskID, setPromptByTaskID] = useState<Record<string, string>>({});
+  const [taskModel, setTaskModel] = useState<PromptModel | undefined>();
+  const [modelOptions, setModelOptions] = useState<ModelOption[]>([]);
+  const [modelFilterInput, setModelFilterInput] = useState("");
+  const [modelPickerOpen, setModelPickerOpen] = useState(false);
+  const [selectedModelOptionIndex, setSelectedModelOptionIndex] = useState(0);
+  const [promptByTaskID, setPromptByTaskID] = useState<Record<string, string>>(
+    {},
+  );
+  const [modelByTaskID, setModelByTaskID] = useState<
+    Record<string, PromptModel | undefined>
+  >({});
   const [followUpPromptInput, setFollowUpPromptInput] = useState<string>();
   const [logViewLevel, setLogViewLevel] = useState<LogViewLevel>("info");
   const [isLogViewOpen, setIsLogViewOpen] = useState(false);
@@ -118,7 +145,9 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
       return logs;
     }
 
-    const scoped = logs.filter((entry) => !entry.taskId || entry.taskId === selectedTask.taskId);
+    const scoped = logs.filter(
+      (entry) => !entry.taskId || entry.taskId === selectedTask.taskId,
+    );
     return scoped;
   }, [logs, selectedTask]);
 
@@ -129,6 +158,24 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
 
     return sessionMessagesByTaskID[selectedTask.taskId] ?? [];
   }, [selectedTask, sessionMessagesByTaskID]);
+
+  const filteredModelOptions = useMemo(() => {
+    return filterModelOptions(modelOptions, modelFilterInput);
+  }, [modelOptions, modelFilterInput]);
+
+  useEffect(() => {
+    if (!modelPickerOpen) {
+      return;
+    }
+
+    setSelectedModelOptionIndex((current) => {
+      if (filteredModelOptions.length === 0) {
+        return 0;
+      }
+
+      return Math.max(0, Math.min(current, filteredModelOptions.length - 1));
+    });
+  }, [filteredModelOptions, modelPickerOpen]);
 
   useEffect(() => {
     setSelectedProjectIndex((current) => {
@@ -160,7 +207,10 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
       try {
         await services.runtime.start();
         await services.orchestrator.initialize();
-        await ensureDefaultProject(services.projectRegistry, defaultProjectDirectory);
+        await ensureDefaultProject(
+          services.projectRegistry,
+          defaultProjectDirectory,
+        );
 
         if (cancelled) {
           return;
@@ -219,11 +269,14 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
         return;
       }
 
-      const payload = event.payload as RuntimeEventMap["session.message.received"];
+      const payload =
+        event.payload as RuntimeEventMap["session.message.received"];
 
       setSessionMessagesByTaskID((current) => {
         const existing = current[payload.taskId] ?? [];
-        if (existing.some((message) => message.messageID === payload.messageID)) {
+        if (
+          existing.some((message) => message.messageID === payload.messageID)
+        ) {
           return current;
         }
 
@@ -244,15 +297,17 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
       });
     });
 
-    const unsubscribeUpdates = services.eventBus.subscribeToUiUpdates((update) => {
-      const text = `${update.scope}.${update.action} (${update.taskId})`;
-      if (update.eventType === "task.failed") {
-        pushBanner("error", text);
-        return;
-      }
+    const unsubscribeUpdates = services.eventBus.subscribeToUiUpdates(
+      (update) => {
+        const text = `${update.scope}.${update.action} (${update.taskId})`;
+        if (update.eventType === "task.failed") {
+          pushBanner("error", text);
+          return;
+        }
 
-      pushBanner("info", text);
-    });
+        pushBanner("info", text);
+      },
+    );
 
     return () => {
       unsubscribeLogs();
@@ -278,41 +333,52 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
     [services.projectRegistry, pushBanner],
   );
 
-  const createProject = useCallback(async (inputPath: string) => {
-    const normalizedInputPath = inputPath.trim();
-    if (!normalizedInputPath) {
-      pushBanner("warn", "Project path is required.");
-      return;
-    }
-
-    const rootDirectory = resolve(normalizedInputPath);
-    const existingProject = projects.find((project) => project.rootDirectory === rootDirectory);
-
-    setBusyMessage("Creating project...");
-    try {
-      if (existingProject) {
-        pushBanner("warn", `Project already exists for ${rootDirectory}. New project was not created.`);
+  const createProject = useCallback(
+    async (inputPath: string) => {
+      const normalizedInputPath = inputPath.trim();
+      if (!normalizedInputPath) {
+        pushBanner("warn", "Project path is required.");
         return;
       }
 
-      const projectName = basename(rootDirectory) || "project";
-      const projectID = buildUniqueProjectID(projectName, projects.map((project) => project.id));
-      const project = await services.projectRegistry.addProject({
-        id: projectID,
-        name: projectName,
-        rootDirectory,
-      });
+      const rootDirectory = resolve(normalizedInputPath);
+      const existingProject = projects.find(
+        (project) => project.rootDirectory === rootDirectory,
+      );
 
-      await services.projectRegistry.selectProject(project.id);
-      await refreshProjects();
-      setRoute("task-board");
-      pushBanner("success", `Created project: ${project.name}`);
-    } catch (error) {
-      pushBanner("error", toErrorMessage(error));
-    } finally {
-      setBusyMessage(undefined);
-    }
-  }, [projects, services.projectRegistry, refreshProjects, pushBanner]);
+      setBusyMessage("Creating project...");
+      try {
+        if (existingProject) {
+          pushBanner(
+            "warn",
+            `Project already exists for ${rootDirectory}. New project was not created.`,
+          );
+          return;
+        }
+
+        const projectName = basename(rootDirectory) || "project";
+        const projectID = buildUniqueProjectID(
+          projectName,
+          projects.map((project) => project.id),
+        );
+        const project = await services.projectRegistry.addProject({
+          id: projectID,
+          name: projectName,
+          rootDirectory,
+        });
+
+        await services.projectRegistry.selectProject(project.id);
+        await refreshProjects();
+        setRoute("task-board");
+        pushBanner("success", `Created project: ${project.name}`);
+      } catch (error) {
+        pushBanner("error", toErrorMessage(error));
+      } finally {
+        setBusyMessage(undefined);
+      }
+    },
+    [projects, services.projectRegistry, refreshProjects, pushBanner],
+  );
 
   const startProjectCreationInput = useCallback(() => {
     const defaultPath = resolve(defaultProjectDirectory ?? process.cwd());
@@ -320,59 +386,81 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
     pushBanner("info", "Enter project path and press Enter to create project.");
   }, [defaultProjectDirectory, pushBanner]);
 
-  const runTask = useCallback(async (initialPrompt?: string) => {
-    if (!activeProject) {
-      pushBanner("warn", "No active project selected.");
-      return;
-    }
+  const runTask = useCallback(
+    async (
+      initialPrompt?: string,
+      model: PromptModel | undefined = taskModel,
+    ) => {
+      if (!activeProject) {
+        pushBanner("warn", "No active project selected.");
+        return;
+      }
 
-    const taskID = createTaskID(activeProject.id);
-    const prompt = initialPrompt?.trim() || buildDefaultPrompt(activeProject.name, taskID);
-    setPromptByTaskID((current) => ({
-      ...current,
-      [taskID]: prompt,
-    }));
+      const prompt = initialPrompt?.trim() || "";
+      const taskID = createTaskID(activeProject.id, prompt);
+      const resolvedPrompt =
+        prompt || buildDefaultPrompt(activeProject.name, taskID);
+      setPromptByTaskID((current) => ({
+        ...current,
+        [taskID]: resolvedPrompt,
+      }));
+      setModelByTaskID((current) => ({
+        ...current,
+        [taskID]: model,
+      }));
 
-    setBusyMessage(`Running ${taskID}...`);
-    try {
-      await services.orchestrator.runTask({
-        taskId: taskID,
-        projectId: activeProject.id,
-        initialPrompt: prompt,
-        title: `Task ${taskID}`,
-      });
-      pushBanner("success", `Task ${taskID} finished.`);
-    } catch (error) {
-      pushBanner("error", toErrorMessage(error));
-    } finally {
-      setBusyMessage(undefined);
-      setTasks(services.orchestrator.listTasks());
-    }
-  }, [activeProject, pushBanner, services.orchestrator]);
+      setBusyMessage(`Running ${taskID}...`);
+      try {
+        await services.orchestrator.runTask({
+          taskId: taskID,
+          projectId: activeProject.id,
+          initialPrompt: resolvedPrompt,
+          title: `Task ${taskID}`,
+          model,
+        });
+        pushBanner("success", `Task ${taskID} finished.`);
+      } catch (error) {
+        pushBanner("error", toErrorMessage(error));
+      } finally {
+        setBusyMessage(undefined);
+        setTasks(services.orchestrator.listTasks());
+      }
+    },
+    [activeProject, pushBanner, services.orchestrator, taskModel],
+  );
 
-  const sendFollowUpPrompt = useCallback(async (prompt: string) => {
-    const task = selectedTask;
-    if (!task) {
-      pushBanner("warn", "No task selected.");
-      return;
-    }
+  const sendFollowUpPrompt = useCallback(
+    async (prompt: string) => {
+      const task = selectedTask;
+      if (!task) {
+        pushBanner("warn", "No task selected.");
+        return;
+      }
 
-    if (task.state !== "review") {
-      pushBanner("warn", "Task must be in review state to send a follow-up prompt.");
-      return;
-    }
+      if (task.state !== "review") {
+        pushBanner(
+          "warn",
+          "Task must be in review state to send a follow-up prompt.",
+        );
+        return;
+      }
 
-    setBusyMessage(`Sending follow-up to ${task.taskId}...`);
-    try {
-      await services.orchestrator.sendFollowUpPrompt(task.taskId, prompt);
-      pushBanner("success", `Follow-up completed for ${task.taskId}. Now in review.`);
-    } catch (error) {
-      pushBanner("error", toErrorMessage(error));
-    } finally {
-      setBusyMessage(undefined);
-      setTasks(services.orchestrator.listTasks());
-    }
-  }, [selectedTask, pushBanner, services.orchestrator]);
+      setBusyMessage(`Sending follow-up to ${task.taskId}...`);
+      try {
+        await services.orchestrator.sendFollowUpPrompt(task.taskId, prompt);
+        pushBanner(
+          "success",
+          `Follow-up completed for ${task.taskId}. Now in review.`,
+        );
+      } catch (error) {
+        pushBanner("error", toErrorMessage(error));
+      } finally {
+        setBusyMessage(undefined);
+        setTasks(services.orchestrator.listTasks());
+      }
+    },
+    [selectedTask, pushBanner, services.orchestrator],
+  );
 
   const mergeSelectedTask = useCallback(async () => {
     const task = selectedTask;
@@ -389,7 +477,10 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
     setBusyMessage(`Merging ${task.taskId}...`);
     try {
       const result = await services.orchestrator.mergeTask(task.taskId);
-      pushBanner("success", `Merged branch ${result.branch} for task ${task.taskId}.`);
+      pushBanner(
+        "success",
+        `Merged branch ${result.branch} for task ${task.taskId}.`,
+      );
     } catch (error) {
       pushBanner("error", toErrorMessage(error));
     } finally {
@@ -406,7 +497,10 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
     }
 
     if (task.state !== "review") {
-      pushBanner("warn", "Task must be in review state to send a follow-up prompt.");
+      pushBanner(
+        "warn",
+        "Task must be in review state to send a follow-up prompt.",
+      );
       return;
     }
 
@@ -421,8 +515,41 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
     }
 
     setNewTaskPromptInput("");
-    pushBanner("info", "Enter the first task prompt and press Enter to run.");
-  }, [activeProject, pushBanner]);
+    pushBanner(
+      "info",
+      `Enter the first task prompt and press Enter to run (model: ${formatModel(taskModel)}).`,
+    );
+  }, [activeProject, pushBanner, taskModel]);
+
+  const openTaskModelPicker = useCallback(async () => {
+    if (!activeProject) {
+      pushBanner("warn", "No active project selected.");
+      return;
+    }
+
+    setBusyMessage("Loading available models...");
+    try {
+      const options = await loadModelOptions(
+        services,
+        activeProject.rootDirectory,
+      );
+      setModelOptions(options);
+      setModelFilterInput("");
+      const activeIndex = options.findIndex((candidate) =>
+        isSameModel(candidate.model, taskModel),
+      );
+      setSelectedModelOptionIndex(activeIndex >= 0 ? activeIndex : 0);
+      setModelPickerOpen(true);
+      pushBanner(
+        "info",
+        "Type to filter models, use arrows, Enter select, Esc cancel.",
+      );
+    } catch (error) {
+      pushBanner("error", toErrorMessage(error));
+    } finally {
+      setBusyMessage(undefined);
+    }
+  }, [activeProject, pushBanner, services, taskModel]);
 
   const toggleLogViewLevel = useCallback(() => {
     setLogViewLevel((current) => {
@@ -440,9 +567,14 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
     });
   }, [pushBanner]);
 
-  const scrollLogsUp = useCallback((step = LOG_SCROLL_STEP) => {
-    setLogScrollOffset((current) => Math.min(current + Math.max(1, step), Math.max(taskLogs.length - 1, 0)));
-  }, [taskLogs.length]);
+  const scrollLogsUp = useCallback(
+    (step = LOG_SCROLL_STEP) => {
+      setLogScrollOffset((current) =>
+        Math.min(current + Math.max(1, step), Math.max(taskLogs.length - 1, 0)),
+      );
+    },
+    [taskLogs.length],
+  );
 
   const scrollLogsDown = useCallback((step = LOG_SCROLL_STEP) => {
     setLogScrollOffset((current) => Math.max(0, current - Math.max(1, step)));
@@ -489,8 +621,20 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
         delete next[task.taskId];
         return next;
       });
+      setModelByTaskID((current) => {
+        if (!(task.taskId in current)) {
+          return current;
+        }
+
+        const next = { ...current };
+        delete next[task.taskId];
+        return next;
+      });
       setTasks(services.orchestrator.listTasks());
-      pushBanner("success", `Deleted task ${task.taskId} and cleaned its worktree.`);
+      pushBanner(
+        "success",
+        `Deleted task ${task.taskId} and cleaned its worktree.`,
+      );
     } catch (error) {
       pushBanner("error", toErrorMessage(error));
     } finally {
@@ -503,9 +647,15 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
   }, [selectedTask?.taskId]);
 
   useInput((input, key) => {
-    const isInTextInputMode = newProjectPathInput !== undefined || newTaskPromptInput !== undefined || followUpPromptInput !== undefined;
-    const wantsMoveUp = (key.upArrow || input === "k") && !key.ctrl && !key.meta;
-    const wantsMoveDown = (key.downArrow || input === "j") && !key.ctrl && !key.meta;
+    const isInTextInputMode =
+      newProjectPathInput !== undefined ||
+      newTaskPromptInput !== undefined ||
+      modelPickerOpen ||
+      followUpPromptInput !== undefined;
+    const wantsMoveUp =
+      (key.upArrow || input === "k") && !key.ctrl && !key.meta;
+    const wantsMoveDown =
+      (key.downArrow || input === "j") && !key.ctrl && !key.meta;
 
     if (key.ctrl && input === "c") {
       exit();
@@ -585,11 +735,21 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
       }
 
       if (key.backspace || key.delete) {
-        setNewProjectPathInput((current) => (current && current.length > 0 ? current.slice(0, -1) : ""));
+        setNewProjectPathInput((current) =>
+          current && current.length > 0 ? current.slice(0, -1) : "",
+        );
         return;
       }
 
-      if (input && !key.ctrl && !key.meta && !key.upArrow && !key.downArrow && !key.leftArrow && !key.rightArrow) {
+      if (
+        input &&
+        !key.ctrl &&
+        !key.meta &&
+        !key.upArrow &&
+        !key.downArrow &&
+        !key.leftArrow &&
+        !key.rightArrow
+      ) {
         setNewProjectPathInput((current) => `${current ?? ""}${input}`);
       }
 
@@ -611,17 +771,84 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
         }
 
         setNewTaskPromptInput(undefined);
-        void runTask(promptToSubmit);
+        void runTask(promptToSubmit, taskModel);
         return;
       }
 
       if (key.backspace || key.delete) {
-        setNewTaskPromptInput((current) => (current && current.length > 0 ? current.slice(0, -1) : ""));
+        setNewTaskPromptInput((current) =>
+          current && current.length > 0 ? current.slice(0, -1) : "",
+        );
         return;
       }
 
-      if (input && !key.ctrl && !key.meta && !key.upArrow && !key.downArrow && !key.leftArrow && !key.rightArrow) {
+      if (
+        input &&
+        !key.ctrl &&
+        !key.meta &&
+        !key.upArrow &&
+        !key.downArrow &&
+        !key.leftArrow &&
+        !key.rightArrow
+      ) {
         setNewTaskPromptInput((current) => `${current ?? ""}${input}`);
+      }
+
+      return;
+    }
+
+    if (modelPickerOpen) {
+      if (key.escape) {
+        setModelPickerOpen(false);
+        setModelFilterInput("");
+        pushBanner("info", "Model selection cancelled.");
+        return;
+      }
+
+      if (key.return) {
+        const selectedOption = filteredModelOptions[selectedModelOptionIndex];
+        if (!selectedOption) {
+          pushBanner("warn", "No matching model option is selected.");
+          return;
+        }
+        setTaskModel(selectedOption.model);
+        setModelPickerOpen(false);
+        setModelFilterInput("");
+        pushBanner("success", `Task model set to ${selectedOption.label}.`);
+        return;
+      }
+
+      if (key.upArrow && !key.ctrl && !key.meta) {
+        setSelectedModelOptionIndex((current) => Math.max(0, current - 1));
+        return;
+      }
+
+      if (key.downArrow && !key.ctrl && !key.meta) {
+        setSelectedModelOptionIndex((current) =>
+          Math.min(filteredModelOptions.length - 1, current + 1),
+        );
+        return;
+      }
+
+      if (key.backspace || key.delete) {
+        setModelFilterInput((current) => current.slice(0, -1));
+        setSelectedModelOptionIndex(0);
+        return;
+      }
+
+      if (
+        input &&
+        !key.ctrl &&
+        !key.meta &&
+        !key.upArrow &&
+        !key.downArrow &&
+        !key.leftArrow &&
+        !key.rightArrow &&
+        input.length === 1
+      ) {
+        setModelFilterInput((current) => `${current}${input}`);
+        setSelectedModelOptionIndex(0);
+        return;
       }
 
       return;
@@ -647,11 +874,21 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
       }
 
       if (key.backspace || key.delete) {
-        setFollowUpPromptInput((current) => (current && current.length > 0 ? current.slice(0, -1) : ""));
+        setFollowUpPromptInput((current) =>
+          current && current.length > 0 ? current.slice(0, -1) : "",
+        );
         return;
       }
 
-      if (input && !key.ctrl && !key.meta && !key.upArrow && !key.downArrow && !key.leftArrow && !key.rightArrow) {
+      if (
+        input &&
+        !key.ctrl &&
+        !key.meta &&
+        !key.upArrow &&
+        !key.downArrow &&
+        !key.leftArrow &&
+        !key.rightArrow
+      ) {
         setFollowUpPromptInput((current) => `${current ?? ""}${input}`);
       }
 
@@ -665,7 +902,9 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
       }
 
       if (wantsMoveDown) {
-        setSelectedProjectIndex((current) => Math.min(projects.length - 1, current + 1));
+        setSelectedProjectIndex((current) =>
+          Math.min(projects.length - 1, current + 1),
+        );
         return;
       }
 
@@ -691,12 +930,19 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
     }
 
     if (wantsMoveDown) {
-      setSelectedTaskIndex((current) => Math.min(tasksForActiveProject.length - 1, current + 1));
+      setSelectedTaskIndex((current) =>
+        Math.min(tasksForActiveProject.length - 1, current + 1),
+      );
       return;
     }
 
     if (input === "n") {
       startTaskPromptInput();
+      return;
+    }
+
+    if (input === "o") {
+      void openTaskModelPicker();
       return;
     }
 
@@ -714,25 +960,36 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
       void mergeSelectedTask();
       return;
     }
-
   });
 
   const frameWidth = Math.max(stdout.columns ?? 40, 40);
   const frameHeight = Math.max(stdout.rows ?? 16, 16);
-  const logVisibleRows = Math.max(isLogViewOpen ? frameHeight - 8 : Math.floor(frameHeight / 3), 6);
+  const logVisibleRows = Math.max(
+    isLogViewOpen ? frameHeight - 8 : Math.floor(frameHeight / 3),
+    6,
+  );
 
   return (
-    <Box flexDirection="column" width={frameWidth} height={frameHeight} paddingX={1}>
+    <Box
+      flexDirection="column"
+      width={frameWidth}
+      height={frameHeight}
+      paddingX={1}
+    >
       <Box marginBottom={1}>
         <Text color="cyanBright">iKanban</Text>
         <Text> - {ROUTE_DESCRIPTORS[route].title}</Text>
-        <Text color={services.runtime.isRunning() ? "green" : "red"}> | runtime {services.runtime.isRunning() ? "up" : "down"}</Text>
+        <Text color={services.runtime.isRunning() ? "green" : "red"}>
+          {" "}
+          | runtime {services.runtime.isRunning() ? "up" : "down"}
+        </Text>
       </Box>
 
       {statusBanner ? (
         <Box marginBottom={1}>
           <Text color={toInkColor(statusBanner.tone)}>
-            [{statusBanner.tone.toUpperCase()}] {statusBanner.message} ({formatTime(statusBanner.at)})
+            [{statusBanner.tone.toUpperCase()}] {statusBanner.message} (
+            {formatTime(statusBanner.at)})
           </Text>
         </Box>
       ) : null}
@@ -768,11 +1025,14 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
         ) : (
           <Box flexDirection="column" flexGrow={1}>
             <Box flexDirection="column">
-              <Text color="magentaBright">Tasks ({activeProject?.name ?? "none"})</Text>
+              <Text color="magentaBright">
+                Tasks ({activeProject?.name ?? "none"})
+              </Text>
               <Box marginTop={1} flexDirection="column">
                 <TaskBoardView
                   tasks={tasksForActiveProject}
                   selectedTaskIndex={selectedTaskIndex}
+                  pendingTaskModelLabel={formatModel(taskModel)}
                 />
               </Box>
             </Box>
@@ -785,8 +1045,13 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
                     <Text>Task: {selectedTask.taskId}</Text>
                     <Text>State: {selectedTask.state}</Text>
                     <Text>Project: {selectedTask.projectId}</Text>
+                    <Text>
+                      Model: {formatModel(modelByTaskID[selectedTask.taskId])}
+                    </Text>
                     <Text>Session: {selectedTask.sessionID ?? "-"}</Text>
-                    <Text>Worktree: {selectedTask.worktreeDirectory ?? "-"}</Text>
+                    <Text>
+                      Worktree: {selectedTask.worktreeDirectory ?? "-"}
+                    </Text>
                     <Text>Error: {selectedTask.error ?? "-"}</Text>
                   </>
                 ) : (
@@ -798,8 +1063,12 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
                 <Text color="cyan">Conversation</Text>
                 {taskMessages.length > 0 ? (
                   taskMessages.slice(-6).map((message) => (
-                    <Text key={message.messageID} color={message.role === "assistant" ? "green" : undefined}>
-                      [{message.role}] {truncate(message.preview || "(no text preview)", 120)}
+                    <Text
+                      key={message.messageID}
+                      color={message.role === "assistant" ? "green" : undefined}
+                    >
+                      [{message.role}]{" "}
+                      {truncate(message.preview || "(no text preview)", 120)}
                     </Text>
                   ))
                 ) : (
@@ -813,7 +1082,9 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
 
       {newProjectPathInput !== undefined ? (
         <Box marginTop={1}>
-          <Text color="cyan">New project path: {newProjectPathInput || " "}</Text>
+          <Text color="cyan">
+            New project path: {newProjectPathInput || " "}
+          </Text>
         </Box>
       ) : null}
 
@@ -823,9 +1094,34 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
         </Box>
       ) : null}
 
+      {modelPickerOpen ? (
+        <Box marginTop={1} flexDirection="column">
+          <Text color="cyan">Select task model (Enter save, Esc cancel)</Text>
+          <Text color="gray">Filter: {modelFilterInput || "(none)"}</Text>
+          {filteredModelOptions.length > 0 ? (
+            visibleModelOptions(
+              filteredModelOptions,
+              selectedModelOptionIndex,
+              8,
+            ).map((option) => (
+              <Text
+                key={option.label}
+                color={option.isSelected ? "green" : undefined}
+              >
+                {option.isSelected ? ">" : " "} {option.label}
+              </Text>
+            ))
+          ) : (
+            <Text color="yellow">(no matching models)</Text>
+          )}
+        </Box>
+      ) : null}
+
       {followUpPromptInput !== undefined ? (
         <Box marginTop={1}>
-          <Text color="cyan">Follow-up prompt: {followUpPromptInput || " "}</Text>
+          <Text color="cyan">
+            Follow-up prompt: {followUpPromptInput || " "}
+          </Text>
         </Box>
       ) : null}
 
@@ -834,6 +1130,7 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
           {keyboardHints(route, {
             isCreatingProject: newProjectPathInput !== undefined,
             isCreatingTask: newTaskPromptInput !== undefined,
+            isEditingTaskModel: modelPickerOpen,
             isFollowUpPrompt: followUpPromptInput !== undefined,
             logViewLevel,
             isLogViewOpen,
@@ -852,7 +1149,14 @@ export function App({ services, defaultProjectDirectory, initialRoute = "project
 
 function keyboardHints(
   route: AppRoute,
-  options: { isCreatingProject: boolean; isCreatingTask: boolean; isFollowUpPrompt: boolean; logViewLevel: LogViewLevel; isLogViewOpen: boolean },
+  options: {
+    isCreatingProject: boolean;
+    isCreatingTask: boolean;
+    isEditingTaskModel: boolean;
+    isFollowUpPrompt: boolean;
+    logViewLevel: LogViewLevel;
+    isLogViewOpen: boolean;
+  },
 ): string {
   if (options.isLogViewOpen) {
     return `Keys: j/k line | u/d page | g/G oldest/latest | v log ${options.logViewLevel} | l close logs | q quit`;
@@ -868,9 +1172,13 @@ function keyboardHints(
     return "Keys: Type prompt | Enter send | Esc cancel";
   }
 
+  if (options.isEditingTaskModel) {
+    return "Keys: Type to filter | Up/Down move | Backspace delete | Enter save | Esc cancel";
+  }
+
   return options.isCreatingTask
     ? "Keys: Type prompt | Enter run | Esc cancel"
-    : "Keys: Up/Down or k/j move | n new task | p follow-up prompt | m merge | d delete | l logs | Tab switch | q quit";
+    : "Keys: Up/Down or k/j move | n new task | o task model | p follow-up prompt | m merge | d delete | l logs | Tab switch | q quit";
 }
 
 async function ensureDefaultProject(
@@ -909,14 +1217,6 @@ function relayOrchestratorEvent(
       return;
     }
     case "task.state.changed": {
-      bus.emit("task.state.updated", {
-        taskId: event.task.taskId,
-        projectId: event.task.projectId,
-        previousState: event.from,
-        nextState: event.to,
-        updatedAt: event.task.updatedAt,
-        error: event.task.error,
-      });
       if (event.to === "completed") {
         bus.emit("task.completed", {
           taskId: event.task.taskId,
@@ -1016,10 +1316,18 @@ function relayOrchestratorEvent(
   }
 }
 
-function createTaskID(seed: string): string {
-  const normalized = toSlug(seed);
-  const base = normalized.length > 0 ? normalized : "task";
-  return `${base}-${Date.now()}`;
+function createTaskID(seed: string, prompt?: string): string {
+  const hash = simpleHash(seed + Date.now().toString()).slice(0, 7);
+  const promptSlice = prompt ? toSlug(prompt).slice(0, 16) : "";
+  return promptSlice ? `${promptSlice}-${hash}` : `task-${hash}`;
+}
+
+function simpleHash(input: string): string {
+  let h = 0;
+  for (let i = 0; i < input.length; i++) {
+    h = ((h << 5) - h + input.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h).toString(36);
 }
 
 function buildDefaultPrompt(projectName: string, taskID: string): string {
@@ -1028,6 +1336,165 @@ function buildDefaultPrompt(projectName: string, taskID: string): string {
 
 function buildRetryPrompt(taskID: string): string {
   return `Retry task ${taskID}. Address the previous failure and continue with the same objective.`;
+}
+
+function formatModel(model: PromptModel | undefined): string {
+  if (!model) {
+    return "default";
+  }
+
+  return `${model.providerID}/${model.modelID}`;
+}
+
+function isSameModel(
+  left: PromptModel | undefined,
+  right: PromptModel | undefined,
+): boolean {
+  if (!left && !right) {
+    return true;
+  }
+
+  if (!left || !right) {
+    return false;
+  }
+
+  return left.providerID === right.providerID && left.modelID === right.modelID;
+}
+
+async function loadModelOptions(
+  services: AppServices,
+  directory: string,
+): Promise<ModelOption[]> {
+  const client = await services.runtime.getClient(directory);
+  const response = await client.config.providers({ directory });
+
+  if (response.error) {
+    throw new Error(
+      `Failed to load models: ${formatUnknownError(response.error)}`,
+    );
+  }
+
+  const data = response.data as
+    | {
+      providers?: Array<{
+        id?: string;
+        models?: Record<string, unknown>;
+      }>;
+    }
+    | undefined;
+
+  const options: ModelOption[] = [{ label: "default", model: undefined }];
+  const seen = new Set<string>();
+
+  for (const provider of data?.providers ?? []) {
+    const providerID = provider.id?.trim();
+    if (!providerID || !provider.models) {
+      continue;
+    }
+
+    for (const modelID of Object.keys(provider.models)) {
+      const key = `${providerID}/${modelID}`;
+      if (seen.has(key)) {
+        continue;
+      }
+
+      seen.add(key);
+      options.push({
+        label: key,
+        model: {
+          providerID,
+          modelID,
+        },
+      });
+    }
+  }
+
+  if (options.length === 1) {
+    return options;
+  }
+
+  const explicit = options
+    .slice(1)
+    .sort((left, right) => left.label.localeCompare(right.label));
+  const [defaultOption] = options;
+  return defaultOption ? [defaultOption, ...explicit] : explicit;
+}
+
+function visibleModelOptions(
+  options: ModelOption[],
+  selectedIndex: number,
+  maxRows: number,
+): Array<ModelOption & { isSelected: boolean }> {
+  if (options.length === 0) {
+    return [];
+  }
+
+  const clampedRows = Math.max(1, maxRows);
+  const safeSelectedIndex = Math.max(
+    0,
+    Math.min(selectedIndex, options.length - 1),
+  );
+  if (options.length <= clampedRows) {
+    return options.map((option, index) => ({
+      ...option,
+      isSelected: index === safeSelectedIndex,
+    }));
+  }
+
+  const half = Math.floor(clampedRows / 2);
+  const start = Math.max(
+    0,
+    Math.min(safeSelectedIndex - half, options.length - clampedRows),
+  );
+  const end = start + clampedRows;
+  return options.slice(start, end).map((option, index) => ({
+    ...option,
+    isSelected: start + index === safeSelectedIndex,
+  }));
+}
+
+function formatUnknownError(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (typeof error === "string") {
+    return error;
+  }
+
+  return "Unknown SDK error";
+}
+
+function filterModelOptions(
+  options: ModelOption[],
+  query: string,
+): ModelOption[] {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) {
+    return options;
+  }
+
+  return options.filter((option) =>
+    fuzzyMatches(option.label.toLowerCase(), normalizedQuery),
+  );
+}
+
+function fuzzyMatches(text: string, query: string): boolean {
+  if (!query) {
+    return true;
+  }
+
+  let textIndex = 0;
+  let queryIndex = 0;
+
+  while (textIndex < text.length && queryIndex < query.length) {
+    if (text[textIndex] === query[queryIndex]) {
+      queryIndex += 1;
+    }
+    textIndex += 1;
+  }
+
+  return queryIndex === query.length;
 }
 
 function toSlug(value: string): string {
@@ -1039,7 +1506,10 @@ function toSlug(value: string): string {
     .slice(0, 36);
 }
 
-function buildUniqueProjectID(projectName: string, existingProjectIDs: string[]): string {
+function buildUniqueProjectID(
+  projectName: string,
+  existingProjectIDs: string[],
+): string {
   const base = toSlug(projectName) || "project";
   const existing = new Set(existingProjectIDs);
 

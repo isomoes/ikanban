@@ -5,11 +5,17 @@ import type { TaskRuntime, TaskState } from "../../domain/task";
 type TaskBoardViewProps = {
   tasks: TaskRuntime[];
   selectedTaskIndex: number;
+  pendingTaskModelLabel: string;
 };
 
-export function TaskBoardView({ tasks, selectedTaskIndex }: TaskBoardViewProps) {
+export function TaskBoardView({ tasks, selectedTaskIndex, pendingTaskModelLabel }: TaskBoardViewProps) {
   if (tasks.length === 0) {
-    return <Text color="yellow">No tasks for active project.</Text>;
+    return (
+      <Box flexDirection="column">
+        <Text color="gray">New task model: {pendingTaskModelLabel}</Text>
+        <Text color="yellow">No tasks for active project.</Text>
+      </Box>
+    );
   }
 
   const selectedTaskId = tasks[selectedTaskIndex]?.taskId;
@@ -18,6 +24,7 @@ export function TaskBoardView({ tasks, selectedTaskIndex }: TaskBoardViewProps) 
   return (
     <Box flexDirection="column">
       <Text color="gray">Press d to delete selected task and clean worktree.</Text>
+      <Text color="gray">New task model: {pendingTaskModelLabel}</Text>
       <Text color="cyan">Task board by status</Text>
       <Box marginTop={1} flexDirection="row" flexWrap="wrap" columnGap={2} rowGap={1}>
         {STATUS_COLUMNS.map((column) => {
