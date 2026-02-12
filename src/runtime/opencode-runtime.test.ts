@@ -69,7 +69,7 @@ describe("OpenCodeRuntime lifecycle", () => {
     await runtime.start();
     await runtime.stop();
 
-    expect(createdRuntimes[0].server.closeCalls).toBe(1);
+    expect(createdRuntimes[0]!.server.closeCalls).toBe(1);
     expect(runtime.isRunning()).toBe(false);
 
     const restarted = await runtime.start();
@@ -95,7 +95,7 @@ describe("OpenCodeRuntime lifecycle", () => {
 
     expect(first.server.url).toBe("http://localhost:9000");
     expect(second.server.url).toBe("http://localhost:9001");
-    expect(createdRuntimes[0].server.closeCalls).toBe(1);
+    expect(createdRuntimes[0]!.server.closeCalls).toBe(1);
   });
 });
 
