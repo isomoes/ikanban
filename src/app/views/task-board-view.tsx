@@ -112,10 +112,6 @@ function groupTasksByColumn(tasks: TaskRuntime[]): Record<StatusColumn["key"], T
     grouped[column.key].push(task);
   }
 
-  for (const key of Object.keys(grouped) as StatusColumn["key"][]) {
-    grouped[key].sort((a, b) => b.updatedAt - a.updatedAt);
-  }
-
   return grouped;
 }
 

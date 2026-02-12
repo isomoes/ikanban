@@ -704,10 +704,8 @@ export function App({
       newTaskPromptInput !== undefined ||
       modelPickerOpen ||
       followUpPromptInput !== undefined;
-    const wantsMoveUp =
-      (key.upArrow || input === "k") && !key.ctrl && !key.meta;
-    const wantsMoveDown =
-      (key.downArrow || input === "j") && !key.ctrl && !key.meta;
+    const wantsMoveUp = input === "k" && !key.ctrl && !key.meta;
+    const wantsMoveDown = input === "j" && !key.ctrl && !key.meta;
 
     if (key.ctrl && input === "c") {
       exit();
@@ -1222,7 +1220,7 @@ function keyboardHints(
   if (route === "project-selector") {
     return options.isCreatingProject
       ? "Keys: type path | Enter create | Esc cancel"
-      : "Keys: Up/Down or j/k | Enter open | n new | d delete | l logs | Tab board | q quit";
+      : "Keys: j/k move | Enter open | n new | d delete | l logs | Tab board | q quit";
   }
 
   if (options.isFollowUpPrompt) {
@@ -1235,7 +1233,7 @@ function keyboardHints(
 
   return options.isCreatingTask
     ? "Keys: type prompt | Enter run | Esc cancel"
-    : "Keys: Up/Down or j/k | n new | o model | p follow-up | m merge | d delete | l logs | Tab projects | q quit";
+    : "Keys: j/k move | n new | o model | p follow-up | m merge | d delete | l logs | Tab projects | q quit";
 }
 
 async function ensureDefaultProject(
