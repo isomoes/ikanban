@@ -8,6 +8,7 @@ import {
   type TaskState,
 } from "../domain/task";
 import type { ProjectRef } from "../domain/project";
+import type { TaskRegistry } from "./task-registry";
 import type { ProjectRegistry } from "./project-registry";
 import type {
   ConversationManager,
@@ -24,6 +25,7 @@ import { resolveCleanupPolicy } from "./worktree-manager";
 import { noopRuntimeLogger, toStructuredError, type RuntimeLogger } from "./runtime-logger";
 
 type ProjectRegistryLike = Pick<ProjectRegistry, "getProject" | "getActiveProject">;
+type TaskRegistryLike = Pick<TaskRegistry, "listTasks" | "upsertTask">;
 
 type WorktreeManagerLike = Pick<
   WorktreeManager,
@@ -140,6 +142,7 @@ type CleanupExecutionResult = {
 
 export class TaskOrchestrator {
   private readonly projectRegistry: ProjectRegistryLike;
+  private readonly taskRegistry?: TaskRegistryLike;
   private readonly worktreeManager: WorktreeManagerLike;
   private readonly conversationManager: ConversationManagerLike;
   private readonly maxConcurrent: number;
@@ -150,16 +153,20 @@ export class TaskOrchestrator {
   private readonly taskQueue: QueueEntry[] = [];
   private readonly runningTaskIds = new Set<string>();
   private readonly listeners = new Set<(event: TaskOrchestratorEvent) => void>();
+  private initialized = false;
+  private initializationPromise?: Promise<void>;
 
   constructor(
     dependencies: {
       projectRegistry: ProjectRegistryLike;
+      taskRegistry?: TaskRegistryLike;
       worktreeManager: WorktreeManagerLike;
       conversationManager: ConversationManagerLike;
     },
     options: TaskOrchestratorOptions = {},
   ) {
     this.projectRegistry = dependencies.projectRegistry;
+    this.taskRegistry = dependencies.taskRegistry;
     this.worktreeManager = dependencies.worktreeManager;
     this.conversationManager = dependencies.conversationManager;
     this.maxConcurrent = normalizeMaxConcurrent(options.maxConcurrent);
@@ -168,7 +175,13 @@ export class TaskOrchestrator {
     this.logger = options.logger ?? noopRuntimeLogger;
   }
 
-  runTask(input: RunTaskInput): Promise<RunTaskResult> {
+  async initialize(): Promise<void> {
+    await this.ensureInitialized();
+  }
+
+  async runTask(input: RunTaskInput): Promise<RunTaskResult> {
+    await this.ensureInitialized();
+
     const taskId = normalizeId(input.taskId, "Task id");
     const prompt = normalizePrompt(input.initialPrompt);
     const timestamp = normalizeTimestamp(input.timestamp ?? Date.now(), "Timestamp");
@@ -188,6 +201,7 @@ export class TaskOrchestrator {
 
     assertTaskRuntimeInvariants(runtime);
     this.tasksById.set(taskId, runtime);
+    this.persistTask(runtime);
 
     return new Promise<RunTaskResult>((resolve, reject) => {
       this.taskQueue.push({
@@ -255,6 +269,41 @@ export class TaskOrchestrator {
         this.runningTaskIds.delete(taskId);
         this.schedule();
       });
+    }
+  }
+
+  private async ensureInitialized(): Promise<void> {
+    if (this.initialized) {
+      return;
+    }
+
+    if (!this.initializationPromise) {
+      this.initializationPromise = this.loadPersistedTasks()
+        .catch((error) => {
+          this.logger.log({
+            level: "error",
+            source: "task-orchestrator.load",
+            message: "Failed to load persisted tasks.",
+            error: toStructuredError(error),
+          });
+        })
+        .finally(() => {
+          this.initialized = true;
+          this.initializationPromise = undefined;
+        });
+    }
+
+    await this.initializationPromise;
+  }
+
+  private async loadPersistedTasks(): Promise<void> {
+    if (!this.taskRegistry) {
+      return;
+    }
+
+    const persistedTasks = await this.taskRegistry.listTasks();
+    for (const task of persistedTasks) {
+      this.tasksById.set(task.taskId, task);
     }
   }
 
@@ -507,6 +556,7 @@ export class TaskOrchestrator {
     };
     assertTaskRuntimeInvariants(nextTask);
     this.tasksById.set(taskId, nextTask);
+    this.persistTask(nextTask);
     this.emit({
       type: "task.state.changed",
       task: nextTask,
@@ -539,8 +589,28 @@ export class TaskOrchestrator {
 
     assertTaskRuntimeInvariants(nextTask);
     this.tasksById.set(taskId, nextTask);
+    this.persistTask(nextTask);
 
     return nextTask;
+  }
+
+  private persistTask(task: TaskRuntime): void {
+    if (!this.taskRegistry) {
+      return;
+    }
+
+    void this.taskRegistry.upsertTask(task).catch((error) => {
+      this.logger.log({
+        level: "error",
+        source: "task-orchestrator.persist",
+        message: "Failed to persist task.",
+        context: {
+          taskId: task.taskId,
+          state: task.state,
+        },
+        error: toStructuredError(error),
+      });
+    });
   }
 
   private getTaskOrThrow(taskId: string): TaskRuntime {
