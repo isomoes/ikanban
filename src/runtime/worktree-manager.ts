@@ -165,6 +165,17 @@ export class WorktreeManager {
       worktreeDirectory,
       "Worktree directory",
     );
+    // Resolve the branch name before removing the worktree
+    let worktreeBranch: string | undefined;
+    try {
+      worktreeBranch =
+        (
+          await Bun.$`git -C ${normalizedWorktreeDirectory} rev-parse --abbrev-ref HEAD`.text()
+        ).trim() || undefined;
+    } catch {
+      // Worktree dir may already be gone; ignore
+    }
+
     const client = await this.runtime.getClient(normalizedProjectDirectory);
     const wasRemoved = await readDataOrThrow<boolean>(
       client.worktree.remove({
@@ -177,6 +188,15 @@ export class WorktreeManager {
     );
 
     if (wasRemoved) {
+      // Delete the branch associated with the worktree
+      if (worktreeBranch && worktreeBranch !== "HEAD") {
+        try {
+          await Bun.$`git -C ${normalizedProjectDirectory} branch -D ${worktreeBranch}`.quiet();
+        } catch {
+          // Branch may already be gone; ignore
+        }
+      }
+
       for (const [
         taskId,
         directory,
@@ -310,7 +330,7 @@ export class WorktreeManager {
 
       try {
         await Bun.$`git -C ${worktreeDirectory} add -A`.text();
-        await Bun.$`git -C ${worktreeDirectory} commit -m ${branch + " (ikanban)"}`.text();
+        await Bun.$`git -C ${worktreeDirectory} commit -m ${taskId + " (ikanban)"}`.text();
       } catch (error) {
         throw new Error(
           `Failed to commit uncommitted changes in worktree ${branch}: ${formatUnknownError(error)}`,
@@ -343,9 +363,10 @@ export class WorktreeManager {
       context: { taskId, branch, defaultBranch },
     });
 
-    // Merge the worktree branch into the default branch
+    // Squash merge the worktree branch into the default branch (single commit)
     try {
-      await Bun.$`git -C ${projectDirectory} merge ${branch} --no-ff -m ${branch + " (ikanban)"}`.text();
+      await Bun.$`git -C ${projectDirectory} merge --squash ${branch}`.text();
+      await Bun.$`git -C ${projectDirectory} commit -m ${taskId + " (ikanban)"}`.text();
     } catch (error) {
       throw new Error(
         `Failed to merge ${branch} into ${defaultBranch}: ${formatUnknownError(error)}`,
@@ -355,7 +376,7 @@ export class WorktreeManager {
     this.logger.log({
       level: "info",
       source: logSource,
-      message: `Merged ${branch} into ${defaultBranch} for task ${taskId}.`,
+      message: `Squash-merged ${branch} into ${defaultBranch} for task ${taskId}.`,
       context: { taskId, branch, defaultBranch },
     });
 
