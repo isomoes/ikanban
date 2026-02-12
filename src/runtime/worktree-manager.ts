@@ -64,13 +64,21 @@ export class WorktreeManager {
   private readonly logger: RuntimeLogger;
   private readonly taskToWorktreeDirectory = new Map<string, string>();
 
-  constructor(runtime: RuntimeClientProvider, options?: { logger?: RuntimeLogger }) {
+  constructor(
+    runtime: RuntimeClientProvider,
+    options?: { logger?: RuntimeLogger },
+  ) {
     this.runtime = runtime;
     this.logger = options?.logger ?? noopRuntimeLogger;
   }
 
-  async createTaskWorktree(input: CreateTaskWorktreeInput): Promise<ManagedWorktree> {
-    const projectDirectory = normalizeDirectory(input.projectDirectory, "Project directory");
+  async createTaskWorktree(
+    input: CreateTaskWorktreeInput,
+  ): Promise<ManagedWorktree> {
+    const projectDirectory = normalizeDirectory(
+      input.projectDirectory,
+      "Project directory",
+    );
     const taskId = normalizeTaskId(input.taskId);
     const createdAt = normalizeTimestamp(input.timestamp ?? Date.now());
     const name = buildTaskWorktreeName(taskId, createdAt);
@@ -86,7 +94,10 @@ export class WorktreeManager {
       "Failed to create worktree",
     );
 
-    const worktreeDirectory = normalizeDirectory(payload.directory, "Worktree directory");
+    const worktreeDirectory = normalizeDirectory(
+      payload.directory,
+      "Worktree directory",
+    );
     this.taskToWorktreeDirectory.set(taskId, worktreeDirectory);
 
     return {
@@ -100,7 +111,10 @@ export class WorktreeManager {
   }
 
   async listWorktrees(projectDirectory: string): Promise<string[]> {
-    const normalizedProjectDirectory = normalizeDirectory(projectDirectory, "Project directory");
+    const normalizedProjectDirectory = normalizeDirectory(
+      projectDirectory,
+      "Project directory",
+    );
     const client = await this.runtime.getClient(normalizedProjectDirectory);
     const directories = await readDataOrThrow<string[]>(
       client.worktree.list({
@@ -109,12 +123,23 @@ export class WorktreeManager {
       "Failed to list worktrees",
     );
 
-    return directories.map((directory) => normalizeDirectory(directory, "Worktree directory"));
+    return directories.map((directory) =>
+      normalizeDirectory(directory, "Worktree directory"),
+    );
   }
 
-  async resetWorktree(projectDirectory: string, worktreeDirectory: string): Promise<boolean> {
-    const normalizedProjectDirectory = normalizeDirectory(projectDirectory, "Project directory");
-    const normalizedWorktreeDirectory = normalizeDirectory(worktreeDirectory, "Worktree directory");
+  async resetWorktree(
+    projectDirectory: string,
+    worktreeDirectory: string,
+  ): Promise<boolean> {
+    const normalizedProjectDirectory = normalizeDirectory(
+      projectDirectory,
+      "Project directory",
+    );
+    const normalizedWorktreeDirectory = normalizeDirectory(
+      worktreeDirectory,
+      "Worktree directory",
+    );
     const client = await this.runtime.getClient(normalizedProjectDirectory);
 
     return readDataOrThrow<boolean>(
@@ -128,9 +153,18 @@ export class WorktreeManager {
     );
   }
 
-  async removeWorktree(projectDirectory: string, worktreeDirectory: string): Promise<boolean> {
-    const normalizedProjectDirectory = normalizeDirectory(projectDirectory, "Project directory");
-    const normalizedWorktreeDirectory = normalizeDirectory(worktreeDirectory, "Worktree directory");
+  async removeWorktree(
+    projectDirectory: string,
+    worktreeDirectory: string,
+  ): Promise<boolean> {
+    const normalizedProjectDirectory = normalizeDirectory(
+      projectDirectory,
+      "Project directory",
+    );
+    const normalizedWorktreeDirectory = normalizeDirectory(
+      worktreeDirectory,
+      "Worktree directory",
+    );
     const client = await this.runtime.getClient(normalizedProjectDirectory);
     const wasRemoved = await readDataOrThrow<boolean>(
       client.worktree.remove({
@@ -143,7 +177,10 @@ export class WorktreeManager {
     );
 
     if (wasRemoved) {
-      for (const [taskId, directory] of this.taskToWorktreeDirectory.entries()) {
+      for (const [
+        taskId,
+        directory,
+      ] of this.taskToWorktreeDirectory.entries()) {
         if (directory === normalizedWorktreeDirectory) {
           this.taskToWorktreeDirectory.delete(taskId);
         }
@@ -153,15 +190,22 @@ export class WorktreeManager {
     return wasRemoved;
   }
 
-  async cleanupTaskWorktree(input: CleanupTaskWorktreeInput): Promise<CleanupTaskWorktreeResult> {
+  async cleanupTaskWorktree(
+    input: CleanupTaskWorktreeInput,
+  ): Promise<CleanupTaskWorktreeResult> {
     const taskId = normalizeTaskId(input.taskId);
     const policy = resolveCleanupPolicy(input.policy);
-    const normalizedProjectDirectory = normalizeDirectory(input.projectDirectory, "Project directory");
+    const normalizedProjectDirectory = normalizeDirectory(
+      input.projectDirectory,
+      "Project directory",
+    );
     const explicitDirectory = input.worktreeDirectory
       ? normalizeDirectory(input.worktreeDirectory, "Worktree directory")
       : undefined;
     const resolvedDirectory =
-      explicitDirectory ?? this.taskToWorktreeDirectory.get(taskId) ?? undefined;
+      explicitDirectory ??
+      this.taskToWorktreeDirectory.get(taskId) ??
+      undefined;
 
     if (!resolvedDirectory) {
       return {
@@ -181,7 +225,10 @@ export class WorktreeManager {
       };
     }
 
-    const removed = await this.removeWorktree(normalizedProjectDirectory, resolvedDirectory);
+    const removed = await this.removeWorktree(
+      normalizedProjectDirectory,
+      resolvedDirectory,
+    );
 
     if (removed) {
       this.taskToWorktreeDirectory.delete(taskId);
@@ -195,10 +242,18 @@ export class WorktreeManager {
     };
   }
 
-  async mergeTaskWorktree(input: MergeTaskWorktreeInput): Promise<MergeTaskWorktreeResult> {
+  async mergeTaskWorktree(
+    input: MergeTaskWorktreeInput,
+  ): Promise<MergeTaskWorktreeResult> {
     const taskId = normalizeTaskId(input.taskId);
-    const projectDirectory = normalizeDirectory(input.projectDirectory, "Project directory");
-    const worktreeDirectory = normalizeDirectory(input.worktreeDirectory, "Worktree directory");
+    const projectDirectory = normalizeDirectory(
+      input.projectDirectory,
+      "Project directory",
+    );
+    const worktreeDirectory = normalizeDirectory(
+      input.worktreeDirectory,
+      "Worktree directory",
+    );
     const logSource = "worktree-manager.merge";
 
     this.logger.log({
@@ -209,10 +264,13 @@ export class WorktreeManager {
     });
 
     // Get the branch name of the worktree
-    const branchResult = await Bun.$`git -C ${worktreeDirectory} rev-parse --abbrev-ref HEAD`.text();
+    const branchResult =
+      await Bun.$`git -C ${worktreeDirectory} rev-parse --abbrev-ref HEAD`.text();
     const branch = branchResult.trim();
     if (!branch) {
-      throw new Error(`Failed to determine branch for worktree at ${worktreeDirectory}.`);
+      throw new Error(
+        `Failed to determine branch for worktree at ${worktreeDirectory}.`,
+      );
     }
 
     this.logger.log({
@@ -223,10 +281,13 @@ export class WorktreeManager {
     });
 
     // Get the default branch of the main worktree
-    const defaultBranchResult = await Bun.$`git -C ${projectDirectory} rev-parse --abbrev-ref HEAD`.text();
+    const defaultBranchResult =
+      await Bun.$`git -C ${projectDirectory} rev-parse --abbrev-ref HEAD`.text();
     const defaultBranch = defaultBranchResult.trim();
     if (!defaultBranch) {
-      throw new Error(`Failed to determine default branch for project at ${projectDirectory}.`);
+      throw new Error(
+        `Failed to determine default branch for project at ${projectDirectory}.`,
+      );
     }
 
     this.logger.log({
@@ -236,24 +297,35 @@ export class WorktreeManager {
       context: { taskId, defaultBranch, projectDirectory },
     });
 
-    // Generate a diff of all changes between the default branch and the worktree (including uncommitted)
-    // Compare the default branch HEAD against the worktree working tree to capture everything
-    const defaultHead = (await Bun.$`git -C ${projectDirectory} rev-parse HEAD`.text()).trim();
-
-    this.logger.log({
-      level: "info",
-      source: logSource,
-      message: `Generating diff: ${defaultBranch} (${defaultHead}) vs worktree working tree.`,
-      context: { taskId, defaultHead, worktreeDirectory },
-    });
-
-    const diff = await Bun.$`git -C ${worktreeDirectory} diff ${defaultHead} -- .`.text();
-
-    if (!diff.trim()) {
+    // Commit any uncommitted changes in the worktree branch first
+    const statusResult =
+      await Bun.$`git -C ${worktreeDirectory} status --porcelain`.text();
+    if (statusResult.trim()) {
       this.logger.log({
         level: "info",
         source: logSource,
-        message: `No changes between ${defaultBranch} and worktree. Nothing to apply.`,
+        message: `Committing uncommitted changes in worktree branch ${branch}.`,
+        context: { taskId, branch, worktreeDirectory },
+      });
+
+      try {
+        await Bun.$`git -C ${worktreeDirectory} add -A`.text();
+        await Bun.$`git -C ${worktreeDirectory} commit -m ${branch + " (ikanban)"}`.text();
+      } catch (error) {
+        throw new Error(
+          `Failed to commit uncommitted changes in worktree ${branch}: ${formatUnknownError(error)}`,
+        );
+      }
+    }
+
+    // Check if there are any commits to merge
+    const logResult =
+      await Bun.$`git -C ${projectDirectory} log ${defaultBranch}..${branch} --oneline`.text();
+    if (!logResult.trim()) {
+      this.logger.log({
+        level: "info",
+        source: logSource,
+        message: `No commits to merge from ${branch} into ${defaultBranch}.`,
         context: { taskId, branch, defaultBranch },
       });
 
@@ -267,48 +339,23 @@ export class WorktreeManager {
     this.logger.log({
       level: "info",
       source: logSource,
-      message: `Found changes to apply from worktree to ${defaultBranch}.`,
-      context: { taskId, branch, defaultBranch, diffSize: diff.length },
-    });
-
-    // Apply the diff to the main worktree
-    try {
-      const applyProc = Bun.spawn(["git", "apply", "--index", "--3way"], {
-        cwd: projectDirectory,
-        stdin: "pipe",
-      });
-      applyProc.stdin.write(diff);
-      applyProc.stdin.end();
-      const exitCode = await applyProc.exited;
-      if (exitCode !== 0) {
-        throw new Error(`git apply exited with code ${exitCode}`);
-      }
-    } catch (error) {
-      throw new Error(
-        `Failed to apply changes from ${branch} to ${defaultBranch}: ${formatUnknownError(error)}`,
-      );
-    }
-
-    this.logger.log({
-      level: "info",
-      source: logSource,
-      message: `Applied changes to ${defaultBranch} working tree.`,
+      message: `Merging ${branch} into ${defaultBranch}.`,
       context: { taskId, branch, defaultBranch },
     });
 
-    // Commit the applied changes on the default branch
+    // Merge the worktree branch into the default branch
     try {
-      await Bun.$`git -C ${projectDirectory} commit -m ${"task " + taskId + ": apply changes from " + branch}`.text();
+      await Bun.$`git -C ${projectDirectory} merge ${branch} --no-ff -m ${branch + " (ikanban)"}`.text();
     } catch (error) {
       throw new Error(
-        `Failed to commit applied changes on ${defaultBranch}: ${formatUnknownError(error)}`,
+        `Failed to merge ${branch} into ${defaultBranch}: ${formatUnknownError(error)}`,
       );
     }
 
     this.logger.log({
       level: "info",
       source: logSource,
-      message: `Committed changes on ${defaultBranch} for task ${taskId}.`,
+      message: `Merged ${branch} into ${defaultBranch} for task ${taskId}.`,
       context: { taskId, branch, defaultBranch },
     });
 
@@ -324,11 +371,12 @@ export class WorktreeManager {
   }
 }
 
-export function buildTaskWorktreeName(taskId: string, timestamp: number = Date.now()): string {
+export function buildTaskWorktreeName(
+  taskId: string,
+  _timestamp?: number,
+): string {
   const normalizedTaskId = normalizeTaskId(taskId);
-  const normalizedTimestamp = normalizeTimestamp(timestamp);
-
-  return `task-${normalizedTaskId}-${normalizedTimestamp}`;
+  return normalizedTaskId;
 }
 
 export function shouldRemoveWorktree(policy: WorktreeCleanupPolicy): boolean {
