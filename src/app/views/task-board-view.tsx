@@ -23,7 +23,7 @@ export function TaskBoardView({ tasks, selectedTaskIndex, pendingTaskModelLabel 
 
   return (
     <Box flexDirection="column">
-      <Text color="gray">Press r to open review diff, m to merge, d to delete selected task.</Text>
+      <Text color="gray">Press r to open review diff, m to merge, dd to delete selected task.</Text>
       <Text color="gray">New task model: {pendingTaskModelLabel}</Text>
       <Text color="cyan">Task board by status</Text>
       <Box marginTop={1} flexDirection="row" flexWrap="wrap" columnGap={2} rowGap={1}>

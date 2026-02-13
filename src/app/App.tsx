@@ -104,6 +104,9 @@ export function App({
   const [isLogViewOpen, setIsLogViewOpen] = useState(false);
   const [logScrollOffset, setLogScrollOffset] = useState(0);
   const [reviewDiff, setReviewDiff] = useState<ReviewDiffState>();
+  // Track last key press for double-key detection (e.g., "dd" to delete)
+  const [lastKeyPress, setLastKeyPress] = useState<{ key: string; time: number } | null>(null);
+  const DOUBLE_KEY_TIMEOUT_MS = 500; // Reset after 500ms
 
   const pushBanner = useCallback((tone: BannerTone, message: string) => {
     setStatusBanner({
@@ -1109,7 +1112,16 @@ export function App({
     }
 
     if (input === "d") {
-      void deleteSelectedTask();
+      const now = Date.now();
+      const isDoublePress = lastKeyPress && lastKeyPress.key === "d" && now - lastKeyPress.time < DOUBLE_KEY_TIMEOUT_MS;
+      
+      if (isDoublePress) {
+        void deleteSelectedTask();
+        setLastKeyPress(null); // Reset after successful double-press
+      } else {
+        setLastKeyPress({ key: "d", time: now });
+        pushBanner("warn", "Press 'd' again within 500ms to confirm delete.");
+      }
       return;
     }
 
@@ -1387,7 +1399,7 @@ function keyboardHints(
 
   return options.isCreatingTask
     ? "Keys: type prompt | Enter run | Esc cancel"
-    : "Keys: j/k move | n new | o model | r review | p follow-up | m merge | d delete | l logs | Tab projects | q quit";
+    : "Keys: j/k move | n new | o model | r review | p follow-up | m merge | dd delete | l logs | Tab projects | q quit";
 }
 
 async function ensureDefaultProject(
