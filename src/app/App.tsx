@@ -766,7 +766,7 @@ export function App({
     setLogScrollOffset(0);
   }, [selectedTask?.taskId]);
 
-  useInput((input, key) => {
+  useInput(async (input, key) => {
     const isInTextInputMode =
       newProjectPathInput !== undefined ||
       newTaskPromptInput !== undefined ||
@@ -1138,7 +1138,20 @@ export function App({
     if (input === "y") {
       const task = tasksForActiveProject[selectedTaskIndex];
       if (task?.worktreeDirectory) {
-        await Bun.write("/dev/clipboard", task.worktreeDirectory);
+        const platform = process.platform;
+        if (platform === "darwin") {
+          await Bun.spawn(["pbcopy"], { stdin: new TextEncoder().encode(task.worktreeDirectory) });
+        } else if (platform === "linux") {
+          const escapedPath = task.worktreeDirectory.replace(/'/g, "'\\''");
+          const success = await Bun.spawn(["sh", "-c", `echo -n '$escapedPath' | xclip -selection clipboard 2>/dev/null || xsel --clipboard 2>/dev/null || wl-paste --no-newline 2>/dev/null`]).exited;
+          if (success !== 0) {
+            pushBanner("warn", "No clipboard tool found (install xclip, xsel, or wl-paste).");
+            return;
+          }
+        } else {
+          pushBanner("warn", "Clipboard not supported on this platform.");
+          return;
+        }
         pushBanner("success", `Copied worktree path: ${task.worktreeDirectory}`);
       } else {
         pushBanner("warn", "No worktree path available for this task.");

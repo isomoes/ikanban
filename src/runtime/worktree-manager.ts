@@ -155,6 +155,15 @@ export class WorktreeManager {
       worktreeDirectory,
       "Worktree directory",
     );
+    assertWorktreeDirectoryIsDistinct(
+      normalizedProjectDirectory,
+      normalizedWorktreeDirectory,
+      "reset worktree",
+    );
+    await assertWorktreeCleanForDestructiveAction(
+      normalizedWorktreeDirectory,
+      "reset",
+    );
     const client = await this.runtime.getClient(normalizedProjectDirectory);
 
     return readDataOrThrow<boolean>(
@@ -180,6 +189,15 @@ export class WorktreeManager {
       worktreeDirectory,
       "Worktree directory",
     );
+    assertWorktreeDirectoryIsDistinct(
+      normalizedProjectDirectory,
+      normalizedWorktreeDirectory,
+      "remove worktree",
+    );
+    await assertWorktreeCleanForDestructiveAction(
+      normalizedWorktreeDirectory,
+      "remove",
+    );
     // Resolve the branch name before removing the worktree
     let worktreeBranch: string | undefined;
     try {
@@ -203,12 +221,29 @@ export class WorktreeManager {
     );
 
     if (wasRemoved) {
-      // Delete the branch associated with the worktree
+      // Delete the branch only when it is already merged into the default branch.
+      // Otherwise keep it to avoid losing task-only commits.
       if (worktreeBranch && worktreeBranch !== "HEAD") {
         try {
-          await Bun.$`git -C ${normalizedProjectDirectory} branch -D ${worktreeBranch}`.quiet();
+          const defaultBranch = (
+            await Bun.$`git -C ${normalizedProjectDirectory} rev-parse --abbrev-ref HEAD`.text()
+          ).trim();
+
+          if (defaultBranch) {
+            try {
+              await Bun.$`git -C ${normalizedProjectDirectory} merge-base --is-ancestor ${worktreeBranch} ${defaultBranch}`.quiet();
+              await Bun.$`git -C ${normalizedProjectDirectory} branch -d ${worktreeBranch}`.quiet();
+            } catch {
+              this.logger.log({
+                level: "info",
+                source: "worktree-manager.remove",
+                message: `Preserving unmerged branch ${worktreeBranch} after removing worktree.`,
+                context: { worktreeBranch, defaultBranch },
+              });
+            }
+          }
         } catch {
-          // Branch may already be gone; ignore
+          // Branch lookup may fail; ignore
         }
       }
 
@@ -288,6 +323,11 @@ export class WorktreeManager {
     const worktreeDirectory = normalizeDirectory(
       input.worktreeDirectory,
       "Worktree directory",
+    );
+    assertWorktreeDirectoryIsDistinct(
+      projectDirectory,
+      worktreeDirectory,
+      "merge task worktree",
     );
     const logSource = "worktree-manager.merge";
 
@@ -414,6 +454,11 @@ export class WorktreeManager {
       input.worktreeDirectory,
       "Worktree directory",
     );
+    assertWorktreeDirectoryIsDistinct(
+      projectDirectory,
+      worktreeDirectory,
+      "review task worktree",
+    );
     const logSource = "worktree-manager.review-diff";
 
     const branchResult =
@@ -438,15 +483,29 @@ export class WorktreeManager {
       await Bun.$`git -C ${worktreeDirectory} status --porcelain`.text();
     const hasUncommittedChanges = statusResult.trim().length > 0;
 
-    const summaryCommand = hasUncommittedChanges
-      ? Bun.$`git -C ${worktreeDirectory} diff --no-color --stat ${defaultBranch}`
-      : Bun.$`git -C ${projectDirectory} diff --no-color --stat ${defaultBranch}...${branch}`;
-    const diffCommand = hasUncommittedChanges
-      ? Bun.$`git -C ${worktreeDirectory} diff --no-color ${defaultBranch}`
-      : Bun.$`git -C ${projectDirectory} diff --no-color ${defaultBranch}...${branch}`;
+    let summary: string;
+    let diff: string;
 
-    const summary = (await summaryCommand.text()).trim();
-    const diff = (await diffCommand.text()).trim();
+    if (hasUncommittedChanges) {
+      // Stage all changes (including untracked new files) so they appear in the diff.
+      // Without this, `git diff` misses untracked files entirely.
+      await Bun.$`git -C ${worktreeDirectory} add -A`.quiet();
+      try {
+        const summaryCommand = Bun.$`git -C ${worktreeDirectory} diff --cached --no-color --stat ${defaultBranch}`;
+        const diffCommand = Bun.$`git -C ${worktreeDirectory} diff --cached --no-color ${defaultBranch}`;
+        summary = (await summaryCommand.text()).trim();
+        diff = (await diffCommand.text()).trim();
+      } finally {
+        // Reset the staging area to restore the original working tree state.
+        await Bun.$`git -C ${worktreeDirectory} reset`.quiet();
+      }
+    } else {
+      const summaryCommand = Bun.$`git -C ${projectDirectory} diff --no-color --stat ${defaultBranch}...${branch}`;
+      const diffCommand = Bun.$`git -C ${projectDirectory} diff --no-color ${defaultBranch}...${branch}`;
+      summary = (await summaryCommand.text()).trim();
+      diff = (await diffCommand.text()).trim();
+    }
+
     const hasChanges = summary.length > 0 || diff.length > 0;
 
     this.logger.log({
@@ -557,4 +616,35 @@ function formatUnknownError(error: unknown): string {
   }
 
   return "Unknown SDK error";
+}
+
+function assertWorktreeDirectoryIsDistinct(
+  projectDirectory: string,
+  worktreeDirectory: string,
+  action: string,
+): void {
+  if (projectDirectory === worktreeDirectory) {
+    throw new Error(
+      `Refusing to ${action} because worktree directory resolves to the project directory (${projectDirectory}).`,
+    );
+  }
+}
+
+async function assertWorktreeCleanForDestructiveAction(
+  worktreeDirectory: string,
+  action: "reset" | "remove",
+): Promise<void> {
+  let statusOutput = "";
+
+  try {
+    statusOutput = await Bun.$`git -C ${worktreeDirectory} status --porcelain`.text();
+  } catch {
+    return;
+  }
+
+  if (statusOutput.trim().length > 0) {
+    throw new Error(
+      `Refusing to ${action} worktree with local changes at ${worktreeDirectory}. Commit, stash, or discard changes first.`,
+    );
+  }
 }
