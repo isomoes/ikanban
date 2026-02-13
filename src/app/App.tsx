@@ -1257,17 +1257,12 @@ export function App({
                   </>
                 ) : selectedTask ? (
                   <>
-                    <Text>Task: {selectedTask.taskId}</Text>
-                    <Text>State: {selectedTask.state}</Text>
-                    <Text>Project: {selectedTask.projectId}</Text>
                     <Text>
-                      Model: {formatModel(modelByTaskID[selectedTask.taskId], defaultModelLabel)}
+                      {selectedTask.taskId} | {selectedTask.state} | {formatModel(modelByTaskID[selectedTask.taskId], defaultModelLabel)}
                     </Text>
-                    <Text>Session: {selectedTask.sessionID ?? "-"}</Text>
-                    <Text>
-                      Worktree: {selectedTask.worktreeDirectory ?? "-"}
+                    <Text color="gray">
+                      {selectedTask.projectId} | {selectedTask.sessionID ?? "-"} | {selectedTask.worktreeDirectory ?? "-"}
                     </Text>
-                    <Text>Error: {selectedTask.error ?? "-"}</Text>
                   </>
                 ) : (
                   <Text color="yellow">Select a task to inspect details.</Text>
