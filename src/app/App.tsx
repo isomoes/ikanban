@@ -170,6 +170,11 @@ export function App({
     return filterModelOptions(modelOptions, modelFilterInput);
   }, [modelOptions, modelFilterInput]);
 
+  const defaultModelLabel = useMemo(() => {
+    const option = modelOptions.find((candidate) => candidate.model === undefined);
+    return option?.label ?? "default";
+  }, [modelOptions]);
+
   useEffect(() => {
     if (!modelPickerOpen) {
       return;
@@ -629,9 +634,9 @@ export function App({
     setNewTaskPromptInput("");
     pushBanner(
       "info",
-      `Enter the first task prompt and press Enter to run (model: ${formatModel(taskModel)}).`,
+      `Enter the first task prompt and press Enter to run (model: ${formatModel(taskModel, defaultModelLabel)}).`,
     );
-  }, [activeProject, pushBanner, taskModel]);
+  }, [activeProject, defaultModelLabel, pushBanner, taskModel]);
 
   const openTaskModelPicker = useCallback(async () => {
     if (!activeProject) {
@@ -1202,7 +1207,7 @@ export function App({
                 <TaskBoardView
                   tasks={tasksForActiveProject}
                   selectedTaskIndex={selectedTaskIndex}
-                  pendingTaskModelLabel={formatModel(taskModel)}
+                  pendingTaskModelLabel={formatModel(taskModel, defaultModelLabel)}
                 />
               </Box>
             </Box>
@@ -1244,7 +1249,7 @@ export function App({
                     <Text>State: {selectedTask.state}</Text>
                     <Text>Project: {selectedTask.projectId}</Text>
                     <Text>
-                      Model: {formatModel(modelByTaskID[selectedTask.taskId])}
+                      Model: {formatModel(modelByTaskID[selectedTask.taskId], defaultModelLabel)}
                     </Text>
                     <Text>Session: {selectedTask.sessionID ?? "-"}</Text>
                     <Text>
@@ -1550,9 +1555,12 @@ function buildRetryPrompt(taskID: string): string {
   return `Retry task ${taskID}. Address the previous failure and continue with the same objective.`;
 }
 
-function formatModel(model: PromptModel | undefined): string {
+function formatModel(
+  model: PromptModel | undefined,
+  defaultLabel = "default",
+): string {
   if (!model) {
-    return "default";
+    return defaultLabel;
   }
 
   return `${model.providerID}/${model.modelID}`;
@@ -1592,13 +1600,42 @@ async function loadModelOptions(
         id?: string;
         models?: Record<string, unknown>;
       }>;
+      default?: Record<string, string>;
     }
     | undefined;
 
-  const options: ModelOption[] = [{ label: "default", model: undefined }];
+  const providers = data?.providers ?? [];
+  const defaultByProvider = data?.default ?? {};
+  const providerOrder = providers
+    .map((provider) => provider.id?.trim())
+    .filter((providerID): providerID is string => Boolean(providerID));
+  const candidateProviders = [
+    ...providerOrder,
+    ...Object.keys(defaultByProvider).filter(
+      (providerID) => !providerOrder.includes(providerID),
+    ),
+  ];
+  let resolvedDefaultModelLabel = "default";
+
+  for (const providerID of candidateProviders) {
+    const modelID = defaultByProvider[providerID];
+    if (!modelID) {
+      continue;
+    }
+
+    const provider = providers.find((candidate) => candidate.id === providerID);
+    if (!provider?.models || !(modelID in provider.models)) {
+      continue;
+    }
+
+    resolvedDefaultModelLabel = `default (${providerID}/${modelID})`;
+    break;
+  }
+
+  const options: ModelOption[] = [{ label: resolvedDefaultModelLabel, model: undefined }];
   const seen = new Set<string>();
 
-  for (const provider of data?.providers ?? []) {
+  for (const provider of providers) {
     const providerID = provider.id?.trim();
     if (!providerID || !provider.models) {
       continue;
