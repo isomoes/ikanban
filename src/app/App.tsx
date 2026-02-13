@@ -1135,6 +1135,17 @@ export function App({
       return;
     }
 
+    if (input === "y") {
+      const task = tasksForActiveProject[selectedTaskIndex];
+      if (task?.worktreeDirectory) {
+        await Bun.write("/dev/clipboard", task.worktreeDirectory);
+        pushBanner("success", `Copied worktree path: ${task.worktreeDirectory}`);
+      } else {
+        pushBanner("warn", "No worktree path available for this task.");
+      }
+      return;
+    }
+
     if (input === "m") {
       void mergeSelectedTask();
       return;
@@ -1261,7 +1272,7 @@ export function App({
                       {selectedTask.taskId} | {selectedTask.state} | {formatModel(modelByTaskID[selectedTask.taskId], defaultModelLabel)}
                     </Text>
                     <Text color="gray">
-                      {selectedTask.projectId} | {selectedTask.sessionID ?? "-"} | {selectedTask.worktreeDirectory ?? "-"}
+                      {selectedTask.projectId} | {selectedTask.sessionID ?? "-"}
                     </Text>
                   </>
                 ) : (
