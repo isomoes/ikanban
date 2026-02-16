@@ -8,6 +8,11 @@
   "bin": {
     "ikanban": "./bin/cli.js"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/isomoes/ikanban",
+    "directory": "packages/web"
+  },
   "publishConfig": {
     "access": "public"
   },

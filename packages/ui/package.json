@@ -4,6 +4,11 @@
   "private": true,
   "type": "module",
   "main": "src/main.tsx",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/isomoes/ikanban",
+    "directory": "packages/ui"
+  },
   "scripts": {
     "dev": "tsc --noEmit --watch",
     "build": "tsc --noEmit",
