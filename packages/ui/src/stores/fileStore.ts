@@ -21,7 +21,28 @@ const MAX_ATTACHMENT_SIZE = 50 * 1024 * 1024;
 const guessMimeTypeFromName = (filename: string): string => {
     const name = (filename || "").toLowerCase();
     const ext = name.includes(".") ? name.split(".").pop() || "" : "";
+
+    const noExtNames = new Set([
+        "license",
+        "readme",
+        "changelog",
+        "notice",
+        "authors",
+        "copying",
+        "makefile",
+        "dockerfile",
+        "gemfile",
+        "rakefile",
+        "procfile",
+        "vagrantfile",
+        "justfile",
+        "taskfile",
+    ]);
+
+    if (noExtNames.has(name)) return "text/plain";
+
     switch (ext) {
+        // Images
         case "png":
             return "image/png";
         case "jpg":
@@ -37,8 +58,116 @@ const guessMimeTypeFromName = (filename: string): string => {
             return "image/bmp";
         case "ico":
             return "image/x-icon";
+        // PDF
         case "pdf":
             return "application/pdf";
+        // Markup / data
+        case "md":
+        case "markdown":
+            return "text/markdown";
+        case "json":
+            return "application/json";
+        case "yaml":
+        case "yml":
+            return "application/x-yaml";
+        case "xml":
+            return "application/xml";
+        case "toml":
+            return "application/toml";
+        // Text / code — return text/plain so AI providers accept them
+        case "txt":
+        case "csv":
+        case "log":
+        case "env":
+        case "ini":
+        case "cfg":
+        case "conf":
+        case "properties":
+        case "ts":
+        case "tsx":
+        case "js":
+        case "jsx":
+        case "mjs":
+        case "cjs":
+        case "py":
+        case "pyi":
+        case "rb":
+        case "rs":
+        case "go":
+        case "java":
+        case "kt":
+        case "kts":
+        case "scala":
+        case "c":
+        case "h":
+        case "cpp":
+        case "cc":
+        case "cxx":
+        case "hpp":
+        case "hxx":
+        case "cs":
+        case "swift":
+        case "m":
+        case "mm":
+        case "r":
+        case "lua":
+        case "pl":
+        case "pm":
+        case "php":
+        case "ex":
+        case "exs":
+        case "erl":
+        case "hrl":
+        case "hs":
+        case "lhs":
+        case "ml":
+        case "mli":
+        case "fs":
+        case "fsx":
+        case "clj":
+        case "cljs":
+        case "cljc":
+        case "dart":
+        case "zig":
+        case "nim":
+        case "v":
+        case "vhdl":
+        case "verilog":
+        case "sql":
+        case "graphql":
+        case "gql":
+        case "proto":
+        case "thrift":
+        case "sh":
+        case "bash":
+        case "zsh":
+        case "fish":
+        case "ps1":
+        case "bat":
+        case "cmd":
+        case "html":
+        case "htm":
+        case "css":
+        case "scss":
+        case "sass":
+        case "less":
+        case "vue":
+        case "svelte":
+        case "astro":
+        case "tf":
+        case "hcl":
+        case "nix":
+        case "cmake":
+        case "mk":
+        case "gradle":
+        case "sbt":
+        case "lock":
+        case "gitignore":
+        case "dockerignore":
+        case "editorconfig":
+        case "eslintrc":
+        case "prettierrc":
+            return "text/plain";
         default:
             return "application/octet-stream";
     }

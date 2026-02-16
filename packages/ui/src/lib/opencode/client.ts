@@ -453,6 +453,12 @@ class OpencodeService {
       return true;
     }
     
+    // application/octet-stream is a fallback MIME type that AI providers reject;
+    // treat it as text/plain since binary files can't be meaningfully sent to AI anyway
+    if (lowerMime === 'application/octet-stream') {
+      return true;
+    }
+    
     // Common application types that are actually text
     const textBasedTypes = [
       'application/json',
