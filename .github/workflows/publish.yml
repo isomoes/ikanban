@@ -71,7 +71,21 @@ jobs:
           registry-url: https://registry.npmjs.org
 
       - name: Publish package to npm
-        run: npm publish dist/*.tgz --access public
+        run: |
+          set -- dist/*.tgz
+
+          if [ "$1" = "dist/*.tgz" ]; then
+            echo "No npm tarball found in dist/"
+            exit 1
+          fi
+
+          if [ -n "$2" ]; then
+            echo "Expected exactly one npm tarball in dist/, found multiple"
+            printf '%s\n' "$@"
+            exit 1
+          fi
+
+          npm publish "$1" --access public
 
   create-release:
     needs: publish
