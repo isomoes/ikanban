@@ -72,6 +72,9 @@ jobs:
 
       - name: Publish package to npm
         run: |
+          unset NODE_AUTH_TOKEN
+          unset NPM_TOKEN
+
           set -- dist/*.tgz
 
           if [ "$1" = "dist/*.tgz" ]; then
@@ -85,7 +88,7 @@ jobs:
             exit 1
           fi
 
-          npm publish "./$1" --access public
+          npm publish "./$1" --access public --provenance
 
   create-release:
     needs: publish
