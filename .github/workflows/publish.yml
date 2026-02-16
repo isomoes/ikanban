@@ -52,7 +52,6 @@ jobs:
   publish:
     needs: build
     runs-on: ubuntu-latest
-    environment: release
     permissions:
       contents: read
       id-token: write
@@ -67,7 +66,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
+          registry-url: "https://registry.npmjs.org"
 
       - name: Publish package to npm
         run: |
@@ -87,7 +87,7 @@ jobs:
             exit 1
           fi
 
-          npm publish "./$1" --access public --provenance
+          npm publish "./$1" --provenance
 
   create-release:
     needs: publish
