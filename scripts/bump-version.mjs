@@ -41,8 +41,8 @@ if (fs.existsSync(lockPath)) {
   let lockContent = fs.readFileSync(lockPath, 'utf8');
 
   const workspaceEntries = [
-    { workspace: 'packages/ui', name: '@ikanban/ui' },
-    { workspace: 'packages/web', name: '@ikanban/web' },
+    { workspace: 'packages/ui', name: 'ikanban-ui' },
+    { workspace: 'packages/web', name: 'ikanban-web' },
   ];
 
   for (const entry of workspaceEntries) {
