@@ -85,7 +85,7 @@ jobs:
             exit 1
           fi
 
-          npm publish "$1" --access public
+          npm publish "./$1" --access public
 
   create-release:
     needs: publish
