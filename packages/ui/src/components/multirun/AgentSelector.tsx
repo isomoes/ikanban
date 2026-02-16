@@ -1,0 +1,109 @@
+import React from 'react';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useConfigStore } from '@/stores/useConfigStore';
+
+export interface AgentSelectorProps {
+  /** Currently selected agent name (empty string for no agent) */
+  value: string;
+  /** Called when agent selection changes */
+  onChange: (agentName: string) => void;
+  /** Optional className for the trigger */
+  className?: string;
+  /** Whether the selector is disabled */
+  disabled?: boolean;
+  /** ID for accessibility */
+  id?: string;
+}
+
+/**
+ * Agent selector dropdown for selecting an agent for multi-run sessions.
+ * Uses getVisibleAgents from useConfigStore to show available agents.
+ */
+export const AgentSelector: React.FC<AgentSelectorProps> = ({
+  value,
+  onChange,
+  className,
+  disabled,
+  id,
+}) => {
+  const getVisibleAgents = useConfigStore((state) => state.getVisibleAgents);
+  const loadAgents = useConfigStore((state) => state.loadAgents);
+  const defaultAgentName = useConfigStore((state) => state.currentAgentName);
+  const agents = getVisibleAgents();
+  const selectableAgents = React.useMemo(
+    () => agents.filter((agent) => agent.mode !== 'subagent'),
+    [agents]
+  );
+
+  // Load agents on mount
+  React.useEffect(() => {
+    loadAgents();
+  }, [loadAgents]);
+
+  // Ensure we always have a valid selection (defaults to current default agent, then first selectable agent).
+  React.useEffect(() => {
+    if (disabled) {
+      return;
+    }
+
+    const trimmedValue = value.trim();
+    if (trimmedValue.length > 0 && selectableAgents.some((agent) => agent.name === trimmedValue)) {
+      return;
+    }
+
+    const candidateDefault =
+      typeof defaultAgentName === 'string' && defaultAgentName.trim().length > 0
+        ? defaultAgentName.trim()
+        : null;
+
+    if (candidateDefault && selectableAgents.some((agent) => agent.name === candidateDefault)) {
+      onChange(candidateDefault);
+      return;
+    }
+
+    const firstAgent = selectableAgents[0]?.name;
+    if (firstAgent) {
+      onChange(firstAgent);
+    }
+  }, [defaultAgentName, disabled, onChange, selectableAgents, value]);
+
+  const selectValue = value.trim().length > 0 ? value : undefined;
+
+  return (
+    <Select
+      value={selectValue}
+      onValueChange={onChange}
+      disabled={disabled}
+    >
+      <SelectTrigger
+        id={id}
+        size="lg"
+        className={className ?? 'max-w-full typography-meta text-foreground'}
+      >
+        <SelectValue placeholder="Select an agent" />
+      </SelectTrigger>
+      <SelectContent fitContent>
+        {selectableAgents.length > 0 && (
+          <SelectGroup>
+            {selectableAgents.map((agent) => (
+              <SelectItem
+                key={agent.name}
+                value={agent.name}
+                className="w-auto whitespace-nowrap"
+              >
+                {agent.name}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        )}
+      </SelectContent>
+    </Select>
+  );
+};

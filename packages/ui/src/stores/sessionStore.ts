@@ -1,0 +1,1560 @@
+import { create } from "zustand";
+import { devtools, persist, createJSONStorage } from "zustand/middleware";
+import type { Session } from "@opencode-ai/sdk/v2";
+import { opencodeClient } from "@/lib/opencode/client";
+import { getSafeStorage } from "./utils/safeStorage";
+import type { WorktreeMetadata } from "@/types/worktree";
+import { getWorktreeStatus } from "@/lib/worktrees/worktreeStatus";
+import { listProjectWorktrees, removeProjectWorktree } from "@/lib/worktrees/worktreeManager";
+import { useDirectoryStore } from "./useDirectoryStore";
+import { useProjectsStore } from "./useProjectsStore";
+import { triggerSessionStatusPoll } from "@/hooks/useServerSessionStatus";
+import type { ProjectEntry } from "@/lib/api/types";
+import { checkIsGitRepository } from "@/lib/gitApi";
+import { streamDebugEnabled } from "@/stores/utils/streamDebug";
+
+interface SessionState {
+    sessions: Session[];
+    sessionsByDirectory: Map<string, Session[]>;
+    currentSessionId: string | null;
+    lastLoadedDirectory: string | null;
+    isLoading: boolean;
+    error: string | null;
+    webUICreatedSessions: Set<string>;
+    worktreeMetadata: Map<string, WorktreeMetadata>;
+    availableWorktrees: WorktreeMetadata[];
+    availableWorktreesByProject: Map<string, WorktreeMetadata[]>;
+}
+
+interface SessionActions {
+    loadSessions: () => Promise<void>;
+    createSession: (title?: string, directoryOverride?: string | null, parentID?: string | null) => Promise<Session | null>;
+    deleteSession: (id: string, options?: { archiveWorktree?: boolean; deleteRemoteBranch?: boolean; deleteLocalBranch?: boolean; remoteName?: string }) => Promise<boolean>;
+    deleteSessions: (ids: string[], options?: { archiveWorktree?: boolean; deleteRemoteBranch?: boolean; deleteLocalBranch?: boolean; remoteName?: string; silent?: boolean }) => Promise<{ deletedIds: string[]; failedIds: string[] }>;
+    updateSessionTitle: (id: string, title: string) => Promise<void>;
+    shareSession: (id: string) => Promise<Session | null>;
+    unshareSession: (id: string) => Promise<Session | null>;
+    setCurrentSession: (id: string | null) => void;
+    clearError: () => void;
+    getSessionsByDirectory: (directory: string) => Session[];
+    getDirectoryForSession: (sessionId: string) => string | null;
+    applySessionMetadata: (sessionId: string, metadata: Partial<Session>) => void;
+    isIKanbanCreatedSession: (sessionId: string) => boolean;
+    markSessionAsIKanbanCreated: (sessionId: string) => void;
+    initializeNewIKanbanSession: (sessionId: string, agents: Record<string, unknown>[]) => void;
+    setWorktreeMetadata: (sessionId: string, metadata: WorktreeMetadata | null) => void;
+    getWorktreeMetadata: (sessionId: string) => WorktreeMetadata | undefined;
+    setSessionDirectory: (sessionId: string, directory: string | null) => void;
+    updateSession: (session: Session) => void;
+    removeSessionFromStore: (sessionId: string) => void;
+}
+
+type SessionStore = SessionState & SessionActions;
+
+const safeStorage = getSafeStorage();
+const SESSION_SELECTION_STORAGE_KEY = "oc.sessionSelectionByDirectory";
+type SessionSelectionMap = Record<string, string>;
+
+const readSessionSelectionMap = (): SessionSelectionMap => {
+    try {
+        const raw = safeStorage.getItem(SESSION_SELECTION_STORAGE_KEY);
+        if (!raw) {
+            return {};
+        }
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== "object") {
+            return {};
+        }
+        return Object.entries(parsed as Record<string, unknown>).reduce<SessionSelectionMap>((acc, [directory, sessionId]) => {
+            if (typeof directory === "string" && typeof sessionId === "string" && directory.length > 0 && sessionId.length > 0) {
+                acc[directory] = sessionId;
+            }
+            return acc;
+        }, {});
+    } catch {
+        return {};
+    }
+};
+
+let sessionSelectionCache: SessionSelectionMap | null = null;
+
+const getSessionSelectionMap = (): SessionSelectionMap => {
+    if (!sessionSelectionCache) {
+        sessionSelectionCache = readSessionSelectionMap();
+    }
+    return sessionSelectionCache;
+};
+
+const persistSessionSelectionMap = (map: SessionSelectionMap) => {
+    sessionSelectionCache = map;
+    try {
+        safeStorage.setItem(SESSION_SELECTION_STORAGE_KEY, JSON.stringify(map));
+    } catch { /* ignored */ }
+};
+
+const getStoredSessionForDirectory = (directory: string | null | undefined): string | null => {
+    if (!directory) {
+        return null;
+    }
+    const map = getSessionSelectionMap();
+    const selection = map[directory];
+    return typeof selection === "string" ? selection : null;
+};
+
+const storeSessionForDirectory = (directory: string | null | undefined, sessionId: string | null) => {
+    if (!directory) {
+        return;
+    }
+    const map = { ...getSessionSelectionMap() };
+    if (sessionId) {
+        map[directory] = sessionId;
+    } else {
+        delete map[directory];
+    }
+    persistSessionSelectionMap(map);
+};
+
+const clearInvalidSessionSelection = (directory: string | null | undefined, validIds: Iterable<string>) => {
+    if (!directory) {
+        return;
+    }
+    const storedSelection = getStoredSessionForDirectory(directory);
+    if (!storedSelection) {
+        return;
+    }
+    const validSet = new Set(validIds);
+    if (!validSet.has(storedSelection)) {
+        const map = { ...getSessionSelectionMap() };
+        delete map[directory];
+        persistSessionSelectionMap(map);
+    }
+};
+
+const archiveSessionWorktree = async (
+    metadata: WorktreeMetadata,
+    options?: { deleteRemoteBranch?: boolean; deleteLocalBranch?: boolean; remoteName?: string }
+) => {
+    const status = metadata.status ?? (await getWorktreeStatus(metadata.path).catch(() => undefined));
+
+    const projects = useProjectsStore.getState().projects;
+    const normalizedProject = normalizePath(metadata.projectDirectory) ?? metadata.projectDirectory;
+    const projectEntry = projects.find((project) => normalizePath(project.path) === normalizedProject);
+
+    const projectRef = {
+        id: projectEntry?.id ?? `path:${normalizedProject}`,
+        path: normalizedProject,
+    };
+
+    await removeProjectWorktree(
+        projectRef,
+        status ? ({ ...metadata, status } as WorktreeMetadata) : metadata,
+        {
+            deleteRemoteBranch: options?.deleteRemoteBranch,
+            deleteLocalBranch: options?.deleteLocalBranch,
+            remoteName: options?.remoteName,
+        }
+    );
+};
+
+const deleteSessionOnServer = async (sessionId: string, directory?: string | null): Promise<boolean> => {
+    const apiClient = opencodeClient.getApiClient();
+    const normalizedDirectory = normalizePath(directory ?? null);
+    const response = await apiClient.session.delete({
+        sessionID: sessionId,
+        ...(normalizedDirectory ? { directory: normalizedDirectory } : {}),
+    });
+    return Boolean(response.data);
+};
+
+const normalizePath = (value?: string | null): string | null => {
+    if (typeof value !== "string") {
+        return null;
+    }
+    const trimmed = value.trim();
+    if (!trimmed) {
+        return null;
+    }
+    const replaced = trimmed.replace(/\\/g, "/");
+    if (replaced === "/") {
+        return "/";
+    }
+    return replaced.length > 1 ? replaced.replace(/\/+$/, "") : replaced;
+};
+
+const readVSCodeWorkspaceDirectory = (): string | null => {
+    if (typeof window === "undefined") {
+        return null;
+    }
+    const config = (window as unknown as { __VSCODE_CONFIG__?: { workspaceFolder?: unknown } }).__VSCODE_CONFIG__;
+    const workspaceFolder = typeof config?.workspaceFolder === "string" ? config.workspaceFolder : null;
+    return normalizePath(workspaceFolder);
+};
+
+const isVSCodeRuntime = (): boolean => {
+    if (typeof window === "undefined") return false;
+    const runtime = (window as unknown as { __IKANBAN_RUNTIME_APIS__?: { runtime?: { isVSCode?: boolean } } })
+        .__IKANBAN_RUNTIME_APIS__?.runtime;
+    return Boolean(runtime?.isVSCode);
+};
+
+const vscodeDebugLog = (...args: unknown[]) => {
+    if (!streamDebugEnabled()) return;
+    if (!isVSCodeRuntime()) return;
+    console.log("[IKanban][VSCode][sessions]", ...args);
+};
+
+const dedupeSessionsById = (sessions: Session[]): Session[] => {
+    const map = new Map<string, Session>();
+
+    sessions.forEach((session) => {
+        if (!session || typeof session.id !== "string" || session.id.length === 0) {
+            return;
+        }
+
+        const existing = map.get(session.id);
+        if (!existing) {
+            map.set(session.id, session);
+            return;
+        }
+
+        const existingUpdated = (existing as { time?: { updated?: number | null } }).time?.updated ?? 0;
+        const candidateUpdated = (session as { time?: { updated?: number | null } }).time?.updated ?? 0;
+        if (candidateUpdated > existingUpdated) {
+            map.set(session.id, session);
+        }
+    });
+
+    return Array.from(map.values());
+};
+
+const buildSessionsByDirectory = (sessions: Session[]): Map<string, Session[]> => {
+    const map = new Map<string, Session[]>();
+
+    sessions.forEach((session) => {
+        const directory = normalizePath((session as { directory?: string | null }).directory ?? null);
+        if (!directory) {
+            return;
+        }
+
+        const existing = map.get(directory);
+        if (existing) {
+            existing.push(session);
+        } else {
+            map.set(directory, [session]);
+        }
+    });
+
+    for (const [key, value] of map.entries()) {
+        map.set(key, dedupeSessionsById(value));
+    }
+
+    return map;
+};
+
+const getSessionDirectory = (sessions: Session[], sessionId: string): string | null => {
+    const target = sessions.find((session) => session.id === sessionId);
+    if (!target) {
+        return null;
+    }
+    return normalizePath((target as { directory?: string | null }).directory ?? null);
+};
+
+const hydrateSessionWorktreeMetadata = async (
+    sessions: Session[],
+    projectDirectory: string | null,
+    existingMetadata: Map<string, WorktreeMetadata>
+): Promise<Map<string, WorktreeMetadata> | null> => {
+    const normalizedProject = normalizePath(projectDirectory);
+    if (!normalizedProject || sessions.length === 0) {
+        return null;
+    }
+
+    const sessionsWithDirectory = sessions
+        .map((session) => ({ id: session.id, directory: normalizePath((session as { directory?: string }).directory) }))
+        .filter((entry): entry is { id: string; directory: string } => Boolean(entry.directory));
+
+    if (sessionsWithDirectory.length === 0) {
+        return null;
+    }
+
+    let worktreeEntries: WorktreeMetadata[];
+    try {
+        worktreeEntries = await listProjectWorktrees({ id: `path:${normalizedProject}`, path: normalizedProject });
+    } catch (error) {
+        console.debug("Failed to hydrate worktree metadata from worktree list:", error);
+        return null;
+    }
+
+    if (!Array.isArray(worktreeEntries) || worktreeEntries.length === 0) {
+        let mutated = false;
+        const next = new Map(existingMetadata);
+        sessionsWithDirectory.forEach(({ id }) => {
+            if (next.delete(id)) {
+                mutated = true;
+            }
+        });
+        return mutated ? next : null;
+    }
+
+    const worktreeMapByPath = new Map<string, WorktreeMetadata>();
+    worktreeEntries.forEach((metadata) => {
+        const normalizedPath = normalizePath(metadata.path) ?? metadata.path;
+
+        if (normalizedPath === normalizedProject) {
+            return;
+        }
+
+        worktreeMapByPath.set(normalizedPath, metadata);
+    });
+
+    let mutated = false;
+    const next = new Map(existingMetadata);
+
+    const mergeHydratedMetadata = (
+        hydrated: WorktreeMetadata,
+        previous?: WorktreeMetadata
+    ): WorktreeMetadata => {
+        if (!previous) {
+            return hydrated;
+        }
+        return {
+            ...previous,
+            ...hydrated,
+            branch: hydrated.branch || previous.branch,
+            label: hydrated.label || previous.label,
+            name: hydrated.name || previous.name,
+            projectDirectory: hydrated.projectDirectory || previous.projectDirectory,
+            createdFromBranch: hydrated.createdFromBranch || previous.createdFromBranch,
+            kind: hydrated.kind || previous.kind,
+            status: hydrated.status || previous.status,
+        };
+    };
+
+    sessionsWithDirectory.forEach(({ id, directory }) => {
+        const metadata = worktreeMapByPath.get(directory);
+        if (!metadata) {
+            if (next.delete(id)) {
+                mutated = true;
+            }
+            return;
+        }
+
+        const previous = next.get(id);
+        const merged = mergeHydratedMetadata(metadata, previous);
+        if (
+            !previous ||
+            previous.path !== merged.path ||
+            previous.branch !== merged.branch ||
+            previous.label !== merged.label ||
+            previous.name !== merged.name ||
+            previous.projectDirectory !== merged.projectDirectory ||
+            previous.createdFromBranch !== merged.createdFromBranch ||
+            previous.kind !== merged.kind ||
+            previous.source !== merged.source
+        ) {
+            next.set(id, merged);
+            mutated = true;
+        }
+    });
+
+    return mutated ? next : null;
+};
+
+export const useSessionStore = create<SessionStore>()(
+    devtools(
+        persist(
+            (set, get) => ({
+
+                sessions: [],
+                sessionsByDirectory: new Map(),
+                currentSessionId: null,
+                lastLoadedDirectory: null,
+                isLoading: false,
+                error: null,
+                webUICreatedSessions: new Set(),
+                worktreeMetadata: new Map(),
+                availableWorktrees: [],
+                availableWorktreesByProject: new Map(),
+
+                loadSessions: async () => {
+                    set({ isLoading: true, error: null });
+                    try {
+                        const directoryStore = useDirectoryStore.getState();
+                        const projectsStore = useProjectsStore.getState();
+                        const apiClient = opencodeClient.getApiClient();
+                        const vscodeWorkspaceDirectory = readVSCodeWorkspaceDirectory();
+                        const includeDescendants = Boolean(vscodeWorkspaceDirectory);
+
+                        vscodeDebugLog("loadSessions:start", {
+                            workspace: vscodeWorkspaceDirectory,
+                            currentDirectory: directoryStore.currentDirectory,
+                            clientDirectory: opencodeClient.getDirectory(),
+                            projectsCount: projectsStore.projects.length,
+                            activeProjectId: projectsStore.activeProjectId,
+                        });
+
+                        const canonicalDirectoryCache = new Map<string, string>();
+
+                        const resolveCanonicalDirectory = async (directory: string): Promise<string> => {
+                            const normalizedRequested = normalizePath(directory) ?? directory;
+                            const cacheKey = normalizedRequested;
+                            const cached = canonicalDirectoryCache.get(cacheKey);
+                            if (cached) {
+                                return cached;
+                            }
+
+                            try {
+                                const info = await apiClient.path.get({ directory });
+                                const canonical = normalizePath((info.data as { directory?: string | null } | null)?.directory ?? null);
+                                const resolved = canonical ?? normalizedRequested;
+                                canonicalDirectoryCache.set(cacheKey, resolved);
+                                return resolved;
+                            } catch {
+                                canonicalDirectoryCache.set(cacheKey, normalizedRequested);
+                                return normalizedRequested;
+                            }
+                        };
+
+                        const filterSessionsToDirectory = (
+                            sessions: Session[],
+                            directory: string,
+                            options?: { includeDescendants?: boolean; includeMissingDirectory?: boolean }
+                        ): Session[] => {
+                            const normalized = normalizePath(directory);
+                            if (!normalized) {
+                                return sessions;
+                            }
+                            const includeDescendants = options?.includeDescendants === true;
+                            const prefix = includeDescendants ? `${normalized}/` : null;
+                            const includeMissingDirectory = options?.includeMissingDirectory === true;
+                            return sessions.filter((session) => {
+                                const sessionDir = normalizePath((session as { directory?: string | null }).directory ?? null);
+                                if (!sessionDir) return includeMissingDirectory;
+                                if (sessionDir === normalized) return true;
+                                if (prefix && sessionDir.startsWith(prefix)) return true;
+                                return false;
+                            });
+                        };
+
+                        const assignRequestedDirectory = (
+                            sessions: Session[],
+                            requestedDirectory: string,
+                            canonicalDirectory?: string | null
+                        ): Session[] => {
+                            const normalizedRequested = normalizePath(requestedDirectory);
+                            if (!normalizedRequested) {
+                                return sessions;
+                            }
+                            const normalizedCanonical = normalizePath(canonicalDirectory ?? null);
+                            if (!normalizedCanonical || normalizedCanonical === normalizedRequested) {
+                                return sessions.map((session) => {
+                                    const sessionDir = normalizePath((session as { directory?: string | null }).directory ?? null);
+                                    if (sessionDir) {
+                                        return session;
+                                    }
+                                    return ({ ...session, directory: normalizedRequested } as Session);
+                                });
+                            }
+
+                            const canonicalPrefix = normalizedCanonical === "/" ? "/" : `${normalizedCanonical}/`;
+                            const requestedPrefix = normalizedRequested === "/" ? "/" : `${normalizedRequested}/`;
+
+                            return sessions.map((session) => {
+                                const sessionDir = normalizePath((session as { directory?: string | null }).directory ?? null);
+                                if (!sessionDir) {
+                                    return ({ ...session, directory: normalizedRequested } as Session);
+                                }
+                                if (sessionDir === normalizedCanonical) {
+                                    return ({ ...session, directory: normalizedRequested } as Session);
+                                }
+                                if (canonicalPrefix !== "/" && sessionDir.startsWith(canonicalPrefix)) {
+                                    const suffix = sessionDir.slice(canonicalPrefix.length);
+                                    return ({ ...session, directory: `${requestedPrefix}${suffix}` } as Session);
+                                }
+                                return session;
+                            });
+                        };
+
+                        const fetchSessionsForDirectory = async (directoryParam?: string | null): Promise<Session[]> => {
+                            const requestedDirectory = normalizePath(directoryParam);
+                            if (!requestedDirectory) {
+                                try {
+                                    const response = await apiClient.session.list(undefined);
+                                    return Array.isArray(response.data) ? response.data : [];
+                                } catch (error) {
+                                    console.debug("Failed to list sessions (global):", error);
+                                    throw error;
+                                }
+                            }
+
+                            const canonicalDirectory = await resolveCanonicalDirectory(requestedDirectory);
+
+                            const listFromDirectoryScopedCall = async (): Promise<Session[]> => {
+                                const response = await apiClient.session.list({ directory: requestedDirectory });
+                                return Array.isArray(response.data) ? response.data : [];
+                            };
+
+                            let sessions: Session[] = [];
+                            let listError: unknown = null;
+                            let usedGlobalFallback = false;
+                            try {
+                                sessions = await listFromDirectoryScopedCall();
+                            } catch (error) {
+                                console.debug("Failed to list sessions for directory:", requestedDirectory, error);
+                                listError = error;
+                                sessions = [];
+                            }
+
+                            // Some runtimes canonicalize directory paths (e.g. realpath). If the scoped call returns no results,
+                            // fall back to the global list and map canonical paths back to the requested directory.
+                            if (sessions.length === 0) {
+                                usedGlobalFallback = true;
+                                try {
+                                    const globalResponse = await apiClient.session.list(undefined);
+                                    const globalList = Array.isArray(globalResponse.data) ? globalResponse.data : [];
+                                    sessions = filterSessionsToDirectory(globalList, canonicalDirectory, {
+                                        includeDescendants,
+                                        includeMissingDirectory: false,
+                                    });
+                                } catch (error) {
+                                    console.debug("Failed to list sessions (global fallback):", error);
+                                    if (listError) {
+                                        throw listError;
+                                    }
+                                    throw error;
+                                }
+                            }
+
+                            const filtered = filterSessionsToDirectory(sessions, canonicalDirectory, {
+                                includeDescendants,
+                                includeMissingDirectory: !usedGlobalFallback,
+                            });
+                            vscodeDebugLog("fetchSessionsForDirectory", {
+                                requestedDirectory,
+                                canonicalDirectory,
+                                fetched: sessions.length,
+                                filtered: filtered.length,
+                            });
+                            return assignRequestedDirectory(filtered, requestedDirectory, canonicalDirectory);
+                        };
+
+                        const normalizedFallback = normalizePath(directoryStore.currentDirectory ?? opencodeClient.getDirectory() ?? null);
+                        const activeProject = projectsStore.projects.find((project) => project.id === projectsStore.activeProjectId) ?? null;
+                        const activeProjectRoot = normalizePath(activeProject?.path ?? null);
+
+                        const legacyRoot = activeProjectRoot ?? normalizedFallback ?? null;
+
+                        const projectEntries: Array<Pick<ProjectEntry, 'id' | 'path'>> = projectsStore.projects.length > 0
+                            ? projectsStore.projects
+                            : (legacyRoot ? [{ id: 'legacy', path: legacyRoot }] : []);
+
+                        type ProjectSessionResult = {
+                            projectId: string;
+                            projectPath: string | null;
+                            sessions: Session[];
+                            discoveredWorktrees: WorktreeMetadata[];
+                            validPaths: Set<string>;
+                        };
+
+                        if (projectEntries.length === 0) {
+                            set({
+                                sessions: [],
+                                sessionsByDirectory: new Map(),
+                                currentSessionId: null,
+                                lastLoadedDirectory: null,
+                                isLoading: false,
+                                worktreeMetadata: new Map(),
+                                availableWorktrees: [],
+                                availableWorktreesByProject: new Map(),
+                            });
+                            return;
+                        }
+
+                        const projectResults: ProjectSessionResult[] = await Promise.all(
+                            projectEntries.map(async (project: Pick<ProjectEntry, 'id' | 'path'>) => {
+                                const normalizedProject = normalizePath(project.path);
+                                if (!normalizedProject) {
+                                    return {
+                                        projectId: project.id,
+                                        projectPath: null,
+                                        sessions: [],
+                                        discoveredWorktrees: [],
+                                        validPaths: new Set<string>(),
+                                    };
+                                }
+
+                                const isGitRepo = await checkIsGitRepository(normalizedProject).catch(() => false);
+                                const parentSessions = await fetchSessionsForDirectory(normalizedProject || null);
+                                vscodeDebugLog("projectSessions", {
+                                    projectId: project.id,
+                                    projectPath: normalizedProject,
+                                    isGitRepo,
+                                    parentSessions: parentSessions.length,
+                                });
+
+                                const subdirectorySessions: Session[] = [];
+                                let discoveredWorktrees: WorktreeMetadata[] = [];
+                                const validPaths = new Set<string>();
+                                validPaths.add(normalizedProject);
+
+                                if (isGitRepo) {
+                                    try {
+                                        const candidates = new Set<string>();
+
+                                        const managedWorktrees = await listProjectWorktrees({
+                                            id: project.id,
+                                            path: normalizedProject,
+                                        }).catch(() => []);
+                                        discoveredWorktrees = managedWorktrees;
+                                        managedWorktrees.forEach((meta) => {
+                                            if (meta?.path) {
+                                                candidates.add(normalizePath(meta.path) ?? meta.path);
+                                            }
+                                        });
+
+                                        candidates.forEach((candidate) => {
+                                            const normalizedCandidate = normalizePath(candidate) ?? candidate;
+                                            validPaths.add(normalizedCandidate);
+                                        });
+
+                                        if (candidates.size > 0) {
+                                            const results = await Promise.allSettled(
+                                                Array.from(candidates).map((path) => fetchSessionsForDirectory(path))
+                                            );
+                                            results.forEach((result) => {
+                                                if (result.status === "fulfilled" && Array.isArray(result.value)) {
+                                                    subdirectorySessions.push(...result.value);
+                                                }
+                                            });
+                                        }
+                                    } catch {
+                                        discoveredWorktrees = [];
+                                    }
+                                }
+
+                                const mergedSessions = dedupeSessionsById([...parentSessions, ...subdirectorySessions]);
+
+                                return {
+                                    projectId: project.id,
+                                    projectPath: normalizedProject,
+                                    sessions: mergedSessions,
+                                    discoveredWorktrees,
+                                    validPaths,
+                                };
+                            })
+                        );
+
+                        const sessionsByDirectory = new Map<string, Session[]>();
+                        projectResults.forEach((result) => {
+                            if (!result.projectPath) {
+                                return;
+                            }
+
+                            result.validPaths.forEach((directory) => {
+                                const directoryKey = normalizePath(directory) ?? directory;
+                                const directorySessions = result.sessions.filter((session) => {
+                                    const dir = normalizePath((session as { directory?: string | null }).directory ?? null) ?? directoryKey;
+                                    return dir === directoryKey;
+                                });
+                                sessionsByDirectory.set(directoryKey, dedupeSessionsById(directorySessions));
+                            });
+                        });
+
+                        const mergedSessions: Session[] = dedupeSessionsById(Array.from(sessionsByDirectory.values()).flat());
+                        const stateSnapshot = get();
+
+                        let nextWorktreeMetadata = stateSnapshot.worktreeMetadata;
+                        for (const result of projectResults) {
+                            if (!result.projectPath) {
+                                continue;
+                            }
+                            try {
+                                const hydratedMetadata = await hydrateSessionWorktreeMetadata(
+                                    result.sessions,
+                                    result.projectPath,
+                                    nextWorktreeMetadata
+                                );
+                                if (hydratedMetadata) {
+                                    nextWorktreeMetadata = hydratedMetadata;
+                                }
+                            } catch (metadataError) {
+                                console.debug("Failed to refresh worktree metadata during session load:", metadataError);
+                            }
+                        }
+
+                        const worktreesByProject = new Map<string, WorktreeMetadata[]>();
+                        projectResults.forEach((result) => {
+                            if (result.projectPath) {
+                                worktreesByProject.set(result.projectPath, result.discoveredWorktrees);
+                            }
+                        });
+
+                        const allValidPaths = new Set<string>();
+                        projectResults.forEach((result) => {
+                            result.validPaths.forEach((value) => {
+                                const key = normalizePath(value) ?? value;
+                                if (key) {
+                                    allValidPaths.add(key);
+                                }
+                            });
+                        });
+
+                        const activeDirectoryCandidate = normalizedFallback ?? activeProjectRoot ?? null;
+                        const activeDirectory = activeDirectoryCandidate && allValidPaths.has(activeDirectoryCandidate)
+                            ? activeDirectoryCandidate
+                            : (activeProjectRoot ?? activeDirectoryCandidate);
+
+                        const activeDirectorySessions = activeDirectory
+                            ? sessionsByDirectory.get(activeDirectory) ?? []
+                            : mergedSessions;
+
+                        const validSessionIds = new Set(mergedSessions.map((session) => session.id));
+
+                        // Keep directory-scoped stored selections tidy.
+                        for (const [directoryKey, directorySessions] of sessionsByDirectory.entries()) {
+                            clearInvalidSessionSelection(directoryKey, directorySessions.map((session) => session.id));
+                        }
+
+                        const directoryChanged = (activeDirectory ?? null) !== (stateSnapshot.lastLoadedDirectory ?? null);
+
+                        let nextCurrentId = stateSnapshot.currentSessionId;
+                        if (!nextCurrentId || !validSessionIds.has(nextCurrentId) || directoryChanged) {
+                            nextCurrentId = activeDirectorySessions[0]?.id ?? mergedSessions[0]?.id ?? null;
+                        }
+
+                        if (activeDirectory) {
+                            const storedSelection = getStoredSessionForDirectory(activeDirectory);
+                            if (storedSelection && validSessionIds.has(storedSelection)) {
+                                nextCurrentId = storedSelection;
+                            }
+                        }
+
+                        const resolvedDirectoryForCurrent = (() => {
+                            if (!nextCurrentId) {
+                                return activeDirectory ?? null;
+                            }
+                            const metadataPath = nextWorktreeMetadata.get(nextCurrentId)?.path;
+                            if (metadataPath) {
+                                return normalizePath(metadataPath) ?? metadataPath;
+                            }
+                            const sessionDir = getSessionDirectory(mergedSessions, nextCurrentId);
+                            if (sessionDir) {
+                                return sessionDir;
+                            }
+                            return activeDirectory ?? null;
+                        })();
+
+                        try {
+                            opencodeClient.setDirectory(resolvedDirectoryForCurrent ?? undefined);
+                        } catch (error) {
+                            console.warn("Failed to sync OpenCode directory after session load:", error);
+                        }
+
+                        const activeWorktrees = activeProjectRoot
+                            ? projectResults.find((result) => result.projectPath === activeProjectRoot)?.discoveredWorktrees ?? []
+                            : [];
+
+                        set({
+                            sessions: mergedSessions,
+                            sessionsByDirectory,
+                            currentSessionId: nextCurrentId,
+                            lastLoadedDirectory: activeDirectory ?? null,
+                            isLoading: false,
+                            worktreeMetadata: nextWorktreeMetadata,
+                            availableWorktrees: activeWorktrees,
+                            availableWorktreesByProject: worktreesByProject,
+                        });
+
+                        if (activeDirectory) {
+                            storeSessionForDirectory(activeDirectory, nextCurrentId);
+                        }
+                        if (resolvedDirectoryForCurrent && resolvedDirectoryForCurrent !== activeDirectory) {
+                            storeSessionForDirectory(resolvedDirectoryForCurrent, nextCurrentId);
+                        }
+                    } catch (error) {
+                        set({
+                            error: error instanceof Error ? error.message : "Failed to load sessions",
+                            isLoading: false,
+                        });
+                    }
+                },
+
+                createSession: async (title?: string, directoryOverride?: string | null, parentID?: string | null) => {
+                    set({ error: null });
+                    const directoryStore = useDirectoryStore.getState();
+                    const fallbackDirectory = normalizePath(directoryStore.currentDirectory);
+                    const vscodeWorkspaceDirectory = readVSCodeWorkspaceDirectory();
+                    const targetDirectory = vscodeWorkspaceDirectory ?? normalizePath(directoryOverride ?? opencodeClient.getDirectory() ?? fallbackDirectory);
+                    vscodeDebugLog("createSession:start", { title, parentID, targetDirectory, vscodeWorkspaceDirectory });
+
+                    const tempId = `temp_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+                    const previousState = get();
+                    const existingIds = new Set(previousState.sessions.map((s) => s.id));
+                    const optimisticSession: Session = {
+                        id: tempId,
+                        title: title || "New session",
+                        parentID: parentID ?? undefined,
+                        directory: targetDirectory ?? null,
+                        projectID: (previousState.sessions[0] as { projectID?: string })?.projectID ?? "",
+                        version: "0.0.0",
+                        time: {
+                            created: Date.now(),
+                            updated: Date.now(),
+                        },
+                        summary: undefined,
+                        share: undefined,
+                    } as Session;
+
+                    set((state) => {
+                        const nextSessions = [optimisticSession, ...state.sessions];
+                        const nextByDirectory = new Map(state.sessionsByDirectory);
+                        if (targetDirectory) {
+                            const existing = nextByDirectory.get(targetDirectory) ?? [];
+                            nextByDirectory.set(targetDirectory, dedupeSessionsById([optimisticSession, ...existing]));
+                        }
+
+                        return {
+                            sessions: nextSessions,
+                            sessionsByDirectory: nextByDirectory,
+                            currentSessionId: tempId,
+                            webUICreatedSessions: new Set([...state.webUICreatedSessions, tempId]),
+                            isLoading: false,
+                        };
+                    });
+
+                    if (targetDirectory) {
+                        try {
+                            opencodeClient.setDirectory(targetDirectory);
+                        } catch (error) {
+                            console.warn("Failed to sync OpenCode directory after session creation:", error);
+                        }
+                    }
+
+                    const replaceOptimistic = (real: Session) => {
+                        const normalizedTarget = targetDirectory ?? null;
+                        const normalizedReal: Session = (normalizedTarget
+                            ? ({ ...real, directory: normalizedTarget } as Session)
+                            : real);
+                        set((state) => {
+                            const updatedSessions = state.sessions.map((item) => (item.id === tempId ? normalizedReal : item));
+
+                            const nextByDirectory = new Map(state.sessionsByDirectory);
+                            if (targetDirectory) {
+                                const existing = nextByDirectory.get(targetDirectory) ?? [];
+                                const replaced = existing.map((item) => (item.id === tempId ? normalizedReal : item));
+                                nextByDirectory.set(targetDirectory, dedupeSessionsById(replaced));
+                            }
+
+                            return {
+                                sessions: updatedSessions,
+                                sessionsByDirectory: buildSessionsByDirectory(updatedSessions),
+                                currentSessionId: normalizedReal.id,
+                                webUICreatedSessions: new Set([
+                                    ...Array.from(state.webUICreatedSessions).filter((id) => id !== tempId),
+                                    normalizedReal.id,
+                                ]),
+                            };
+                        });
+                        storeSessionForDirectory(targetDirectory ?? null, normalizedReal.id);
+                    };
+
+                    const pollForSession = async (): Promise<Session | null> => {
+                        const apiClient = opencodeClient.getApiClient();
+                        const attempts = 20;
+                        for (let attempt = 0; attempt < attempts; attempt += 1) {
+                            try {
+                                const response = await apiClient.session.list(
+                                    targetDirectory ? { directory: targetDirectory } : undefined
+                                );
+                                const list = Array.isArray(response.data) ? response.data : [];
+                                const candidate = list.find((entry) => {
+                                    if (existingIds.has(entry.id)) return false;
+                                    if (title && entry.title && entry.title !== title) return false;
+                                    return true;
+                                });
+                                if (candidate) {
+                                    return candidate as Session;
+                                }
+                            } catch (pollError) {
+                                console.debug("Session poll attempt failed:", pollError);
+                            }
+                            await new Promise((resolve) => setTimeout(resolve, 2000));
+                        }
+                        return null;
+                    };
+
+                    try {
+                        const createRequest = () => opencodeClient.createSession({ title, parentID: parentID ?? undefined });
+                        let session: Session | null = null;
+
+                        try {
+                            session = targetDirectory
+                                ? await opencodeClient.withDirectory(targetDirectory, createRequest)
+                                : await createRequest();
+                        } catch (creationError) {
+                            console.warn("Direct session create failed or timed out, falling back to polling:", creationError);
+                        }
+
+                        if (!session) {
+                            session = await pollForSession();
+                        }
+
+                        if (session) {
+                            replaceOptimistic(session);
+                            return session;
+                        }
+
+                        set((state) => ({
+                            sessions: state.sessions.filter((s) => s.id !== tempId),
+                            currentSessionId: previousState.currentSessionId,
+                            webUICreatedSessions: new Set(
+                                Array.from(state.webUICreatedSessions).filter((id) => id !== tempId)
+                            ),
+                            isLoading: false,
+                            error: "Failed to create session",
+                        }));
+                        return null;
+                    } catch (error) {
+
+                        set((state) => ({
+                            sessions: state.sessions.filter((s) => s.id !== tempId),
+                            currentSessionId: previousState.currentSessionId,
+                            webUICreatedSessions: new Set(
+                                Array.from(state.webUICreatedSessions).filter((id) => id !== tempId)
+                            ),
+                            isLoading: false,
+                            error: error instanceof Error ? error.message : "Failed to create session",
+                        }));
+                        return null;
+                    }
+                },
+
+                deleteSession: async (id: string, options) => {
+                    set({ isLoading: true, error: null });
+                    const metadata = get().worktreeMetadata.get(id);
+                    const metadataPath = typeof metadata?.path === 'string' ? metadata.path : null;
+                    const metadataProjectDirectory = typeof metadata?.projectDirectory === 'string' ? metadata.projectDirectory : null;
+                    const sessionDirectory = getSessionDirectory(get().sessions, id);
+                    const requestDirectory = normalizePath(metadataProjectDirectory)
+                        ?? normalizePath(sessionDirectory)
+                        ?? normalizePath(opencodeClient.getDirectory() ?? null)
+                        ?? null;
+
+                    let archiveSucceeded = false;
+                    try {
+                        const success = await deleteSessionOnServer(id, requestDirectory);
+                        if (!success) {
+                            set({
+                                isLoading: false,
+                                error: "Failed to delete session",
+                            });
+                            return false;
+                        }
+
+                        if (metadata && options?.archiveWorktree) {
+                            try {
+                                await archiveSessionWorktree(metadata, {
+                                    deleteRemoteBranch: options?.deleteRemoteBranch,
+                                    deleteLocalBranch: options?.deleteLocalBranch,
+                                    remoteName: options?.remoteName,
+                                });
+                                archiveSucceeded = true;
+                            } catch (error) {
+                                const message = error instanceof Error ? error.message : "Failed to delete worktree";
+                                set({ error: message });
+                            }
+                        }
+
+                        let nextCurrentId: string | null = null;
+                        set((state) => {
+                            const filteredSessions = state.sessions.filter((s) => s.id !== id);
+                            nextCurrentId = state.currentSessionId === id ? null : state.currentSessionId;
+                            const nextMetadata = new Map(state.worktreeMetadata);
+                            nextMetadata.delete(id);
+                            const shouldRemoveWorktreeFromLists = Boolean(metadataPath && options?.archiveWorktree && archiveSucceeded);
+                            const nextAvailableWorktrees = shouldRemoveWorktreeFromLists
+                                ? state.availableWorktrees.filter((entry) => normalizePath(entry.path) !== normalizePath(metadataPath))
+                                : state.availableWorktrees;
+                            const nextAvailableWorktreesByProject = new Map(state.availableWorktreesByProject);
+                            if (shouldRemoveWorktreeFromLists && metadataProjectDirectory) {
+                                const projectKey = normalizePath(metadataProjectDirectory) ?? metadataProjectDirectory;
+                                const projectWorktrees = nextAvailableWorktreesByProject.get(projectKey) ?? [];
+                                nextAvailableWorktreesByProject.set(
+                                    projectKey,
+                                    projectWorktrees.filter((entry) => normalizePath(entry.path) !== normalizePath(metadataPath))
+                                );
+                            }
+                            return {
+                                sessions: filteredSessions,
+                                sessionsByDirectory: buildSessionsByDirectory(filteredSessions),
+                                currentSessionId: nextCurrentId,
+                                isLoading: false,
+                                worktreeMetadata: nextMetadata,
+                                availableWorktrees: nextAvailableWorktrees,
+                                availableWorktreesByProject: nextAvailableWorktreesByProject,
+                            };
+                        });
+
+                        const directoryToStore = normalizePath(sessionDirectory)
+                            ?? normalizePath(opencodeClient.getDirectory() ?? null)
+                            ?? null;
+                        storeSessionForDirectory(directoryToStore, nextCurrentId);
+
+                        return true;
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : "Failed to delete session";
+                        set({
+                            error: message,
+                            isLoading: false,
+                        });
+                        return false;
+                    }
+                },
+
+                deleteSessions: async (
+                    ids: string[],
+                    options?: { archiveWorktree?: boolean; deleteRemoteBranch?: boolean; deleteLocalBranch?: boolean; remoteName?: string; silent?: boolean }
+                ) => {
+                    const uniqueIds = Array.from(new Set(ids.filter((id): id is string => typeof id === "string" && id.length > 0)));
+                    if (uniqueIds.length === 0) {
+                        return { deletedIds: [], failedIds: [] };
+                    }
+
+                    const silent = options?.silent === true;
+                    if (!silent) {
+                        set({ isLoading: true, error: null });
+                    }
+                    const deletedIds: string[] = [];
+                    const failedIds: string[] = [];
+                    const worktreesToArchive = new Map<string, WorktreeMetadata>();
+                    const archivedWorktreePaths = new Set<string>();
+
+                    for (const id of uniqueIds) {
+                        try {
+                            const metadata = get().worktreeMetadata.get(id);
+                            const sessionDirectory = getSessionDirectory(get().sessions, id);
+                            const requestDirectory = normalizePath(metadata?.projectDirectory ?? null)
+                                ?? normalizePath(sessionDirectory)
+                                ?? normalizePath(opencodeClient.getDirectory() ?? null)
+                                ?? null;
+
+                            if (metadata && options?.archiveWorktree) {
+                                const key = normalizePath(metadata.path) ?? metadata.path;
+                                if (!archivedWorktreePaths.has(key)) {
+                                    archivedWorktreePaths.add(key);
+                                    worktreesToArchive.set(key, metadata);
+                                }
+                            }
+
+                            const success = await deleteSessionOnServer(id, requestDirectory);
+                            if (success) {
+                                deletedIds.push(id);
+                            } else {
+                                failedIds.push(id);
+                            }
+                        } catch {
+                            failedIds.push(id);
+                        }
+                    }
+
+                    const archivedWorktrees: Array<{ path: string; projectDirectory: string }> = [];
+                    const archiveFailures: string[] = [];
+
+                    if (options?.archiveWorktree && worktreesToArchive.size > 0) {
+                        for (const metadata of worktreesToArchive.values()) {
+                            try {
+                                await archiveSessionWorktree(metadata, {
+                                    deleteRemoteBranch: options?.deleteRemoteBranch,
+                                    deleteLocalBranch: options?.deleteLocalBranch,
+                                    remoteName: options?.remoteName,
+                                });
+                                archivedWorktrees.push({ path: metadata.path, projectDirectory: metadata.projectDirectory });
+                            } catch (error) {
+                                const message = error instanceof Error ? error.message : "Failed to delete worktree";
+                                archiveFailures.push(message);
+                            }
+                        }
+                    }
+
+                    if (archiveFailures.length > 0) {
+                        set({ error: archiveFailures[0] });
+                    }
+
+                    const directoryStore = useDirectoryStore.getState();
+                    archivedWorktrees.forEach(({ path, projectDirectory }) => {
+                        if (directoryStore.currentDirectory === path) {
+                            directoryStore.setDirectory(projectDirectory, { showOverlay: false });
+                        }
+                    });
+
+                    const deletedSet = new Set(deletedIds);
+                    const errorMessage = failedIds.length > 0
+                        ? (failedIds.length === uniqueIds.length ? "Failed to delete sessions" : "Failed to delete some sessions")
+                        : null;
+                    let nextCurrentId: string | null = null;
+
+                    set((state) => {
+                        const filteredSessions = state.sessions.filter((session) => !deletedSet.has(session.id));
+                        if (state.currentSessionId && deletedSet.has(state.currentSessionId)) {
+                            nextCurrentId = null;
+                        } else {
+                            nextCurrentId = state.currentSessionId;
+                        }
+
+                        const nextMetadata = new Map(state.worktreeMetadata);
+                        for (const removedId of deletedSet) {
+                            nextMetadata.delete(removedId);
+                        }
+
+                        const removedPaths = new Set(
+                            archivedWorktrees
+                                .map((entry) => normalizePath(entry.path))
+                                .filter((p): p is string => Boolean(p))
+                        );
+                        const nextAvailableWorktrees = removedPaths.size > 0
+                            ? state.availableWorktrees.filter((entry) => !removedPaths.has(normalizePath(entry.path) ?? entry.path))
+                            : state.availableWorktrees;
+
+                        const nextAvailableWorktreesByProject = new Map(state.availableWorktreesByProject);
+                        if (archivedWorktrees.length > 0) {
+                            const removedPathsByProject = archivedWorktrees.reduce<Map<string, Set<string>>>((accumulator, entry) => {
+                                const projectKey = normalizePath(entry.projectDirectory) ?? entry.projectDirectory;
+                                const pathKey = normalizePath(entry.path) ?? entry.path;
+                                if (!accumulator.has(projectKey)) {
+                                    accumulator.set(projectKey, new Set());
+                                }
+                                accumulator.get(projectKey)?.add(pathKey);
+                                return accumulator;
+                            }, new Map());
+
+                            removedPathsByProject.forEach((paths, projectKey) => {
+                                const projectWorktrees = nextAvailableWorktreesByProject.get(projectKey) ?? [];
+                                const filtered = projectWorktrees.filter(
+                                    (entry) => !paths.has(normalizePath(entry.path) ?? entry.path)
+                                );
+                                nextAvailableWorktreesByProject.set(projectKey, filtered);
+                            });
+                        }
+
+                        return {
+                            sessions: filteredSessions,
+                            sessionsByDirectory: buildSessionsByDirectory(filteredSessions),
+                            currentSessionId: nextCurrentId,
+                            ...(silent ? {} : { isLoading: false, error: errorMessage }),
+                            worktreeMetadata: nextMetadata,
+                            availableWorktrees: nextAvailableWorktrees,
+                            availableWorktreesByProject: nextAvailableWorktreesByProject,
+                        };
+                    });
+
+                    const directory = opencodeClient.getDirectory() ?? null;
+                    storeSessionForDirectory(directory, nextCurrentId);
+
+                    return { deletedIds, failedIds };
+                },
+
+                updateSessionTitle: async (id: string, title: string) => {
+                    try {
+                        const sessionDirectory = getSessionDirectory(get().sessions, id);
+                        const metadata = get().worktreeMetadata.get(id);
+                        const updateRequest = () => opencodeClient.updateSession(id, title);
+                        const overrideDirectory = metadata?.path ?? sessionDirectory;
+                        const updatedSession = overrideDirectory
+                            ? await opencodeClient.withDirectory(overrideDirectory, updateRequest)
+                            : await updateRequest();
+                        set((state) => {
+                            const sessions = state.sessions.map((s) => (s.id === id ? updatedSession : s));
+                            return { sessions, sessionsByDirectory: buildSessionsByDirectory(sessions) };
+                        });
+                    } catch (error) {
+                        set({
+                            error: error instanceof Error ? error.message : "Failed to update session title",
+                        });
+                    }
+                },
+
+                shareSession: async (id: string) => {
+                    try {
+                        const sessionDirectory = getSessionDirectory(get().sessions, id);
+                        const apiClient = opencodeClient.getApiClient();
+                        const metadata = get().worktreeMetadata.get(id);
+                        const overrideDirectory = metadata?.path ?? sessionDirectory;
+                        const shareRequest = async () => {
+                            const directory = sessionDirectory ?? opencodeClient.getDirectory();
+                            return apiClient.session.share({
+                                sessionID: id,
+                                ...(directory ? { directory } : {})
+                            });
+                        };
+                        const response = overrideDirectory
+                            ? await opencodeClient.withDirectory(overrideDirectory, shareRequest)
+                            : await shareRequest();
+
+                        if (response.data) {
+                            set((state) => {
+                                const sessions = state.sessions.map((s) => (s.id === id ? response.data : s));
+                                return { sessions, sessionsByDirectory: buildSessionsByDirectory(sessions) };
+                            });
+                            return response.data;
+                        }
+                        return null;
+                    } catch (error) {
+                        set({
+                            error: error instanceof Error ? error.message : "Failed to share session",
+                        });
+                        return null;
+                    }
+                },
+
+                unshareSession: async (id: string) => {
+                    try {
+                        const sessionDirectory = getSessionDirectory(get().sessions, id);
+                        const apiClient = opencodeClient.getApiClient();
+                        const metadata = get().worktreeMetadata.get(id);
+                        const overrideDirectory = metadata?.path ?? sessionDirectory;
+                        const unshareRequest = async () => {
+                            const directory = sessionDirectory ?? opencodeClient.getDirectory();
+                            return apiClient.session.unshare({
+                                sessionID: id,
+                                ...(directory ? { directory } : {})
+                            });
+                        };
+                        const response = overrideDirectory
+                            ? await opencodeClient.withDirectory(overrideDirectory, unshareRequest)
+                            : await unshareRequest();
+
+                        if (response.data) {
+                            set((state) => {
+                                const sessions = state.sessions.map((s) => (s.id === id ? response.data : s));
+                                return { sessions, sessionsByDirectory: buildSessionsByDirectory(sessions) };
+                            });
+                            return response.data;
+                        }
+                        return null;
+                    } catch (error) {
+                        set({
+                            error: error instanceof Error ? error.message : "Failed to unshare session",
+                        });
+                        return null;
+                    }
+                },
+
+                setCurrentSession: (id: string | null) => {
+                    const prevSessionId = get().currentSessionId;
+                    set({ currentSessionId: id, error: null });
+
+                    // Notify server of view state changes
+                    // This enables server-side needs_attention tracking
+                    if (prevSessionId && prevSessionId !== id) {
+                        // Leaving previous session
+                        fetch(`/api/sessions/${prevSessionId}/unview`, { method: 'POST' })
+                            .catch(() => { /* ignore */ });
+                    }
+                    if (id) {
+                        // Entering new session
+                        fetch(`/api/sessions/${id}/view`, { method: 'POST' })
+                            .catch(() => { /* ignore */ });
+                    }
+
+                    // Trigger immediate poll to get latest attention states
+                    // This prevents stale state when switching sessions
+                    triggerSessionStatusPoll();
+
+                    const directory = opencodeClient.getDirectory() ?? null;
+                    storeSessionForDirectory(directory, id);
+                },
+
+                clearError: () => {
+                    set({ error: null });
+                },
+
+                getSessionsByDirectory: (directory: string) => {
+                    const normalized = normalizePath(directory) ?? directory;
+                    const { sessionsByDirectory, sessions } = get();
+
+                    const direct = sessionsByDirectory.get(normalized);
+                    if (direct) {
+                        return direct;
+                    }
+
+                    return sessions.filter((session) => {
+                        const dir = normalizePath((session as { directory?: string | null }).directory ?? null);
+                        return (dir ?? normalized) === normalized;
+                    });
+                },
+
+                getDirectoryForSession: (sessionId: string) => {
+                    if (!sessionId) {
+                        return null;
+                    }
+
+                    const metadata = get().worktreeMetadata.get(sessionId);
+                    if (metadata?.path) {
+                        return normalizePath(metadata.path) ?? metadata.path;
+                    }
+
+                    const entry = get().sessions.find((session) => session.id === sessionId) as { directory?: string | null } | undefined;
+                    const directory = normalizePath(entry?.directory ?? null);
+                    return directory;
+                },
+
+                applySessionMetadata: (sessionId, metadata) => {
+                    if (!sessionId || !metadata) {
+                        return;
+                    }
+
+                    set((state) => {
+                        const index = state.sessions.findIndex((session) => session.id === sessionId);
+                        if (index === -1) {
+                            return state;
+                        }
+
+                        const existingSession = state.sessions[index];
+                        const mergedTime = metadata.time
+                            ? { ...existingSession.time, ...metadata.time }
+                            : existingSession.time;
+                        const mergedSummary =
+                            metadata.summary === undefined
+                                ? existingSession.summary
+                                : metadata.summary || undefined;
+                        const mergedShare =
+                            metadata.share === undefined
+                                ? existingSession.share
+                                : metadata.share || undefined;
+
+                        const mergedSession: Session = {
+                            ...existingSession,
+                            ...metadata,
+                            time: mergedTime,
+                            summary: mergedSummary,
+                            share: mergedShare,
+                        };
+
+                        const hasChanged =
+                            mergedSession.title !== existingSession.title ||
+                            mergedSession.parentID !== existingSession.parentID ||
+                            mergedSession.directory !== existingSession.directory ||
+                            mergedSession.version !== existingSession.version ||
+                            mergedSession.projectID !== existingSession.projectID ||
+                            JSON.stringify(mergedSession.time) !== JSON.stringify(existingSession.time) ||
+                            JSON.stringify(mergedSession.summary ?? null) !== JSON.stringify(existingSession.summary ?? null) ||
+                            JSON.stringify(mergedSession.share ?? null) !== JSON.stringify(existingSession.share ?? null);
+
+                        const sessions = [...state.sessions];
+                        sessions[index] = hasChanged ? mergedSession : existingSession;
+
+                        return {
+                            sessions,
+                            sessionsByDirectory: buildSessionsByDirectory(sessions),
+                        };
+                    });
+                },
+
+                isIKanbanCreatedSession: (sessionId: string) => {
+                    const { webUICreatedSessions } = get();
+                    return webUICreatedSessions.has(sessionId);
+                },
+
+                markSessionAsIKanbanCreated: (sessionId: string) => {
+                    set((state) => {
+                        const newIKanbanCreatedSessions = new Set(state.webUICreatedSessions);
+                        newIKanbanCreatedSessions.add(sessionId);
+                        return {
+                            webUICreatedSessions: newIKanbanCreatedSessions,
+                        };
+                    });
+                },
+
+                initializeNewIKanbanSession: (sessionId: string) => {
+                    const { markSessionAsIKanbanCreated } = get();
+
+                    markSessionAsIKanbanCreated(sessionId);
+
+                },
+
+                setWorktreeMetadata: (sessionId: string, metadata: WorktreeMetadata | null) => {
+                    if (!sessionId) {
+                        return;
+                    }
+                    set((state) => {
+                        const next = new Map(state.worktreeMetadata);
+                        if (metadata) {
+                            next.set(sessionId, metadata);
+                        } else {
+                            next.delete(sessionId);
+                        }
+                        return { worktreeMetadata: next };
+                    });
+                },
+
+                getWorktreeMetadata: (sessionId: string) => {
+                    if (!sessionId) {
+                        return undefined;
+                    }
+                    return get().worktreeMetadata.get(sessionId);
+                },
+
+                setSessionDirectory: (sessionId: string, directory: string | null) => {
+                    if (!sessionId) {
+                        return;
+                    }
+
+                    const currentSessions = get().sessions;
+                    const targetIndex = currentSessions.findIndex((session) => session.id === sessionId);
+                    if (targetIndex === -1) {
+                        return;
+                    }
+
+                    const existingSession = currentSessions[targetIndex];
+                    const previousDirectory = existingSession.directory ?? null;
+                    const normalizedDirectory = directory ?? undefined;
+
+                    if (previousDirectory === (normalizedDirectory ?? null)) {
+                        return;
+                    }
+
+                    set((state) => {
+                        const sessions = [...state.sessions];
+                        const updatedSession = { ...sessions[targetIndex] } as Record<string, unknown>;
+                        if (normalizedDirectory !== undefined) {
+                            updatedSession.directory = normalizedDirectory;
+                        } else {
+                            delete updatedSession.directory;
+                        }
+                        sessions[targetIndex] = updatedSession as Session;
+                        return { sessions, sessionsByDirectory: buildSessionsByDirectory(sessions) };
+                    });
+
+                    if (previousDirectory) {
+                        storeSessionForDirectory(previousDirectory, null);
+                    }
+                    if (directory) {
+                        storeSessionForDirectory(directory, sessionId);
+                    }
+
+                },
+
+                updateSession: (session: Session) => {
+                    set((state) => {
+                        const index = state.sessions.findIndex((s) => s.id === session.id);
+                        const nextSessions = index === -1
+                            ? [session, ...state.sessions]
+                            : state.sessions.map((s) => (s.id === session.id ? session : s));
+
+                        const deduped = dedupeSessionsById(nextSessions);
+
+                        return {
+                            sessions: deduped,
+                            sessionsByDirectory: buildSessionsByDirectory(deduped),
+                        };
+                    });
+                },
+
+                removeSessionFromStore: (sessionId: string) => {
+                    if (!sessionId) {
+                        return;
+                    }
+
+                    set((state) => {
+                        const target = state.sessions.find((session) => session.id === sessionId) as { directory?: string | null } | undefined;
+                        const directory = normalizePath(target?.directory ?? null);
+
+                        const filteredSessions = state.sessions.filter((session) => session.id !== sessionId);
+                        if (filteredSessions.length === state.sessions.length) {
+                            return state;
+                        }
+
+                        const nextMetadata = new Map(state.worktreeMetadata);
+                        nextMetadata.delete(sessionId);
+
+                        const nextCurrentId = state.currentSessionId === sessionId ? null : state.currentSessionId;
+
+                        if (directory) {
+                            storeSessionForDirectory(directory, null);
+                        }
+
+                        return {
+                            sessions: filteredSessions,
+                            sessionsByDirectory: buildSessionsByDirectory(filteredSessions),
+                            currentSessionId: nextCurrentId,
+                            worktreeMetadata: nextMetadata,
+                        };
+                    });
+                },
+            }),
+            {
+                name: "session-store",
+                storage: createJSONStorage(() => getSafeStorage()),
+    partialize: (state) => ({
+        currentSessionId: state.currentSessionId,
+        sessions: state.sessions,
+        lastLoadedDirectory: state.lastLoadedDirectory,
+        webUICreatedSessions: Array.from(state.webUICreatedSessions),
+        worktreeMetadata: Array.from(state.worktreeMetadata.entries()),
+        availableWorktrees: state.availableWorktrees,
+        availableWorktreesByProject: Array.from(state.availableWorktreesByProject.entries()),
+    }),
+    merge: (persistedState, currentState) => {
+        const isRecord = (value: unknown): value is Record<string, unknown> =>
+            typeof value === "object" && value !== null;
+
+        if (!isRecord(persistedState)) {
+            return currentState;
+        }
+
+        const persistedSessions = Array.isArray(persistedState.sessions)
+            ? (persistedState.sessions as Session[])
+            : currentState.sessions;
+
+        const persistedCurrentSessionId =
+            typeof persistedState.currentSessionId === "string" || persistedState.currentSessionId === null
+                ? (persistedState.currentSessionId as string | null)
+                : currentState.currentSessionId;
+
+        const webUiSessionsArray = Array.isArray(persistedState.webUICreatedSessions)
+            ? (persistedState.webUICreatedSessions as string[])
+            : [];
+
+        const persistedWorktreeEntries = Array.isArray(persistedState.worktreeMetadata)
+            ? (persistedState.worktreeMetadata as Array<[string, WorktreeMetadata]>)
+            : [];
+
+        const persistedAvailableWorktrees = Array.isArray(persistedState.availableWorktrees)
+            ? (persistedState.availableWorktrees as WorktreeMetadata[])
+            : currentState.availableWorktrees;
+
+        const persistedWorktreesByProjectEntries = Array.isArray(persistedState.availableWorktreesByProject)
+            ? (persistedState.availableWorktreesByProject as Array<[string, WorktreeMetadata[]]>)
+            : [];
+        const persistedWorktreesByProject = new Map(persistedWorktreesByProjectEntries);
+
+        const lastLoadedDirectory =
+            typeof persistedState.lastLoadedDirectory === "string"
+                ? persistedState.lastLoadedDirectory
+                : currentState.lastLoadedDirectory ?? null;
+
+        const mergedSessions = dedupeSessionsById(persistedSessions);
+
+        const mergedResult = {
+            ...currentState,
+            ...persistedState,
+            sessions: mergedSessions,
+            sessionsByDirectory: buildSessionsByDirectory(mergedSessions),
+            currentSessionId: persistedCurrentSessionId,
+            webUICreatedSessions: new Set(webUiSessionsArray),
+            worktreeMetadata: new Map(persistedWorktreeEntries),
+            availableWorktrees: persistedAvailableWorktrees,
+            availableWorktreesByProject: persistedWorktreesByProject.size > 0
+                ? persistedWorktreesByProject
+                : currentState.availableWorktreesByProject,
+            lastLoadedDirectory,
+        };
+        return mergedResult;
+    },
+            }
+        ),
+        {
+            name: "session-store",
+        }
+    )
+);
