@@ -1,6 +1,6 @@
 {
   "name": "ikanban",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "iKanban - Kanban board powered by OpenCode",
   "private": true,
   "type": "module",
@@ -24,7 +24,8 @@
     "dev:web": "bun run --cwd packages/web build:watch",
     "dev:web:server": "bun run --cwd packages/web dev:server:watch",
     "dev:web:full": "concurrently -n \"api,build\" -c \"cyan,magenta\" \"bun run --cwd packages/web dev:server:watch\" \"bun run --cwd packages/web build:watch\"",
-    "start:web": "bun run --cwd packages/web start"
+    "start:web": "bun run --cwd packages/web start",
+    "bump-version": "node scripts/bump-version.mjs"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.0",
