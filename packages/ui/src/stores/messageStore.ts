@@ -688,7 +688,7 @@ export const useMessageStore = create<MessageStore>()(
                                     url:
                                         file.source === "server" &&
                                         file.serverPath &&
-                                        (file.mimeType === "text/plain" || file.mimeType === "application/x-directory")
+                                        file.mimeType === "application/x-directory"
                                             ? toFileUrl(file.serverPath)
                                             : file.dataUrl,
                                 }));
@@ -717,7 +717,7 @@ export const useMessageStore = create<MessageStore>()(
                                         url:
                                             file.source === "server" &&
                                             file.serverPath &&
-                                            (file.mimeType === "text/plain" || file.mimeType === "application/x-directory")
+                                            file.mimeType === "application/x-directory"
                                                 ? toFileUrl(file.serverPath)
                                                 : file.dataUrl,
                                     })),

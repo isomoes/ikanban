@@ -174,49 +174,18 @@ const guessMimeTypeFromName = (filename: string): string => {
 };
 
 const guessMimeType = (file: File): string => {
-    if (file.type && file.type.trim().length > 0) {
+    // If the browser provides a MIME type that isn't the generic octet-stream fallback, use it
+    const browserMime = file.type?.trim().toLowerCase() ?? "";
+    if (
+        browserMime.length > 0 &&
+        browserMime !== "application/octet-stream" &&
+        !browserMime.startsWith("application/octet-stream;")
+    ) {
         return file.type;
     }
 
-    const name = (file.name || "").toLowerCase();
-    const ext = name.includes(".") ? name.split(".").pop() || "" : "";
-    const noExtNames = new Set([
-        "license",
-        "readme",
-        "changelog",
-        "notice",
-        "authors",
-        "copying",
-    ]);
-
-    if (noExtNames.has(name)) return "text/plain";
-
-    switch (ext) {
-        case "md":
-        case "markdown":
-            return "text/markdown";
-        case "txt":
-            return "text/plain";
-        case "json":
-            return "application/json";
-        case "yaml":
-        case "yml":
-            return "application/x-yaml";
-        case "ts":
-        case "tsx":
-        case "js":
-        case "jsx":
-        case "mjs":
-        case "cjs":
-        case "py":
-        case "rb":
-        case "sh":
-        case "bash":
-        case "zsh":
-            return "text/plain";
-        default:
-            return "application/octet-stream";
-    }
+    // Fall back to extension-based detection (reuse guessMimeTypeFromName)
+    return guessMimeTypeFromName(file.name);
 };
 
 const normalizeServerPath = (inputPath: string): string => inputPath.replace(/\\/g, "/").trim();
@@ -334,16 +303,30 @@ export const useFileStore = create<FileStore>()(
                         }
 
                         const inferredMime = guessMimeTypeFromName(name);
-                        const safeMimeType = inferredMime && inferredMime.trim().length > 0 ? inferredMime : "application/octet-stream";
+                        const safeMimeType = inferredMime && inferredMime.trim().length > 0 ? inferredMime : "text/plain";
 
-                        const shouldInlineBinary = safeMimeType !== "text/plain" && safeMimeType !== "application/x-directory";
+                        const isDirectory = safeMimeType === "application/x-directory";
 
+                        // Always read file content and create a data URL with the correct MIME type.
+                        // Sending file:// URLs causes the backend to re-detect MIME types which can
+                        // produce application/octet-stream and trigger AI provider errors.
                         let dataUrl = toFileUrl(normalizedPath);
-                        if (shouldInlineBinary) {
+                        if (!isDirectory) {
                             try {
-                                dataUrl = await readRawFileAsDataUrl(normalizedPath);
+                                const rawDataUrl = await readRawFileAsDataUrl(normalizedPath);
+                                // Replace the MIME in the data URL with our correctly inferred MIME,
+                                // since /api/fs/raw may return application/octet-stream for text files
+                                const commaIndex = rawDataUrl.indexOf(',');
+                                if (commaIndex !== -1) {
+                                    const meta = rawDataUrl.substring(5, commaIndex); // after "data:"
+                                    const contentPart = rawDataUrl.substring(commaIndex); // includes comma
+                                    const newMeta = meta.replace(/^[^;,]+/, safeMimeType);
+                                    dataUrl = `data:${newMeta}${contentPart}`;
+                                } else {
+                                    dataUrl = rawDataUrl;
+                                }
                             } catch (error) {
-                                console.warn("Failed to inline binary server file, falling back to file://", error);
+                                console.warn("Failed to read server file, falling back to file://", error);
                             }
                         }
 
