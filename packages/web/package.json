@@ -1,6 +1,6 @@
 {
   "name": "@ikanban/web",
-  "version": "1.6.8",
+  "version": "0.1.0",
   "private": false,
   "type": "module",
   "main": "./server/index.js",
