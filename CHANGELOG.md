@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+- No user-facing changes since `v0.1.3`.
+
+## [0.1.3]
+
 ## [0.1.2]
 
 - CLI: Renamed published npm package names to `ikanban-web` and `ikanban-ui`; update install commands to use the new names. (thanks to @isomo)
