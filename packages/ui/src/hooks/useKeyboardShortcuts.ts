@@ -35,9 +35,51 @@ export const useKeyboardShortcuts = () => {
   }, [clearAbortPrompt]);
 
   React.useEffect(() => {
+    const isEditableTarget = (target: EventTarget | null) => {
+      const element = target as HTMLElement | null;
+      if (!element) return false;
+
+      const tagName = element.tagName;
+      if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT') {
+        return true;
+      }
+
+      if (element.isContentEditable) {
+        return true;
+      }
+
+      return Boolean(element.closest('[contenteditable="true"]'));
+    };
+
+    const getVimScrollTarget = (activeMainTab: ReturnType<typeof useUIStore.getState>['activeMainTab']) => {
+      if (activeMainTab === 'chat') {
+        return document.querySelector<HTMLElement>('[data-scrollbar="chat"]');
+      }
+
+      if (activeMainTab === 'diff') {
+        const candidates = Array.from(
+          document.querySelectorAll<HTMLElement>('.overlay-scrollbar-container[data-diff-virtual-content]')
+        );
+
+        const visibleCandidates = candidates.filter((el) => {
+          if (el.clientHeight <= 0) return false;
+          if (el.scrollHeight <= el.clientHeight) return false;
+          return el.offsetParent !== null;
+        });
+
+        if (visibleCandidates.length === 0) {
+          return null;
+        }
+
+        return visibleCandidates.sort((a, b) => (b.scrollHeight - b.clientHeight) - (a.scrollHeight - a.clientHeight))[0];
+      }
+
+      return null;
+    };
+
     const handleKeyDown = (e: KeyboardEvent) => {
 
-       if (hasModifier(e) && e.key === 'k') {
+       if (hasModifier(e) && e.key.toLowerCase() === 'p') {
         e.preventDefault();
         toggleCommandPalette();
       }
@@ -114,6 +156,74 @@ export const useKeyboardShortcuts = () => {
         const textarea = document.querySelector<HTMLTextAreaElement>('textarea[data-chat-input="true"]');
         textarea?.focus();
         return;
+      }
+
+      const key = e.key.toLowerCase();
+      const ctrlOnly = e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey;
+      const noModifiers = !hasModifier(e) && !e.shiftKey;
+      const isLineDown = noModifiers && key === 'j';
+      const isLineUp = noModifiers && key === 'k';
+      const isHalfPageDown = (noModifiers && key === 'd') || (ctrlOnly && key === 'd');
+      const isHalfPageUp = (noModifiers && key === 'u') || (ctrlOnly && key === 'u');
+
+      if (isLineDown || isLineUp || isHalfPageDown || isHalfPageUp) {
+        if (isEditableTarget(e.target)) {
+          return;
+        }
+
+        const {
+          isSettingsDialogOpen,
+          isCommandPaletteOpen,
+          isHelpDialogOpen,
+          isSessionSwitcherOpen,
+          isAboutDialogOpen,
+          isMultiRunLauncherOpen,
+          isImagePreviewOpen,
+          activeMainTab,
+        } = useUIStore.getState();
+
+        const hasOverlay =
+          isSettingsDialogOpen ||
+          isCommandPaletteOpen ||
+          isHelpDialogOpen ||
+          isSessionSwitcherOpen ||
+          isAboutDialogOpen ||
+          isMultiRunLauncherOpen ||
+          isImagePreviewOpen;
+
+        if (hasOverlay) {
+          return;
+        }
+
+        const scrollTarget = getVimScrollTarget(activeMainTab);
+        if (!scrollTarget) {
+          return;
+        }
+
+        const lineStep = 36;
+        const halfPageStep = Math.max(Math.floor(scrollTarget.clientHeight / 2), lineStep * 3);
+
+        let delta = 0;
+        if (isLineDown) delta = lineStep;
+        if (isLineUp) delta = -lineStep;
+        if (isHalfPageDown) delta = halfPageStep;
+        if (isHalfPageUp) delta = -halfPageStep;
+
+        if (delta !== 0) {
+          e.preventDefault();
+          const maxScrollTop = Math.max(0, scrollTarget.scrollHeight - scrollTarget.clientHeight);
+          const nextScrollTop = Math.max(0, Math.min(maxScrollTop, scrollTarget.scrollTop + delta));
+          if (nextScrollTop !== scrollTarget.scrollTop) {
+            // Signal manual override so the scroll engine cancels any ongoing
+            // programmatic scroll-to-bottom animation — same as mouse wheel does
+            // via its native 'wheel' event listener.  A zero-delta synthetic
+            // wheel event triggers the listener without causing the browser to
+            // perform its own scroll.
+            scrollTarget.dispatchEvent(new WheelEvent('wheel', { bubbles: false, cancelable: false, deltaY: 0 }));
+            scrollTarget.scrollTo({ top: nextScrollTop, behavior: 'auto' });
+          }
+          return;
+        }
       }
 
       // Cmd/Ctrl+Shift+M: Open model selector (same conditions as double-ESC: chat tab, no overlays)

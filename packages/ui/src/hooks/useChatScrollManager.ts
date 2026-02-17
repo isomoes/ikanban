@@ -58,8 +58,6 @@ interface UseChatScrollManagerResult {
     isPinned: boolean;
 }
 
-const PROGRAMMATIC_SCROLL_SUPPRESS_MS = 200;
-const DIRECT_SCROLL_INTENT_WINDOW_MS = 250;
 // Threshold for re-pinning: 10% of container height (matches bottom spacer)
 const PIN_THRESHOLD_RATIO = 0.10;
 
@@ -86,14 +84,8 @@ export const useChatScrollManager = ({
     const [isPinned, setIsPinned] = React.useState(true);
 
     const lastSessionIdRef = React.useRef<string | null>(null);
-    const suppressUserScrollUntilRef = React.useRef<number>(0);
-    const lastDirectScrollIntentAtRef = React.useRef<number>(0);
     const isPinnedRef = React.useRef(true);
     const lastScrollTopRef = React.useRef<number>(0);
-
-    const markProgrammaticScroll = React.useCallback(() => {
-        suppressUserScrollUntilRef.current = Date.now() + PROGRAMMATIC_SCROLL_SUPPRESS_MS;
-    }, []);
 
     const getDistanceFromBottom = React.useCallback(() => {
         const container = scrollRef.current;
@@ -113,9 +105,8 @@ export const useChatScrollManager = ({
         if (!container) return;
 
         const bottom = container.scrollHeight - container.clientHeight;
-        markProgrammaticScroll();
         scrollEngine.scrollToPosition(Math.max(0, bottom), options);
-    }, [markProgrammaticScroll, scrollEngine]);
+    }, [scrollEngine]);
 
     const updateScrollButtonVisibility = React.useCallback(() => {
         const container = scrollRef.current;
@@ -139,9 +130,8 @@ export const useChatScrollManager = ({
         const container = scrollRef.current;
         if (!container) return;
 
-        markProgrammaticScroll();
         scrollEngine.scrollToPosition(Math.max(0, position), options);
-    }, [markProgrammaticScroll, scrollEngine]);
+    }, [scrollEngine]);
 
     const scrollToBottom = React.useCallback((options?: { instant?: boolean; force?: boolean }) => {
         const container = scrollRef.current;
@@ -154,15 +144,11 @@ export const useChatScrollManager = ({
         setShowScrollButton(false);
     }, [scrollToBottomInternal, updatePinnedState]);
 
-    const handleScrollEvent = React.useCallback((event?: Event) => {
+    const handleScrollEvent = React.useCallback(() => {
         const container = scrollRef.current;
         if (!container || !currentSessionId) {
             return;
         }
-
-        const now = Date.now();
-        const isProgrammatic = now < suppressUserScrollUntilRef.current;
-        const hasDirectIntent = now - lastDirectScrollIntentAtRef.current <= DIRECT_SCROLL_INTENT_WINDOW_MS;
 
         scrollEngine.handleScroll();
         updateScrollButtonVisibility();
@@ -170,12 +156,12 @@ export const useChatScrollManager = ({
         // Handle pin/unpin logic
         const currentScrollTop = container.scrollTop;
 
-        // Unpin requires strict user intent check
-        if (event?.isTrusted && !isProgrammatic && hasDirectIntent) {
-            const scrollingUp = currentScrollTop < lastScrollTopRef.current;
-            if (scrollingUp && isPinnedRef.current) {
-                updatePinnedState(false);
-            }
+        // Unpin on any upward movement.
+        // Programmatic scrolls from this manager only move toward bottom, so this keeps keyboard/manual
+        // upward navigation from snapping back to bottom during streaming updates.
+        const scrollingUp = currentScrollTop < lastScrollTopRef.current;
+        if (scrollingUp && isPinnedRef.current) {
+            updatePinnedState(false);
         }
 
         // Re-pin at bottom should always work (even momentum scroll)
@@ -207,18 +193,10 @@ export const useChatScrollManager = ({
         const container = scrollRef.current;
         if (!container) return;
 
-        const markDirectIntent = () => {
-            lastDirectScrollIntentAtRef.current = Date.now();
-        };
-
         container.addEventListener('scroll', handleScrollEvent as EventListener, { passive: true });
-        container.addEventListener('wheel', markDirectIntent as EventListener, { passive: true });
-        container.addEventListener('touchmove', markDirectIntent as EventListener, { passive: true });
 
         return () => {
             container.removeEventListener('scroll', handleScrollEvent as EventListener);
-            container.removeEventListener('wheel', markDirectIntent as EventListener);
-            container.removeEventListener('touchmove', markDirectIntent as EventListener);
         };
     }, [handleScrollEvent]);
 
@@ -237,10 +215,9 @@ export const useChatScrollManager = ({
 
         const container = scrollRef.current;
         if (container) {
-            markProgrammaticScroll();
             scrollToBottomInternal({ instant: true });
         }
-    }, [currentSessionId, markProgrammaticScroll, scrollToBottomInternal, updatePinnedState]);
+    }, [currentSessionId, scrollToBottomInternal, updatePinnedState]);
 
     // Maintain pin-to-bottom when content changes
     React.useEffect(() => {
@@ -253,10 +230,9 @@ export const useChatScrollManager = ({
         // When pinned and content grows, scroll to bottom instantly
         const distanceFromBottom = getDistanceFromBottom();
         if (distanceFromBottom > getPinThreshold()) {
-            markProgrammaticScroll();
             scrollToBottomInternal({ instant: true });
         }
-    }, [getDistanceFromBottom, getPinThreshold, isSyncing, markProgrammaticScroll, scrollToBottomInternal, sessionMessages]);
+    }, [getDistanceFromBottom, getPinThreshold, isSyncing, scrollToBottomInternal, sessionMessages]);
 
     // Use ResizeObserver to detect content changes and maintain pin
     React.useEffect(() => {

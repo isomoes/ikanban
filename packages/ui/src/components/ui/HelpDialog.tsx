@@ -94,7 +94,7 @@ export const HelpDialog: React.FC = () => {
       category: "Navigation & Commands",
       items: [
         {
-          keys: [`${mod} + K`],
+          keys: [`${mod} + P`],
           description: "Open Command Palette",
           icon: RiCommandLine,
         },
@@ -243,7 +243,7 @@ export const HelpDialog: React.FC = () => {
                 <p className="font-medium mb-1">Pro Tips:</p>
                 <ul className="space-y-0.5 typography-meta">
                   <li>
-                    • Use Command Palette ({mod} + K) to quickly access all
+                    • Use Command Palette ({mod} + P) to quickly access all
                     actions
                   </li>
                   <li>
