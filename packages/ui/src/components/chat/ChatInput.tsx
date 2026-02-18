@@ -791,6 +791,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
             return;
         }
 
+        // Escape blurs the chat input (exit insert mode) when no autocomplete is open
+        if (e.key === 'Escape' && !isAnyAutocompleteOpen) {
+            e.preventDefault();
+            textareaRef.current?.blur();
+            return;
+        }
+
         // Handle Enter/Ctrl+Enter based on queue mode
         if (e.key === 'Enter' && !e.shiftKey && !isMobile) {
             e.preventDefault();
@@ -1295,6 +1302,44 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
             textareaRef.current.focus();
         }
     }, [currentSessionId, isMobile]);
+
+    // Global keyboard shortcuts: 'i' to focus input, Ctrl+C to stop session
+    React.useEffect(() => {
+        if (isMobile) return;
+
+        const handleGlobalKeyDown = (e: KeyboardEvent) => {
+            const textarea = textareaRef.current;
+            if (!textarea) return;
+
+            const isInputFocused = document.activeElement === textarea;
+
+            // 'i' key focuses the chat input when it's not already focused
+            if (e.key === 'i' && !isInputFocused && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                // Don't intercept if focus is on another input/textarea/contenteditable
+                const active = document.activeElement;
+                const tag = active?.tagName?.toLowerCase();
+                if (tag === 'input' || tag === 'textarea' || (active as HTMLElement)?.isContentEditable) {
+                    return;
+                }
+                e.preventDefault();
+                textarea.focus();
+                return;
+            }
+
+            // Ctrl+C stops the current session when input is focused and session is working
+            if (e.key === 'c' && e.ctrlKey && !e.metaKey && !e.altKey && isInputFocused) {
+                if (canAbort) {
+                    e.preventDefault();
+                    handleAbort();
+                }
+            }
+        };
+
+        document.addEventListener('keydown', handleGlobalKeyDown);
+        return () => {
+            document.removeEventListener('keydown', handleGlobalKeyDown);
+        };
+    }, [isMobile, canAbort, handleAbort]);
 
     React.useEffect(() => {
         if (!isMobile) {
