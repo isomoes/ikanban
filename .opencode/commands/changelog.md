@@ -14,7 +14,7 @@ Style rules:
 - No new release header; only update the `[Unreleased]` bullets.
 - Don't include implementation notes, commit hashes, or file paths in the changelog text.
 - Use area prefixes when helpful for grouping in the main @CHANGELOG.md (e.g., "Chat:", "VSCode:", "Settings:", "Git:", "Terminal:", "Mobile:", "UI:").
-- Credit contributors inline using "(thanks to @username)" at the end of the bullet. Find contributor usernames from commit authors or PR metadata when available.
+- Credit contributors inline using "(@username)" at the end of the bullet. Find contributor usernames from commit authors or PR metadata when available.
 
 Determine the base version:
 
