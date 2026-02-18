@@ -1155,7 +1155,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
         }
     }, [addAttachedFile, currentSessionId, newSessionDraftOpen, insertTextAtSelection]);
 
-    const handleFileSelect = (file: { name: string; path: string }) => {
+    const handleFileSelect = (file: { name: string; path: string; relativePath?: string }) => {
+        const insertLabel = file.relativePath || file.name;
 
         const cursorPosition = textareaRef.current?.selectionStart || 0;
         const textBeforeCursor = message.substring(0, cursorPosition);
@@ -1164,16 +1165,16 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
         if (lastAtSymbol !== -1) {
             const newMessage =
                 message.substring(0, lastAtSymbol) +
-                file.name +
+                insertLabel +
                 message.substring(cursorPosition);
             setMessage(newMessage);
         } else if (textareaRef.current) {
             const newMessage =
                 message.substring(0, cursorPosition) +
-                `@${file.name} ` +
+                `@${insertLabel} ` +
                 message.substring(cursorPosition);
             setMessage(newMessage);
-            const nextCursor = cursorPosition + file.name.length + 2;
+            const nextCursor = cursorPosition + insertLabel.length + 2;
             requestAnimationFrame(() => {
                 if (textareaRef.current) {
                     textareaRef.current.selectionStart = nextCursor;
