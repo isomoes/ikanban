@@ -13,9 +13,10 @@ import { useUIStore } from '@/stores/useUIStore';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useDirectoryStore } from '@/stores/useDirectoryStore';
 import { useConfigStore } from '@/stores/useConfigStore';
+import { useProjectsStore } from '@/stores/useProjectsStore';
 import { useThemeSystem } from '@/contexts/useThemeSystem';
 import { useDeviceInfo } from '@/lib/device';
-import { RiAddLine, RiChatAi3Line, RiCheckLine, RiCodeLine, RiComputerLine, RiGitBranchLine, RiLayoutLeftLine, RiMoonLine, RiQuestionLine, RiSettings3Line, RiSunLine, RiTerminalBoxLine, RiTimeLine } from '@remixicon/react';
+import { RiAddLine, RiChatAi3Line, RiCheckLine, RiCodeLine, RiComputerLine, RiFolder3Line, RiGitBranchLine, RiLayoutLeftLine, RiMoonLine, RiQuestionLine, RiSettings3Line, RiSunLine, RiTerminalBoxLine, RiTimeLine } from '@remixicon/react';
 import { getModifierLabel } from '@/lib/utils';
 import { createWorktreeSession } from '@/lib/worktreeSessionCreator';
 
@@ -110,6 +111,13 @@ export const CommandPalette: React.FC = () => {
     handleClose();
   };
 
+  const { projects, activeProjectId, setActiveProject } = useProjectsStore();
+
+  const handleSwitchProject = (projectId: string) => {
+    setActiveProject(projectId);
+    handleClose();
+  };
+
   const directorySessions = getSessionsByDirectory(currentDirectory ?? '');
   const currentSessions = React.useMemo(() => {
     return directorySessions.slice(0, 5);
@@ -172,6 +180,30 @@ export const CommandPalette: React.FC = () => {
             <CommandShortcut>{getModifierLabel()} + ,</CommandShortcut>
           </CommandItem>
         </CommandGroup>
+
+        {projects.length > 1 && (
+          <>
+            <CommandSeparator />
+            <CommandGroup heading="Projects">
+              {projects.map((project) => {
+                const label = project.label && project.label.trim().length > 0
+                  ? project.label
+                  : (project.path.split('/').filter(Boolean).pop() ?? project.path);
+                const isActive = project.id === activeProjectId;
+                return (
+                  <CommandItem
+                    key={project.id}
+                    onSelect={() => handleSwitchProject(project.id)}
+                  >
+                    <RiFolder3Line className="mr-2 h-4 w-4" />
+                    <span className="truncate">{label}</span>
+                    {isActive && <RiCheckLine className="ml-auto h-4 w-4" />}
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+          </>
+        )}
 
         <CommandSeparator />
 
