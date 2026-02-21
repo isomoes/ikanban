@@ -15,6 +15,7 @@ export const useKeyboardShortcuts = () => {
     toggleCommandPalette,
     toggleHelpDialog,
     toggleSidebar,
+    toggleRightSidebar,
     setSessionSwitcherOpen,
     setActiveMainTab,
     setSettingsDialogOpen,
@@ -140,13 +141,24 @@ export const useKeyboardShortcuts = () => {
         return;
       }
 
-      if (hasModifier(e) && !e.shiftKey && e.key.toLowerCase() === 'l') {
+      if (hasModifier(e) && !e.shiftKey && e.key.toLowerCase() === 'h') {
         e.preventDefault();
         const { isMobile, isSessionSwitcherOpen } = useUIStore.getState();
         if (isMobile) {
           setSessionSwitcherOpen(!isSessionSwitcherOpen);
         } else {
           toggleSidebar();
+        }
+        return;
+      }
+
+      if (hasModifier(e) && !e.shiftKey && e.key.toLowerCase() === 'l') {
+        e.preventDefault();
+        const { isMobile, isSessionSwitcherOpen } = useUIStore.getState();
+        if (isMobile) {
+          setSessionSwitcherOpen(!isSessionSwitcherOpen);
+        } else {
+          toggleRightSidebar();
         }
         return;
       }
