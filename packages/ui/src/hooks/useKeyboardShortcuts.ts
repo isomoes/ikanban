@@ -177,8 +177,9 @@ export const useKeyboardShortcuts = () => {
       const isLineUp = noModifiers && key === 'k';
       const isHalfPageDown = (noModifiers && key === 'd') || (ctrlOnly && key === 'd');
       const isHalfPageUp = (noModifiers && key === 'u') || (ctrlOnly && key === 'u');
+      const isVimInsert = noModifiers && key === 'i';
 
-      if (isLineDown || isLineUp || isHalfPageDown || isHalfPageUp) {
+      if (isLineDown || isLineUp || isHalfPageDown || isHalfPageUp || isVimInsert) {
         if (isEditableTarget(e.target)) {
           return;
         }
@@ -204,6 +205,14 @@ export const useKeyboardShortcuts = () => {
           isImagePreviewOpen;
 
         if (hasOverlay) {
+          return;
+        }
+
+        // vim 'i': enter insert mode by focusing the chat input textarea
+        if (isVimInsert) {
+          e.preventDefault();
+          const textarea = document.querySelector<HTMLTextAreaElement>('textarea[data-chat-input="true"]');
+          textarea?.focus();
           return;
         }
 
@@ -236,6 +245,54 @@ export const useKeyboardShortcuts = () => {
           }
           return;
         }
+      }
+
+      // Ctrl+J / Ctrl+K: vim-style session switching (next/prev by last-updated order)
+      const ctrlJK = e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && (e.key === 'j' || e.key === 'k');
+      if (ctrlJK) {
+        if (isEditableTarget(e.target)) {
+          return;
+        }
+
+        const {
+          isSettingsDialogOpen,
+          isCommandPaletteOpen,
+          isHelpDialogOpen,
+          isSessionSwitcherOpen,
+          isAboutDialogOpen,
+          isMultiRunLauncherOpen,
+          isImagePreviewOpen,
+        } = useUIStore.getState();
+
+        const hasOverlay =
+          isSettingsDialogOpen ||
+          isCommandPaletteOpen ||
+          isHelpDialogOpen ||
+          isSessionSwitcherOpen ||
+          isAboutDialogOpen ||
+          isMultiRunLauncherOpen ||
+          isImagePreviewOpen;
+
+        if (hasOverlay) {
+          return;
+        }
+
+        const { sessions, currentSessionId: activeSessionId, setCurrentSession } = useSessionStore.getState();
+        if (sessions.length <= 1) {
+          return;
+        }
+
+        const sorted = [...sessions].sort((a, b) => (b.time?.updated || 0) - (a.time?.updated || 0));
+        const currentIndex = sorted.findIndex((s) => s.id === activeSessionId);
+        const delta = e.key === 'j' ? 1 : -1;
+        const nextIndex = (currentIndex + delta + sorted.length) % sorted.length;
+        const nextSession = sorted[nextIndex];
+
+        if (nextSession && nextSession.id !== activeSessionId) {
+          e.preventDefault();
+          void setCurrentSession(nextSession.id);
+        }
+        return;
       }
 
       // Cmd/Ctrl+Shift+M: Open model selector (same conditions as double-ESC: chat tab, no overlays)

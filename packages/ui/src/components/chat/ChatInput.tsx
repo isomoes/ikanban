@@ -1297,13 +1297,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onOpenSettings, scrollToBo
         setTimeout(refocus, 60);
     };
 
-    React.useEffect(() => {
-
-        if (currentSessionId && textareaRef.current && !isMobile) {
-            textareaRef.current.focus();
-        }
-    }, [currentSessionId, isMobile]);
-
     // Global keyboard shortcuts: 'i' to focus input, Ctrl+C to stop session
     React.useEffect(() => {
         if (isMobile) return;

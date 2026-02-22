@@ -437,10 +437,16 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
 
     // Handle agent selector close behavior
     const [agentSearchQuery, setAgentSearchQuery] = React.useState('');
+    const prevAgentSelectorOpenRef = React.useRef(isAgentSelectorOpen);
     React.useEffect(() => {
+        const wasOpen = prevAgentSelectorOpenRef.current;
+        prevAgentSelectorOpenRef.current = isAgentSelectorOpen;
+
         if (!isAgentSelectorOpen) {
             setAgentSearchQuery('');
-            if (!isCompact) {
+
+            // Restore focus to chat input when agent selector closes (not on initial mount)
+            if (wasOpen && !isCompact) {
                 requestAnimationFrame(() => {
                     const textarea = document.querySelector<HTMLTextAreaElement>('textarea[data-chat-input="true"]');
                     textarea?.focus();
