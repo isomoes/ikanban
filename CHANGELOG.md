@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.5]
+
+- UI: Updated sidebar shortcuts so `Cmd/Ctrl + H` toggles the Session Sidebar, while `Cmd/Ctrl + L` now toggles the Git Sidebar. (@isomoes)
+- Chat: Added Vim-style input mode controls with `i` to focus the chat input and `Escape` to blur it when no autocomplete menu is open. (@isomoes)
+- Chat: Added `Ctrl + C` in the focused chat input to quickly stop an in-progress response. (@isomoes)
+- Chat: Improved `@` file mentions so selecting a file inserts a relative path label when available. (@isomoes)
+- Sessions: Added Vim-style session switching with `Ctrl + J` and `Ctrl + K`, cycling by most recently updated sessions. (@isomoes)
+- Command Palette: Added a Projects group so you can switch active projects directly from the palette. (@isomoes)
+- Chat: Improved focus behavior after closing the agent selector so the chat input restores focus reliably. (@isomoes)
+
 ## [0.1.4]
 
 - Command Palette: Changed the main shortcut from `Cmd/Ctrl + K` to `Cmd/Ctrl + P` and updated shortcut hints in Help to match. (thanks to @isomoes)

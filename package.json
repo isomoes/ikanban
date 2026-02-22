@@ -1,6 +1,6 @@
 {
   "name": "ikanban",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "iKanban - Kanban board powered by OpenCode",
   "private": true,
   "type": "module",
