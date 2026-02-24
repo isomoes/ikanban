@@ -2879,6 +2879,54 @@ function getOpenCodeAuthHeaders() {
   return { Authorization: `Basic ${credentials}` };
 }
 
+function resolveOpenCodeHttpsProxy() {
+  const candidates = [
+    process.env.IKANBAN_OPENCODE_HTTPS_PROXY,
+    process.env.OPENCODE_HTTPS_PROXY,
+  ];
+
+  for (const raw of candidates) {
+    if (typeof raw !== 'string') {
+      continue;
+    }
+    const trimmed = raw.trim();
+    if (trimmed) {
+      return trimmed;
+    }
+  }
+
+  return null;
+}
+
+function applyOpenCodeProxyEnvToProcess() {
+  const openCodeHttpsProxy = resolveOpenCodeHttpsProxy();
+  if (!openCodeHttpsProxy) {
+    return () => {};
+  }
+
+  const previous = {
+    HTTPS_PROXY: process.env.HTTPS_PROXY,
+    https_proxy: process.env.https_proxy,
+  };
+
+  process.env.HTTPS_PROXY = openCodeHttpsProxy;
+  process.env.https_proxy = openCodeHttpsProxy;
+
+  return () => {
+    if (typeof previous.HTTPS_PROXY === 'string') {
+      process.env.HTTPS_PROXY = previous.HTTPS_PROXY;
+    } else {
+      delete process.env.HTTPS_PROXY;
+    }
+
+    if (typeof previous.https_proxy === 'string') {
+      process.env.https_proxy = previous.https_proxy;
+    } else {
+      delete process.env.https_proxy;
+    }
+  };
+}
+
 const ENV_CONFIGURED_API_PREFIX = normalizeApiPrefix(
   process.env.OPENCODE_API_PREFIX || process.env.IKANBAN_API_PREFIX || ''
 );
@@ -4381,16 +4429,13 @@ async function startOpenCode() {
 
   await applyOpencodeBinaryFromSettings();
   ensureOpencodeCliEnv();
+  const restoreOpenCodeProxyEnv = applyOpenCodeProxyEnvToProcess();
 
   try {
     const serverInstance = await createOpencodeServer({
       hostname: '127.0.0.1',
       port: desiredPort,
       timeout: 30000,
-      env: {
-        ...process.env,
-        // Pass minimal config to avoid pollution, but inherit PATH etc
-      }
     });
 
     if (!serverInstance || !serverInstance.url) {
@@ -4425,6 +4470,8 @@ async function startOpenCode() {
     syncToHmrState();
     console.error(`Failed to start OpenCode: ${message}`);
     throw error;
+  } finally {
+    restoreOpenCodeProxyEnv();
   }
 }
 
