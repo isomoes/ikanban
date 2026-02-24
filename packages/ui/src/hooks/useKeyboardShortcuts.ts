@@ -315,8 +315,8 @@ export const useKeyboardShortcuts = () => {
         return;
       }
 
-      // Cmd/Ctrl+Shift+M: Open model selector (same conditions as double-ESC: chat tab, no overlays)
-      if (hasModifier(e) && e.shiftKey && e.key.toLowerCase() === 'm') {
+      // Cmd/Ctrl+M: Open model selector (same conditions as double-ESC: chat tab, no overlays)
+      if (hasModifier(e) && !e.shiftKey && e.key.toLowerCase() === 'm') {
         const {
           isSettingsDialogOpen,
           isCommandPaletteOpen,
