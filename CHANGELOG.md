@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+- Sessions: Remapped new-session shortcuts from `Cmd/Ctrl + N` / `Cmd/Ctrl + Shift + N` to bare `N` / `Shift + N` so they work without a modifier when the chat input is not focused. (@isomoes)
+- Sessions: Changed session-switching shortcuts from `Ctrl + J` / `Ctrl + K` to `Shift + J` / `Shift + K` to avoid conflicts with Vim-style line scrolling. (@isomoes)
+- Chat: Changed the model selector shortcut from `Cmd/Ctrl + Shift + M` to `Cmd/Ctrl + M` for easier one-handed access. (@isomoes)
+- Server: The web server and dev proxy now respect the standard `PORT` environment variable in addition to `IKANBAN_PORT`. (@isomoes)
+- Server: HTTPS proxy settings (`IKANBAN_OPENCODE_HTTPS_PROXY` / `OPENCODE_HTTPS_PROXY`) are now correctly forwarded to the OpenCode SDK at startup. (@isomoes)
+
 ## [0.1.5]
 
 - UI: Updated sidebar shortcuts so `Cmd/Ctrl + H` toggles the Session Sidebar, while `Cmd/Ctrl + L` now toggles the Git Sidebar. (@isomoes)
