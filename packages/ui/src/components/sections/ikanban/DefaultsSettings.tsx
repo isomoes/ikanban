@@ -9,7 +9,6 @@ import { updateDesktopSettings } from '@/lib/persistence';
 import { isVSCodeRuntime } from '@/lib/desktop';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { getRegisteredRuntimeAPIs } from '@/contexts/runtimeAPIRegistry';
-import { getModifierLabel } from '@/lib/utils';
 
 interface ZenModel {
   id: string;
@@ -384,8 +383,8 @@ export const DefaultsSettings: React.FC = () => {
           </label>
           <p className="typography-meta text-muted-foreground pl-5 mt-1">
             {settingsAutoCreateWorktree
-              ? `New session (Worktree): ${getModifierLabel()} + N  •  New session (Standard): Shift + ${getModifierLabel()} + N`
-              : `New session (Standard): ${getModifierLabel()} + N  •  New session (Worktree): Shift + ${getModifierLabel()} + N`}
+              ? `New session (Worktree): N  •  New session (Standard): Shift + N`
+              : `New session (Standard): N  •  New session (Worktree): Shift + N`}
           </p>
         </div>
       )}

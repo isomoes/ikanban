@@ -139,14 +139,14 @@ export const CommandPalette: React.FC = () => {
             <RiAddLine className="mr-2 h-4 w-4" />
             <span>New Session</span>
             <CommandShortcut>
-              {settingsAutoCreateWorktree ? `Shift + ${getModifierLabel()} + N` : `${getModifierLabel()} + N`}
+              {settingsAutoCreateWorktree ? 'Shift + N' : 'N'}
             </CommandShortcut>
           </CommandItem>
           <CommandItem onSelect={handleCreateWorktreeSession}>
             <RiGitBranchLine className="mr-2 h-4 w-4" />
             <span>New Session with Worktree</span>
             <CommandShortcut>
-              {settingsAutoCreateWorktree ? `${getModifierLabel()} + N` : `Shift + ${getModifierLabel()} + N`}
+              {settingsAutoCreateWorktree ? 'N' : 'Shift + N'}
             </CommandShortcut>
           </CommandItem>
           <CommandItem onSelect={handleShowHelp}>

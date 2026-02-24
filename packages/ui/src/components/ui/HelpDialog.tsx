@@ -140,12 +140,12 @@ export const HelpDialog: React.FC = () => {
       category: "Session Management",
       items: [
         {
-          keys: [`${mod} + N`],
+          keys: [`N`, `${mod} + N`],
           description: settingsAutoCreateWorktree ? "Create New Session in Worktree" : "Create New Session",
           icon: settingsAutoCreateWorktree ? RiGitBranchLine : RiAddLine,
         },
         {
-          keys: [`Shift + ${mod} + N`],
+          keys: [`Shift + N`, `Shift + ${mod} + N`],
           description: settingsAutoCreateWorktree ? "Create New Session" : "Create New Session in Worktree",
           icon: settingsAutoCreateWorktree ? RiAddLine : RiGitBranchLine,
         },
@@ -154,6 +154,11 @@ export const HelpDialog: React.FC = () => {
           keys: ["Esc + Esc"],
           description: "Abort active run (double press)",
           icon: RiCloseCircleLine,
+        },
+        {
+          keys: ["Shift + J / Shift + K"],
+          description: "Switch Session (next/previous)",
+          icon: RiTimeLine,
         },
       ],
     },

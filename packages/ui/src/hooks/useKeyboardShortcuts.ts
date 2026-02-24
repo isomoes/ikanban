@@ -79,6 +79,25 @@ export const useKeyboardShortcuts = () => {
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      const openNewSessionFromShortcut = (useAlternateShortcut: boolean) => {
+        const isVSCode = isVSCodeRuntime();
+        const autoWorktree = useConfigStore.getState().settingsAutoCreateWorktree;
+        // If autoWorktree is true: primary shortcut -> Worktree, alternate -> Standard
+        // If autoWorktree is false: primary shortcut -> Standard, alternate -> Worktree
+        // VS Code: always open standard session (no worktree support)
+        const shouldCreateWorktree = isVSCode ? false : (autoWorktree ? !useAlternateShortcut : useAlternateShortcut);
+
+        if (shouldCreateWorktree) {
+          setActiveMainTab('chat');
+          setSessionSwitcherOpen(false);
+          createWorktreeSession();
+          return;
+        }
+
+        setActiveMainTab('chat');
+        setSessionSwitcherOpen(false);
+        openNewSessionDraft();
+      };
 
        if (hasModifier(e) && e.key.toLowerCase() === 'p') {
         e.preventDefault();
@@ -96,27 +115,28 @@ export const useKeyboardShortcuts = () => {
         toggleHelpDialog();
       }
 
-      if (hasModifier(e) && e.key.toLowerCase() === 'n') {
-        e.preventDefault();
-        
-        const isVSCode = isVSCodeRuntime();
-        const autoWorktree = useConfigStore.getState().settingsAutoCreateWorktree;
-        // If autoWorktree is true: Cmd+N -> Worktree, Cmd+Shift+N -> Standard
-        // If autoWorktree is false: Cmd+N -> Standard, Cmd+Shift+N -> Worktree
-        // VS Code: always open standard session (no worktree support)
-        const shouldCreateWorktree = isVSCode ? false : (autoWorktree ? !e.shiftKey : e.shiftKey);
-
-        if (shouldCreateWorktree) {
-          // Create new session with auto-generated worktree
-          setActiveMainTab('chat');
-          setSessionSwitcherOpen(false);
-          createWorktreeSession();
+      if (!hasModifier(e) && !e.altKey && !e.shiftKey && !e.repeat && e.key.toLowerCase() === 'n') {
+        if (isEditableTarget(e.target)) {
           return;
         }
-        // Open a new session without worktree
-        setActiveMainTab('chat');
-        setSessionSwitcherOpen(false);
-        openNewSessionDraft();
+        e.preventDefault();
+        openNewSessionFromShortcut(false);
+        return;
+      }
+
+      if (!hasModifier(e) && !e.altKey && e.shiftKey && !e.repeat && e.key.toLowerCase() === 'n') {
+        if (isEditableTarget(e.target)) {
+          return;
+        }
+        e.preventDefault();
+        openNewSessionFromShortcut(true);
+        return;
+      }
+
+      if (hasModifier(e) && e.key.toLowerCase() === 'n') {
+        e.preventDefault();
+        openNewSessionFromShortcut(e.shiftKey);
+        return;
       }
 
        if (hasModifier(e) && e.key === '/') {
@@ -247,9 +267,9 @@ export const useKeyboardShortcuts = () => {
         }
       }
 
-      // Ctrl+J / Ctrl+K: vim-style session switching (next/prev by last-updated order)
-      const ctrlJK = e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && (e.key === 'j' || e.key === 'k');
-      if (ctrlJK) {
+      // Shift+J / Shift+K: session switching (next/prev by last-updated order)
+      const shiftJK = e.shiftKey && !hasModifier(e) && !e.altKey && (key === 'j' || key === 'k');
+      if (shiftJK) {
         if (isEditableTarget(e.target)) {
           return;
         }
@@ -284,7 +304,7 @@ export const useKeyboardShortcuts = () => {
 
         const sorted = [...sessions].sort((a, b) => (b.time?.updated || 0) - (a.time?.updated || 0));
         const currentIndex = sorted.findIndex((s) => s.id === activeSessionId);
-        const delta = e.key === 'j' ? 1 : -1;
+        const delta = key === 'j' ? 1 : -1;
         const nextIndex = (currentIndex + delta + sorted.length) % sorted.length;
         const nextSession = sorted[nextIndex];
 
