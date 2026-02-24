@@ -8,6 +8,7 @@ import { themeStoragePlugin } from '../../vite-theme-plugin';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const packageJson = JSON.parse(readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8'));
+const backendPort = process.env.PORT || process.env.IKANBAN_PORT || 3001;
 
 export default defineConfig({
   root: path.resolve(__dirname, '.'),
@@ -57,15 +58,15 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/auth': {
-        target: `http://127.0.0.1:${process.env.IKANBAN_PORT || 3001}`,
+        target: `http://127.0.0.1:${backendPort}`,
         changeOrigin: true,
       },
       '/health': {
-        target: `http://127.0.0.1:${process.env.IKANBAN_PORT || 3001}`,
+        target: `http://127.0.0.1:${backendPort}`,
         changeOrigin: true,
       },
       '/api': {
-        target: `http://127.0.0.1:${process.env.IKANBAN_PORT || 3001}`,
+        target: `http://127.0.0.1:${backendPort}`,
         changeOrigin: true,
       },
     },
