@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [0.1.6]
 
 - Sessions: Remapped new-session shortcuts from `Cmd/Ctrl + N` / `Cmd/Ctrl + Shift + N` to bare `N` / `Shift + N` so they work without a modifier when the chat input is not focused. (@isomoes)
 - Sessions: Changed session-switching shortcuts from `Ctrl + J` / `Ctrl + K` to `Shift + J` / `Shift + K` to avoid conflicts with Vim-style line scrolling. (@isomoes)
