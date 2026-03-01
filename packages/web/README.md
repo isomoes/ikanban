@@ -1,29 +1,26 @@
 Web/PWA interface for the [OpenCode](https://opencode.ai) AI coding agent.
 
-This package installs the `ikanban` CLI that runs a local web server. For the full project overview and screenshots, see the main repo:
+This package publishes as `ikanban-web` and runs a local web server. For the full project overview and screenshots, see the main repo:
 
 https://github.com/isomoes/ikanban
 
 ## Installation
 
 ```bash
-# Quick install (auto-detects your package manager)
-curl -fsSL https://raw.githubusercontent.com/isomoes/ikanban/main/scripts/install.sh | bash
-
-# Or install manually
-bun add -g @ikanban/web    # or npm, pnpm, yarn
+# No global install required
+npx ikanban-web@latest --help
 ```
 
 ## Usage
 
 ```bash
-ikanban                             # Start on port 3000
-ikanban --port 8080                 # Custom port
-ikanban --daemon                    # Background mode
-ikanban --ui-password secret        # Password-protect UI
-OPENCODE_PORT=4096 OPENCODE_SKIP_START=true ikanban  # Connect to external OpenCode server
-ikanban stop                        # Stop server
-ikanban update                      # Update to latest version
+npx ikanban-web@latest                              # Start on port 3000
+npx ikanban-web@latest --port 8080                  # Custom port
+npx ikanban-web@latest --daemon                     # Background mode
+npx ikanban-web@latest --ui-password secret         # Password-protect UI
+OPENCODE_PORT=4096 OPENCODE_SKIP_START=true npx ikanban-web@latest  # Connect to external OpenCode server
+npx ikanban-web@latest stop                         # Stop server
+npx ikanban-web@latest update                       # Update to latest version
 ```
 
 ### Environment Variables
@@ -57,7 +54,7 @@ ikanban update                      # Update to latest version
 
 - Mobile-first UI with gestures and optimized terminal controls
 - Remote access from any device via browser (works alongside the OpenCode TUI)
-- Self-serve updates (`ikanban update`) without reinstalling
+- Self-serve updates (`npx ikanban-web@latest update`) without reinstalling
 - Update + restart keeps previous server settings (port/password)
 
 ## License

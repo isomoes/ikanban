@@ -156,7 +156,7 @@ function showHelp() {
  IKanban - Web interface for the OpenCode AI coding agent
 
 USAGE:
-  ikanban [COMMAND] [OPTIONS]
+  npx ikanban-web@latest [COMMAND] [OPTIONS]
 
 COMMANDS:
   serve          Start the web server (default)
@@ -181,14 +181,14 @@ ENVIRONMENT:
   OPENCODE_SKIP_START          Skip starting OpenCode, use external server
 
 EXAMPLES:
-  ikanban                    # Start on default port 3000 (or a free port)
-  ikanban --port 8080        # Start on port 8080
-  ikanban serve --daemon     # Start in background
-  ikanban --try-cf-tunnel    # Start with Cloudflare Quick Tunnel
-  ikanban stop               # Stop all running instances
-  ikanban stop --port 3000   # Stop specific instance
-  ikanban status             # Check status
-  ikanban update             # Update to latest version
+  npx ikanban-web@latest                    # Start on default port 3000 (or a free port)
+  npx ikanban-web@latest --port 8080        # Start on port 8080
+  npx ikanban-web@latest serve --daemon     # Start in background
+  npx ikanban-web@latest --try-cf-tunnel    # Start with Cloudflare Quick Tunnel
+  npx ikanban-web@latest stop               # Stop all running instances
+  npx ikanban-web@latest stop --port 3000   # Stop specific instance
+  npx ikanban-web@latest status             # Check status
+  npx ikanban-web@latest update             # Update to latest version
 `);
 }
 
