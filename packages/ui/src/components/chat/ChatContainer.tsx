@@ -326,7 +326,8 @@ export const ChatContainer: React.FC = () => {
         }
 
         const hasSessionMessages = hasSessionMessagesEntry;
-        if (hasSessionMessages) {
+        const needsHistoryBootstrap = !memoryState || memoryState.historyComplete === undefined;
+        if (hasSessionMessages && !needsHistoryBootstrap) {
             return;
         }
 
@@ -352,7 +353,7 @@ export const ChatContainer: React.FC = () => {
         };
 
         void load();
-    }, [currentSessionId, hasSessionMessagesEntry, isPinned, loadMessages, scrollToBottom, sessionMessages.length, sessionStatusForCurrent.type]);
+    }, [currentSessionId, hasSessionMessagesEntry, isPinned, loadMessages, memoryState, scrollToBottom, sessionMessages.length, sessionStatusForCurrent.type]);
 
     if (!currentSessionId && !draftOpen) {
         return (

@@ -305,8 +305,14 @@ export const useSessionStore = create<SessionStore>()(
                         const needsHistoryBootstrap =
                             !memoryState ||
                             memoryState.historyComplete === undefined;
+                        const now = Date.now();
+                        const staleThresholdMs = 5000;
+                        const needsFreshSync =
+                            !memoryState ||
+                            !memoryState.lastAccessedAt ||
+                            (now - memoryState.lastAccessedAt) > staleThresholdMs;
 
-                        if (!existingMessages || needsHistoryBootstrap) {
+                        if (!existingMessages || needsHistoryBootstrap || needsFreshSync) {
 
                             await get().loadMessages(id);
                         }

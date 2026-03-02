@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { devtools, persist, createJSONStorage } from "zustand/middleware";
 import type { Session } from "@opencode-ai/sdk/v2";
 import { opencodeClient } from "@/lib/opencode/client";
-import { getSafeStorage } from "./utils/safeStorage";
+import { getSafeSessionStorage, getSafeStorage } from "./utils/safeStorage";
 import type { WorktreeMetadata } from "@/types/worktree";
 import { getWorktreeStatus } from "@/lib/worktrees/worktreeStatus";
 import { listProjectWorktrees, removeProjectWorktree } from "@/lib/worktrees/worktreeManager";
@@ -51,13 +51,13 @@ interface SessionActions {
 
 type SessionStore = SessionState & SessionActions;
 
-const safeStorage = getSafeStorage();
+const safeSessionStorage = getSafeSessionStorage();
 const SESSION_SELECTION_STORAGE_KEY = "oc.sessionSelectionByDirectory";
 type SessionSelectionMap = Record<string, string>;
 
 const readSessionSelectionMap = (): SessionSelectionMap => {
     try {
-        const raw = safeStorage.getItem(SESSION_SELECTION_STORAGE_KEY);
+        const raw = safeSessionStorage.getItem(SESSION_SELECTION_STORAGE_KEY);
         if (!raw) {
             return {};
         }
@@ -88,7 +88,7 @@ const getSessionSelectionMap = (): SessionSelectionMap => {
 const persistSessionSelectionMap = (map: SessionSelectionMap) => {
     sessionSelectionCache = map;
     try {
-        safeStorage.setItem(SESSION_SELECTION_STORAGE_KEY, JSON.stringify(map));
+        safeSessionStorage.setItem(SESSION_SELECTION_STORAGE_KEY, JSON.stringify(map));
     } catch { /* ignored */ }
 };
 
@@ -1486,7 +1486,6 @@ export const useSessionStore = create<SessionStore>()(
                 name: "session-store",
                 storage: createJSONStorage(() => getSafeStorage()),
     partialize: (state) => ({
-        currentSessionId: state.currentSessionId,
         sessions: state.sessions,
         lastLoadedDirectory: state.lastLoadedDirectory,
         webUICreatedSessions: Array.from(state.webUICreatedSessions),
@@ -1505,11 +1504,6 @@ export const useSessionStore = create<SessionStore>()(
         const persistedSessions = Array.isArray(persistedState.sessions)
             ? (persistedState.sessions as Session[])
             : currentState.sessions;
-
-        const persistedCurrentSessionId =
-            typeof persistedState.currentSessionId === "string" || persistedState.currentSessionId === null
-                ? (persistedState.currentSessionId as string | null)
-                : currentState.currentSessionId;
 
         const webUiSessionsArray = Array.isArray(persistedState.webUICreatedSessions)
             ? (persistedState.webUICreatedSessions as string[])
@@ -1540,7 +1534,6 @@ export const useSessionStore = create<SessionStore>()(
             ...persistedState,
             sessions: mergedSessions,
             sessionsByDirectory: buildSessionsByDirectory(mergedSessions),
-            currentSessionId: persistedCurrentSessionId,
             webUICreatedSessions: new Set(webUiSessionsArray),
             worktreeMetadata: new Map(persistedWorktreeEntries),
             availableWorktrees: persistedAvailableWorktrees,

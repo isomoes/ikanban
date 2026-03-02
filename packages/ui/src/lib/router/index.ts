@@ -6,7 +6,7 @@
  *
  * URL Schema:
  * - `?session=<id>` - Navigate to specific session
- * - `?tab=<chat|git|diff|terminal|files>` - Active main tab
+ * - `?tab=<chat|git|diff|terminal>` - Active main tab
  * - `?settings=<section>` - Open settings to specific section
  * - `?file=<path>` - Diff view with file selected
  *

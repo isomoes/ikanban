@@ -1768,6 +1768,12 @@ export const useEventStream = () => {
       maybeBootstrapIfStale('visibility_restore');
       triggerSessionStatusPoll();
 
+      const visibleSessionId = currentSessionIdRef.current;
+      if (visibleSessionId) {
+        requestSessionMetadataRefresh(visibleSessionId);
+        void scheduleSoftResync(visibleSessionId, 'visibility_restore', getMessageLimit());
+      }
+
       const isStalled = Date.now() - lastEventTimestampRef.current > 45000;
       if (isStalled) {
         console.info('[useEventStream] Visibility restored with stalled stream, reconnecting...');
@@ -1796,6 +1802,12 @@ export const useEventStream = () => {
       clearPauseTimeout();
       maybeBootstrapIfStale('window_focus');
       triggerSessionStatusPoll();
+
+      const focusedSessionId = currentSessionIdRef.current;
+      if (focusedSessionId) {
+        requestSessionMetadataRefresh(focusedSessionId);
+        void scheduleSoftResync(focusedSessionId, 'window_focus', getMessageLimit());
+      }
 
       const isStalled = Date.now() - lastEventTimestampRef.current > 45000;
       if (isStalled) {

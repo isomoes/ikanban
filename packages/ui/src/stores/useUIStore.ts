@@ -4,7 +4,7 @@ import type { SidebarSection } from '@/constants/sidebar';
 import { getSafeStorage } from './utils/safeStorage';
 import { SEMANTIC_TYPOGRAPHY, getTypographyVariable, type SemanticTypographyKey } from '@/lib/typography';
 
-export type MainTab = 'chat' | 'plan' | 'git' | 'diff' | 'terminal' | 'files';
+export type MainTab = 'chat' | 'plan' | 'git' | 'diff' | 'terminal';
 
 export type MainTabGuard = (nextTab: MainTab) => boolean;
 export type EventStreamStatus =
@@ -422,7 +422,7 @@ export const useUIStore = create<UIStore>()(
           }
           const state = get();
           const currentTab = state.activeMainTab;
-          const fullscreenTabs: MainTab[] = ['files', 'diff'];
+          const fullscreenTabs: MainTab[] = ['diff'];
           const isEnteringFullscreen = fullscreenTabs.includes(tab) && !fullscreenTabs.includes(currentTab);
           const isLeavingFullscreen = !fullscreenTabs.includes(tab) && fullscreenTabs.includes(currentTab);
 
@@ -463,7 +463,7 @@ export const useUIStore = create<UIStore>()(
           }
           const state = get();
           const currentTab = state.activeMainTab;
-          const fullscreenTabs: MainTab[] = ['files', 'diff'];
+          const fullscreenTabs: MainTab[] = ['diff'];
           const isEnteringFullscreen = !fullscreenTabs.includes(currentTab);
 
           if (isEnteringFullscreen) {
@@ -903,6 +903,11 @@ export const useUIStore = create<UIStore>()(
             delete state.memoryLimitHistorical;
             delete state.memoryLimitViewport;
             delete state.memoryLimitActiveSession;
+          }
+
+          const activeMainTab = state.activeMainTab;
+          if (activeMainTab === 'files') {
+            state.activeMainTab = 'chat';
           }
 
           return state;

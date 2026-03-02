@@ -33,7 +33,6 @@ type MenuAction =
   | 'change-workspace'
   | 'open-git-tab'
   | 'open-diff-tab'
-  | 'open-files-tab'
   | 'open-terminal-tab'
   | 'theme-light'
   | 'theme-dark'
@@ -137,12 +136,6 @@ export const useMenuActions = (
         case 'open-diff-tab': {
           const { activeMainTab } = useUIStore.getState();
           setActiveMainTab(activeMainTab === 'diff' ? 'chat' : 'diff');
-          break;
-        }
-
-        case 'open-files-tab': {
-          const { activeMainTab } = useUIStore.getState();
-          setActiveMainTab(activeMainTab === 'files' ? 'chat' : 'files');
           break;
         }
 

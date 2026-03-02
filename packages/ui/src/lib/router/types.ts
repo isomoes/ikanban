@@ -8,7 +8,7 @@ import type { MainTab } from '@/stores/useUIStore';
 export interface RouteState {
   /** Session ID to navigate to */
   sessionId: string | null;
-  /** Main tab to display (chat, git, diff, terminal, files) */
+  /** Main tab to display (chat, git, diff, terminal) */
   tab: MainTab | null;
   /** Settings section - when non-null, settings dialog should be open */
   settingsSection: SidebarSection | null;
@@ -31,7 +31,7 @@ export interface RouterContext {
 /**
  * Valid main tab values for URL routing.
  */
-export const VALID_TABS: readonly MainTab[] = ['chat', 'git', 'diff', 'terminal', 'files'] as const;
+export const VALID_TABS: readonly MainTab[] = ['chat', 'git', 'diff', 'terminal'] as const;
 
 /**
  * Valid settings section values for URL routing.
