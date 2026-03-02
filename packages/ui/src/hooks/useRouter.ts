@@ -1,6 +1,7 @@
 import React from 'react';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useUIStore } from '@/stores/useUIStore';
+import { useProjectsStore } from '@/stores/useProjectsStore';
 import { parseRoute, updateBrowserURL, hasRouteParams } from '@/lib/router';
 import type { RouteState, AppRouteState } from '@/lib/router';
 import type { SidebarSection } from '@/constants/sidebar';
@@ -43,6 +44,7 @@ export function useRouter(): void {
   const setSettingsDialogOpen = useUIStore((state) => state.setSettingsDialogOpen);
   const setSidebarSection = useUIStore((state) => state.setSidebarSection);
   const navigateToDiff = useUIStore((state) => state.navigateToDiff);
+  const setActiveProject = useProjectsStore((state) => state.setActiveProject);
 
   /**
    * Apply a parsed route state to the application stores.
@@ -56,6 +58,15 @@ export function useRouter(): void {
       isApplyingRouteRef.current = true;
 
       try {
+        // 0. Apply project selection (tab-scoped - each tab tracks its own active project)
+        if (route.projectId) {
+          const projectsState = useProjectsStore.getState();
+          const projectExists = projectsState.projects.some((p) => p.id === route.projectId);
+          if (projectExists && route.projectId !== projectsState.activeProjectId) {
+            setActiveProject(route.projectId);
+          }
+        }
+
         // 1. Apply session first (may trigger async operations)
         if (route.sessionId) {
           const currentSessionId = useSessionStore.getState().currentSessionId;
@@ -90,7 +101,7 @@ export function useRouter(): void {
         isApplyingRouteRef.current = false;
       }
     },
-    [setCurrentSession, setActiveMainTab, setSettingsDialogOpen, setSidebarSection, navigateToDiff]
+    [setCurrentSession, setActiveMainTab, setSettingsDialogOpen, setSidebarSection, navigateToDiff, setActiveProject]
   );
 
   /**
@@ -99,6 +110,7 @@ export function useRouter(): void {
   const getCurrentAppState = React.useCallback((): AppRouteState => {
     const sessionState = useSessionStore.getState();
     const uiState = useUIStore.getState();
+    const projectsState = useProjectsStore.getState();
 
     return {
       sessionId: sessionState.currentSessionId,
@@ -106,6 +118,7 @@ export function useRouter(): void {
       isSettingsOpen: uiState.isSettingsDialogOpen,
       settingsSection: uiState.sidebarSection,
       diffFile: uiState.pendingDiffFile,
+      activeProjectId: projectsState.activeProjectId,
     };
   }, []);
 
@@ -169,6 +182,28 @@ export function useRouter(): void {
       }
 
       prevSessionId = sessionId;
+      syncURLFromState();
+    });
+
+    return unsubscribe;
+  }, [isVSCode, syncURLFromState]);
+
+  // Subscribe to project store changes (active project)
+  React.useEffect(() => {
+    if (isVSCode) {
+      return;
+    }
+
+    let prevProjectId: string | null = useProjectsStore.getState().activeProjectId;
+
+    const unsubscribe = useProjectsStore.subscribe((state) => {
+      const projectId = state.activeProjectId;
+
+      if (projectId === prevProjectId || isApplyingRouteRef.current) {
+        return;
+      }
+
+      prevProjectId = projectId;
       syncURLFromState();
     });
 
@@ -260,6 +295,9 @@ export function navigateToRoute(route: Partial<RouteState>): void {
   const win = window as { __VSCODE_CONFIG__?: unknown };
   if (win.__VSCODE_CONFIG__ !== undefined) {
     // In VS Code, just apply state changes directly
+    if (route.projectId) {
+      useProjectsStore.getState().setActiveProject(route.projectId);
+    }
     if (route.sessionId) {
       void useSessionStore.getState().setCurrentSession(route.sessionId);
     }
@@ -278,6 +316,10 @@ export function navigateToRoute(route: Partial<RouteState>): void {
   // Build URL and navigate
   const params = new URLSearchParams();
 
+  const activeProjectId = route.projectId ?? useProjectsStore.getState().activeProjectId;
+  if (activeProjectId) {
+    params.set('project', activeProjectId);
+  }
   if (route.sessionId) {
     params.set('session', route.sessionId);
   }
@@ -299,6 +341,9 @@ export function navigateToRoute(route: Partial<RouteState>): void {
   window.history.pushState({ route }, '', url);
 
   // Also apply to state
+  if (route.projectId) {
+    useProjectsStore.getState().setActiveProject(route.projectId);
+  }
   if (route.sessionId) {
     void useSessionStore.getState().setCurrentSession(route.sessionId);
   }
@@ -323,8 +368,13 @@ export function getShareableURL(): string {
 
   const sessionState = useSessionStore.getState();
   const uiState = useUIStore.getState();
+  const projectsState = useProjectsStore.getState();
 
   const params = new URLSearchParams();
+
+  if (projectsState.activeProjectId) {
+    params.set('project', projectsState.activeProjectId);
+  }
 
   if (sessionState.currentSessionId) {
     params.set('session', sessionState.currentSessionId);

@@ -11,6 +11,8 @@ export interface AppRouteState {
   isSettingsOpen: boolean;
   settingsSection: SidebarSection;
   diffFile: string | null;
+  /** Active project ID - written to URL so each tab can track its own project */
+  activeProjectId: string | null;
 }
 
 /**
@@ -24,6 +26,11 @@ const DEFAULT_TAB: MainTab = 'chat';
  */
 export function serializeRoute(state: AppRouteState): URLSearchParams {
   const params = new URLSearchParams();
+
+  // Active project - always include if present so each tab keeps its own project
+  if (state.activeProjectId && state.activeProjectId.trim().length > 0) {
+    params.set(ROUTE_PARAMS.PROJECT, state.activeProjectId);
+  }
 
   // Session ID - always include if present
   if (state.sessionId && state.sessionId.trim().length > 0) {

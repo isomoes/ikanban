@@ -14,6 +14,8 @@ export interface RouteState {
   settingsSection: SidebarSection | null;
   /** File path for diff view */
   diffFile: string | null;
+  /** Active project ID - each tab tracks its own project independently */
+  projectId: string | null;
 }
 
 /**
@@ -51,4 +53,5 @@ export const ROUTE_PARAMS = {
   TAB: 'tab',
   SETTINGS: 'settings',
   FILE: 'file',
+  PROJECT: 'project',
 } as const;

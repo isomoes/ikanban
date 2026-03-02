@@ -19,6 +19,7 @@ export function parseRoute(searchParams?: URLSearchParams): RouteState {
     tab: parseTab(params),
     settingsSection: parseSettingsSection(params),
     diffFile: parseDiffFile(params),
+    projectId: parseProjectId(params),
   };
 }
 
@@ -112,6 +113,18 @@ function parseDiffFile(params: URLSearchParams): string | null {
 }
 
 /**
+ * Parse project ID from URL parameters.
+ * Returns null if missing or empty.
+ */
+function parseProjectId(params: URLSearchParams): string | null {
+  const value = params.get(ROUTE_PARAMS.PROJECT);
+  if (!value || value.trim().length === 0) {
+    return null;
+  }
+  return value.trim();
+}
+
+/**
  * Check if the current URL has any route parameters.
  */
 export function hasRouteParams(): boolean {
@@ -125,7 +138,8 @@ export function hasRouteParams(): boolean {
       params.has(ROUTE_PARAMS.SESSION) ||
       params.has(ROUTE_PARAMS.TAB) ||
       params.has(ROUTE_PARAMS.SETTINGS) ||
-      params.has(ROUTE_PARAMS.FILE)
+      params.has(ROUTE_PARAMS.FILE) ||
+      params.has(ROUTE_PARAMS.PROJECT)
     );
   } catch {
     return false;

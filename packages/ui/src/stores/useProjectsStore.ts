@@ -7,6 +7,7 @@ import { updateDesktopSettings } from '@/lib/persistence';
 import { getSafeStorage } from './utils/safeStorage';
 import { useDirectoryStore } from './useDirectoryStore';
 import { streamDebugEnabled } from '@/stores/utils/streamDebug';
+import { ROUTE_PARAMS } from '@/lib/router';
 
 interface ProjectPathValidationResult {
   ok: boolean;
@@ -32,6 +33,27 @@ interface ProjectsStore {
 const safeStorage = getSafeStorage();
 const PROJECTS_STORAGE_KEY = 'projects';
 const ACTIVE_PROJECT_STORAGE_KEY = 'activeProjectId';
+
+/**
+ * Read the project ID from the current URL's `?project=` parameter.
+ * This is tab-scoped (each browser tab has its own URL) so multiple tabs
+ * can independently track different active projects.
+ */
+const readProjectIdFromURL = (): string | null => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const value = params.get(ROUTE_PARAMS.PROJECT);
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value.trim();
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+};
 
 const resolveTildePath = (value: string, homeDir?: string | null): string => {
   const trimmed = value.trim();
@@ -218,7 +240,15 @@ const getVSCodeWorkspaceProject = (): { projects: ProjectEntry[]; activeProjectI
 // Always prefer the workspace project over any persisted multi-project registry.
 const vscodeWorkspace = getVSCodeWorkspaceProject();
 const effectiveInitialProjects = vscodeWorkspace?.projects ?? initialProjects;
+
+// Resolve the initial active project ID with the following priority:
+//   1. VS Code workspace (always wins in that runtime)
+//   2. URL ?project= param (tab-scoped — each browser tab has its own URL)
+//   3. localStorage persisted value (last cross-tab fallback)
+//   4. First project in the list
+const urlProjectId = readProjectIdFromURL();
 const initialActiveProjectId = vscodeWorkspace?.activeProjectId
+  ?? (urlProjectId && effectiveInitialProjects.some((p) => p.id === urlProjectId) ? urlProjectId : null)
   ?? readPersistedActiveProjectId()
   ?? effectiveInitialProjects[0]?.id
   ?? null;
@@ -411,17 +441,23 @@ export const useProjectsStore = create<ProjectsStore>()(
 
       const current = get();
       const projectsChanged = JSON.stringify(current.projects) !== JSON.stringify(incomingProjects);
-      const activeChanged = current.activeProjectId !== incomingActive;
+
+      // If this tab has a URL-scoped project already active, don't let the server
+      // settings override it. Each tab independently manages its own active project
+      // via the URL ?project= parameter.
+      const tabHasURLScopedProject = readProjectIdFromURL() !== null;
+      const resolvedActive = tabHasURLScopedProject ? current.activeProjectId : incomingActive;
+      const activeChanged = current.activeProjectId !== resolvedActive;
 
       if (!projectsChanged && !activeChanged) {
         return;
       }
 
-      set({ projects: incomingProjects, activeProjectId: incomingActive });
-      cacheProjects(incomingProjects, incomingActive);
+      set({ projects: incomingProjects, activeProjectId: resolvedActive });
+      cacheProjects(incomingProjects, resolvedActive);
 
-      if (incomingActive) {
-        const activeProject = incomingProjects.find((project) => project.id === incomingActive);
+      if (!tabHasURLScopedProject && resolvedActive) {
+        const activeProject = incomingProjects.find((project) => project.id === resolvedActive);
         if (activeProject) {
           opencodeClient.setDirectory(activeProject.path);
           useDirectoryStore.getState().setDirectory(activeProject.path, { showOverlay: false });
