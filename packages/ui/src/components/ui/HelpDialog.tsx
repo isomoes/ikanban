@@ -19,7 +19,6 @@ import {
   RiCommandLine,
   RiGitBranchLine,
   RiLayoutLeftLine,
-  RiLayoutRightLine,
   RiPaletteLine,
   RiQuestionLine,
   RiSettings3Line,
@@ -108,11 +107,6 @@ export const HelpDialog: React.FC = () => {
           keys: [`${mod} + H`],
           description: "Toggle Session Sidebar",
           icon: RiLayoutLeftLine,
-        },
-        {
-          keys: [`${mod} + L`],
-          description: "Toggle Git Sidebar",
-          icon: RiLayoutRightLine,
         },
         {
           keys: ["Shift + Tab"],
