@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [0.2.0]
 
 - UI: Removed the Files tab from the main layout to streamline navigation around chat, sessions, and git workflows. (@isomoes)
 - UI: Removed the `Cmd/Ctrl + L` Git Sidebar shortcut to avoid conflicting with common terminal and editor keybindings. (@isomoes)
