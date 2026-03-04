@@ -67,7 +67,7 @@
     },
     "packages/web": {
       "name": "ikanban-web",
-      "version": "0.1.6",
+      "version": "0.2.0",
       "dependencies": {
         "@kobalte/core": "0.13.11",
         "@opencode-ai/sdk": "^1.2.16",

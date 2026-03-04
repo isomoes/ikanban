@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+- UI: Removed the Files tab from the main layout to streamline navigation around chat, sessions, and git workflows. (@isomoes)
+- UI: Removed the `Cmd/Ctrl + L` Git Sidebar shortcut to avoid conflicting with common terminal and editor keybindings. (@isomoes)
+- Projects: Active project selection is now scoped per browser tab via URL state, so different tabs can stay on different projects. (@isomoes)
+- Routing: Improved project/session URL synchronization so in-app navigation and direct URL updates stay consistent. (@isomoes)
+- Chat: Hardened initial message bootstrapping to make session loading more reliable. (@isomoes)
+- CLI: Added `npx ikanban` usage support and updated Quick Start guidance to make first-run setup easier without a global install. (@isomoes)
+- Docs: Added collapsible prompt and diff screenshots in the README to make key UI behaviors easier to preview. (@isomoes)
+
 ## [0.1.6]
 
 - Sessions: Remapped new-session shortcuts from `Cmd/Ctrl + N` / `Cmd/Ctrl + Shift + N` to bare `N` / `Shift + N` so they work without a modifier when the chat input is not focused. (@isomoes)
