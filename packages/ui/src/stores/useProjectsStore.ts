@@ -4,7 +4,7 @@ import { opencodeClient } from '@/lib/opencode/client';
 import type { ProjectEntry } from '@/lib/api/types';
 import type { DesktopSettings } from '@/lib/desktop';
 import { updateDesktopSettings } from '@/lib/persistence';
-import { getSafeStorage } from './utils/safeStorage';
+import { getSafeSessionStorage, getSafeStorage } from './utils/safeStorage';
 import { useDirectoryStore } from './useDirectoryStore';
 import { streamDebugEnabled } from '@/stores/utils/streamDebug';
 import { ROUTE_PARAMS } from '@/lib/router';
@@ -31,6 +31,7 @@ interface ProjectsStore {
 }
 
 const safeStorage = getSafeStorage();
+const safeSessionStorage = getSafeSessionStorage();
 const PROJECTS_STORAGE_KEY = 'projects';
 const ACTIVE_PROJECT_STORAGE_KEY = 'activeProjectId';
 
@@ -165,6 +166,16 @@ const readPersistedProjects = (): ProjectEntry[] => {
 
 const readPersistedActiveProjectId = (): string | null => {
   try {
+    const tabScoped = safeSessionStorage.getItem(ACTIVE_PROJECT_STORAGE_KEY);
+    if (typeof tabScoped === 'string' && tabScoped.trim().length > 0) {
+      return tabScoped.trim();
+    }
+  } catch {
+    // ignore and fall back to localStorage for compatibility
+  }
+
+  try {
+    // Backward compatibility fallback for older versions that stored this in localStorage.
     const raw = safeStorage.getItem(ACTIVE_PROJECT_STORAGE_KEY);
     if (typeof raw === 'string' && raw.trim().length > 0) {
       return raw.trim();
@@ -184,8 +195,10 @@ const cacheProjects = (projects: ProjectEntry[], activeProjectId: string | null)
 
   try {
     if (activeProjectId) {
-      safeStorage.setItem(ACTIVE_PROJECT_STORAGE_KEY, activeProjectId);
+      safeSessionStorage.setItem(ACTIVE_PROJECT_STORAGE_KEY, activeProjectId);
+      safeStorage.removeItem(ACTIVE_PROJECT_STORAGE_KEY);
     } else {
+      safeSessionStorage.removeItem(ACTIVE_PROJECT_STORAGE_KEY);
       safeStorage.removeItem(ACTIVE_PROJECT_STORAGE_KEY);
     }
   } catch {

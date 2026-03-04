@@ -38,11 +38,6 @@ const persistToLocalStorage = (settings: DesktopSettings) => {
   } else {
     localStorage.removeItem('projects');
   }
-  if (settings.activeProjectId) {
-    localStorage.setItem('activeProjectId', settings.activeProjectId);
-  } else {
-    localStorage.removeItem('activeProjectId');
-  }
   if (Array.isArray(settings.pinnedDirectories) && settings.pinnedDirectories.length > 0) {
     localStorage.setItem('pinnedDirectories', JSON.stringify(settings.pinnedDirectories));
   } else {
