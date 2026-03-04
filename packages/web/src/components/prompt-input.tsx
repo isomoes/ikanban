@@ -400,6 +400,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
 
   const isFocused = createFocusSignal(() => editorRef)
   const escBlur = () => platform.platform === "desktop" && platform.os === "macos"
+  const stopKeyLabel = () => (platform.platform === "desktop" && platform.os === "macos" ? "Cmd+C" : "Ctrl+C")
 
   const pick = () => fileInputRef?.click()
 
@@ -1037,13 +1038,6 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
         return
       }
 
-      if (working()) {
-        abort()
-        event.preventDefault()
-        event.stopPropagation()
-        return
-      }
-
       if (escBlur()) {
         editorRef.blur()
         event.preventDefault()
@@ -1097,7 +1091,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
       }
     }
 
-    if (ctrl && event.code === "KeyG") {
+    if (ctrl && (event.code === "KeyG" || event.code === "KeyC")) {
       if (store.popover) {
         closePopover()
         event.preventDefault()
@@ -1290,7 +1284,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
                     <Match when={working()}>
                       <div class="flex items-center gap-2">
                         <span>{language.t("prompt.action.stop")}</span>
-                        <span class="text-icon-base text-12-medium text-[10px]!">{language.t("common.key.esc")}</span>
+                        <span class="text-icon-base text-12-medium text-[10px]!">{stopKeyLabel()}</span>
                       </div>
                     </Match>
                     <Match when={true}>
