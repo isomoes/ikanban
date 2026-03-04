@@ -27,12 +27,10 @@ const DEFAULT_TAB: MainTab = 'chat';
 export function serializeRoute(state: AppRouteState): URLSearchParams {
   const params = new URLSearchParams();
 
-  // Active project - always include if present so each tab keeps its own project
   if (state.activeProjectId && state.activeProjectId.trim().length > 0) {
     params.set(ROUTE_PARAMS.PROJECT, state.activeProjectId);
   }
 
-  // Session ID - always include if present
   if (state.sessionId && state.sessionId.trim().length > 0) {
     params.set(ROUTE_PARAMS.SESSION, state.sessionId);
   }
@@ -62,15 +60,47 @@ export function serializeRoute(state: AppRouteState): URLSearchParams {
  * Convert URLSearchParams to a URL string.
  * Returns just the pathname if no params, otherwise pathname + search string.
  */
-export function buildURL(params: URLSearchParams, pathname?: string): string {
-  const path = pathname ?? (typeof window !== 'undefined' ? window.location.pathname : '/');
-  const search = params.toString();
+export function buildURL(
+  params: URLSearchParams,
+  pathname?: string,
+  route?: Pick<AppRouteState, 'activeProjectId' | 'sessionId'>
+): string {
+  const project = route?.activeProjectId?.trim() || params.get(ROUTE_PARAMS.PROJECT)?.trim() || '';
+  const session = route?.sessionId?.trim() || params.get(ROUTE_PARAMS.SESSION)?.trim() || '';
+
+  const searchParams = new URLSearchParams(params);
+  searchParams.delete(ROUTE_PARAMS.PROJECT);
+  searchParams.delete(ROUTE_PARAMS.SESSION);
+
+  const path = buildRoutePath(pathname, project, session);
+  const search = searchParams.toString();
 
   if (!search) {
     return path;
   }
 
   return `${path}?${search}`;
+}
+
+function encodePathPart(value: string): string {
+  return encodeURIComponent(value.trim());
+}
+
+function buildRoutePath(pathname: string | undefined, project: string, session: string): string {
+  const fallbackPathname = pathname ?? (typeof window !== 'undefined' ? window.location.pathname : '/');
+
+  if (typeof window === 'undefined' && typeof pathname === 'undefined') {
+    return '/';
+  }
+
+  if (project && session) {
+    return `/${encodePathPart(project)}/${encodePathPart(session)}`;
+  }
+  if (project) {
+    return `/${encodePathPart(project)}`;
+  }
+
+  return fallbackPathname || '/';
 }
 
 /**
@@ -83,24 +113,13 @@ export function routeMatchesURL(state: AppRouteState): boolean {
   }
 
   try {
-    const currentParams = new URLSearchParams(window.location.search);
     const newParams = serializeRoute(state);
-
-    // Compare sorted param strings for equality
-    const currentSorted = [...currentParams.entries()].sort((a, b) => a[0].localeCompare(b[0]));
-    const newSorted = [...newParams.entries()].sort((a, b) => a[0].localeCompare(b[0]));
-
-    if (currentSorted.length !== newSorted.length) {
-      return false;
-    }
-
-    for (let i = 0; i < currentSorted.length; i++) {
-      if (currentSorted[i][0] !== newSorted[i][0] || currentSorted[i][1] !== newSorted[i][1]) {
-        return false;
-      }
-    }
-
-    return true;
+    const nextUrl = buildURL(newParams, undefined, {
+      activeProjectId: state.activeProjectId,
+      sessionId: state.sessionId,
+    });
+    const currentUrl = `${window.location.pathname}${window.location.search}`;
+    return nextUrl === currentUrl;
   } catch {
     return true;
   }
@@ -130,7 +149,10 @@ export function updateBrowserURL(
 
   try {
     const params = serializeRoute(state);
-    const url = buildURL(params);
+    const url = buildURL(params, undefined, {
+      activeProjectId: state.activeProjectId,
+      sessionId: state.sessionId,
+    });
 
     if (options.replace) {
       window.history.replaceState({ ...window.history.state, route: state }, '', url);

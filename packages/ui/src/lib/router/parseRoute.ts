@@ -13,13 +13,14 @@ import {
  */
 export function parseRoute(searchParams?: URLSearchParams): RouteState {
   const params = searchParams ?? getSearchParams();
+  const path = getPathRouteParts();
 
   return {
-    sessionId: parseSessionId(params),
+    sessionId: parseSessionId(params, path),
     tab: parseTab(params),
     settingsSection: parseSettingsSection(params),
     diffFile: parseDiffFile(params),
-    projectId: parseProjectId(params),
+    projectId: parseProjectId(params, path),
   };
 }
 
@@ -38,16 +39,52 @@ function getSearchParams(): URLSearchParams {
   }
 }
 
+type PathRouteParts = {
+  projectId: string | null;
+  sessionId: string | null;
+};
+
+function getPathRouteParts(): PathRouteParts {
+  if (typeof window === 'undefined') {
+    return { projectId: null, sessionId: null };
+  }
+
+  try {
+    const segments = window.location.pathname
+      .split('/')
+      .filter((segment) => segment.length > 0)
+      .map((segment) => {
+        try {
+          return decodeURIComponent(segment);
+        } catch {
+          return segment;
+        }
+      });
+
+    if (segments.length === 0) {
+      return { projectId: null, sessionId: null };
+    }
+
+    return {
+      projectId: segments[0] || null,
+      sessionId: segments[1] || null,
+    };
+  } catch {
+    return { projectId: null, sessionId: null };
+  }
+}
+
 /**
  * Parse session ID from URL parameters.
  * Returns null if missing or empty.
  */
-function parseSessionId(params: URLSearchParams): string | null {
+function parseSessionId(params: URLSearchParams, path: PathRouteParts): string | null {
   const value = params.get(ROUTE_PARAMS.SESSION);
-  if (!value || value.trim().length === 0) {
-    return null;
+  if (value && value.trim().length > 0) {
+    return value.trim();
   }
-  return value.trim();
+
+  return path.sessionId;
 }
 
 /**
@@ -116,12 +153,13 @@ function parseDiffFile(params: URLSearchParams): string | null {
  * Parse project ID from URL parameters.
  * Returns null if missing or empty.
  */
-function parseProjectId(params: URLSearchParams): string | null {
+function parseProjectId(params: URLSearchParams, path: PathRouteParts): string | null {
   const value = params.get(ROUTE_PARAMS.PROJECT);
-  if (!value || value.trim().length === 0) {
-    return null;
+  if (value && value.trim().length > 0) {
+    return value.trim();
   }
-  return value.trim();
+
+  return path.projectId;
 }
 
 /**
@@ -134,7 +172,10 @@ export function hasRouteParams(): boolean {
 
   try {
     const params = new URLSearchParams(window.location.search);
+    const path = getPathRouteParts();
     return (
+      Boolean(path.projectId) ||
+      Boolean(path.sessionId) ||
       params.has(ROUTE_PARAMS.SESSION) ||
       params.has(ROUTE_PARAMS.TAB) ||
       params.has(ROUTE_PARAMS.SETTINGS) ||

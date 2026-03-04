@@ -2,7 +2,7 @@ import React from 'react';
 import { useSessionStore } from '@/stores/useSessionStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { useProjectsStore } from '@/stores/useProjectsStore';
-import { parseRoute, updateBrowserURL, hasRouteParams } from '@/lib/router';
+import { parseRoute, updateBrowserURL, hasRouteParams, serializeRoute, buildURL } from '@/lib/router';
 import type { RouteState, AppRouteState } from '@/lib/router';
 import type { SidebarSection } from '@/constants/sidebar';
 import type { MainTab } from '@/stores/useUIStore';
@@ -313,30 +313,33 @@ export function navigateToRoute(route: Partial<RouteState>): void {
     return;
   }
 
-  // Build URL and navigate
-  const params = new URLSearchParams();
+  const sessionState = useSessionStore.getState();
+  const uiState = useUIStore.getState();
+  const projectsState = useProjectsStore.getState();
 
-  const activeProjectId = route.projectId ?? useProjectsStore.getState().activeProjectId;
-  if (activeProjectId) {
-    params.set('project', activeProjectId);
-  }
-  if (route.sessionId) {
-    params.set('session', route.sessionId);
-  }
-  if (route.settingsSection) {
-    params.set('settings', route.settingsSection);
-  } else if (route.tab && route.tab !== 'chat') {
-    if (useUIStore.getState().isSettingsDialogOpen) {
-      useUIStore.getState().setSettingsDialogOpen(false);
-    }
-    params.set('tab', route.tab);
-  }
-  if (route.diffFile) {
-    params.set('file', route.diffFile);
+  const nextState: AppRouteState = {
+    sessionId: route.sessionId ?? null,
+    tab: route.tab ?? uiState.activeMainTab,
+    isSettingsOpen: route.settingsSection ? true : uiState.isSettingsDialogOpen,
+    settingsSection: route.settingsSection ?? uiState.sidebarSection,
+    diffFile: route.diffFile ?? uiState.pendingDiffFile,
+    activeProjectId: route.projectId ?? projectsState.activeProjectId,
+  };
+
+  if (!route.sessionId) {
+    nextState.sessionId = sessionState.currentSessionId;
   }
 
-  const search = params.toString();
-  const url = search ? `${window.location.pathname}?${search}` : window.location.pathname;
+  if (route.tab && uiState.isSettingsDialogOpen) {
+    useUIStore.getState().setSettingsDialogOpen(false);
+    nextState.isSettingsOpen = false;
+  }
+
+  const params = serializeRoute(nextState);
+  const url = buildURL(params, undefined, {
+    activeProjectId: nextState.activeProjectId,
+    sessionId: nextState.sessionId,
+  });
 
   window.history.pushState({ route }, '', url);
 
@@ -370,29 +373,20 @@ export function getShareableURL(): string {
   const uiState = useUIStore.getState();
   const projectsState = useProjectsStore.getState();
 
-  const params = new URLSearchParams();
+  const state: AppRouteState = {
+    sessionId: sessionState.currentSessionId,
+    tab: uiState.activeMainTab,
+    isSettingsOpen: uiState.isSettingsDialogOpen,
+    settingsSection: uiState.sidebarSection,
+    diffFile: uiState.pendingDiffFile,
+    activeProjectId: projectsState.activeProjectId,
+  };
 
-  if (projectsState.activeProjectId) {
-    params.set('project', projectsState.activeProjectId);
-  }
+  const params = serializeRoute(state);
+  const relativeUrl = buildURL(params, '/', {
+    activeProjectId: state.activeProjectId,
+    sessionId: state.sessionId,
+  });
 
-  if (sessionState.currentSessionId) {
-    params.set('session', sessionState.currentSessionId);
-  }
-
-  if (uiState.isSettingsDialogOpen) {
-    const settingsSection = uiState.sidebarSection === 'sessions' ? 'settings' : uiState.sidebarSection;
-    params.set('settings', settingsSection);
-  } else if (uiState.activeMainTab !== 'chat') {
-    params.set('tab', uiState.activeMainTab);
-  }
-
-  if (uiState.activeMainTab === 'diff' && uiState.pendingDiffFile) {
-    params.set('file', uiState.pendingDiffFile);
-  }
-
-  const search = params.toString();
-  const base = `${window.location.origin}${window.location.pathname}`;
-
-  return search ? `${base}?${search}` : base;
+  return `${window.location.origin}${relativeUrl}`;
 }
