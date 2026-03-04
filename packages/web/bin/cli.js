@@ -54,8 +54,38 @@ function proxyRequest(req, res) {
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`)
 
-  // Proxy API and WebSocket upgrade paths to OpenCode backend
-  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/v1/")) {
+  // Proxy OpenCode API paths to backend.
+  // These are the top-level path segments used by @opencode-ai/sdk.
+  const API_PREFIXES = [
+    "/agent",
+    "/auth",
+    "/command",
+    "/config",
+    "/event",
+    "/experimental",
+    "/file",
+    "/find",
+    "/formatter",
+    "/global",
+    "/instance",
+    "/log",
+    "/lsp",
+    "/mcp",
+    "/path",
+    "/permission",
+    "/project",
+    "/provider",
+    "/pty",
+    "/question",
+    "/session",
+    "/skill",
+    "/tui",
+    "/vcs",
+  ]
+  const isApi = API_PREFIXES.some(
+    (p) => url.pathname === p || url.pathname.startsWith(p + "/"),
+  )
+  if (isApi) {
     return proxyRequest(req, res)
   }
 
