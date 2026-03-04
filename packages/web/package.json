@@ -78,7 +78,11 @@
     "vite-plugin-icons-spritesheet": "3.0.1",
     "vite-plugin-solid": "2.11.10"
   },
+  "bin": {
+    "ikanban": "bin/cli.js"
+  },
   "files": [
+    "bin",
     "dist",
     "src",
     "public",
