@@ -18,6 +18,12 @@ import { useLanguage } from "@/context/language"
 const isFree = (provider: string, cost: { input: number } | undefined) =>
   provider === "opencode" && (!cost || cost.input === 0)
 
+type ModelItem = ReturnType<ReturnType<typeof useLocal>["model"]["list"]>[number] & {
+  _recentKey?: string
+}
+
+const RECENT_GROUP = "\u0000recent"
+
 const ModelList: Component<{
   provider?: string
   class?: string
@@ -27,31 +33,62 @@ const ModelList: Component<{
   const local = useLocal()
   const language = useLanguage()
 
-  const models = createMemo(() =>
+  const visibleModels = createMemo(() =>
     local.model
       .list()
       .filter((m) => local.model.visible({ modelID: m.id, providerID: m.provider.id }))
       .filter((m) => (props.provider ? m.provider.id === props.provider : true)),
   )
 
+  const recentModels = createMemo(() =>
+    local.model
+      .recent()
+      .filter((m) => m && local.model.visible({ modelID: m.id, providerID: m.provider.id }))
+      .filter((m) => m && (props.provider ? m.provider.id === props.provider : true)) as NonNullable<
+      ReturnType<ReturnType<typeof useLocal>["model"]["recent"]>[number]
+    >[],
+  )
+
+  const items = (filter: string): ModelItem[] => {
+    const visible = visibleModels()
+    if (filter.trim()) return visible
+    const recent = recentModels()
+    if (recent.length === 0) return visible
+    const recentKeys = new Set(recent.map((m) => `${m.provider.id}:${m.id}`))
+    const nonRecentVisible = visible.filter((m) => !recentKeys.has(`${m.provider.id}:${m.id}`))
+    const recentItems: ModelItem[] = recent.map((m) => ({ ...m, _recentKey: `${m.provider.id}:${m.id}` }))
+    return [...recentItems, ...nonRecentVisible]
+  }
+
+  const recentGroupLabel = () => language.t("dialog.model.recent")
+
   return (
     <List
       class={`flex-1 min-h-0 [&_[data-slot=list-scroll]]:flex-1 [&_[data-slot=list-scroll]]:min-h-0 ${props.class ?? ""}`}
       search={{ placeholder: language.t("dialog.model.search.placeholder"), autofocus: true, action: props.action }}
       emptyMessage={language.t("dialog.model.empty")}
-      key={(x) => `${x.provider.id}:${x.id}`}
-      items={models}
-      current={local.model.current()}
+      key={(x) => (x._recentKey ? `${RECENT_GROUP}:${x._recentKey}` : `${x.provider.id}:${x.id}`)}
+      items={items}
+      current={local.model.current() as ModelItem | undefined}
       filterKeys={["provider.name", "name", "id"]}
-      sortBy={(a, b) => a.name.localeCompare(b.name)}
-      groupBy={(x) => x.provider.name}
+      sortBy={(a, b) => {
+        if (a._recentKey && b._recentKey) return 0
+        if (a._recentKey || b._recentKey) return 0
+        return a.name.localeCompare(b.name)
+      }}
+      groupBy={(x) => (x._recentKey ? RECENT_GROUP : x.provider.name)}
       sortGroupsBy={(a, b) => {
+        if (a.category === RECENT_GROUP) return -1
+        if (b.category === RECENT_GROUP) return 1
         const aProvider = a.items[0].provider.id
         const bProvider = b.items[0].provider.id
         if (popularProviders.includes(aProvider) && !popularProviders.includes(bProvider)) return -1
         if (!popularProviders.includes(aProvider) && popularProviders.includes(bProvider)) return 1
         return popularProviders.indexOf(aProvider) - popularProviders.indexOf(bProvider)
       }}
+      groupHeader={(group) =>
+        group.category === RECENT_GROUP ? recentGroupLabel() : group.category
+      }
       itemWrapper={(item, node) => (
         <Tooltip
           class="w-full"

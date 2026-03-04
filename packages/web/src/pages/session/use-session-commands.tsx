@@ -246,7 +246,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       id: "model.choose",
       title: language.t("command.model.choose"),
       description: language.t("command.model.choose.description"),
-      keybind: "mod+'",
+      keybind: "mod+m",
       slash: "model",
       onSelect: () => dialog.show(() => <DialogSelectModel />),
     }),
