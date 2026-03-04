@@ -44,7 +44,7 @@
   "dependencies": {
     "@kobalte/core": "0.13.11",
     "@opencode-ai/sdk": "^1.2.16",
-    "ikanban-utils": "0.2.0",
+    "ikanban-utils": "workspace:*",
     "@pierre/diffs": "1.1.0-beta.18",
     "@shikijs/transformers": "3.9.2",
     "@solid-primitives/bounds": "0.1.3",
