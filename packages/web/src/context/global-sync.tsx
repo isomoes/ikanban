@@ -7,8 +7,8 @@ import type {
   ProviderListResponse,
   Todo,
 } from "@opencode-ai/sdk/v2/client"
-import { showToast } from "@opencode-ai/ui/toast"
-import { getFilename } from "@opencode-ai/util/path"
+import { showToast } from "ikanban-ui/toast"
+import { getFilename } from "ikanban-utils/path"
 import {
   createContext,
   getOwner,

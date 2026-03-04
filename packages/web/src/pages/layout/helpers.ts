@@ -1,4 +1,4 @@
-import { getFilename } from "@opencode-ai/util/path"
+import { getFilename } from "ikanban-utils/path"
 import { type Session } from "@opencode-ai/sdk/v2/client"
 
 export const workspaceKey = (directory: string) => {

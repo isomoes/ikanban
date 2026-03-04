@@ -5,9 +5,9 @@ import { SDKProvider } from "@/context/sdk"
 import { SyncProvider, useSync } from "@/context/sync"
 import { LocalProvider } from "@/context/local"
 
-import { DataProvider } from "@opencode-ai/ui/context"
+import { DataProvider } from "ikanban-ui/context"
 import { decode64 } from "@/utils/base64"
-import { showToast } from "@opencode-ai/ui/toast"
+import { showToast } from "ikanban-ui/toast"
 import { useLanguage } from "@/context/language"
 
 function DirectoryDataProvider(props: ParentProps<{ directory: string }>) {

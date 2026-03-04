@@ -1,6 +1,6 @@
 import type { Message } from "@opencode-ai/sdk/v2/client"
-import { showToast } from "@opencode-ai/ui/toast"
-import { base64Encode } from "@opencode-ai/util/encode"
+import { showToast } from "ikanban-ui/toast"
+import { base64Encode } from "ikanban-utils/encode"
 import { useNavigate, useParams } from "@solidjs/router"
 import type { Accessor } from "solid-js"
 import type { FileSelection } from "@/context/file"

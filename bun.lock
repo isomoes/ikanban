@@ -10,12 +10,11 @@
       },
     },
     "packages/ui": {
-      "name": "@opencode-ai/ui",
-      "version": "1.2.16",
+      "name": "ikanban-ui",
+      "version": "0.2.1",
       "dependencies": {
         "@kobalte/core": "0.13.11",
         "@opencode-ai/sdk": "^1.2.16",
-        "@opencode-ai/util": "workspace:*",
         "@pierre/diffs": "1.1.0-beta.18",
         "@shikijs/transformers": "3.9.2",
         "@solid-primitives/bounds": "0.1.3",
@@ -25,6 +24,7 @@
         "@typescript/native-preview": "7.0.0-dev.20260304.1",
         "dompurify": "3.3.1",
         "fuzzysort": "3.1.0",
+        "ikanban-utils": "0.2.0",
         "katex": "0.16.27",
         "luxon": "3.7.2",
         "marked": "17.0.3",
@@ -55,8 +55,8 @@
       },
     },
     "packages/util": {
-      "name": "@opencode-ai/util",
-      "version": "1.2.16",
+      "name": "ikanban-utils",
+      "version": "0.2.0",
       "dependencies": {
         "zod": "^4.3.6",
       },
@@ -67,12 +67,13 @@
     },
     "packages/web": {
       "name": "ikanban-web",
-      "version": "0.2.0",
+      "version": "0.2.1",
+      "bin": {
+        "ikanban": "bin/cli.js",
+      },
       "dependencies": {
         "@kobalte/core": "0.13.11",
         "@opencode-ai/sdk": "^1.2.16",
-        "@opencode-ai/ui": "workspace:*",
-        "@opencode-ai/util": "workspace:*",
         "@shikijs/transformers": "4.0.1",
         "@solid-primitives/active-element": "2.1.5",
         "@solid-primitives/audio": "1.4.4",
@@ -109,6 +110,8 @@
         "@types/luxon": "3.7.1",
         "@types/node": "25.3.3",
         "@typescript/native-preview": "7.0.0-dev.20260304.1",
+        "ikanban-ui": "0.2.0",
+        "ikanban-utils": "0.2.0",
         "typescript": "5.9.3",
         "vite": "7.3.1",
         "vite-plugin-icons-spritesheet": "3.0.1",
@@ -236,10 +239,6 @@
     "@kobalte/utils": ["@kobalte/utils@0.9.1", "https://registry.npmmirror.com/@kobalte/utils/-/utils-0.9.1.tgz", { "dependencies": { "@solid-primitives/event-listener": "^2.2.14", "@solid-primitives/keyed": "^1.2.0", "@solid-primitives/map": "^0.4.7", "@solid-primitives/media": "^2.2.4", "@solid-primitives/props": "^3.1.8", "@solid-primitives/refs": "^1.0.5", "@solid-primitives/utils": "^6.2.1" }, "peerDependencies": { "solid-js": "^1.8.8" } }, "sha512-eeU60A3kprIiBDAfv9gUJX1tXGLuZiKMajUfSQURAF2pk4ZoMYiqIzmrMBvzcxP39xnYttgTyQEVLwiTZnrV4w=="],
 
     "@opencode-ai/sdk": ["@opencode-ai/sdk@1.2.16", "https://registry.npmmirror.com/@opencode-ai/sdk/-/sdk-1.2.16.tgz", {}, "sha512-y9ae9VnCcuog0GaI4DveX1HB6DBoZgGN3EuJVlRFbBCPwhzkls6fCfHSb5+VnTS6Fy0OWFUL28VBCmixL/D+/Q=="],
-
-    "@opencode-ai/ui": ["@opencode-ai/ui@workspace:packages/ui"],
-
-    "@opencode-ai/util": ["@opencode-ai/util@workspace:packages/util"],
 
     "@pierre/diffs": ["@pierre/diffs@1.1.0-beta.18", "https://registry.npmmirror.com/@pierre/diffs/-/diffs-1.1.0-beta.18.tgz", { "dependencies": { "@pierre/theme": "0.0.22", "@shikijs/transformers": "^3.0.0", "diff": "8.0.3", "hast-util-to-html": "9.0.5", "lru_map": "0.4.1", "shiki": "^3.0.0" }, "peerDependencies": { "react": "^18.3.1 || ^19.0.0", "react-dom": "^18.3.1 || ^19.0.0" } }, "sha512-7ZF3YD9fxdbYsPnltz5cUqHacN7ztp8RX/fJLxwv8wIEORpP4+7dHz1h/qx3o4EW2xUrIhmbM8ImywLasB787Q=="],
 
@@ -594,6 +593,10 @@
     "html-entities": ["html-entities@2.3.3", "https://registry.npmmirror.com/html-entities/-/html-entities-2.3.3.tgz", {}, "sha512-DV5Ln36z34NNTDgnz0EWGBLZENelNAtkiFA4kyNOG2tDI6Mz1uSWiq1wAKdyjnJwyDiDO7Fa2SO1CTxPXL8VxA=="],
 
     "html-void-elements": ["html-void-elements@3.0.0", "https://registry.npmmirror.com/html-void-elements/-/html-void-elements-3.0.0.tgz", {}, "sha512-bEqo66MRXsUGxWHV5IP0PUiAWwoEjba4VCzg0LjFJBpchPaTfyfCKTG6bc5F8ucKec3q5y6qOdGyYTSBEvhCrg=="],
+
+    "ikanban-ui": ["ikanban-ui@workspace:packages/ui"],
+
+    "ikanban-utils": ["ikanban-utils@workspace:packages/util"],
 
     "ikanban-web": ["ikanban-web@workspace:packages/web"],
 
