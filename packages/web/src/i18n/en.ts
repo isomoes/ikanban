@@ -610,7 +610,7 @@ export const dict = {
   "sidebar.project.viewAllSessions": "View all sessions",
   "sidebar.project.clearNotifications": "Clear notifications",
 
-  "app.name.desktop": "OpenCode Desktop",
+  "app.name.desktop": "iKanban",
 
   "settings.section.desktop": "Desktop",
   "settings.section.server": "Server",
