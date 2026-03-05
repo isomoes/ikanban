@@ -36,8 +36,10 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Build web package (npm)
+      - name: Build web package (npm + GitHub Pages)
         run: bun run build:web
+        env:
+          VITE_BASE_PATH: /ikanban/
 
       - name: Prepare artifact directory
         run: mkdir -p dist
@@ -51,11 +53,6 @@ jobs:
         with:
           name: npm-package
           path: dist/*.tgz
-
-      - name: Build web package (GitHub Pages)
-        run: bun run build:web
-        env:
-          VITE_BASE_PATH: /ikanban/
 
       - name: Add 404.html for SPA routing
         run: cp packages/web/dist/index.html packages/web/dist/404.html

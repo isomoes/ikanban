@@ -116,7 +116,11 @@ const defaultUrl = iife(() => {
   if (location.hostname.includes("opencode.ai")) return "http://localhost:4096"
   if (import.meta.env.DEV)
     return `http://${import.meta.env.VITE_OPENCODE_SERVER_HOST ?? "localhost"}:${import.meta.env.VITE_OPENCODE_SERVER_PORT ?? "4096"}`
-  return location.origin
+  // Strip trailing slash from BASE_URL so origin + base never has a double slash.
+  // When VITE_BASE_PATH is set (e.g. /ikanban/) Vite bakes it into BASE_URL,
+  // so API calls are routed through the same-origin proxy under that prefix.
+  const base = (import.meta.env.BASE_URL ?? "/").replace(/\/+$/, "")
+  return location.origin + base
 })
 
 if (root instanceof HTMLElement) {

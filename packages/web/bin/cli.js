@@ -30,8 +30,9 @@ const PORT = portFlag !== -1 ? parseInt(args[portFlag + 1], 10) : 3000
 // OpenCode backend: honour OPENCODE_URL or default to localhost:4096
 const OPENCODE_URL = process.env.OPENCODE_URL || "http://localhost:4096"
 
-function proxyRequest(req, res) {
+function proxyRequest(req, res, overridePath) {
   const target = new URL(req.url, OPENCODE_URL)
+  if (overridePath !== undefined) target.pathname = overridePath
   const mod = target.protocol === "https:" ? https : http
   const options = {
     hostname: target.hostname,
@@ -51,8 +52,17 @@ function proxyRequest(req, res) {
   req.pipe(proxy)
 }
 
+const BASE = "/ikanban"
+
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`)
+
+  // Redirect bare /ikanban to /ikanban/
+  if (url.pathname === BASE) {
+    res.writeHead(301, { Location: BASE + "/" })
+    res.end()
+    return
+  }
 
   // Proxy OpenCode API paths to backend.
   // These are the top-level path segments used by @opencode-ai/sdk.
@@ -82,15 +92,37 @@ const server = http.createServer((req, res) => {
     "/tui",
     "/vcs",
   ]
+  // Support both /session/... (SDK default, same-origin) and
+  // /ikanban/session/... (prefixed, e.g. from a reverse proxy).
+  // Determine the effective API pathname by stripping the base prefix if present.
+  let apiPathname = url.pathname
+  if (apiPathname.startsWith(BASE + "/")) {
+    const stripped = apiPathname.slice(BASE.length)
+    if (API_PREFIXES.some((p) => stripped === p || stripped.startsWith(p + "/"))) {
+      apiPathname = stripped
+    }
+  }
   const isApi = API_PREFIXES.some(
-    (p) => url.pathname === p || url.pathname.startsWith(p + "/"),
+    (p) => apiPathname === p || apiPathname.startsWith(p + "/"),
   )
   if (isApi) {
-    return proxyRequest(req, res)
+    // Pass the stripped path so the backend never sees the /ikanban prefix
+    return proxyRequest(req, res, apiPathname !== url.pathname ? apiPathname : undefined)
+  }
+
+  // Strip /ikanban prefix before resolving static files
+  let pathname = url.pathname
+  if (pathname.startsWith(BASE + "/")) {
+    pathname = pathname.slice(BASE.length) || "/"
+  } else if (pathname !== BASE) {
+    // Anything outside /ikanban/ that isn't an API call gets a 404
+    res.writeHead(404)
+    res.end("Not found")
+    return
   }
 
   // Serve static files from dist/
-  let filePath = path.join(DIST, url.pathname)
+  let filePath = path.join(DIST, pathname)
   if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
     filePath = path.join(DIST, "index.html")
   }
@@ -110,7 +142,7 @@ const server = http.createServer((req, res) => {
 })
 
 server.listen(PORT, () => {
-  console.log(`iKanban running at http://localhost:${PORT}`)
+  console.log(`iKanban running at http://localhost:${PORT}${BASE}/`)
   console.log(`OpenCode backend: ${OPENCODE_URL}`)
   console.log("Press Ctrl+C to stop")
 })
