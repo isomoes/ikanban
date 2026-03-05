@@ -1,23 +1,31 @@
 # ikanban
 
-iKanban is a Web/PWA interface for the [OpenCode](https://opencode.ai) AI coding agent. It unifies chat, terminal, and board workflows in a single interface so teams can plan, execute, and track coding tasks with shared context.
+iKanban is a Web interface for the [OpenCode](https://opencode.ai) AI coding agent. It unifies chat, terminal, and board workflows in a single interface so teams can plan, execute, and track coding tasks.
 
 ## UI Previews
 
 <details>
 <summary>Expand screenshots</summary>
 
-### Prompt Panel
-
-<img width="2700" alt="Prompt panel" src="https://github.com/user-attachments/assets/2b103547-9194-4a53-ab70-78be0ed823ab" />
-
-### Diff Panel
-
-<img width="2700" alt="Diff panel" src="https://github.com/user-attachments/assets/f0e965b7-0103-45ad-9201-dc4d3b9934f0" />
+<img width="3695" height="2149" alt="Image" src="https://github.com/user-attachments/assets/b5ca21b8-b8aa-46f6-84cc-8906f629b6c8" />
 
 </details>
 
 ## Quick Start
+
+### Option 1: Use the hosted app (recommended)
+
+Open: https://isomoes.github.io/ikanban
+
+Start OpenCode with CORS enabled for GitHub Pages:
+
+```bash
+opencode serve --port <PORT> --cors https://isomoes.github.io
+```
+
+Then add your server URL in settings: `http://localhost:<PORT>`.
+
+### Option 2: Run locally with npx
 
 ```bash
 npx ikanban-web@latest                        # Start on port 3000
