@@ -102,6 +102,7 @@ export const { use: useServer, provider: ServerProvider } = createSimpleContext(
       Persist.global("server", ["server.v3"]),
       createStore({
         list: [] as StoredServer[],
+        deleted: [] as ServerConnection.Key[],
         projects: {} as Record<string, StoredProject[]>,
         lastProject: {} as Record<string, string>,
       }),
@@ -110,8 +111,9 @@ export const { use: useServer, provider: ServerProvider } = createSimpleContext(
     const url = (x: StoredServer) => (typeof x === "string" ? x : "type" in x ? x.http.url : x.url)
 
     const allServers = createMemo((): Array<ServerConnection.Any> => {
+      const deletedSet = new Set(store.deleted)
       const servers = [
-        ...(props.servers ?? []),
+        ...(props.servers ?? []).filter((s) => !deletedSet.has(ServerConnection.key(s))),
         ...store.list.map((value) =>
           typeof value === "string"
             ? {
@@ -172,6 +174,7 @@ export const { use: useServer, provider: ServerProvider } = createSimpleContext(
       const url_ = normalizeServerUrl(input.http.url)
       if (!url_) return
       const conn = { ...input, http: { ...input.http, url: url_ } }
+      const connKey = ServerConnection.key(conn)
       return batch(() => {
         const existing = store.list.findIndex((x) => url(x) === url_)
         if (existing !== -1) {
@@ -179,18 +182,35 @@ export const { use: useServer, provider: ServerProvider } = createSimpleContext(
         } else {
           setStore("list", store.list.length, conn)
         }
-        setState("active", ServerConnection.key(conn))
+        // If this server was previously deleted, un-delete it
+        if (store.deleted.includes(connKey)) {
+          setStore("deleted", store.deleted.filter((k) => k !== connKey))
+        }
+        setState("active", connKey)
         return conn
       })
     }
 
     function remove(key: ServerConnection.Key) {
       const list = store.list.filter((x) => url(x) !== key)
+      const isPropServer = (props.servers ?? []).some((s) => ServerConnection.key(s) === key)
       batch(() => {
         setStore("list", list)
+        // If it's a prop-injected server, record it as deleted so it stays gone after reload
+        if (isPropServer && !store.deleted.includes(key)) {
+          setStore("deleted", [...store.deleted, key])
+        }
         if (state.active === key) {
-          const next = list[0]
-          setState("active", next ? ServerConnection.Key.make(url(next)) : props.defaultServer)
+          const nextStored = list[0]
+          const nextProp = (props.servers ?? []).find(
+            (s) => !store.deleted.includes(ServerConnection.key(s)) && ServerConnection.key(s) !== key,
+          )
+          const nextKey = nextStored
+            ? ServerConnection.Key.make(url(nextStored))
+            : nextProp
+              ? ServerConnection.key(nextProp)
+              : props.defaultServer
+          setState("active", nextKey)
         }
       })
     }
