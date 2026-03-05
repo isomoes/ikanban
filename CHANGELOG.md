@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.7]
+
+- Settings: Deleted prop-injected servers (e.g. the default GitHub Pages server) now stay removed after a page reload instead of reappearing on every visit. (@isomoes)
+- UI: Removed session sharing actions from the session header to simplify the interface. (@isomoes)
+- Settings: Narrowed built-in i18n support to English and Chinese, removing unmaintained locale files to improve translation quality going forward. (@isomoes)
+- Docs: Refreshed the README and Quick Start guide with clearer setup instructions; removed unused internal documentation files. (@isomoes)
+
 ## [0.2.6]
 
 - Web/CLI: Added runtime support for serving the app under the `/ikanban/` base path, including prefixed SPA routes and API proxy path handling for same-origin deployments. (@isomoes)
