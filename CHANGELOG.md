@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [0.2.5]
 
 - CI: Added GitHub Pages deployment to the publish workflow so site assets can be deployed automatically during releases. (@isomoes)
+- CI: Fixed asset 404s on GitHub Pages by building with `VITE_BASE_PATH=/ikanban/` so all asset paths resolve correctly under the repository subpath. (@isomoes)
 
 ## [0.2.4]
 
