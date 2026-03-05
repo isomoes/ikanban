@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.6]
+
+- Web/CLI: Added runtime support for serving the app under the `/ikanban/` base path, including prefixed SPA routes and API proxy path handling for same-origin deployments. (@isomoes)
+- Routing: Updated the app router and OpenCode server URL resolution to honor Vite `BASE_URL`, preventing path mismatches when deployed to GitHub Pages subpaths. (@isomoes)
+- CI: Simplified release build flow by producing the web artifact once with `VITE_BASE_PATH=/ikanban/` before publishing npm and GitHub Pages outputs. (@isomoes)
+
 ## [0.2.5]
 
 - CI: Added GitHub Pages deployment to the publish workflow so site assets can be deployed automatically during releases. (@isomoes)
