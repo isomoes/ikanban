@@ -36,7 +36,7 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Build web package
+      - name: Build web package (npm)
         run: bun run build:web
 
       - name: Prepare artifact directory
@@ -51,6 +51,19 @@ jobs:
         with:
           name: npm-package
           path: dist/*.tgz
+
+      - name: Build web package (GitHub Pages)
+        run: bun run build:web
+        env:
+          VITE_BASE_PATH: /ikanban/
+
+      - name: Add 404.html for SPA routing
+        run: cp packages/web/dist/index.html packages/web/dist/404.html
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: packages/web/dist
 
   publish:
     needs: build
@@ -155,22 +168,6 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      - name: Download npm artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: npm-package
-          path: npm-artifact/
-
-      - name: Extract dist from tarball
-        run: |
-          tar -xzf npm-artifact/*.tgz -C npm-artifact/
-          cp npm-artifact/package/dist/index.html npm-artifact/package/dist/404.html
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: npm-artifact/package/dist
-
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
