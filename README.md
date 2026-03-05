@@ -28,3 +28,4 @@ OPENCODE_URL=http://myserver:4096 npx ikanban-web@latest  # External OpenCode se
 ## Acknowledgments
 
 - Inspired by and thanks to the [openchamber](https://github.com/btriapitsyn/openchamber) project.
+- [opencode web UI](https://github.com/anomalyco/opencode/tree/dev/packages/app)

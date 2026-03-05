@@ -1,34 +1,31 @@
-## Usage
+# ikanban
 
-Dependencies for these templates are managed with [pnpm](https://pnpm.io) using `pnpm up -Lri`.
+iKanban is a Web/PWA interface for the [OpenCode](https://opencode.ai) AI coding agent. It unifies chat, terminal, and board workflows in a single interface so teams can plan, execute, and track coding tasks with shared context.
 
-This is the reason you see a `pnpm-lock.yaml`. That said, any package manager will work. This file can safely be removed once you clone a template.
+## UI Previews
+
+<details>
+<summary>Expand screenshots</summary>
+
+### Prompt Panel
+
+<img width="2700" alt="Prompt panel" src="https://github.com/user-attachments/assets/2b103547-9194-4a53-ab70-78be0ed823ab" />
+
+### Diff Panel
+
+<img width="2700" alt="Diff panel" src="https://github.com/user-attachments/assets/f0e965b7-0103-45ad-9201-dc4d3b9934f0" />
+
+</details>
+
+## Quick Start
 
 ```bash
-$ npm install # or pnpm install or yarn install
+npx ikanban-web@latest                        # Start on port 3000
+npx ikanban-web@latest --port 8080            # Custom port
+OPENCODE_URL=http://myserver:4096 npx ikanban-web@latest  # External OpenCode server
 ```
 
-### Learn more on the [Solid Website](https://solidjs.com) and come chat with us on our [Discord](https://discord.com/invite/solidjs)
+## Acknowledgments
 
-## Available Scripts
-
-In the project directory, you can run:
-
-### `npm run dev` or `npm start`
-
-Runs the app in the development mode.<br>
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
-
-The page will reload if you make edits.<br>
-
-### `npm run build`
-
-Builds the app for production to the `dist` folder.<br>
-It correctly bundles Solid in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.<br>
-Your app is ready to be deployed!
-
-## Deployment
-
-You can deploy the `dist` folder to any static host provider (netlify, surge, now, etc.)
+- Inspired by and thanks to the [openchamber](https://github.com/btriapitsyn/openchamber) project.
+- [opencode web UI](https://github.com/anomalyco/opencode/tree/dev/packages/app)

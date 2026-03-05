@@ -4,11 +4,10 @@
 
 ## Local Dev
 
-- `opencode dev web` proxies `https://app.opencode.ai`, so local UI/CSS changes will not show there.
-- For local UI changes, run the backend and app dev servers separately.
-- Backend (from `packages/opencode`): `bun run --conditions=browser ./src/index.ts serve --port 4096`
-- App (from `packages/app`): `bun dev -- --port 4444`
-- Open `http://localhost:4444` to verify UI changes (it targets the backend at `http://localhost:4096`).
+- Do not use `opencode dev web` for this repo.
+- From repo root, run `bun dev` (or `bun run dev:web`).
+- From `packages/web`, run `bun dev`.
+- Open the local Vite URL shown in terminal (usually `http://localhost:5173`) to verify UI/CSS changes.
 
 ## SolidJS
 
