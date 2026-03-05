@@ -11,6 +11,9 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -140,3 +143,34 @@ jobs:
           body_path: RELEASE_NOTES.md
           files: |
             dist/*.tgz
+
+  deploy-pages:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Download npm artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: npm-package
+          path: npm-artifact/
+
+      - name: Extract dist from tarball
+        run: |
+          tar -xzf npm-artifact/*.tgz -C npm-artifact/
+          cp npm-artifact/package/dist/index.html npm-artifact/package/dist/404.html
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: npm-artifact/package/dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
