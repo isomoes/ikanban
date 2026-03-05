@@ -4,23 +4,19 @@ import { DropdownMenu } from "ikanban-ui/dropdown-menu"
 import { Icon } from "ikanban-ui/icon"
 import { IconButton } from "ikanban-ui/icon-button"
 import { Keybind } from "ikanban-ui/keybind"
-import { Popover } from "ikanban-ui/popover"
 import { Spinner } from "ikanban-ui/spinner"
-import { TextField } from "ikanban-ui/text-field"
 import { showToast } from "ikanban-ui/toast"
-import { Tooltip, TooltipKeybind } from "ikanban-ui/tooltip"
+import { TooltipKeybind } from "ikanban-ui/tooltip"
 import { getFilename } from "ikanban-utils/path"
 import { useParams } from "@solidjs/router"
-import { createEffect, createMemo, For, onCleanup, Show } from "solid-js"
+import { createEffect, createMemo, For, Show } from "solid-js"
 import { createStore } from "solid-js/store"
 import { Portal } from "solid-js/web"
 import { useCommand } from "@/context/command"
-import { useGlobalSDK } from "@/context/global-sdk"
 import { useLanguage } from "@/context/language"
 import { useLayout } from "@/context/layout"
 import { usePlatform } from "@/context/platform"
 import { useServer } from "@/context/server"
-import { useSync } from "@/context/sync"
 import { decode64 } from "@/utils/base64"
 import { Persist, persisted } from "@/utils/persist"
 import { StatusPopover } from "../status-popover"
@@ -134,99 +130,11 @@ const showRequestError = (language: ReturnType<typeof useLanguage>, err: unknown
   })
 }
 
-function useSessionShare(args: {
-  globalSDK: ReturnType<typeof useGlobalSDK>
-  currentSession: () =>
-    | {
-        share?: {
-          url?: string
-        }
-      }
-    | undefined
-  sessionID: () => string | undefined
-  projectDirectory: () => string
-  platform: ReturnType<typeof usePlatform>
-}) {
-  const [state, setState] = createStore({
-    share: false,
-    unshare: false,
-    copied: false,
-    timer: undefined as number | undefined,
-  })
-  const shareUrl = createMemo(() => args.currentSession()?.share?.url)
-
-  createEffect(() => {
-    const url = shareUrl()
-    if (url) return
-    if (state.timer) window.clearTimeout(state.timer)
-    setState({ copied: false, timer: undefined })
-  })
-
-  onCleanup(() => {
-    if (state.timer) window.clearTimeout(state.timer)
-  })
-
-  const shareSession = () => {
-    const sessionID = args.sessionID()
-    if (!sessionID || state.share) return
-    setState("share", true)
-    args.globalSDK.client.session
-      .share({ sessionID, directory: args.projectDirectory() })
-      .catch((error) => {
-        console.error("Failed to share session", error)
-      })
-      .finally(() => {
-        setState("share", false)
-      })
-  }
-
-  const unshareSession = () => {
-    const sessionID = args.sessionID()
-    if (!sessionID || state.unshare) return
-    setState("unshare", true)
-    args.globalSDK.client.session
-      .unshare({ sessionID, directory: args.projectDirectory() })
-      .catch((error) => {
-        console.error("Failed to unshare session", error)
-      })
-      .finally(() => {
-        setState("unshare", false)
-      })
-  }
-
-  const copyLink = (onError: (error: unknown) => void) => {
-    const url = shareUrl()
-    if (!url) return
-    navigator.clipboard
-      .writeText(url)
-      .then(() => {
-        if (state.timer) window.clearTimeout(state.timer)
-        setState("copied", true)
-        const timer = window.setTimeout(() => {
-          setState("copied", false)
-          setState("timer", undefined)
-        }, 3000)
-        setState("timer", timer)
-      })
-      .catch(onError)
-  }
-
-  const viewShare = () => {
-    const url = shareUrl()
-    if (!url) return
-    args.platform.openLink(url)
-  }
-
-  return { state, shareUrl, shareSession, unshareSession, copyLink, viewShare }
-}
-
 export function SessionHeader() {
-  const globalSDK = useGlobalSDK()
   const layout = useLayout()
   const params = useParams()
   const command = useCommand()
   const server = useServer()
-  const sync = useSync()
   const platform = usePlatform()
   const language = useLanguage()
 
@@ -243,9 +151,6 @@ export function SessionHeader() {
   })
   const hotkey = createMemo(() => command.keybind("file.open"))
 
-  const currentSession = createMemo(() => (params.id ? sync.session.get(params.id) : undefined))
-  const shareEnabled = createMemo(() => sync.data.config.share !== "disabled")
-  const showShare = createMemo(() => shareEnabled() && !!params.id)
   const sessionKey = createMemo(() => `${params.dir}${params.id ? "/" + params.id : ""}`)
   const view = createMemo(() => layout.view(sessionKey))
   const os = createMemo(() => detectOS(platform))
@@ -342,14 +247,6 @@ export function SessionHeader() {
       })
       .catch((err: unknown) => showRequestError(language, err))
   }
-
-  const share = useSessionShare({
-    globalSDK,
-    currentSession,
-    sessionID: () => params.id,
-    projectDirectory,
-    platform,
-  })
 
   const centerMount = createMemo(() => document.getElementById("opencode-titlebar-center"))
   const rightMount = createMemo(() => document.getElementById("opencode-titlebar-right"))
@@ -502,112 +399,6 @@ export function SessionHeader() {
                         </DropdownMenu>
                       </div>
                     </div>
-                  </Show>
-                </div>
-              </Show>
-              <Show when={showShare()}>
-                <div class="flex items-center">
-                  <Popover
-                    title={language.t("session.share.popover.title")}
-                    description={
-                      share.shareUrl()
-                        ? language.t("session.share.popover.description.shared")
-                        : language.t("session.share.popover.description.unshared")
-                    }
-                    gutter={4}
-                    placement="bottom-end"
-                    shift={-64}
-                    class="rounded-xl [&_[data-slot=popover-close-button]]:hidden"
-                    triggerAs={Button}
-                    triggerProps={{
-                      variant: "ghost",
-                      class:
-                        "rounded-md h-[24px] px-3 border border-border-weak-base bg-surface-panel shadow-none data-[expanded]:bg-surface-base-active",
-                      classList: {
-                        "rounded-r-none": share.shareUrl() !== undefined,
-                        "border-r-0": share.shareUrl() !== undefined,
-                      },
-                      style: { scale: 1 },
-                    }}
-                    trigger={<span class="text-12-regular">{language.t("session.share.action.share")}</span>}
-                  >
-                    <div class="flex flex-col gap-2">
-                      <Show
-                        when={share.shareUrl()}
-                        fallback={
-                          <div class="flex">
-                            <Button
-                              size="large"
-                              variant="primary"
-                              class="w-1/2"
-                              onClick={share.shareSession}
-                              disabled={share.state.share}
-                            >
-                              {share.state.share
-                                ? language.t("session.share.action.publishing")
-                                : language.t("session.share.action.publish")}
-                            </Button>
-                          </div>
-                        }
-                      >
-                        <div class="flex flex-col gap-2">
-                          <TextField
-                            value={share.shareUrl() ?? ""}
-                            readOnly
-                            copyable
-                            copyKind="link"
-                            tabIndex={-1}
-                            class="w-full"
-                          />
-                          <div class="grid grid-cols-2 gap-2">
-                            <Button
-                              size="large"
-                              variant="secondary"
-                              class="w-full shadow-none border border-border-weak-base"
-                              onClick={share.unshareSession}
-                              disabled={share.state.unshare}
-                            >
-                              {share.state.unshare
-                                ? language.t("session.share.action.unpublishing")
-                                : language.t("session.share.action.unpublish")}
-                            </Button>
-                            <Button
-                              size="large"
-                              variant="primary"
-                              class="w-full"
-                              onClick={share.viewShare}
-                              disabled={share.state.unshare}
-                            >
-                              {language.t("session.share.action.view")}
-                            </Button>
-                          </div>
-                        </div>
-                      </Show>
-                    </div>
-                  </Popover>
-                  <Show when={share.shareUrl()} fallback={<div aria-hidden="true" />}>
-                    <Tooltip
-                      value={
-                        share.state.copied
-                          ? language.t("session.share.copy.copied")
-                          : language.t("session.share.copy.copyLink")
-                      }
-                      placement="top"
-                      gutter={8}
-                    >
-                      <IconButton
-                        icon={share.state.copied ? "check" : "link"}
-                        variant="ghost"
-                        class="rounded-l-none h-[24px] border border-border-weak-base bg-surface-panel shadow-none"
-                        onClick={() => share.copyLink((error) => showRequestError(language, error))}
-                        disabled={share.state.unshare}
-                        aria-label={
-                          share.state.copied
-                            ? language.t("session.share.copy.copied")
-                            : language.t("session.share.copy.copyLink")
-                        }
-                      />
-                    </Tooltip>
                   </Show>
                 </div>
               </Show>
