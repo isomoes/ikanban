@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.5]
+
+- CI: Added GitHub Pages deployment to the publish workflow so site assets can be deployed automatically during releases. (@isomoes)
+
 ## [0.2.4]
 
 - Settings: Simplified built-in UI language support to English and Chinese while we focus translation quality for actively maintained locales. (@isomoes)
@@ -10,6 +14,18 @@ All notable changes to this project will be documented in this file.
 - Chat: Pressing `Escape` no longer interrupts active responses, preserving Vim-style focus behavior and reducing accidental stops. (@isomoes)
 - Chat: Standardized stop-response behavior around `Ctrl/Cmd + C` so interruption shortcuts are more predictable while composing. (@isomoes)
 - Dev Experience: Removed the web Playwright end-to-end test suite and related setup to keep the package focused on unit-test workflows. (@isomoes)
+
+## [0.2.3]
+
+- CLI: Updated `cli.js` proxy rules to match `@opencode-ai/sdk` v2 API paths for compatibility with newer SDK routing. (@isomoes)
+
+## [0.2.2]
+
+- Workspaces: Internal `@opencode-ai/ui` and `@opencode-ai/util` dependencies now resolve through workspace dependencies to avoid package mismatch issues. (@isomoes)
+
+## [0.2.1]
+
+- Release: Updated changelog/version metadata for the `0.2.1` release line. (@isomoes)
 
 ## [0.2.0]
 
