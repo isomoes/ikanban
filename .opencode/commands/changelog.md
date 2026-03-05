@@ -21,17 +21,6 @@ Determine the base version:
 - Use the latest tag (ex: `v1.3.2`) as the base.
 - Inspect all commits after the base up to `HEAD`.
 
-Repo context for style:
-!`head -140 CHANGELOG.md`
-
-Git context (base tag, commits, changed files):
-!`BASE=$(git describe --tags --abbrev=0 2>/dev/null || git rev-list --max-parents=0 HEAD); echo "Base: $BASE"; echo "Commits since base: $(git rev-list --count "$BASE"..HEAD)"; echo "Diff stats: $(git diff --shortstat "$BASE"..HEAD)"; echo; echo "=== Top 30 commits ==="; git log --oneline -30 "$BASE"..HEAD; echo; echo "=== Changed files ==="; git diff --stat "$BASE"..HEAD`
-
-Additional hints (optional, use only if needed):
-
-- If there are breaking changes or user-visible behavior changes, call them out first.
-- If changes are mostly internal refactors, summarize them as reliability/performance improvements.
-
 Now:
 
 1. Propose the new `[Unreleased]` bullet list for the main @CHANGELOG.md.

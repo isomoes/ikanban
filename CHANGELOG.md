@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.4]
+
+- Settings: Simplified built-in UI language support to English and Chinese while we focus translation quality for actively maintained locales. (@isomoes)
+- Settings: Added a `GitHub Dark Colorblind` theme preset to improve high-contrast readability for colorblind-friendly workflows. (@isomoes)
+- Chat: Model picker now shows a `Recent` group with your last-used models at the top for faster reselection. (@isomoes)
+- Chat: Pressing `Escape` no longer interrupts active responses, preserving Vim-style focus behavior and reducing accidental stops. (@isomoes)
+- Chat: Standardized stop-response behavior around `Ctrl/Cmd + C` so interruption shortcuts are more predictable while composing. (@isomoes)
+- Dev Experience: Removed the web Playwright end-to-end test suite and related setup to keep the package focused on unit-test workflows. (@isomoes)
+
 ## [0.2.0]
 
 - UI: Removed the Files tab from the main layout to streamline navigation around chat, sessions, and git workflows. (@isomoes)
