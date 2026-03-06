@@ -625,6 +625,7 @@ export const dict = {
   "settings.general.section.notifications": "System notifications",
   "settings.general.section.updates": "Updates",
   "settings.general.section.sounds": "Sound effects",
+  "settings.general.section.releaseNotes": "Release notes",
   "settings.general.section.feed": "Feed",
   "settings.general.section.display": "Display",
 
@@ -652,6 +653,9 @@ export const dict = {
 
   "settings.general.row.releaseNotes.title": "Release notes",
   "settings.general.row.releaseNotes.description": "Show What's New popups after updates",
+  "settings.general.row.releaseNotesCurrent.title": "Current version changes",
+  "settings.general.row.releaseNotesCurrent.description": "Open this version's changelog entries on GitHub",
+  "settings.general.action.releaseNotesCurrent": "View changes",
 
   "settings.updates.row.startup.title": "Check for updates on startup",
   "settings.updates.row.startup.description": "Automatically check for updates when OpenCode launches",

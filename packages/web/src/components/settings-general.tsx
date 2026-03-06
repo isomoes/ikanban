@@ -1,12 +1,10 @@
 import { Component, Show, createMemo, createResource, type JSX } from "solid-js"
-import { createStore } from "solid-js/store"
 import { Button } from "ikanban-ui/button"
 import { Icon } from "ikanban-ui/icon"
 import { Select } from "ikanban-ui/select"
 import { Switch } from "ikanban-ui/switch"
 import { Tooltip } from "ikanban-ui/tooltip"
 import { useTheme, type ColorScheme } from "ikanban-ui/theme"
-import { showToast } from "ikanban-ui/toast"
 import { useLanguage } from "@/context/language"
 import { usePlatform } from "@/context/platform"
 import { useSettings, monoFontFamily } from "@/context/settings"
@@ -38,69 +36,23 @@ const playDemoSound = (src: string | undefined) => {
 }
 
 export const SettingsGeneral: Component = () => {
+  const CHANGELOG_URL = "https://github.com/isomoes/ikanban/blob/main/CHANGELOG.md"
+
   const theme = useTheme()
   const language = useLanguage()
   const platform = usePlatform()
   const settings = useSettings()
 
-  const [store, setStore] = createStore({
-    checking: false,
-  })
-
   const linux = createMemo(() => platform.platform === "desktop" && platform.os === "linux")
 
-  const check = () => {
-    if (!platform.checkUpdate) return
-    setStore("checking", true)
-
-    void platform
-      .checkUpdate()
-      .then((result) => {
-        if (!result.updateAvailable) {
-          showToast({
-            variant: "success",
-            icon: "circle-check",
-            title: language.t("settings.updates.toast.latest.title"),
-            description: language.t("settings.updates.toast.latest.description", { version: platform.version ?? "" }),
-          })
-          return
-        }
-
-        const actions =
-          platform.update && platform.restart
-            ? [
-                {
-                  label: language.t("toast.update.action.installRestart"),
-                  onClick: async () => {
-                    await platform.update!()
-                    await platform.restart!()
-                  },
-                },
-                {
-                  label: language.t("toast.update.action.notYet"),
-                  onClick: "dismiss" as const,
-                },
-              ]
-            : [
-                {
-                  label: language.t("toast.update.action.notYet"),
-                  onClick: "dismiss" as const,
-                },
-              ]
-
-        showToast({
-          persistent: true,
-          icon: "download",
-          title: language.t("toast.update.title"),
-          description: language.t("toast.update.description", { version: result.version ?? "" }),
-          actions,
-        })
-      })
-      .catch((err: unknown) => {
-        const message = err instanceof Error ? err.message : String(err)
-        showToast({ title: language.t("common.requestFailed"), description: message })
-      })
-      .finally(() => setStore("checking", false))
+  const openCurrentVersionChanges = () => {
+    const normalized = platform.version?.trim().replace(/^v/i, "")
+    if (!normalized) {
+      platform.openLink(CHANGELOG_URL)
+      return
+    }
+    const fragment = normalized.replace(/\./g, "")
+    platform.openLink(`${CHANGELOG_URL}#${fragment}`)
   }
 
   const themeOptions = createMemo(() =>
@@ -412,44 +364,17 @@ export const SettingsGeneral: Component = () => {
     </div>
   )
 
-  const UpdatesSection = () => (
+  const ReleaseNotesSection = () => (
     <div class="flex flex-col gap-1">
-      <h3 class="text-14-medium text-text-strong pb-2">{language.t("settings.general.section.updates")}</h3>
+      <h3 class="text-14-medium text-text-strong pb-2">{language.t("settings.general.section.releaseNotes")}</h3>
 
       <div class="bg-surface-raised-base px-4 rounded-lg">
         <SettingsRow
-          title={language.t("settings.updates.row.startup.title")}
-          description={language.t("settings.updates.row.startup.description")}
+          title={language.t("settings.general.row.releaseNotesCurrent.title")}
+          description={language.t("settings.general.row.releaseNotesCurrent.description")}
         >
-          <div data-action="settings-updates-startup">
-            <Switch
-              checked={settings.updates.startup()}
-              disabled={!platform.checkUpdate}
-              onChange={(checked) => settings.updates.setStartup(checked)}
-            />
-          </div>
-        </SettingsRow>
-
-        <SettingsRow
-          title={language.t("settings.general.row.releaseNotes.title")}
-          description={language.t("settings.general.row.releaseNotes.description")}
-        >
-          <div data-action="settings-release-notes">
-            <Switch
-              checked={settings.general.releaseNotes()}
-              onChange={(checked) => settings.general.setReleaseNotes(checked)}
-            />
-          </div>
-        </SettingsRow>
-
-        <SettingsRow
-          title={language.t("settings.updates.row.check.title")}
-          description={language.t("settings.updates.row.check.description")}
-        >
-          <Button size="small" variant="secondary" disabled={store.checking || !platform.checkUpdate} onClick={check}>
-            {store.checking
-              ? language.t("settings.updates.action.checking")
-              : language.t("settings.updates.action.checkNow")}
+          <Button size="small" variant="secondary" onClick={openCurrentVersionChanges}>
+            {language.t("settings.general.action.releaseNotesCurrent")}
           </Button>
         </SettingsRow>
       </div>
@@ -472,6 +397,8 @@ export const SettingsGeneral: Component = () => {
         <NotificationsSection />
 
         <SoundsSection />
+
+        <ReleaseNotesSection />
 
         {/*<Show when={platform.platform === "desktop" && platform.os === "windows" && platform.getWslEnabled}>
           {(_) => {
@@ -500,8 +427,6 @@ export const SettingsGeneral: Component = () => {
             )
           }}
         </Show>*/}
-
-        <UpdatesSection />
 
         <Show when={linux()}>
           {(_) => {
