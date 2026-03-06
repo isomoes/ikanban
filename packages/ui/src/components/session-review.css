@@ -128,21 +128,56 @@
     flex-shrink: 0;
   }
 
+  [data-slot="session-review-header-row"] {
+    display: flex;
+    width: 100%;
+    align-items: stretch;
+
+    [data-slot="accordion-trigger"] {
+      min-width: 0;
+      flex: 1;
+      border-right: 0;
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+  }
+
+  [data-slot="session-review-header-actions"] {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 10px;
+    border: 1px solid var(--border-weak-base);
+    border-left: 0;
+    background: var(--background-stronger);
+  }
+
+  [data-slot="session-review-accordion-item"]:first-child [data-slot="session-review-header-actions"] {
+    border-top-right-radius: var(--radius-lg);
+  }
+
+  [data-slot="session-review-accordion-item"]:last-child:not([data-expanded]) [data-slot="session-review-header-actions"] {
+    border-bottom-right-radius: var(--radius-lg);
+  }
+
+  [data-slot="session-review-accordion-item"][data-expanded] [data-slot="session-review-header-actions"] {
+    border-bottom-right-radius: 0;
+  }
+
   [data-slot="session-review-view-button"] {
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 2px;
-    margin-left: 8px;
     border: none;
     background: transparent;
     color: var(--text-base);
     cursor: pointer;
     border-radius: 4px;
-    opacity: 0;
-    will-change: opacity;
-    transform: translateZ(0);
-    transition: opacity 0.15s ease;
+    transition:
+      opacity 0.15s ease,
+      background-color 0.15s ease,
+      color 0.15s ease;
 
     &:hover {
       color: var(--text-strong);
@@ -150,23 +185,34 @@
     }
   }
 
-  [data-slot="accordion-trigger"]:hover [data-slot="session-review-view-button"] {
-    opacity: 1;
-  }
-
   [data-slot="session-review-trigger-actions"] {
     flex-shrink: 0;
     display: flex;
-    gap: 16px;
+    gap: 12px;
     align-items: center;
     justify-content: flex-end;
   }
 
   [data-slot="session-review-diff-chevron"] {
     display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
     color: var(--icon-weaker);
     transform: rotate(-90deg);
-    transition: transform 0.15s ease;
+    cursor: pointer;
+    transition:
+      transform 0.15s ease,
+      background-color 0.15s ease,
+      color 0.15s ease;
+
+    &:hover {
+      color: var(--text-strong);
+      background: var(--surface-base);
+    }
   }
 
   [data-slot="accordion-item"][data-expanded] [data-slot="session-review-diff-chevron"] {

@@ -5,6 +5,8 @@ export const dict: Record<string, string> = {
   "ui.sessionReview.diffStyle.split": "Split",
   "ui.sessionReview.expandAll": "Expand all",
   "ui.sessionReview.collapseAll": "Collapse all",
+  "ui.sessionReview.expandFile": "Expand file",
+  "ui.sessionReview.collapseFile": "Collapse file",
   "ui.sessionReview.change.added": "Added",
   "ui.sessionReview.change.removed": "Removed",
   "ui.sessionReview.change.modified": "Modified",

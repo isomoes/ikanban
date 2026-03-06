@@ -12,6 +12,8 @@ export const dict = {
   "ui.sessionReview.selection.lines": "第 {{start}}-{{end}} 行",
   "ui.sessionReview.expandAll": "全部展开",
   "ui.sessionReview.collapseAll": "全部收起",
+  "ui.sessionReview.expandFile": "展开文件",
+  "ui.sessionReview.collapseFile": "收起文件",
   "ui.sessionReview.change.added": "已添加",
   "ui.sessionReview.change.removed": "已移除",
   "ui.sessionReview.change.modified": "已修改",

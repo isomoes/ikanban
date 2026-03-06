@@ -182,6 +182,8 @@ export const SessionReview = (props: SessionReviewProps) => {
   }
 
   const openFileLabel = () => i18n.t("ui.sessionReview.openFile")
+  const expandFileLabel = () => i18n.t("ui.sessionReview.expandFile")
+  const collapseFileLabel = () => i18n.t("ui.sessionReview.collapseFile")
 
   const selectionLabel = (range: SelectedLineRange) => {
     const start = Math.min(range.start, range.end)
@@ -622,7 +624,7 @@ export const SessionReview = (props: SessionReviewProps) => {
         <div data-slot="session-review-container" class={props.classes?.container}>
           <Show when={hasDiffs()} fallback={props.empty}>
             <div class="pb-6">
-              <Accordion multiple value={open()} onChange={handleChange}>
+              <Accordion collapsible multiple value={open()} onChange={handleChange}>
                 <For each={files()}>
                   {(file) => {
                     let wrapper: HTMLDivElement | undefined
@@ -632,6 +634,10 @@ export const SessionReview = (props: SessionReviewProps) => {
 
                     const expanded = createMemo(() => open().includes(file))
                     const force = () => !!store.force[file]
+                    const toggleFile = () => {
+                      const current = open()
+                      handleChange(expanded() ? current.filter((value) => value !== file) : [...current, file])
+                    }
 
                     const comments = createMemo(() => (props.comments ?? []).filter((c) => c.file === file))
                     const commentedLines = createMemo(() => comments().map((c) => c.selection))
@@ -744,62 +750,75 @@ export const SessionReview = (props: SessionReviewProps) => {
                         data-selected={props.focusedFile === file ? "" : undefined}
                       >
                         <StickyAccordionHeader>
-                          <Accordion.Trigger>
-                            <div data-slot="session-review-trigger-content">
-                              <div data-slot="session-review-file-info">
-                                <FileIcon node={{ path: file, type: "file" }} />
-                                <div data-slot="session-review-file-name-container">
-                                  <Show when={file.includes("/")}>
-                                    <span data-slot="session-review-directory">{`\u202A${getDirectory(file)}\u202C`}</span>
-                                  </Show>
-                                  <span data-slot="session-review-filename">{getFilename(file)}</span>
-                                  <Show when={props.onViewFile}>
-                                    <Tooltip value={openFileLabel()} placement="top" gutter={4}>
-                                      <button
-                                        data-slot="session-review-view-button"
-                                        type="button"
-                                        aria-label={openFileLabel()}
-                                        onClick={(e) => {
-                                          e.stopPropagation()
-                                          props.onViewFile?.(file)
-                                        }}
-                                      >
-                                        <Icon name="open-file" size="small" />
-                                      </button>
-                                    </Tooltip>
-                                  </Show>
+                          <div data-slot="session-review-header-row">
+                            <Accordion.Trigger>
+                              <div data-slot="session-review-trigger-content">
+                                <div data-slot="session-review-file-info">
+                                  <FileIcon node={{ path: file, type: "file" }} />
+                                  <div data-slot="session-review-file-name-container">
+                                    <Show when={file.includes("/")}>
+                                      <span data-slot="session-review-directory">{`\u202A${getDirectory(file)}\u202C`}</span>
+                                    </Show>
+                                    <span data-slot="session-review-filename">{getFilename(file)}</span>
+                                  </div>
+                                </div>
+                                <div data-slot="session-review-trigger-actions">
+                                  <Switch>
+                                    <Match when={isAdded()}>
+                                      <div data-slot="session-review-change-group" data-type="added">
+                                        <span data-slot="session-review-change" data-type="added">
+                                          {i18n.t("ui.sessionReview.change.added")}
+                                        </span>
+                                        <DiffChanges changes={item()} />
+                                      </div>
+                                    </Match>
+                                    <Match when={isDeleted()}>
+                                      <span data-slot="session-review-change" data-type="removed">
+                                        {i18n.t("ui.sessionReview.change.removed")}
+                                      </span>
+                                    </Match>
+                                    <Match when={!!mediaKind()}>
+                                      <span data-slot="session-review-change" data-type="modified">
+                                        {i18n.t("ui.sessionReview.change.modified")}
+                                      </span>
+                                    </Match>
+                                    <Match when={true}>
+                                      <DiffChanges changes={item()} />
+                                    </Match>
+                                  </Switch>
                                 </div>
                               </div>
-                              <div data-slot="session-review-trigger-actions">
-                                <Switch>
-                                  <Match when={isAdded()}>
-                                    <div data-slot="session-review-change-group" data-type="added">
-                                      <span data-slot="session-review-change" data-type="added">
-                                        {i18n.t("ui.sessionReview.change.added")}
-                                      </span>
-                                      <DiffChanges changes={item()} />
-                                    </div>
-                                  </Match>
-                                  <Match when={isDeleted()}>
-                                    <span data-slot="session-review-change" data-type="removed">
-                                      {i18n.t("ui.sessionReview.change.removed")}
-                                    </span>
-                                  </Match>
-                                  <Match when={!!mediaKind()}>
-                                    <span data-slot="session-review-change" data-type="modified">
-                                      {i18n.t("ui.sessionReview.change.modified")}
-                                    </span>
-                                  </Match>
-                                  <Match when={true}>
-                                    <DiffChanges changes={item()} />
-                                  </Match>
-                                </Switch>
-                                <span data-slot="session-review-diff-chevron">
+                            </Accordion.Trigger>
+                            <div data-slot="session-review-header-actions">
+                              <Show when={props.onViewFile}>
+                                <Tooltip value={openFileLabel()} placement="top" gutter={4}>
+                                  <button
+                                    data-slot="session-review-view-button"
+                                    type="button"
+                                    aria-label={openFileLabel()}
+                                    onClick={() => props.onViewFile?.(file)}
+                                  >
+                                    <Icon name="open-file" size="small" />
+                                  </button>
+                                </Tooltip>
+                              </Show>
+                              <Tooltip
+                                value={expanded() ? collapseFileLabel() : expandFileLabel()}
+                                placement="top"
+                                gutter={4}
+                              >
+                                <button
+                                  data-slot="session-review-diff-chevron"
+                                  type="button"
+                                  aria-label={expanded() ? collapseFileLabel() : expandFileLabel()}
+                                  aria-expanded={expanded()}
+                                  onClick={toggleFile}
+                                >
                                   <Icon name="chevron-down" size="small" />
-                                </span>
-                              </div>
+                                </button>
+                              </Tooltip>
                             </div>
-                          </Accordion.Trigger>
+                          </div>
                         </StickyAccordionHeader>
                         <Accordion.Content data-slot="session-review-accordion-content">
                           <div

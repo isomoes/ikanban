@@ -105,6 +105,8 @@ export const dict = {
 
   "command.session.undo": "撤销",
   "command.session.undo.description": "撤销上一条消息",
+  "command.session.timeline": "时间线",
+  "command.session.timeline.description": "跳转到此会话时间线中的任意消息",
   "command.session.redo": "重做",
   "command.session.redo.description": "重做上一条撤销的消息",
   "command.session.compact": "精简会话",
@@ -323,6 +325,8 @@ export const dict = {
   "mcp.status.disabled": "已禁用",
 
   "dialog.fork.empty": "没有可用于分叉的消息",
+  "dialog.timeline.empty": "此时间线中没有消息",
+  "dialog.timeline.latest": "最新消息",
 
   "dialog.directory.search.placeholder": "搜索文件夹",
   "dialog.directory.empty": "未找到文件夹",

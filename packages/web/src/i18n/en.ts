@@ -78,6 +78,8 @@ export const dict = {
   "command.workspace.toggle.description": "Enable or disable multiple workspaces in the sidebar",
   "command.session.undo": "Undo",
   "command.session.undo.description": "Undo the last message",
+  "command.session.timeline": "Timeline",
+  "command.session.timeline.description": "Jump to any message in this session timeline",
   "command.session.redo": "Redo",
   "command.session.redo.description": "Redo the last undone message",
   "command.session.compact": "Compact session",
@@ -304,6 +306,8 @@ export const dict = {
   "mcp.status.disabled": "disabled",
 
   "dialog.fork.empty": "No messages to fork from",
+  "dialog.timeline.empty": "No messages in this timeline",
+  "dialog.timeline.latest": "Latest message",
 
   "dialog.directory.search.placeholder": "Search folders",
   "dialog.directory.empty": "No folders found",
