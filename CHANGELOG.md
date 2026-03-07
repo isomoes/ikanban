@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.8]
+
+- Review: Added a project-wide changes review mode alongside session diffs so you can inspect broader workspace edits from the review flow. (@isomoes)
+- Sessions: Added timeline jump controls and review file toggles to make it easier to navigate conversation history and focus file review context. (@isomoes)
+- Settings: Disabled update prompts and linked changelog entries from settings to reduce noise while making release notes easier to access. (@isomoes)
+- Projects: Added a close-project command in the web app for faster project switching and cleanup. (@isomoes)
+- Docs: Refreshed the README with a Bilibili video link and added architecture/hosted-flow documentation updates. (@isomoes)
+
 ## [0.2.7]
 
 - Settings: Deleted prop-injected servers (e.g. the default GitHub Pages server) now stay removed after a page reload instead of reappearing on every visit. (@isomoes)
