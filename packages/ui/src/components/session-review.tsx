@@ -69,6 +69,8 @@ export interface SessionReviewProps {
   split?: boolean
   diffStyle?: SessionReviewDiffStyle
   onDiffStyleChange?: (diffStyle: SessionReviewDiffStyle) => void
+  wordWrap?: boolean
+  onWordWrapChange?: (wordWrap: boolean) => void
   onDiffRendered?: () => void
   onLineComment?: (comment: SessionReviewLineComment) => void
   onLineCommentUpdate?: (comment: SessionReviewCommentUpdate) => void
@@ -162,6 +164,7 @@ export const SessionReview = (props: SessionReviewProps) => {
   const files = createMemo(() => props.diffs.map((d) => d.file))
   const diffs = createMemo(() => new Map(props.diffs.map((d) => [d.file, d] as const)))
   const diffStyle = () => props.diffStyle ?? (props.split ? "split" : "unified")
+  const wordWrap = () => props.wordWrap ?? true
   const hasDiffs = () => files().length > 0
   const searchValue = createMemo(() => searchQuery().trim())
   const searchExpanded = createMemo(() => searchValue().length > 0)
@@ -573,6 +576,11 @@ export const SessionReview = (props: SessionReviewProps) => {
               onSelect={(style) => style && props.onDiffStyleChange?.(style)}
             />
           </Show>
+          <Show when={hasDiffs() && props.onWordWrapChange}>
+            <Button size="small" variant="secondary" onClick={() => props.onWordWrapChange?.(!wordWrap())}>
+              {i18n.t(wordWrap() ? "ui.sessionReview.wordWrap.on" : "ui.sessionReview.wordWrap.off")}
+            </Button>
+          </Show>
           <Show when={hasDiffs()}>
             <Button
               size="small"
@@ -872,6 +880,7 @@ export const SessionReview = (props: SessionReviewProps) => {
                                       mode="diff"
                                       preloadedDiff={item().preloaded}
                                       diffStyle={diffStyle()}
+                                      overflow={wordWrap() ? "wrap" : "scroll"}
                                       expansionLineCount={searchExpanded() ? Number.MAX_SAFE_INTEGER : 20}
                                       onRendered={() => {
                                         readyFiles.add(file)

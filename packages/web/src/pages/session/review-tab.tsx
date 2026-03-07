@@ -20,6 +20,8 @@ export interface SessionReviewTabProps {
   view: () => ReturnType<ReturnType<typeof useLayout>["view"]>
   diffStyle: DiffStyle
   onDiffStyleChange?: (style: DiffStyle) => void
+  wordWrap?: boolean
+  onWordWrapChange?: (value: boolean) => void
   onViewFile?: (file: string) => void
   onRevealFile?: (file: string) => void
   onLineComment?: (comment: { file: string; selection: SelectedLineRange; comment: string; preview?: string }) => void
@@ -164,6 +166,8 @@ export function SessionReviewTab(props: SessionReviewTabProps) {
       diffs={props.diffs()}
       diffStyle={props.diffStyle}
       onDiffStyleChange={props.onDiffStyleChange}
+      wordWrap={props.wordWrap}
+      onWordWrapChange={props.onWordWrapChange}
       onViewFile={props.onViewFile}
       onRevealFile={props.onRevealFile}
       focusedFile={props.focusedFile}

@@ -8,6 +8,8 @@ export const dict = {
   "ui.sessionReview.title.lastTurn": "上一轮变更",
   "ui.sessionReview.diffStyle.unified": "统一",
   "ui.sessionReview.diffStyle.split": "拆分",
+  "ui.sessionReview.wordWrap.on": "自动换行开",
+  "ui.sessionReview.wordWrap.off": "自动换行关",
   "ui.sessionReview.openFile": "打开文件",
   "ui.sessionReview.selection.line": "第 {{line}} 行",
   "ui.sessionReview.selection.lines": "第 {{start}}-{{end}} 行",

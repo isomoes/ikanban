@@ -27,14 +27,14 @@ const unsafeCSS = `
   --diffs-deletion-base: var(--syntax-diff-delete);
   --diffs-addition-base: var(--syntax-diff-add);
   --diffs-modified-base: var(--syntax-diff-unknown);
-  --diffs-bg-deletion: var(--diffs-bg-deletion-override, light-dark( color-mix(in lab, var(--diffs-bg) 98%, var(--diffs-deletion-base)), color-mix(in lab, var(--diffs-bg) 92%, var(--diffs-deletion-base))));
-  --diffs-bg-deletion-number: var(--diffs-bg-deletion-number-override, light-dark( color-mix(in lab, var(--diffs-bg) 91%, var(--diffs-deletion-base)), color-mix(in lab, var(--diffs-bg) 85%, var(--diffs-deletion-base))));
-  --diffs-bg-deletion-hover: var(--diffs-bg-deletion-hover-override, light-dark( color-mix(in lab, var(--diffs-bg) 80%, var(--diffs-deletion-base)), color-mix(in lab, var(--diffs-bg) 75%, var(--diffs-deletion-base))));
-  --diffs-bg-deletion-emphasis: var(--diffs-bg-deletion-emphasis-override, light-dark(rgb(from var(--diffs-deletion-base) r g b / 0.7), rgb(from var(--diffs-deletion-base) r g b / 0.1)));
-  --diffs-bg-addition: var(--diffs-bg-addition-override, light-dark( color-mix(in lab, var(--diffs-bg) 98%, var(--diffs-addition-base)), color-mix(in lab, var(--diffs-bg) 92%, var(--diffs-addition-base))));
-  --diffs-bg-addition-number: var(--diffs-bg-addition-number-override, light-dark( color-mix(in lab, var(--diffs-bg) 91%, var(--diffs-addition-base)), color-mix(in lab, var(--diffs-bg) 85%, var(--diffs-addition-base))));
-  --diffs-bg-addition-hover: var(--diffs-bg-addition-hover-override, light-dark( color-mix(in lab, var(--diffs-bg) 80%, var(--diffs-addition-base)), color-mix(in lab, var(--diffs-bg) 70%, var(--diffs-addition-base))));
-  --diffs-bg-addition-emphasis: var(--diffs-bg-addition-emphasis-override, light-dark(rgb(from var(--diffs-addition-base) r g b / 0.07), rgb(from var(--diffs-addition-base) r g b / 0.1)));
+  --diffs-bg-deletion: var(--diffs-bg-deletion-override, var(--surface-diff-delete-base));
+  --diffs-bg-deletion-number: var(--diffs-bg-deletion-number-override, var(--surface-diff-delete-strong));
+  --diffs-bg-deletion-hover: var(--diffs-bg-deletion-hover-override, var(--surface-diff-delete-strong));
+  --diffs-bg-deletion-emphasis: var(--diffs-bg-deletion-emphasis-override, var(--surface-diff-delete-strong));
+  --diffs-bg-addition: var(--diffs-bg-addition-override, var(--surface-diff-add-base));
+  --diffs-bg-addition-number: var(--diffs-bg-addition-number-override, var(--surface-diff-add-strong));
+  --diffs-bg-addition-hover: var(--diffs-bg-addition-hover-override, var(--surface-diff-add-strong));
+  --diffs-bg-addition-emphasis: var(--diffs-bg-addition-emphasis-override, var(--surface-diff-add-strong));
   --diffs-selection-base: var(--surface-warning-strong);
   --diffs-selection-border: var(--border-warning-base);
   --diffs-selection-number-fg: #1c1917;
@@ -171,7 +171,7 @@ export function createDefaultOptions<T>(style: FileDiffOptions<T>["diffStyle"]) 
     disableBackground: false,
     expansionLineCount: 20,
     hunkSeparators: "line-info-basic",
-    lineDiffType: style === "split" ? "word-alt" : "none",
+    lineDiffType: "word-alt",
     maxLineDiffLength: 1000,
     maxLineLengthForHighlighting: 1000,
     disableFileHeader: true,

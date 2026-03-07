@@ -40,7 +40,7 @@ export function getWorkerPool(style: WorkerPoolStyle | undefined): WorkerPoolMan
     return split
   }
 
-  if (!unified) unified = createPool("none")
+  if (!unified) unified = createPool("word-alt")
   return unified
 }
 

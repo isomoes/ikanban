@@ -172,12 +172,13 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
 
       const migratedReview = (() => {
         if (!isRecord(review)) return review
-        if (typeof review.panelOpened === "boolean") return review
+        if (typeof review.panelOpened === "boolean" && typeof review.wordWrap === "boolean") return review
 
         const opened = isRecord(fileTree) && typeof fileTree.opened === "boolean" ? fileTree.opened : true
         return {
           ...review,
           panelOpened: opened,
+          wordWrap: typeof review.wordWrap === "boolean" ? review.wordWrap : true,
         }
       })()
 
@@ -240,6 +241,7 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
         },
         review: {
           diffStyle: "split" as ReviewDiffStyle,
+          wordWrap: true,
           panelOpened: true,
         },
         fileTree: {
@@ -618,12 +620,20 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
       },
       review: {
         diffStyle: createMemo(() => store.review?.diffStyle ?? "split"),
+        wordWrap: createMemo(() => store.review?.wordWrap ?? true),
         setDiffStyle(diffStyle: ReviewDiffStyle) {
           if (!store.review) {
-            setStore("review", { diffStyle, panelOpened: true })
+            setStore("review", { diffStyle, wordWrap: true, panelOpened: true })
             return
           }
           setStore("review", "diffStyle", diffStyle)
+        },
+        setWordWrap(wordWrap: boolean) {
+          if (!store.review) {
+            setStore("review", { diffStyle: "split" as ReviewDiffStyle, wordWrap, panelOpened: true })
+            return
+          }
+          setStore("review", "wordWrap", wordWrap)
         },
       },
       fileTree: {
