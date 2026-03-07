@@ -360,9 +360,8 @@ export default function Page() {
   })
 
   const info = createMemo(() => (params.id ? sync.session.get(params.id) : undefined))
-  const diffs = createMemo(() => (params.id ? (sync.data.session_diff[params.id] ?? []) : []))
-  const reviewCount = createMemo(() => Math.max(info()?.summary?.files ?? 0, diffs().length))
-  const hasReview = createMemo(() => reviewCount() > 0)
+  const sessionDiffs = createMemo(() => (params.id ? (sync.data.session_diff[params.id] ?? []) : []))
+  const projectDiffs = createMemo(() => sync.data.project_diff[sdk.directory] ?? [])
   const revertMessageID = createMemo(() => info()?.revert?.messageID)
   const messages = createMemo(() => (params.id ? (sync.data.message[params.id] ?? []) : []))
   const messagesReady = createMemo(() => {
@@ -414,7 +413,7 @@ export default function Page() {
   const [store, setStore] = createStore({
     messageId: undefined as string | undefined,
     mobileTab: "session" as "session" | "changes",
-    changes: "session" as "session" | "turn",
+    changes: "project" as "session" | "project" | "turn",
     newSessionWorktree: "main",
     deferRender: false,
   })
@@ -431,7 +430,42 @@ export default function Page() {
   }, sessionKey())
 
   const turnDiffs = createMemo(() => lastUserMessage()?.summary?.diffs ?? [])
-  const reviewDiffs = createMemo(() => (store.changes === "session" ? diffs() : turnDiffs()))
+  const reviewDiffs = createMemo(() => {
+    if (store.changes === "project") return projectDiffs()
+    if (store.changes === "turn") return turnDiffs()
+    return sessionDiffs()
+  })
+  const reviewDiffFiles = createMemo(() => reviewDiffs().map((diff) => diff.file))
+  const reviewKinds = createMemo(() => {
+    const merge = (a: "add" | "del" | "mix" | undefined, b: "add" | "del" | "mix") => {
+      if (!a) return b
+      if (a === b) return a
+      return "mix" as const
+    }
+
+    const normalize = (p: string) => p.replaceAll("\\", "/").replace(/\/+$/, "")
+
+    const out = new Map<string, "add" | "del" | "mix">()
+    for (const diff of reviewDiffs()) {
+      const file = normalize(diff.file)
+      const kind = diff.status === "added" ? "add" : diff.status === "deleted" ? "del" : "mix"
+
+      out.set(file, kind)
+
+      const parts = file.split("/")
+      for (const [idx] of parts.slice(0, -1).entries()) {
+        const dir = parts.slice(0, idx + 1).join("/")
+        if (!dir) continue
+        out.set(dir, merge(out.get(dir), kind))
+      }
+    }
+    return out
+  })
+  const reviewCount = createMemo(() => reviewDiffs().length)
+  const hasReview = createMemo(() => reviewCount() > 0)
+  const hasAnyReview = createMemo(
+    () => sessionDiffs().length > 0 || projectDiffs().length > 0 || turnDiffs().length > 0,
+  )
 
   const newSessionWorktree = createMemo(() => {
     if (store.newSessionWorktree === "create") return "create"
@@ -471,10 +505,17 @@ export default function Page() {
   const diffsReady = createMemo(() => {
     const id = params.id
     if (!id) return true
+    if (store.changes === "turn") return true
     if (!hasReview()) return true
+    if (store.changes === "project") return sync.data.project_diff[sdk.directory] !== undefined
     return sync.data.session_diff[id] !== undefined
   })
   const reviewEmptyKey = createMemo(() => {
+    if (store.changes === "project") {
+      const project = sync.project
+      if (!project || project.vcs) return "session.review.emptyProject"
+      return "session.review.noVcsProject"
+    }
     const project = sync.project
     if (!project || project.vcs) return "session.review.empty"
     return "session.review.noVcs"
@@ -528,7 +569,7 @@ export default function Page() {
       sessionKey,
       () => {
         setStore("messageId", undefined)
-        setStore("changes", "session")
+        setStore("changes", "project")
       },
       { defer: true },
     ),
@@ -705,16 +746,18 @@ export default function Page() {
     loadFile: file.load,
   })
 
-  const changesOptions = ["session", "turn"] as const
+  const changesOptions = ["project", "session", "turn"] as const
   const changesOptionsList = [...changesOptions]
 
   const changesTitle = () => (
     <Select
       options={changesOptionsList}
       current={store.changes}
-      label={(option) =>
-        option === "session" ? language.t("ui.sessionReview.title") : language.t("ui.sessionReview.title.lastTurn")
-      }
+      label={(option) => {
+        if (option === "project") return language.t("ui.sessionReview.title.project")
+        if (option === "turn") return language.t("ui.sessionReview.title.lastTurn")
+        return language.t("ui.sessionReview.title")
+      }}
       onSelect={(option) => option && setStore("changes", option)}
       variant="ghost"
       size="small"
@@ -743,6 +786,10 @@ export default function Page() {
             title={changesTitle()}
             empty={emptyTurn()}
             diffs={reviewDiffs}
+            onRevealFile={(file) => {
+              if (store.changes !== "project") return
+              void sync.projectDiff.hydrate(file)
+            }}
             view={view}
             diffStyle={input.diffStyle}
             onDiffStyleChange={input.onDiffStyleChange}
@@ -767,6 +814,10 @@ export default function Page() {
             <SessionReviewTab
               title={changesTitle()}
               diffs={reviewDiffs}
+              onRevealFile={(file) => {
+                if (store.changes !== "project") return
+                void sync.projectDiff.hydrate(file)
+              }}
               view={view}
               diffStyle={input.diffStyle}
               onDiffStyleChange={input.onDiffStyleChange}
@@ -935,14 +986,14 @@ export default function Page() {
     const first = openedTabs()[0]
     if (first) return first
     if (contextOpen()) return "context"
-    if (reviewTab() && hasReview()) return "review"
+    if (reviewTab() && hasAnyReview()) return "review"
     return "empty"
   })
 
   createEffect(() => {
     if (!layout.ready()) return
     if (tabs().active()) return
-    if (openedTabs().length === 0 && !contextOpen() && !(reviewTab() && hasReview())) return
+    if (openedTabs().length === 0 && !contextOpen() && !(reviewTab() && hasAnyReview())) return
 
     const next = activeTab()
     if (next === "empty") return
@@ -958,7 +1009,7 @@ export default function Page() {
 
         if (opened) {
           const active = tabs().active()
-          const tab = active === "review" || (!active && hasReview()) ? "changes" : "all"
+          const tab = active === "review" || (!active && hasAnyReview()) ? "changes" : "all"
           layout.fileTree.setTab(tab)
         }
       },
@@ -974,9 +1025,19 @@ export default function Page() {
       ? desktopFileTreeOpen() || (desktopReviewOpen() && activeTab() === "review")
       : store.mobileTab === "changes"
     if (!wants) return
-    if (sync.data.session_diff[id] !== undefined) return
+    if (store.changes === "project") {
+      if (sync.data.project_diff[sdk.directory] !== undefined) return
+    } else if (store.changes === "session") {
+      if (sync.data.session_diff[id] !== undefined) return
+    } else {
+      return
+    }
     if (sync.status === "loading") return
 
+    if (store.changes === "project") {
+      void sync.projectDiff.diff()
+      return
+    }
     void sync.session.diff(id)
   })
 
@@ -1165,7 +1226,7 @@ export default function Page() {
         <SessionMobileTabs
           open={!isDesktop() && !!params.id}
           mobileTab={store.mobileTab}
-          hasReview={hasReview()}
+          hasReview={hasAnyReview()}
           reviewCount={reviewCount()}
           onSession={() => setStore("mobileTab", "session")}
           onChanges={() => setStore("mobileTab", "changes")}
@@ -1281,7 +1342,17 @@ export default function Page() {
           </Show>
         </div>
 
-        <SessionSidePanel reviewPanel={reviewPanel} activeDiff={tree.activeDiff} focusReviewDiff={focusReviewDiff} />
+        <SessionSidePanel
+          reviewPanel={reviewPanel}
+          activeDiff={tree.activeDiff}
+          focusReviewDiff={focusReviewDiff}
+          showReview={hasAnyReview}
+          reviewCount={reviewCount}
+          hasReview={hasReview}
+          diffsReady={diffsReady}
+          diffFiles={reviewDiffFiles}
+          kinds={reviewKinds}
+        />
       </div>
 
       <TerminalPanel />

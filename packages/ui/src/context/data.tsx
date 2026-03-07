@@ -11,8 +11,14 @@ type Data = {
   session_diff: {
     [sessionID: string]: FileDiff[]
   }
+  project_diff: {
+    [directory: string]: FileDiff[]
+  }
   session_diff_preload?: {
     [sessionID: string]: PreloadMultiFileDiffResult<any>[]
+  }
+  project_diff_preload?: {
+    [directory: string]: PreloadMultiFileDiffResult<any>[]
   }
   message: {
     [sessionID: string]: Message[]

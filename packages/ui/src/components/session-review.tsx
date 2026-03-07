@@ -88,6 +88,7 @@ export interface SessionReviewProps {
   actions?: JSX.Element
   diffs: (FileDiff & { preloaded?: PreloadMultiFileDiffResult<any> })[]
   onViewFile?: (file: string) => void
+  onRevealFile?: (file: string) => void
   readFile?: (path: string) => Promise<FileContent | undefined>
 }
 
@@ -644,6 +645,8 @@ export const SessionReview = (props: SessionReviewProps) => {
 
                     const beforeText = () => (typeof item().before === "string" ? item().before : "")
                     const afterText = () => (typeof item().after === "string" ? item().after : "")
+                    const lazy = () => Boolean((item() as FileDiff & { lazy?: boolean }).lazy)
+                    const loading = () => Boolean((item() as FileDiff & { loading?: boolean }).loading)
                     const changedLines = () => item().additions + item().deletions
                     const mediaKind = createMemo(() => mediaKindFromPath(file))
 
@@ -740,6 +743,13 @@ export const SessionReview = (props: SessionReviewProps) => {
                       if (!props.onLineComment) return
                       commentsUi.onLineSelectionEnd(range)
                     }
+
+                    createEffect(() => {
+                      if (!expanded()) return
+                      if (!lazy()) return
+                      if (loading()) return
+                      props.onRevealFile?.(file)
+                    })
 
                     return (
                       <Accordion.Item
@@ -853,57 +863,62 @@ export const SessionReview = (props: SessionReviewProps) => {
                                   </div>
                                 </Match>
                                 <Match when={true}>
-                                  <Dynamic
-                                    component={fileComponent}
-                                    mode="diff"
-                                    preloadedDiff={item().preloaded}
-                                    diffStyle={diffStyle()}
-                                    expansionLineCount={searchExpanded() ? Number.MAX_SAFE_INTEGER : 20}
-                                    onRendered={() => {
-                                      readyFiles.add(file)
-                                      props.onDiffRendered?.()
-                                    }}
-                                    enableLineSelection={props.onLineComment != null}
-                                    enableHoverUtility={props.onLineComment != null}
-                                    onLineSelected={handleLineSelected}
-                                    onLineSelectionEnd={handleLineSelectionEnd}
-                                    onLineNumberSelectionEnd={commentsUi.onLineNumberSelectionEnd}
-                                    annotations={commentsUi.annotations()}
-                                    renderAnnotation={commentsUi.renderAnnotation}
-                                    renderHoverUtility={props.onLineComment ? commentsUi.renderHoverUtility : undefined}
-                                    selectedLines={selectedLines()}
-                                    commentedLines={commentedLines()}
-                                    search={{
-                                      shortcuts: "disabled",
-                                      showBar: false,
-                                      disableVirtualization: searchExpanded(),
-                                      register: (handle: FileSearchHandle | null) => {
-                                        if (!handle) {
-                                          searchHandles.delete(file)
-                                          readyFiles.delete(file)
-                                          if (highlightedFile === file) highlightedFile = undefined
-                                          return
-                                        }
+                                  <Show
+                                    when={!loading()}
+                                    fallback={<div data-slot="session-review-loading">{i18n.t("ui.list.loading")}</div>}
+                                  >
+                                    <Dynamic
+                                      component={fileComponent}
+                                      mode="diff"
+                                      preloadedDiff={item().preloaded}
+                                      diffStyle={diffStyle()}
+                                      expansionLineCount={searchExpanded() ? Number.MAX_SAFE_INTEGER : 20}
+                                      onRendered={() => {
+                                        readyFiles.add(file)
+                                        props.onDiffRendered?.()
+                                      }}
+                                      enableLineSelection={props.onLineComment != null}
+                                      enableHoverUtility={props.onLineComment != null}
+                                      onLineSelected={handleLineSelected}
+                                      onLineSelectionEnd={handleLineSelectionEnd}
+                                      onLineNumberSelectionEnd={commentsUi.onLineNumberSelectionEnd}
+                                      annotations={commentsUi.annotations()}
+                                      renderAnnotation={commentsUi.renderAnnotation}
+                                      renderHoverUtility={props.onLineComment ? commentsUi.renderHoverUtility : undefined}
+                                      selectedLines={selectedLines()}
+                                      commentedLines={commentedLines()}
+                                      search={{
+                                        shortcuts: "disabled",
+                                        showBar: false,
+                                        disableVirtualization: searchExpanded(),
+                                        register: (handle: FileSearchHandle | null) => {
+                                          if (!handle) {
+                                            searchHandles.delete(file)
+                                            readyFiles.delete(file)
+                                            if (highlightedFile === file) highlightedFile = undefined
+                                            return
+                                          }
 
-                                        searchHandles.set(file, handle)
-                                      },
-                                    }}
-                                    before={{
-                                      name: file,
-                                      contents: typeof item().before === "string" ? item().before : "",
-                                    }}
-                                    after={{
-                                      name: file,
-                                      contents: typeof item().after === "string" ? item().after : "",
-                                    }}
-                                    media={{
-                                      mode: "auto",
-                                      path: file,
-                                      before: item().before,
-                                      after: item().after,
-                                      readFile: props.readFile,
-                                    }}
-                                  />
+                                          searchHandles.set(file, handle)
+                                        },
+                                      }}
+                                      before={{
+                                        name: file,
+                                        contents: typeof item().before === "string" ? item().before : "",
+                                      }}
+                                      after={{
+                                        name: file,
+                                        contents: typeof item().after === "string" ? item().after : "",
+                                      }}
+                                      media={{
+                                        mode: "auto",
+                                        path: file,
+                                        before: item().before,
+                                        after: item().after,
+                                        readFile: props.readFile,
+                                      }}
+                                    />
+                                  </Show>
                                 </Match>
                               </Switch>
                             </Show>

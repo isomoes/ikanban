@@ -162,9 +162,9 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
     const sessionID = params.id
     if (!sessionID) return false
 
-    const diffs = sync.data.session_diff[sessionID]
-    if (!diffs) return false
-    return diffs.some((diff) => diff.file === path)
+    const sessionDiffs = sync.data.session_diff[sessionID] ?? []
+    const projectDiffs = sync.data.project_diff[sync.directory] ?? []
+    return [...sessionDiffs, ...projectDiffs].some((diff) => diff.file === path)
   }
 
   const openComment = (item: { path: string; commentID?: string; commentOrigin?: "review" | "file" }) => {

@@ -518,6 +518,8 @@ export const dict = {
   "session.review.loadingChanges": "Loading changes...",
   "session.review.empty": "No changes in this session yet",
   "session.review.noVcs": "No git VCS detected, so session changes will not be detected",
+  "session.review.emptyProject": "No project changes yet",
+  "session.review.noVcsProject": "No git VCS detected, so project changes will not be detected",
   "session.review.noChanges": "No changes",
 
   "session.files.selectToOpen": "Select a file to open",

@@ -1,11 +1,180 @@
 import { batch, createMemo } from "solid-js"
-import { createStore, produce, reconcile } from "solid-js/store"
+import { createStore, produce, reconcile, type SetStoreFunction } from "solid-js/store"
 import { Binary } from "ikanban-utils/binary"
 import { retry } from "ikanban-utils/retry"
 import { createSimpleContext } from "ikanban-ui/context"
+import { applyPatch, parsePatch, reversePatch, type StructuredPatch } from "diff"
 import { useGlobalSync } from "./global-sync"
 import { useSDK } from "./sdk"
-import type { Message, Part } from "@opencode-ai/sdk/v2/client"
+import type { File as SDKFile, FileContent, FileDiff, Message, Part } from "@opencode-ai/sdk/v2/client"
+
+type ProjectDiffEntry = FileDiff & {
+  lazy?: boolean
+  loading?: boolean
+  binary?: boolean
+}
+
+const PROJECT_DIFF_INITIAL_READ_LIMIT = 20
+const PROJECT_DIFF_READ_CONCURRENCY = 4
+const PROJECT_DIFF_MAX_EAGER_CHANGED_LINES = 400
+const BINARY_FILE_RE = /\.(?:png|jpe?g|gif|webp|bmp|ico|avif|mp3|wav|ogg|flac|mp4|mov|avi|mkv|webm|pdf|zip|gz|tar|7z|woff2?|ttf|eot|otf|exe|bin|so|dylib|dll|class|jar|wasm)$/i
+
+function isLikelyBinaryPath(path: string) {
+  return BINARY_FILE_RE.test(path)
+}
+
+function createProjectPlaceholder(file: SDKFile, input: { lazy?: boolean; loading?: boolean; binary?: boolean } = {}): ProjectDiffEntry {
+  return {
+    file: file.path,
+    before: "",
+    after: "",
+    additions: file.added,
+    deletions: file.removed,
+    status: file.status,
+    lazy: input.lazy,
+    loading: input.loading,
+    binary: input.binary,
+  }
+}
+
+function shouldEagerLoadProjectDiff(file: SDKFile) {
+  if (isLikelyBinaryPath(file.path)) return false
+  if (file.added + file.removed > PROJECT_DIFF_MAX_EAGER_CHANGED_LINES) return false
+  return true
+}
+
+function getStructuredPatch(content?: FileContent): StructuredPatch | undefined {
+  if (!content) return
+  if (content.diff) {
+    const parsed = parsePatch(content.diff)[0]
+    if (parsed) return parsed
+  }
+  if (!content.patch) return
+  return {
+    oldFileName: content.patch.oldFileName,
+    newFileName: content.patch.newFileName,
+    oldHeader: content.patch.oldHeader,
+    newHeader: content.patch.newHeader,
+    hunks: content.patch.hunks.map((hunk) => ({
+      oldStart: hunk.oldStart,
+      oldLines: hunk.oldLines,
+      newStart: hunk.newStart,
+      newLines: hunk.newLines,
+      lines: [...hunk.lines],
+    })),
+  }
+}
+
+function buildWorkspaceDiff(file: SDKFile, content?: FileContent): ProjectDiffEntry | undefined {
+  const patch = getStructuredPatch(content)
+
+  if (content?.type === "binary") {
+    return createProjectPlaceholder(file, { binary: true })
+  }
+
+  if (file.status === "added") {
+    const after = content?.content ?? (patch ? applyPatch("", patch) || "" : "")
+    return {
+      file: file.path,
+      before: "",
+      after,
+      additions: file.added,
+      deletions: file.removed,
+      status: file.status,
+    }
+  }
+
+  if (file.status === "deleted") {
+    const before = content?.content ?? (patch ? applyPatch("", reversePatch(patch)) || "" : "")
+    return {
+      file: file.path,
+      before,
+      after: "",
+      additions: file.added,
+      deletions: file.removed,
+      status: file.status,
+    }
+  }
+
+  const after = content?.content ?? ""
+  const before = patch ? applyPatch(after, reversePatch(patch)) || after : after
+
+  if (!patch && file.added + file.removed === 0) return
+
+  return {
+    file: file.path,
+    before,
+    after,
+    additions: file.added,
+    deletions: file.removed,
+    status: file.status,
+  }
+}
+
+async function fetchProjectDiffs(client: ReturnType<typeof useSDK>["client"], directory: string): Promise<FileDiff[]> {
+  const files = await retry(() => client.file.status({ directory })).then((result) => result.data ?? [])
+  return files.map((file) =>
+    createProjectPlaceholder(file, {
+      lazy: !shouldEagerLoadProjectDiff(file),
+      loading: false,
+    }),
+  )
+}
+
+async function hydrateProjectDiffFile(
+  client: ReturnType<typeof useSDK>["client"],
+  directory: string,
+  file: SDKFile,
+): Promise<ProjectDiffEntry> {
+  const content = await retry(() => client.file.read({ path: file.path, directory }))
+    .then((result) => result.data)
+    .catch(() => undefined)
+  return buildWorkspaceDiff(file, content) ?? createProjectPlaceholder(file)
+}
+
+function updateProjectDiffEntry(
+  setStore: SetStoreFunction<any>,
+  directory: string,
+  path: string,
+  updater: (current: ProjectDiffEntry) => ProjectDiffEntry,
+) {
+  setStore(
+    "project_diff",
+    directory,
+    produce((draft: ProjectDiffEntry[]) => {
+      const index = draft.findIndex((item) => item.file === path)
+      if (index === -1) return
+      draft[index] = updater(draft[index])
+    }),
+  )
+}
+
+async function hydrateProjectDiffBatch(input: {
+  client: ReturnType<typeof useSDK>["client"]
+  directory: string
+  setStore: SetStoreFunction<any>
+  entries: ProjectDiffEntry[]
+}) {
+  for (let i = 0; i < input.entries.length; i += PROJECT_DIFF_READ_CONCURRENCY) {
+    const chunk = input.entries.slice(i, i + PROJECT_DIFF_READ_CONCURRENCY)
+    await Promise.all(
+      chunk.map(async (entry) => {
+        const file: SDKFile = {
+          path: entry.file,
+          added: entry.additions,
+          removed: entry.deletions,
+          status: entry.status ?? "modified",
+        }
+        const hydrated = await hydrateProjectDiffFile(input.client, input.directory, file)
+        updateProjectDiffEntry(input.setStore, input.directory, entry.file, () => ({
+          ...hydrated,
+          lazy: false,
+          loading: false,
+        }))
+      }),
+    )
+  }
+}
 
 function sortParts(parts: Part[]) {
   return parts.filter((part) => !!part?.id).sort((a, b) => cmp(a.id, b.id))
@@ -107,6 +276,7 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
     const messagePageSize = 200
     const inflight = new Map<string, Promise<void>>()
     const inflightDiff = new Map<string, Promise<void>>()
+    const inflightProjectFile = new Map<string, Promise<void>>()
     const inflightTodo = new Map<string, Promise<void>>()
     const [meta, setMeta] = createStore({
       limit: {} as Record<string, number>,
@@ -348,6 +518,71 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
               if (match.found) draft.session.splice(match.index, 1)
             }),
           )
+        },
+      },
+      projectDiff: {
+        async diff() {
+          const directory = sdk.directory
+          const client = sdk.client
+          const [store, setStore] = globalSync.child(directory)
+          if (store.project_diff[directory] !== undefined) return
+
+          const key = `project\n${directory}`
+          return runInflight(inflightDiff, key, async () => {
+            const diff = (await fetchProjectDiffs(client, directory)) as ProjectDiffEntry[]
+            const eagerFiles = new Set(
+              diff
+                .filter((entry) => !entry.lazy)
+                .slice(0, PROJECT_DIFF_INITIAL_READ_LIMIT)
+                .map((entry) => entry.file),
+            )
+            const seeded = diff.map((entry) => ({
+              ...entry,
+              lazy: entry.lazy || !eagerFiles.has(entry.file),
+              loading: eagerFiles.has(entry.file),
+            }))
+            setStore("project_diff", directory, reconcile(seeded, { key: "file" }))
+
+            const eager = seeded.filter((entry) => eagerFiles.has(entry.file))
+
+            if (!eager.length) return
+
+            await hydrateProjectDiffBatch({
+              client,
+              directory,
+              setStore,
+              entries: eager,
+            })
+          })
+        },
+        hydrate(path: string) {
+          const directory = sdk.directory
+          const client = sdk.client
+          const [store, setStore] = globalSync.child(directory)
+          const entries = store.project_diff[directory] as ProjectDiffEntry[] | undefined
+          const existing = entries?.find((item) => item.file === path)
+          if (!existing || (!existing.lazy && !existing.loading)) return
+
+          const fileKey = `project-file\n${directory}\n${path}`
+          return runInflight(inflightProjectFile, fileKey, async () => {
+            updateProjectDiffEntry(setStore, directory, path, (current) => ({
+              ...current,
+              loading: true,
+            }))
+
+            const file: SDKFile = {
+              path: existing.file,
+              added: existing.additions,
+              removed: existing.deletions,
+              status: existing.status ?? "modified",
+            }
+            const hydrated = await hydrateProjectDiffFile(client, directory, file)
+            updateProjectDiffEntry(setStore, directory, path, () => ({
+              ...hydrated,
+              lazy: false,
+              loading: false,
+            }))
+          })
         },
       },
       absolute,

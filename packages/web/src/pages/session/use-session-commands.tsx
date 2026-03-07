@@ -1,4 +1,5 @@
 import { createMemo } from "solid-js";
+import { produce } from "solid-js/store";
 import { useNavigate, useParams } from "@solidjs/router";
 import { useCommand, type CommandOption } from "@/context/command";
 import { useDialog } from "ikanban-ui/context/dialog";
@@ -80,6 +81,20 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
     return userMessages().filter((m) => m.id < revert);
   });
 
+  const refreshReviewDiffs = async (sessionID: string) => {
+    const directory = sdk.directory;
+    sync.set(
+      produce((draft) => {
+        delete draft.session_diff[sessionID];
+        delete draft.project_diff[directory];
+      }),
+    );
+    await Promise.allSettled([
+      sync.session.diff(sessionID),
+      sync.projectDiff.diff(),
+    ]);
+  };
+
   const revertToMessage = async (message: UserMessage) => {
     const sessionID = params.id;
     if (!sessionID) return;
@@ -94,6 +109,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       });
       prompt.set(restored);
     }
+    await refreshReviewDiffs(sessionID);
     const priorMessage = findLast(userMessages(), (x) => x.id < message.id);
     setActiveMessage(priorMessage);
   };
@@ -106,6 +122,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
     if (!message) {
       await sdk.client.session.unrevert({ sessionID });
       prompt.reset();
+      await refreshReviewDiffs(sessionID);
       const lastMsg = findLast(
         userMessages(),
         (x) => x.id >= revertMessageID,
@@ -117,6 +134,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       sessionID,
       messageID: message.id,
     });
+    await refreshReviewDiffs(sessionID);
     const priorMsg = findLast(userMessages(), (x) => x.id < message.id);
     setActiveMessage(priorMsg);
   };

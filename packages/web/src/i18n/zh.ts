@@ -511,6 +511,8 @@ export const dict = {
   "session.review.loadingChanges": "正在加载更改...",
   "session.review.empty": "此会话暂无更改",
   "session.review.noVcs": "未检测到 Git 版本控制系统，因此无法检测会话更改",
+  "session.review.emptyProject": "当前没有项目更改",
+  "session.review.noVcsProject": "未检测到 Git 版本控制系统，因此无法检测项目更改",
   "session.review.noChanges": "无更改",
   "session.files.selectToOpen": "选择要打开的文件",
   "session.files.all": "所有文件",

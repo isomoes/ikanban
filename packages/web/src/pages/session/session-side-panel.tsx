@@ -20,7 +20,6 @@ import { useCommand } from "@/context/command"
 import { useFile, type SelectedLineRange } from "@/context/file"
 import { useLanguage } from "@/context/language"
 import { useLayout } from "@/context/layout"
-import { useSync } from "@/context/sync"
 import { createFileTabListSync } from "@/pages/session/file-tab-scroll"
 import { FileTabContent } from "@/pages/session/file-tabs"
 import { createOpenSessionFileTab, getTabReorderIndex } from "@/pages/session/helpers"
@@ -31,10 +30,15 @@ export function SessionSidePanel(props: {
   reviewPanel: () => JSX.Element
   activeDiff?: string
   focusReviewDiff: (path: string) => void
+  showReview: () => boolean
+  reviewCount: () => number
+  hasReview: () => boolean
+  diffsReady: () => boolean
+  diffFiles: () => string[]
+  kinds: () => Map<string, "add" | "del" | "mix">
 }) {
   const params = useParams()
   const layout = useLayout()
-  const sync = useSync()
   const file = useFile()
   const language = useLanguage()
   const command = useCommand()
@@ -48,44 +52,6 @@ export function SessionSidePanel(props: {
   const reviewOpen = createMemo(() => isDesktop() && view().reviewPanel.opened())
   const open = createMemo(() => isDesktop() && (view().reviewPanel.opened() || layout.fileTree.opened()))
   const reviewTab = createMemo(() => isDesktop())
-
-  const info = createMemo(() => (params.id ? sync.session.get(params.id) : undefined))
-  const diffs = createMemo(() => (params.id ? (sync.data.session_diff[params.id] ?? []) : []))
-  const reviewCount = createMemo(() => Math.max(info()?.summary?.files ?? 0, diffs().length))
-  const hasReview = createMemo(() => reviewCount() > 0)
-  const diffsReady = createMemo(() => {
-    const id = params.id
-    if (!id) return true
-    if (!hasReview()) return true
-    return sync.data.session_diff[id] !== undefined
-  })
-
-  const diffFiles = createMemo(() => diffs().map((d) => d.file))
-  const kinds = createMemo(() => {
-    const merge = (a: "add" | "del" | "mix" | undefined, b: "add" | "del" | "mix") => {
-      if (!a) return b
-      if (a === b) return a
-      return "mix" as const
-    }
-
-    const normalize = (p: string) => p.replaceAll("\\\\", "/").replace(/\/+$/, "")
-
-    const out = new Map<string, "add" | "del" | "mix">()
-    for (const diff of diffs()) {
-      const file = normalize(diff.file)
-      const kind = diff.status === "added" ? "add" : diff.status === "deleted" ? "del" : "mix"
-
-      out.set(file, kind)
-
-      const parts = file.split("/")
-      for (const [idx] of parts.slice(0, -1).entries()) {
-        const dir = parts.slice(0, idx + 1).join("/")
-        if (!dir) continue
-        out.set(dir, merge(out.get(dir), kind))
-      }
-    }
-    return out
-  })
 
   const normalizeTab = (tab: string) => {
     if (!tab.startsWith("file://")) return tab
@@ -121,7 +87,7 @@ export function SessionSidePanel(props: {
     const first = openedTabs()[0]
     if (first) return first
     if (contextOpen()) return "context"
-    if (reviewTab() && hasReview()) return "review"
+    if (reviewTab() && props.showReview()) return "review"
     return "empty"
   })
 
@@ -236,8 +202,8 @@ export function SessionSidePanel(props: {
                       <Tabs.Trigger value="review">
                         <div class="flex items-center gap-1.5">
                           <div>{language.t("session.tab.review")}</div>
-                          <Show when={hasReview()}>
-                            <div>{reviewCount()}</div>
+                          <Show when={props.hasReview()}>
+                            <div>{props.reviewCount()}</div>
                           </Show>
                         </div>
                       </Tabs.Trigger>
@@ -356,8 +322,8 @@ export function SessionSidePanel(props: {
               >
                 <Tabs.List data-scrolled={store.fileTreeScrolled ? "" : undefined}>
                   <Tabs.Trigger value="changes" class="flex-1" classes={{ button: "w-full" }}>
-                    {reviewCount()}{" "}
-                    {language.t(reviewCount() === 1 ? "session.review.change.one" : "session.review.change.other")}
+                    {props.reviewCount()}{" "}
+                    {language.t(props.reviewCount() === 1 ? "session.review.change.one" : "session.review.change.other")}
                   </Tabs.Trigger>
                   <Tabs.Trigger value="all" class="flex-1" classes={{ button: "w-full" }}>
                     {language.t("session.files.all")}
@@ -370,9 +336,9 @@ export function SessionSidePanel(props: {
                   class="bg-background-stronger px-3 py-0"
                 >
                   <Switch>
-                    <Match when={hasReview()}>
+                    <Match when={props.hasReview()}>
                       <Show
-                        when={diffsReady()}
+                        when={props.diffsReady()}
                         fallback={
                           <div class="px-2 py-2 text-12-regular text-text-weak">
                             {language.t("common.loading")}
@@ -382,8 +348,8 @@ export function SessionSidePanel(props: {
                       >
                         <FileTree
                           path=""
-                          allowed={diffFiles()}
-                          kinds={kinds()}
+                          allowed={props.diffFiles()}
+                          kinds={props.kinds()}
                           draggable={false}
                           active={props.activeDiff}
                           onFileClick={(node) => props.focusReviewDiff(node.path)}
@@ -405,8 +371,8 @@ export function SessionSidePanel(props: {
                 >
                   <FileTree
                     path=""
-                    modified={diffFiles()}
-                    kinds={kinds()}
+                    modified={props.diffFiles()}
+                    kinds={props.kinds()}
                     onFileClick={(node) => openTab(file.tab(node.path))}
                   />
                 </Tabs.Content>

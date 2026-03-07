@@ -49,6 +49,9 @@ export type State = {
   session_diff: {
     [sessionID: string]: FileDiff[]
   }
+  project_diff: {
+    [directory: string]: FileDiff[]
+  }
   todo: {
     [sessionID: string]: Todo[]
   }
