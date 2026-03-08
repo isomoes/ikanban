@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.9]
+
+- Review: Added persistent review word-wrap controls plus word-level diff highlighting, and improved the GitHub Dark Colorblind diff colors so inline changes are easier to distinguish. (@isomoes)
+
 ## [0.2.8]
 
 - Review: Added a project-wide changes review mode alongside session diffs so you can inspect broader workspace edits from the review flow. (@isomoes)
