@@ -30,7 +30,7 @@
   "license": "MIT",
   "dependencies": {
     "@kobalte/core": "0.13.11",
-    "@opencode-ai/sdk": "^1.2.16",
+    "@opencode-ai/sdk": "^1.2.21",
     "@shikijs/transformers": "4.0.1",
     "@solid-primitives/active-element": "2.1.5",
     "@solid-primitives/audio": "1.4.4",

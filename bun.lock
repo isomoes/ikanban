@@ -73,7 +73,7 @@
       },
       "dependencies": {
         "@kobalte/core": "0.13.11",
-        "@opencode-ai/sdk": "^1.2.16",
+        "@opencode-ai/sdk": "^1.2.21",
         "@shikijs/transformers": "4.0.1",
         "@solid-primitives/active-element": "2.1.5",
         "@solid-primitives/audio": "1.4.4",
@@ -237,7 +237,7 @@
 
     "@kobalte/utils": ["@kobalte/utils@0.9.1", "https://registry.npmmirror.com/@kobalte/utils/-/utils-0.9.1.tgz", { "dependencies": { "@solid-primitives/event-listener": "^2.2.14", "@solid-primitives/keyed": "^1.2.0", "@solid-primitives/map": "^0.4.7", "@solid-primitives/media": "^2.2.4", "@solid-primitives/props": "^3.1.8", "@solid-primitives/refs": "^1.0.5", "@solid-primitives/utils": "^6.2.1" }, "peerDependencies": { "solid-js": "^1.8.8" } }, "sha512-eeU60A3kprIiBDAfv9gUJX1tXGLuZiKMajUfSQURAF2pk4ZoMYiqIzmrMBvzcxP39xnYttgTyQEVLwiTZnrV4w=="],
 
-    "@opencode-ai/sdk": ["@opencode-ai/sdk@1.2.16", "https://registry.npmmirror.com/@opencode-ai/sdk/-/sdk-1.2.16.tgz", {}, "sha512-y9ae9VnCcuog0GaI4DveX1HB6DBoZgGN3EuJVlRFbBCPwhzkls6fCfHSb5+VnTS6Fy0OWFUL28VBCmixL/D+/Q=="],
+    "@opencode-ai/sdk": ["@opencode-ai/sdk@1.2.21", "https://registry.npmmirror.com/@opencode-ai/sdk/-/sdk-1.2.21.tgz", {}, "sha512-7XF7QlXDP5iAbGcAsxsrmKlIjRtSzKgbwuDHPPuZbILkhGOfCo05XwPidAZrVWucZ/re44oc/psw2zDECaZOpQ=="],
 
     "@pierre/diffs": ["@pierre/diffs@1.1.0-beta.18", "https://registry.npmmirror.com/@pierre/diffs/-/diffs-1.1.0-beta.18.tgz", { "dependencies": { "@pierre/theme": "0.0.22", "@shikijs/transformers": "^3.0.0", "diff": "8.0.3", "hast-util-to-html": "9.0.5", "lru_map": "0.4.1", "shiki": "^3.0.0" }, "peerDependencies": { "react": "^18.3.1 || ^19.0.0", "react-dom": "^18.3.1 || ^19.0.0" } }, "sha512-7ZF3YD9fxdbYsPnltz5cUqHacN7ztp8RX/fJLxwv8wIEORpP4+7dHz1h/qx3o4EW2xUrIhmbM8ImywLasB787Q=="],
 
