@@ -190,6 +190,7 @@ export function MessageTimeline(props: {
   setScrollRef: (el: HTMLDivElement | undefined) => void
   onScheduleScrollState: (el: HTMLDivElement) => void
   onAutoScrollHandleScroll: () => void
+  isUserScrolled: () => boolean
   onMarkScrollGesture: (target?: EventTarget | null) => void
   hasScrollGesture: () => boolean
   isDesktop: boolean
@@ -538,8 +539,8 @@ export function MessageTimeline(props: {
           onScroll={(e) => {
             props.onScheduleScrollState(e.currentTarget)
             props.onTurnBackfillScroll()
-            if (!props.hasScrollGesture()) return
             props.onAutoScrollHandleScroll()
+            if (!props.hasScrollGesture() && !props.isUserScrolled()) return
             props.onMarkScrollGesture(e.currentTarget)
             if (props.isDesktop) props.onScrollSpyScroll()
           }}

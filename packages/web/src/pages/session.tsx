@@ -1276,6 +1276,7 @@ export default function Page() {
                     setScrollRef={setScrollRef}
                     onScheduleScrollState={scheduleScrollState}
                     onAutoScrollHandleScroll={autoScroll.handleScroll}
+                    isUserScrolled={autoScroll.userScrolled}
                     onMarkScrollGesture={markScrollGesture}
                     hasScrollGesture={hasScrollGesture}
                     isDesktop={isDesktop()}
