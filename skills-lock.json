@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "simple": {
+      "source": "roin-orca/skills",
+      "sourceType": "github",
+      "computedHash": "cfde9dde00c9b1f8934e0312440a5ae2ed76dbd81e49ba7433e0e63ea6551d13"
+    }
+  }
+}
