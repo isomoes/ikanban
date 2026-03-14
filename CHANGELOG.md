@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.10]
+
+- Web: Added a session status board home view to give the web app a clearer at-a-glance landing surface for active session state. (@isomoes)
+- Sessions: History scrolling now respects plugin-driven behavior so custom integrations can control timeline navigation more reliably. (@isomoes)
+- Skills: Added a lightweight `simple` skill for requirement gathering plus an `agent-browser` skill for browser-driven testing and automation flows. (@isomoes)
+- Dependencies: Updated `@opencode-ai/sdk` to `1.2.21` to stay aligned with the latest SDK fixes and compatibility updates. (@isomoes)
+
 ## [0.2.9]
 
 - Review: Added persistent review word-wrap controls plus word-level diff highlighting, and improved the GitHub Dark Colorblind diff colors so inline changes are easier to distinguish. (@isomoes)
@@ -91,6 +98,8 @@ All notable changes to this project will be documented in this file.
 
 ## [0.1.3]
 
+- Release: Updated version metadata for the `0.1.3` release line. (@isomoes)
+
 ## [0.1.2]
 
 - CLI: Renamed published npm package names to `ikanban-web` and `ikanban-ui`; update install commands to use the new names. (thanks to @isomoes)
@@ -98,6 +107,10 @@ All notable changes to this project will be documented in this file.
 - Docs: Updated CLI and setup examples to use the `ikanban` command and current repository links. (thanks to @isomoes)
 - Release: Enabled npm trusted publishing (OIDC) to improve release security and reduce publish-token setup. (thanks to @isomoes)
 - Release: Consolidated the publish workflow naming while keeping automated npm package and GitHub release artifact publishing. (thanks to @isomoes)
+
+## [0.1.1]
+
+- Release: Published the `0.1.1` release line. (@isomoes)
 
 ## [0.1.0]
 
