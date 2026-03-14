@@ -1,6 +1,6 @@
-import { dict as en } from "./en"
+import { dict as en } from "./en";
 
-type Keys = keyof typeof en
+type Keys = keyof typeof en;
 
 export const dict = {
   "command.category.suggested": "建议",
@@ -162,24 +162,29 @@ export const dict = {
   "provider.connect.apiKey.label": "{{provider}} API 密钥",
   "provider.connect.apiKey.placeholder": "API 密钥",
   "provider.connect.apiKey.required": "API 密钥为必填项",
-  "provider.connect.opencodeZen.line1": "OpenCode Zen 为你提供一组精选的可靠优化模型，用于代码智能体。",
-  "provider.connect.opencodeZen.line2": "只需一个 API 密钥，你就能使用 Claude、GPT、Gemini、GLM 等模型。",
+  "provider.connect.opencodeZen.line1":
+    "OpenCode Zen 为你提供一组精选的可靠优化模型，用于代码智能体。",
+  "provider.connect.opencodeZen.line2":
+    "只需一个 API 密钥，你就能使用 Claude、GPT、Gemini、GLM 等模型。",
   "provider.connect.opencodeZen.visit.prefix": "访问 ",
   "provider.connect.opencodeZen.visit.link": "opencode.ai/zen",
   "provider.connect.opencodeZen.visit.suffix": " 获取你的 API 密钥。",
   "provider.connect.oauth.code.visit.prefix": "访问 ",
   "provider.connect.oauth.code.visit.link": "此链接",
-  "provider.connect.oauth.code.visit.suffix": " 获取授权码，以连接你的帐户并在 OpenCode 中使用 {{provider}} 模型。",
+  "provider.connect.oauth.code.visit.suffix":
+    " 获取授权码，以连接你的帐户并在 OpenCode 中使用 {{provider}} 模型。",
   "provider.connect.oauth.code.label": "{{method}} 授权码",
   "provider.connect.oauth.code.placeholder": "授权码",
   "provider.connect.oauth.code.required": "授权码为必填项",
   "provider.connect.oauth.code.invalid": "授权码无效",
   "provider.connect.oauth.auto.visit.prefix": "访问 ",
   "provider.connect.oauth.auto.visit.link": "此链接",
-  "provider.connect.oauth.auto.visit.suffix": " 并输入以下代码，以连接你的帐户并在 OpenCode 中使用 {{provider}} 模型。",
+  "provider.connect.oauth.auto.visit.suffix":
+    " 并输入以下代码，以连接你的帐户并在 OpenCode 中使用 {{provider}} 模型。",
   "provider.connect.oauth.auto.confirmationCode": "确认码",
   "provider.connect.toast.connected.title": "{{provider}} 已连接",
-  "provider.connect.toast.connected.description": "现在可以使用 {{provider}} 模型了。",
+  "provider.connect.toast.connected.description":
+    "现在可以使用 {{provider}} 模型了。",
 
   "provider.custom.title": "自定义提供商",
   "provider.custom.description.prefix": "配置与 OpenAI 兼容的提供商。请查看",
@@ -187,14 +192,16 @@ export const dict = {
   "provider.custom.description.suffix": "。",
   "provider.custom.field.providerID.label": "提供商 ID",
   "provider.custom.field.providerID.placeholder": "myprovider",
-  "provider.custom.field.providerID.description": "使用小写字母、数字、连字符或下划线",
+  "provider.custom.field.providerID.description":
+    "使用小写字母、数字、连字符或下划线",
   "provider.custom.field.name.label": "显示名称",
   "provider.custom.field.name.placeholder": "我的 AI 提供商",
   "provider.custom.field.baseURL.label": "基础 URL",
   "provider.custom.field.baseURL.placeholder": "https://api.myprovider.com/v1",
   "provider.custom.field.apiKey.label": "API 密钥",
   "provider.custom.field.apiKey.placeholder": "API 密钥",
-  "provider.custom.field.apiKey.description": "可选。如果你通过请求头管理认证，可留空。",
+  "provider.custom.field.apiKey.description":
+    "可选。如果你通过请求头管理认证，可留空。",
   "provider.custom.models.label": "模型",
   "provider.custom.models.id.label": "ID",
   "provider.custom.models.id.placeholder": "model-id",
@@ -210,7 +217,8 @@ export const dict = {
   "provider.custom.headers.remove": "移除请求头",
   "provider.custom.headers.add": "添加请求头",
   "provider.custom.error.providerID.required": "提供商 ID 为必填项",
-  "provider.custom.error.providerID.format": "请使用小写字母、数字、连字符或下划线",
+  "provider.custom.error.providerID.format":
+    "请使用小写字母、数字、连字符或下划线",
   "provider.custom.error.providerID.exists": "该提供商 ID 已存在",
   "provider.custom.error.name.required": "显示名称为必填项",
   "provider.custom.error.baseURL.required": "基础 URL 为必填项",
@@ -219,7 +227,8 @@ export const dict = {
   "provider.custom.error.duplicate": "重复",
 
   "provider.disconnect.toast.disconnected.title": "{{provider}} 已断开连接",
-  "provider.disconnect.toast.disconnected.description": "{{provider}} 模型已不再可用。",
+  "provider.disconnect.toast.disconnected.description":
+    "{{provider}} 模型已不再可用。",
 
   "model.tag.free": "免费",
   "model.tag.latest": "最新",
@@ -303,7 +312,8 @@ export const dict = {
   "prompt.toast.pasteUnsupported.title": "不支持的粘贴",
   "prompt.toast.pasteUnsupported.description": "这里只能粘贴图片或 PDF 文件。",
   "prompt.toast.modelAgentRequired.title": "请选择智能体和模型",
-  "prompt.toast.modelAgentRequired.description": "发送提示前请先选择智能体和模型。",
+  "prompt.toast.modelAgentRequired.description":
+    "发送提示前请先选择智能体和模型。",
   "prompt.toast.worktreeCreateFailed.title": "创建工作树失败",
   "prompt.toast.sessionCreateFailed.title": "创建会话失败",
   "prompt.toast.shellSendFailed.title": "发送 shell 命令失败",
@@ -347,7 +357,8 @@ export const dict = {
   "dialog.server.add.password": "密码（可选）",
   "dialog.server.edit.title": "编辑服务器",
   "dialog.server.default.title": "默认服务器",
-  "dialog.server.default.description": "应用启动时连接此服务器，而不是启动本地服务器。需要重启。",
+  "dialog.server.default.description":
+    "应用启动时连接此服务器，而不是启动本地服务器。需要重启。",
   "dialog.server.default.none": "未选择服务器",
   "dialog.server.default.set": "将当前服务器设为默认",
   "dialog.server.default.clear": "清除",
@@ -368,7 +379,8 @@ export const dict = {
   "dialog.project.edit.color": "颜色",
   "dialog.project.edit.color.select": "选择{{color}}颜色",
   "dialog.project.edit.worktree.startup": "工作区启动脚本",
-  "dialog.project.edit.worktree.startup.description": "在创建新的工作区 (worktree) 后运行。",
+  "dialog.project.edit.worktree.startup.description":
+    "在创建新的工作区 (worktree) 后运行。",
   "dialog.project.edit.worktree.startup.placeholder": "例如 bun install",
 
   "context.breakdown.title": "上下文拆分",
@@ -463,8 +475,10 @@ export const dict = {
   "error.page.report.prefix": "请将此错误报告给 OpenCode 团队",
   "error.page.report.discord": "在 Discord 上",
   "error.page.version": "版本：{{version}}",
-  "error.dev.rootNotFound": "未找到根元素。你是不是忘了把它添加到 index.html？或者 id 属性拼写错了？",
-  "error.globalSync.connectFailed": "无法连接到服务器。是否有服务器正在 `{{url}}` 运行？",
+  "error.dev.rootNotFound":
+    "未找到根元素。你是不是忘了把它添加到 index.html？或者 id 属性拼写错了？",
+  "error.globalSync.connectFailed":
+    "无法连接到服务器。是否有服务器正在 `{{url}}` 运行？",
 
   "directory.error.invalidUrl": "URL 中的目录无效。",
 
@@ -476,28 +490,43 @@ export const dict = {
   "error.chain.responseBody": "响应内容：\n{{body}}",
   "error.chain.didYouMean": "你是不是想输入：{{suggestions}}",
   "error.chain.modelNotFound": "未找到模型：{{provider}}/{{model}}",
-  "error.chain.checkConfig": "请检查你的配置 (opencode.json) 中的 provider/model 名称",
-  "error.chain.mcpFailed": 'MCP 服务器 "{{name}}" 启动失败。注意: OpenCode 暂不支持 MCP 认证。',
-  "error.chain.providerAuthFailed": "提供商认证失败（{{provider}}）：{{message}}",
-  "error.chain.providerInitFailed": '无法初始化提供商 "{{provider}}"。请检查凭据和配置。',
+  "error.chain.checkConfig":
+    "请检查你的配置 (opencode.json) 中的 provider/model 名称",
+  "error.chain.mcpFailed":
+    'MCP 服务器 "{{name}}" 启动失败。注意: OpenCode 暂不支持 MCP 认证。',
+  "error.chain.providerAuthFailed":
+    "提供商认证失败（{{provider}}）：{{message}}",
+  "error.chain.providerInitFailed":
+    '无法初始化提供商 "{{provider}}"。请检查凭据和配置。',
   "error.chain.configJsonInvalid": "配置文件 {{path}} 不是有效的 JSON(C)",
-  "error.chain.configJsonInvalidWithMessage": "配置文件 {{path}} 不是有效的 JSON(C)：{{message}}",
+  "error.chain.configJsonInvalidWithMessage":
+    "配置文件 {{path}} 不是有效的 JSON(C)：{{message}}",
   "error.chain.configDirectoryTypo":
     '{{path}} 中的目录 "{{dir}}" 无效。请将目录重命名为 "{{suggestion}}" 或移除它。这是一个常见拼写错误。',
-  "error.chain.configFrontmatterError": "无法解析 {{path}} 中的 frontmatter：\n{{message}}",
+  "error.chain.configFrontmatterError":
+    "无法解析 {{path}} 中的 frontmatter：\n{{message}}",
   "error.chain.configInvalid": "配置文件 {{path}} 无效",
   "error.chain.configInvalidWithMessage": "配置文件 {{path}} 无效：{{message}}",
 
   "notification.permission.title": "需要权限",
-  "notification.permission.description": "{{sessionTitle}}（{{projectName}}）需要权限",
+  "notification.permission.description":
+    "{{sessionTitle}}（{{projectName}}）需要权限",
   "notification.question.title": "问题",
-  "notification.question.description": "{{sessionTitle}}（{{projectName}}）有一个问题",
+  "notification.question.description":
+    "{{sessionTitle}}（{{projectName}}）有一个问题",
   "notification.action.goToSession": "前往会话",
   "notification.session.responseReady.title": "回复已就绪",
   "notification.session.error.title": "会话错误",
   "notification.session.error.fallbackDescription": "发生错误",
 
   "home.recentProjects": "最近项目",
+  "home.sessionBoard": "会话看板",
+  "home.sessionBoard.description": "按 Progress 和 Idle 分组。",
+  "home.sessionBoard.progress": "Progress",
+  "home.sessionBoard.idle": "Idle",
+  "home.sessionBoard.emptyProgress": "当前没有正在运行的会话。",
+  "home.sessionBoard.emptyIdle": "还没有空闲会话。",
+  "home.sessionBoard.emptyOther": "当前没有需要额外关注的会话。",
   "home.empty.title": "没有最近项目",
   "home.empty.description": "通过打开本地项目开始使用",
 
@@ -512,7 +541,8 @@ export const dict = {
   "session.review.empty": "此会话暂无更改",
   "session.review.noVcs": "未检测到 Git 版本控制系统，因此无法检测会话更改",
   "session.review.emptyProject": "当前没有项目更改",
-  "session.review.noVcsProject": "未检测到 Git 版本控制系统，因此无法检测项目更改",
+  "session.review.noVcsProject":
+    "未检测到 Git 版本控制系统，因此无法检测项目更改",
   "session.review.noChanges": "无更改",
   "session.files.selectToOpen": "选择要打开的文件",
   "session.files.all": "所有文件",
@@ -547,8 +577,10 @@ export const dict = {
   "status.popover.action.manageServers": "管理服务器",
 
   "session.share.popover.title": "发布到网页",
-  "session.share.popover.description.shared": "此会话已在网页上公开。任何拥有链接的人都可以访问。",
-  "session.share.popover.description.unshared": "在网页上公开分享此会话。任何拥有链接的人都可以访问。",
+  "session.share.popover.description.shared":
+    "此会话已在网页上公开。任何拥有链接的人都可以访问。",
+  "session.share.popover.description.unshared":
+    "在网页上公开分享此会话。任何拥有链接的人都可以访问。",
   "session.share.action.share": "分享",
   "session.share.action.publish": "发布",
   "session.share.action.publishing": "正在发布...",
@@ -568,7 +600,8 @@ export const dict = {
   "terminal.title.numbered": "终端 {{number}}",
   "terminal.close": "关闭终端",
   "terminal.connectionLost.title": "连接已丢失",
-  "terminal.connectionLost.description": "终端连接已中断。这可能发生在服务器重启时。",
+  "terminal.connectionLost.description":
+    "终端连接已中断。这可能发生在服务器重启时。",
 
   "common.closeTab": "关闭标签页",
   "common.dismiss": "忽略",
@@ -592,7 +625,8 @@ export const dict = {
   "sidebar.workspaces.disable": "禁用工作区",
   "sidebar.gettingStarted.title": "入门",
   "sidebar.gettingStarted.line1": "OpenCode 提供免费模型，你可以立即开始使用。",
-  "sidebar.gettingStarted.line2": "连接任意提供商即可使用更多模型，如 Claude、GPT、Gemini 等。",
+  "sidebar.gettingStarted.line2":
+    "连接任意提供商即可使用更多模型，如 Claude、GPT、Gemini 等。",
   "sidebar.project.recentSessions": "最近会话",
   "sidebar.project.viewAllSessions": "查看全部会话",
   "sidebar.project.clearNotifications": "清除通知",
@@ -607,7 +641,8 @@ export const dict = {
 
   "settings.desktop.section.wsl": "WSL",
   "settings.desktop.wsl.title": "WSL 集成",
-  "settings.desktop.wsl.description": "在 Windows 的 WSL 环境中运行 OpenCode 服务器。",
+  "settings.desktop.wsl.description":
+    "在 Windows 的 WSL 环境中运行 OpenCode 服务器。",
 
   "settings.general.section.appearance": "外观",
   "settings.general.section.notifications": "系统通知",
@@ -619,24 +654,31 @@ export const dict = {
   "settings.general.row.language.title": "语言",
   "settings.general.row.language.description": "更改 OpenCode 的显示语言",
   "settings.general.row.appearance.title": "外观",
-  "settings.general.row.appearance.description": "自定义 OpenCode 在你的设备上的外观",
+  "settings.general.row.appearance.description":
+    "自定义 OpenCode 在你的设备上的外观",
   "settings.general.row.theme.title": "主题",
   "settings.general.row.theme.description": "自定义 OpenCode 的主题。",
   "settings.general.row.font.title": "字体",
   "settings.general.row.font.description": "自定义代码块使用的等宽字体",
   "settings.general.row.reasoningSummaries.title": "显示推理摘要",
-  "settings.general.row.reasoningSummaries.description": "在时间线中显示模型推理摘要",
+  "settings.general.row.reasoningSummaries.description":
+    "在时间线中显示模型推理摘要",
   "settings.general.row.shellToolPartsExpanded.title": "展开 shell 工具部分",
-  "settings.general.row.shellToolPartsExpanded.description": "默认在时间线中展开 shell 工具部分",
+  "settings.general.row.shellToolPartsExpanded.description":
+    "默认在时间线中展开 shell 工具部分",
   "settings.general.row.editToolPartsExpanded.title": "展开编辑工具部分",
-  "settings.general.row.editToolPartsExpanded.description": "默认在时间线中展开 edit、write 和 patch 工具部分",
+  "settings.general.row.editToolPartsExpanded.description":
+    "默认在时间线中展开 edit、write 和 patch 工具部分",
   "settings.general.row.wayland.title": "使用原生 Wayland",
-  "settings.general.row.wayland.description": "在 Wayland 上禁用 X11 回退。需要重启。",
-  "settings.general.row.wayland.tooltip": "在混合刷新率显示器的 Linux 系统上，原生 Wayland 可能更稳定。",
+  "settings.general.row.wayland.description":
+    "在 Wayland 上禁用 X11 回退。需要重启。",
+  "settings.general.row.wayland.tooltip":
+    "在混合刷新率显示器的 Linux 系统上，原生 Wayland 可能更稳定。",
   "settings.general.row.releaseNotes.title": "发行说明",
   "settings.general.row.releaseNotes.description": "更新后显示“新功能”弹窗",
   "settings.general.row.releaseNotesCurrent.title": "当前版本变更",
-  "settings.general.row.releaseNotesCurrent.description": "在 GitHub 打开当前版本的更新记录",
+  "settings.general.row.releaseNotesCurrent.description":
+    "在 GitHub 打开当前版本的更新记录",
   "settings.general.action.releaseNotesCurrent": "查看变更",
 
   "settings.updates.row.startup.title": "启动时检查更新",
@@ -646,7 +688,8 @@ export const dict = {
   "settings.updates.action.checkNow": "立即检查",
   "settings.updates.action.checking": "正在检查...",
   "settings.updates.toast.latest.title": "已是最新版本",
-  "settings.updates.toast.latest.description": "你正在使用最新版本的 OpenCode。",
+  "settings.updates.toast.latest.description":
+    "你正在使用最新版本的 OpenCode。",
 
   "font.option.ibmPlexMono": "IBM Plex Mono",
   "font.option.cascadiaCode": "Cascadia Code",
@@ -710,13 +753,16 @@ export const dict = {
   "sound.option.yup06": "是 06",
 
   "settings.general.notifications.agent.title": "智能体",
-  "settings.general.notifications.agent.description": "当智能体完成或需要注意时显示系统通知",
+  "settings.general.notifications.agent.description":
+    "当智能体完成或需要注意时显示系统通知",
   "settings.general.notifications.permissions.title": "权限",
-  "settings.general.notifications.permissions.description": "当需要权限时显示系统通知",
+  "settings.general.notifications.permissions.description":
+    "当需要权限时显示系统通知",
   "settings.general.notifications.errors.title": "错误",
   "settings.general.notifications.errors.description": "发生错误时显示系统通知",
   "settings.general.sounds.agent.title": "智能体",
-  "settings.general.sounds.agent.description": "当智能体完成或需要注意时播放声音",
+  "settings.general.sounds.agent.description":
+    "当智能体完成或需要注意时播放声音",
   "settings.general.sounds.permissions.title": "权限",
   "settings.general.sounds.permissions.description": "当需要权限时播放声音",
   "settings.general.sounds.errors.title": "错误",
@@ -727,7 +773,8 @@ export const dict = {
   "settings.shortcuts.reset.toast.title": "快捷键已重置",
   "settings.shortcuts.reset.toast.description": "键盘快捷键已重置为默认设置。",
   "settings.shortcuts.conflict.title": "快捷键已被占用",
-  "settings.shortcuts.conflict.description": "{{keybind}} 已分配给 {{titles}}。",
+  "settings.shortcuts.conflict.description":
+    "{{keybind}} 已分配给 {{titles}}。",
   "settings.shortcuts.unassigned": "未设置",
   "settings.shortcuts.pressKeys": "按下按键",
   "settings.shortcuts.search.placeholder": "搜索快捷键",
@@ -771,7 +818,8 @@ export const dict = {
   "settings.permissions.tool.read.title": "读取",
   "settings.permissions.tool.read.description": "读取文件（匹配文件路径）",
   "settings.permissions.tool.edit.title": "编辑",
-  "settings.permissions.tool.edit.description": "修改文件，包括编辑、写入、补丁和多重编辑",
+  "settings.permissions.tool.edit.description":
+    "修改文件，包括编辑、写入、补丁和多重编辑",
   "settings.permissions.tool.glob.title": "Glob",
   "settings.permissions.tool.glob.description": "使用 glob 模式匹配文件",
   "settings.permissions.tool.grep.title": "Grep",
@@ -797,9 +845,11 @@ export const dict = {
   "settings.permissions.tool.codesearch.title": "代码搜索",
   "settings.permissions.tool.codesearch.description": "在网上搜索代码",
   "settings.permissions.tool.external_directory.title": "外部目录",
-  "settings.permissions.tool.external_directory.description": "访问项目目录之外的文件",
+  "settings.permissions.tool.external_directory.description":
+    "访问项目目录之外的文件",
   "settings.permissions.tool.doom_loop.title": "死循环",
-  "settings.permissions.tool.doom_loop.description": "检测具有相同输入的重复工具调用",
+  "settings.permissions.tool.doom_loop.description":
+    "检测具有相同输入的重复工具调用",
 
   "session.delete.failed.title": "删除会话失败",
   "session.delete.title": "删除会话",
@@ -844,5 +894,6 @@ export const dict = {
   "common.time.hoursAgo.short": "{{count}}小时前",
   "common.time.daysAgo.short": "{{count}}天前",
   "settings.providers.connected.environmentDescription": "已通过环境变量连接",
-  "settings.providers.custom.description": "通过基础 URL 添加与 OpenAI 兼容的提供商。",
-} satisfies Partial<Record<Keys, string>>
+  "settings.providers.custom.description":
+    "通过基础 URL 添加与 OpenAI 兼容的提供商。",
+} satisfies Partial<Record<Keys, string>>;

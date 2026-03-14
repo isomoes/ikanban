@@ -47,7 +47,11 @@ const SessionRoute = () => (
   </SessionProviders>
 )
 
-const SessionIndexRoute = () => <Navigate href="session" />
+const SessionIndexRoute = () => (
+  <Suspense fallback={<Loading />}>
+    <Home />
+  </Suspense>
+)
 
 function UiI18nBridge(props: ParentProps) {
   const language = useLanguage()
