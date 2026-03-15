@@ -49,7 +49,10 @@ import { useTheme, type ColorScheme } from "ikanban-ui/theme"
 import { DialogSelectProvider } from "@/components/dialog-select-provider"
 import { DialogSelectServer } from "@/components/dialog-select-server"
 import { DialogSettings } from "@/components/dialog-settings"
+import { DialogCommandPalette } from "@/components/dialog-command-palette"
+import { DialogSelectFile } from "@/components/dialog-select-file"
 import { useCommand, type CommandOption } from "@/context/command"
+import { FileProvider } from "@/context/file"
 import { ConstrainDragXAxis } from "@/utils/solid-dnd"
 import { DialogSelectDirectory } from "@/components/dialog-select-directory"
 import { DialogEditProject } from "@/components/dialog-edit-project"
@@ -123,7 +126,7 @@ export default function Layout(props: ParentProps) {
   const currentDir = createMemo(() => decode64(params.dir) ?? "")
 
   const [state, setState] = createStore({
-    autoselect: !initialDirectory,
+    autoselect: false,
     busyWorkspaces: {} as Record<string, boolean>,
     hoverSession: undefined as string | undefined,
     hoverProject: undefined as string | undefined,
@@ -196,15 +199,7 @@ export default function Layout(props: ParentProps) {
     setHoverProject(undefined)
   })
 
-  const autoselecting = createMemo(() => {
-    if (params.dir) return false
-    if (!state.autoselect) return false
-    if (!pageReady()) return true
-    if (!layoutReady()) return true
-    const list = layout.projects.list()
-    if (list.length > 0) return true
-    return !!server.projects.last()
-  })
+  const autoselecting = createMemo(() => false)
 
   createEffect(() => {
     if (!state.autoselect) return
@@ -325,7 +320,7 @@ export default function Layout(props: ParentProps) {
           e.details.type === "permission.asked"
             ? language.t("notification.permission.description", { sessionTitle, projectName })
             : language.t("notification.question.description", { sessionTitle, projectName })
-        const href = `/${base64Encode(directory)}/session/${props.sessionID}`
+        const href = `/${base64Encode(directory)}/${props.sessionID}`
 
         const now = Date.now()
         const lastAlerted = alertedAtBySession.get(sessionKey) ?? 0
@@ -425,34 +420,6 @@ export default function Layout(props: ParentProps) {
 
     return projects.find((p) => p.worktree === root)
   })
-
-  createEffect(
-    on(
-      () => ({ ready: pageReady(), layoutReady: layoutReady(), dir: params.dir, list: layout.projects.list() }),
-      (value) => {
-        if (!value.ready) return
-        if (!value.layoutReady) return
-        if (!state.autoselect) return
-        if (value.dir) return
-
-        const last = server.projects.last()
-
-        if (value.list.length === 0) {
-          if (!last) return
-          setState("autoselect", false)
-          openProject(last, false)
-          navigateToProject(last)
-          return
-        }
-
-        const next = value.list.find((project) => project.worktree === last) ?? value.list[0]
-        if (!next) return
-        setState("autoselect", false)
-        openProject(next.worktree, false)
-        navigateToProject(next.worktree)
-      },
-    ),
-  )
 
   const workspaceName = (directory: string, projectId?: string, branch?: string) => {
     const key = workspaceKey(directory)
@@ -793,9 +760,9 @@ export default function Layout(props: ParentProps) {
     )
     if (session.id === params.id) {
       if (nextSession) {
-        navigate(`/${params.dir}/session/${nextSession.id}`)
+        navigate(`/${params.dir}/${nextSession.id}`)
       } else {
-        navigate(`/${params.dir}/session`)
+        navigate(`/${params.dir}`)
       }
     }
   }
@@ -808,6 +775,15 @@ export default function Layout(props: ParentProps) {
         category: language.t("command.category.view"),
         keybind: "mod+b",
         onSelect: () => layout.sidebar.toggle(),
+      },
+      {
+        id: "file.open",
+        title: language.t("command.file.open"),
+        description: params.dir ? language.t("palette.search.placeholder") : language.t("command.project.open"),
+        category: language.t("command.category.file"),
+        keybind: "mod+p",
+        slash: "open",
+        onSelect: openGlobalFilePicker,
       },
       {
         id: "project.open",
@@ -1059,7 +1035,7 @@ export default function Layout(props: ParentProps) {
 
   function navigateToSession(session: Session | undefined) {
     if (!session) return
-    navigateWithSidebarReset(`/${base64Encode(session.directory)}/session/${session.id}`)
+    navigateWithSidebarReset(`/${base64Encode(session.directory)}/${session.id}`)
   }
 
   function openProject(directory: string, navigate = true) {
@@ -1124,7 +1100,7 @@ export default function Layout(props: ParentProps) {
       return
     }
 
-    navigateWithSidebarReset(`/${base64Encode(next.worktree)}/session`)
+    navigateWithSidebarReset(`/${base64Encode(next.worktree)}`)
     layout.projects.close(directory)
     queueMicrotask(() => {
       void navigateToProject(next.worktree)
@@ -1169,6 +1145,19 @@ export default function Layout(props: ParentProps) {
     }
   }
 
+  function openGlobalFilePicker() {
+    if (!params.dir) {
+      dialog.show(() => <DialogCommandPalette />)
+      return
+    }
+
+    dialog.show(() => (
+      <FileProvider>
+        <DialogSelectFile />
+      </FileProvider>
+    ))
+  }
+
   const deleteWorkspace = async (root: string, directory: string, leaveDeletedWorkspace = false) => {
     if (directory === root) return
 
@@ -1177,7 +1166,7 @@ export default function Layout(props: ParentProps) {
     const deletedKey = workspaceKey(directory)
     const shouldLeave = leaveDeletedWorkspace || (!!params.dir && currentKey === deletedKey)
     if (!leaveDeletedWorkspace && shouldLeave) {
-      navigateWithSidebarReset(`/${base64Encode(root)}/session`)
+      navigateWithSidebarReset(`/${base64Encode(root)}`)
     }
 
     setBusy(directory, true)
@@ -1225,7 +1214,7 @@ export default function Layout(props: ParentProps) {
     const valid = dirs.some((item) => workspaceKey(item) === nextKey)
 
     if (params.dir && projectRoot(nextCurrent) === root && !valid) {
-      navigateWithSidebarReset(`/${base64Encode(root)}/session`)
+      navigateWithSidebarReset(`/${base64Encode(root)}`)
     }
   }
 
@@ -1294,7 +1283,7 @@ export default function Layout(props: ParentProps) {
         {
           label: language.t("command.session.new"),
           onClick: () => {
-            const href = `/${base64Encode(directory)}/session`
+            const href = `/${base64Encode(directory)}`
             navigate(href)
             layout.mobileSidebar.hide()
           },
@@ -1330,7 +1319,7 @@ export default function Layout(props: ParentProps) {
     const handleDelete = () => {
       const leaveDeletedWorkspace = !!params.dir && workspaceKey(currentDir()) === workspaceKey(props.directory)
       if (leaveDeletedWorkspace) {
-        navigateWithSidebarReset(`/${base64Encode(props.root)}/session`)
+        navigateWithSidebarReset(`/${base64Encode(props.root)}`)
       }
       dialog.close()
       void deleteWorkspace(props.root, props.directory, leaveDeletedWorkspace)
@@ -1628,7 +1617,7 @@ export default function Layout(props: ParentProps) {
     })
 
     globalSync.child(created.directory)
-    navigateWithSidebarReset(`/${base64Encode(created.directory)}/session`)
+    navigateWithSidebarReset(`/${base64Encode(created.directory)}`)
   }
 
   const workspaceSidebarCtx: WorkspaceSidebarContext = {
@@ -1821,7 +1810,7 @@ export default function Layout(props: ParentProps) {
                             size="large"
                             icon="plus-small"
                             class="w-full"
-                            onClick={() => navigateWithSidebarReset(`/${base64Encode(p().worktree)}/session`)}
+                            onClick={() => navigateWithSidebarReset(`/${base64Encode(p().worktree)}`)}
                           >
                             {language.t("command.session.new")}
                           </Button>
