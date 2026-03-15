@@ -101,7 +101,7 @@ const SessionRow = (props: {
   cancelHoverPrefetch: () => void
 }): JSX.Element => (
   <A
-    href={`/${props.slug}/session/${props.session.id}`}
+    href={`/${props.slug}/${props.session.id}`}
     class={`flex items-center justify-between gap-3 min-w-0 text-left w-full focus:outline-none transition-[padding] ${props.mobile ? "pr-7" : ""} group-hover/session:pr-7 group-focus-within/session:pr-7 group-active/session:pr-7 ${props.dense ? "py-0.5" : "py-1"}`}
     onPointerEnter={props.scheduleHoverPrefetch}
     onPointerLeave={props.cancelHoverPrefetch}
@@ -310,7 +310,7 @@ export const SessionItem = (props: SessionItemProps): JSX.Element => {
           onMessageSelect={(message) => {
             if (!isActive()) {
               layout.pendingMessage.set(`${base64Encode(props.session.directory)}/${props.session.id}`, message.id)
-              navigate(`${props.slug}/session/${props.session.id}`)
+              navigate(`/${props.slug}/${props.session.id}`)
               return
             }
             window.history.replaceState(null, "", `#message-${message.id}`)
@@ -360,7 +360,7 @@ export const NewSessionItem = (props: {
   const tooltip = () => props.mobile || !props.sidebarExpanded()
   const item = (
     <A
-      href={`/${props.slug}/session`}
+      href={`/${props.slug}`}
       end
       class={`flex items-center justify-between gap-3 min-w-0 text-left w-full focus:outline-none ${props.dense ? "py-0.5" : "py-1"}`}
       onClick={() => {

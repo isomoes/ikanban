@@ -1,4 +1,4 @@
-import { createMemo, createEffect, For, Match, Switch } from "solid-js";
+import { createMemo, createEffect, createResource, For, Match, Switch } from "solid-js";
 import { Button } from "ikanban-ui/button";
 import { Logo } from "ikanban-ui/logo";
 import { useLayout } from "@/context/layout";
@@ -15,7 +15,6 @@ import { useServer } from "@/context/server";
 import { useGlobalSync } from "@/context/global-sync";
 import { useLanguage } from "@/context/language";
 import { IconButton } from "ikanban-ui/icon-button";
-import { sortedRootSessions } from "@/pages/layout/helpers";
 import type { Session } from "@opencode-ai/sdk/v2/client";
 
 type BoardColumn = "progress" | "idle";
@@ -26,6 +25,34 @@ type BoardCard = {
   updatedAt: number;
 };
 
+const homeStyles = {
+  border: { border: "1px solid var(--border-weak-base)" },
+  heroIcon: {
+    border: "1px solid var(--border-weak-base)",
+    background:
+      "linear-gradient(135deg, color-mix(in srgb, var(--text-interactive-base) 12%, var(--background-stronger)), var(--background-stronger))",
+  },
+  emptyPanel: {
+    "border-color": "var(--border-weak-base)",
+    background:
+      "linear-gradient(180deg, color-mix(in srgb, var(--surface-base-hover) 35%, var(--background-stronger)), var(--background-stronger))",
+  },
+  emptyIcon: {
+    border: "1px solid var(--border-weak-base)",
+    background:
+      "linear-gradient(135deg, color-mix(in srgb, var(--text-interactive-base) 10%, var(--surface-inset-base)), var(--surface-inset-base))",
+  },
+  card: {
+    border: "1px solid var(--border-weak-base)",
+    background: "var(--background-base)",
+  },
+  emptyState: {
+    "border-color": "var(--border-weak-base)",
+    background:
+      "linear-gradient(180deg, color-mix(in srgb, var(--surface-base-hover) 30%, var(--surface-inset-base)), var(--surface-inset-base))",
+  },
+} as const;
+
 export default function Home() {
   const sync = useGlobalSync();
   const layout = useLayout();
@@ -35,26 +62,49 @@ export default function Home() {
   const globalSDK = useGlobalSDK();
   const server = useServer();
   const language = useLanguage();
-  const recent = createMemo(() => {
+  const projects = createMemo(() => {
     return sync.data.project
       .slice()
       .sort(
         (a, b) =>
           (b.time.updated ?? b.time.created) -
           (a.time.updated ?? a.time.created),
-      )
-      .slice(0, 5);
+      );
   });
+
+  const [rootSessions, { mutate: mutateRootSessions }] = createResource(
+    () => projects().map((project) => project.worktree),
+    async (directories) => {
+      const entries = await Promise.all(
+        directories.map(async (directory) => {
+          const result = await globalSDK.client.session.list({
+            directory,
+            roots: true,
+          });
+
+          const sessions = (result.data ?? []).filter(
+            (session): session is Session => !!session?.id && !session.time?.archived,
+          );
+
+          return [directory, sessions] as const;
+        }),
+      );
+
+      return Object.fromEntries(entries) as Record<string, Session[]>;
+    },
+  );
+
   const boardColumns = createMemo<Record<BoardColumn, BoardCard[]>>(() => {
     const now = Date.now();
     const columns: Record<BoardColumn, BoardCard[]> = {
       progress: [],
       idle: [],
     };
+    const sessionsByProject = rootSessions() ?? {};
 
-    for (const project of recent()) {
+    for (const project of projects()) {
       const [store] = sync.child(project.worktree);
-      const sessions = sortedRootSessions(store, now);
+      const sessions = sessionsByProject[project.worktree] ?? [];
 
       for (const session of sessions) {
         const status = store.session_status[session.id];
@@ -82,7 +132,7 @@ export default function Home() {
   });
 
   createEffect(() => {
-    for (const project of recent()) {
+    for (const project of projects()) {
       sync.child(project.worktree);
     }
   });
@@ -97,13 +147,13 @@ export default function Home() {
   function openProject(directory: string) {
     layout.projects.open(directory);
     server.projects.touch(directory);
-    navigate(`/${base64Encode(directory)}/session`);
+    navigate(`/${base64Encode(directory)}`);
   }
 
   function openSession(directory: string, sessionID: string) {
     layout.projects.open(directory);
     server.projects.touch(directory);
-    navigate(`/${base64Encode(directory)}/session/${sessionID}`);
+    navigate(`/${base64Encode(directory)}/${sessionID}`);
   }
 
   async function archiveSession(directory: string, sessionID: string) {
@@ -111,6 +161,13 @@ export default function Home() {
     await globalSDK.client.session.update({
       sessionID,
       time: { archived: Date.now() },
+    });
+    mutateRootSessions((current) => {
+      if (!current?.[directory]) return current;
+      return {
+        ...current,
+        [directory]: current[directory].filter((session) => session.id !== sessionID),
+      };
     });
     setStore(
       "session",
@@ -148,7 +205,10 @@ export default function Home() {
       <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div class="min-w-0">
           <div class="flex items-center gap-3">
-            <div class="flex size-10 items-center justify-center rounded-2xl border border-border-weak bg-background-base/80">
+            <div
+              class="flex size-10 items-center justify-center rounded-2xl border shadow-xs-border-base"
+              style={homeStyles.heroIcon}
+            >
               <Logo class="w-6 opacity-90" />
             </div>
             <div>
@@ -189,7 +249,7 @@ export default function Home() {
       </div>
 
       <Switch>
-        <Match when={sync.data.project.length > 0}>
+        <Match when={projects().length > 0}>
           <div class="mt-6 flex w-full flex-col gap-6">
             <section class="flex flex-col gap-4">
               <div class="grid gap-3 lg:grid-cols-2">
@@ -216,9 +276,15 @@ export default function Home() {
           </div>
         </Match>
         <Match when={true}>
-          <div class="mt-6 rounded-2xl border border-dashed border-border-weak bg-background-base/60 px-6 py-10">
+          <div
+            class="mt-6 rounded-2xl border border-dashed px-6 py-10 shadow-xs-border-base"
+            style={homeStyles.emptyPanel}
+          >
             <div class="mx-auto flex max-w-md flex-col items-center gap-3 text-center">
-              <div class="flex size-12 items-center justify-center rounded-2xl border border-border-weak bg-background-base/80">
+              <div
+                class="flex size-12 items-center justify-center rounded-2xl border shadow-xs-border-base"
+                style={homeStyles.emptyIcon}
+              >
                 <Icon name="folder-add-left" size="large" />
               </div>
               <div class="flex flex-col gap-1 items-center justify-center">
@@ -251,12 +317,25 @@ function BoardColumnView(props: {
 }) {
   const toneClass = () => {
     if (props.tone === "progress")
-      return "bg-emerald-500/12 text-emerald-300 border-emerald-500/20";
-    return "bg-sky-500/12 text-sky-300 border-sky-500/20";
+      return "bg-surface-base-hover text-icon-success-base border-border-weak-base";
+    return "bg-surface-inset-base text-icon-base border-border-weak-base";
   };
 
+  const sectionStyle = () =>
+    props.tone === "progress"
+      ? {
+          ...homeStyles.border,
+          background:
+            "linear-gradient(180deg, color-mix(in srgb, var(--text-interactive-base) 8%, var(--background-stronger)), var(--background-stronger))",
+        }
+      : {
+          ...homeStyles.border,
+          background:
+            "linear-gradient(180deg, color-mix(in srgb, var(--surface-inset-base) 55%, var(--background-stronger)), var(--background-stronger))",
+        };
+
   return (
-    <section class="rounded-2xl border border-border-weak bg-background-base/80 p-3 md:p-4 min-h-72">
+    <section class="rounded-2xl p-3 md:p-4 min-h-72 shadow-xs-border-base" style={sectionStyle()}>
       <div class="flex items-center justify-between gap-3">
         <div class="flex items-center gap-2 min-w-0">
           <div
@@ -274,7 +353,10 @@ function BoardColumnView(props: {
           <Match when={props.cards.length > 0}>
             <For each={props.cards}>
               {(card) => (
-                <div class="overflow-hidden rounded-xl border border-border-weak bg-background-base/70 hover:border-border-strong">
+                <div
+                  class="overflow-hidden rounded-xl transition-colors"
+                  style={homeStyles.card}
+                >
                   <div class="flex items-start justify-between gap-3 px-3 pt-3">
                     <div class="min-w-0 flex-1 pt-1">
                       <div class="truncate text-14-medium leading-tight text-text-strong">
@@ -320,7 +402,10 @@ function BoardColumnView(props: {
             </For>
           </Match>
           <Match when={true}>
-            <div class="rounded-xl border border-dashed border-border-weak px-3 py-8 text-center text-12-regular text-text-weak">
+            <div
+              class="rounded-xl border border-dashed px-3 py-8 text-center text-12-regular text-text-weak"
+              style={homeStyles.emptyState}
+            >
               {props.empty}
             </div>
           </Match>

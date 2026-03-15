@@ -2,18 +2,32 @@ import { useDialog } from "ikanban-ui/context/dialog"
 import { Dialog } from "ikanban-ui/dialog"
 import { Keybind } from "ikanban-ui/keybind"
 import { List } from "ikanban-ui/list"
-import { createMemo, Show } from "solid-js"
-import { formatKeybind, useCommand } from "@/context/command"
+import { createMemo, onCleanup, Show } from "solid-js"
+import { type CommandOption, formatKeybind, useCommand } from "@/context/command"
 import { useLanguage } from "@/context/language"
 
 export function DialogCommandPalette() {
   const command = useCommand()
   const dialog = useDialog()
   const language = useLanguage()
+  const state = {
+    cleanup: undefined as (() => void) | void,
+    committed: false,
+  }
 
   const items = createMemo(() =>
     command.options.filter((option) => !option.disabled && !option.id.startsWith("suggested.") && option.id !== "file.open"),
   )
+
+  const handleMove = (item: CommandOption | undefined) => {
+    state.cleanup?.()
+    state.cleanup = item?.onHighlight?.()
+  }
+
+  onCleanup(() => {
+    if (state.committed) return
+    state.cleanup?.()
+  })
 
   return (
     <Dialog class="pt-3 pb-0 !max-h-[480px]" transition>
@@ -28,8 +42,11 @@ export function DialogCommandPalette() {
         key={(item) => item.id}
         filterKeys={["title", "description", "category"]}
         groupBy={(item) => item.category ?? language.t("palette.group.commands")}
+        onMove={handleMove}
         onSelect={(item) => {
           if (!item) return
+          state.committed = true
+          state.cleanup = undefined
           dialog.close()
           item.onSelect?.("palette")
         }}

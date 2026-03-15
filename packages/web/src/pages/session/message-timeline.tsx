@@ -346,14 +346,14 @@ export function MessageTimeline(props: {
   const navigateAfterSessionRemoval = (sessionID: string, parentID?: string, nextSessionID?: string) => {
     if (params.id !== sessionID) return
     if (parentID) {
-      navigate(`/${params.dir}/session/${parentID}`)
+      navigate(`/${params.dir}/${parentID}`)
       return
     }
     if (nextSessionID) {
-      navigate(`/${params.dir}/session/${nextSessionID}`)
+      navigate(`/${params.dir}/${nextSessionID}`)
       return
     }
-    navigate(`/${params.dir}/session`)
+    navigate(`/${params.dir}`)
   }
 
   const archiveSession = async (sessionID: string) => {
@@ -446,7 +446,7 @@ export function MessageTimeline(props: {
   const navigateParent = () => {
     const id = parentID()
     if (!id) return
-    navigate(`/${params.dir}/session/${id}`)
+    navigate(`/${params.dir}/${id}`)
   }
 
   function DialogDeleteSession(props: { sessionID: string }) {

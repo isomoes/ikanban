@@ -75,7 +75,7 @@ export const DialogFork: Component = () => {
           return
         }
         dialog.close()
-        navigate(`/${base64Encode(sdk.directory)}/session/${forked.data.id}`)
+        navigate(`/${base64Encode(sdk.directory)}/${forked.data.id}`)
         requestAnimationFrame(() => {
           prompt.set(restored)
         })

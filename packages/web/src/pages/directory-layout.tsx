@@ -19,8 +19,8 @@ function DirectoryDataProvider(props: ParentProps<{ directory: string }>) {
     <DataProvider
       data={sync.data}
       directory={props.directory}
-      onNavigateToSession={(sessionID: string) => navigate(`/${params.dir}/session/${sessionID}`)}
-      onSessionHref={(sessionID: string) => `/${params.dir}/session/${sessionID}`}
+      onNavigateToSession={(sessionID: string) => navigate(`/${params.dir}/${sessionID}`)}
+      onSessionHref={(sessionID: string) => `/${params.dir}/${sessionID}`}
     >
       <LocalProvider>{props.children}</LocalProvider>
     </DataProvider>

@@ -365,7 +365,7 @@ export function DialogSelectFile(props: { mode?: DialogSelectFileMode; onOpenFil
 
     if (item.type === "session") {
       if (!item.directory || !item.sessionID) return
-      navigate(`/${base64Encode(item.directory)}/session/${item.sessionID}`)
+      navigate(`/${base64Encode(item.directory)}/${item.sessionID}`)
       return
     }
 
