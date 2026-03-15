@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.11]
+
+- Web: Simplified home/session routing, hid the shell view on the home screen, and added a quick return shortcut so navigation feels cleaner when moving between the dashboard and active sessions. (@isomoes)
+- Command Palette: Registered the main shortcut globally so it opens more reliably from anywhere in the web app. (@isomoes)
+
 ## [0.2.10]
 
 - Web: Added a session status board home view to give the web app a clearer at-a-glance landing surface for active session state. (@isomoes)
