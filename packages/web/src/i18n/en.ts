@@ -133,7 +133,7 @@ export const dict = {
     "Customize which models appear in the model selector.",
   "dialog.model.manage.provider.toggle": "Toggle all {{provider}} models",
 
-  "dialog.model.unpaid.freeModels.title": "Free models provided by OpenCode",
+  "dialog.model.unpaid.freeModels.title": "Free models provided by iKanban",
   "dialog.model.unpaid.addMore.title": "Add more models from popular providers",
 
   "dialog.provider.viewAll": "Show more providers",
@@ -146,7 +146,7 @@ export const dict = {
   "provider.connect.status.waiting": "Waiting for authorization...",
   "provider.connect.status.failed": "Authorization failed: {{error}}",
   "provider.connect.apiKey.description":
-    "Enter your {{provider}} API key to connect your account and use {{provider}} models in OpenCode.",
+    "Enter your {{provider}} API key to connect your account and use {{provider}} models in iKanban.",
   "provider.connect.apiKey.label": "{{provider}} API key",
   "provider.connect.apiKey.placeholder": "API key",
   "provider.connect.apiKey.required": "API key is required",
@@ -160,7 +160,7 @@ export const dict = {
   "provider.connect.oauth.code.visit.prefix": "Visit ",
   "provider.connect.oauth.code.visit.link": "this link",
   "provider.connect.oauth.code.visit.suffix":
-    " to collect your authorization code to connect your account and use {{provider}} models in OpenCode.",
+    " to collect your authorization code to connect your account and use {{provider}} models in iKanban.",
   "provider.connect.oauth.code.label": "{{method}} authorization code",
   "provider.connect.oauth.code.placeholder": "Authorization code",
   "provider.connect.oauth.code.required": "Authorization code is required",
@@ -168,7 +168,7 @@ export const dict = {
   "provider.connect.oauth.auto.visit.prefix": "Visit ",
   "provider.connect.oauth.auto.visit.link": "this link",
   "provider.connect.oauth.auto.visit.suffix":
-    " and enter the code below to connect your account and use {{provider}} models in OpenCode.",
+    " and enter the code below to connect your account and use {{provider}} models in iKanban.",
   "provider.connect.oauth.auto.confirmationCode": "Confirmation code",
   "provider.connect.toast.connected.title": "{{provider}} connected",
   "provider.connect.toast.connected.description":
@@ -486,7 +486,7 @@ export const dict = {
 
   "toast.update.title": "Update available",
   "toast.update.description":
-    "A new version of OpenCode ({{version}}) is now available to install.",
+    "A new version of iKanban ({{version}}) is now available to install.",
   "toast.update.action.installRestart": "Install and restart",
   "toast.update.action.notYet": "Not yet",
 
@@ -497,7 +497,7 @@ export const dict = {
   "error.page.action.checking": "Checking...",
   "error.page.action.checkUpdates": "Check for updates",
   "error.page.action.updateTo": "Update to {{version}}",
-  "error.page.report.prefix": "Please report this error to the OpenCode team",
+  "error.page.report.prefix": "Please report this error to the iKanban team",
   "error.page.report.discord": "on Discord",
   "error.page.version": "Version: {{version}}",
 
@@ -550,7 +550,7 @@ export const dict = {
   "notification.session.error.fallbackDescription": "An error occurred",
 
   "home.recentProjects": "Recent projects",
-  "home.sessionBoard": "Session board",
+  "home.sessionBoard": "Ikanban",
   "home.sessionBoard.description":
     "Live session activity grouped into Progress and Idle.",
   "home.sessionBoard.progress": "Progress",
@@ -667,7 +667,7 @@ export const dict = {
   "sidebar.workspaces.disable": "Disable workspaces",
   "sidebar.gettingStarted.title": "Getting started",
   "sidebar.gettingStarted.line1":
-    "OpenCode includes free models so you can start immediately.",
+    "iKanban includes free models so you can start immediately.",
   "sidebar.gettingStarted.line2":
     "Connect any provider to use models, inc. Claude, GPT, Gemini etc.",
   "sidebar.project.recentSessions": "Recent sessions",
@@ -695,12 +695,12 @@ export const dict = {
 
   "settings.general.row.language.title": "Language",
   "settings.general.row.language.description":
-    "Change the display language for OpenCode",
+    "Change the display language for iKanban",
   "settings.general.row.appearance.title": "Appearance",
   "settings.general.row.appearance.description":
-    "Customise how OpenCode looks on your device",
+    "Customise how iKanban looks on your device",
   "settings.general.row.theme.title": "Theme",
-  "settings.general.row.theme.description": "Customise how OpenCode is themed.",
+  "settings.general.row.theme.description": "Customise how iKanban is themed.",
   "settings.general.row.font.title": "Font",
   "settings.general.row.font.description":
     "Customise the mono font used in code blocks",
@@ -731,7 +731,7 @@ export const dict = {
 
   "settings.updates.row.startup.title": "Check for updates on startup",
   "settings.updates.row.startup.description":
-    "Automatically check for updates when OpenCode launches",
+    "Automatically check for updates when iKanban launches",
   "settings.updates.row.check.title": "Check for updates",
   "settings.updates.row.check.description":
     "Manually check for updates and install if available",
@@ -739,7 +739,7 @@ export const dict = {
   "settings.updates.action.checking": "Checking...",
   "settings.updates.toast.latest.title": "You're up to date",
   "settings.updates.toast.latest.description":
-    "You're running the latest version of OpenCode.",
+    "You're running the latest version of iKanban.",
   "font.option.ibmPlexMono": "IBM Plex Mono",
   "font.option.cascadiaCode": "Cascadia Code",
   "font.option.firaCode": "Fira Code",

@@ -145,7 +145,7 @@ export const dict = {
   "dialog.model.recent": "最近",
   "dialog.model.manage.description": "自定义模型选择器中显示的模型。",
   "dialog.model.manage.provider.toggle": "切换 {{provider}} 的所有模型",
-  "dialog.model.unpaid.freeModels.title": "OpenCode 提供的免费模型",
+  "dialog.model.unpaid.freeModels.title": "iKanban 提供的免费模型",
   "dialog.model.unpaid.addMore.title": "从热门提供商添加更多模型",
 
   "dialog.provider.viewAll": "查看更多提供商",
@@ -158,7 +158,7 @@ export const dict = {
   "provider.connect.status.waiting": "等待授权...",
   "provider.connect.status.failed": "授权失败：{{error}}",
   "provider.connect.apiKey.description":
-    "输入你的 {{provider}} API 密钥以连接帐户，并在 OpenCode 中使用 {{provider}} 模型。",
+    "输入你的 {{provider}} API 密钥以连接帐户，并在 iKanban 中使用 {{provider}} 模型。",
   "provider.connect.apiKey.label": "{{provider}} API 密钥",
   "provider.connect.apiKey.placeholder": "API 密钥",
   "provider.connect.apiKey.required": "API 密钥为必填项",
@@ -172,7 +172,7 @@ export const dict = {
   "provider.connect.oauth.code.visit.prefix": "访问 ",
   "provider.connect.oauth.code.visit.link": "此链接",
   "provider.connect.oauth.code.visit.suffix":
-    " 获取授权码，以连接你的帐户并在 OpenCode 中使用 {{provider}} 模型。",
+    " 获取授权码，以连接你的帐户并在 iKanban 中使用 {{provider}} 模型。",
   "provider.connect.oauth.code.label": "{{method}} 授权码",
   "provider.connect.oauth.code.placeholder": "授权码",
   "provider.connect.oauth.code.required": "授权码为必填项",
@@ -180,7 +180,7 @@ export const dict = {
   "provider.connect.oauth.auto.visit.prefix": "访问 ",
   "provider.connect.oauth.auto.visit.link": "此链接",
   "provider.connect.oauth.auto.visit.suffix":
-    " 并输入以下代码，以连接你的帐户并在 OpenCode 中使用 {{provider}} 模型。",
+    " 并输入以下代码，以连接你的帐户并在 iKanban 中使用 {{provider}} 模型。",
   "provider.connect.oauth.auto.confirmationCode": "确认码",
   "provider.connect.toast.connected.title": "{{provider}} 已连接",
   "provider.connect.toast.connected.description":
@@ -461,7 +461,7 @@ export const dict = {
   "toast.session.unshare.failed.description": "取消分享会话时发生错误",
   "toast.session.listFailed.title": "无法加载 {{project}} 的会话",
   "toast.update.title": "有可用更新",
-  "toast.update.description": "OpenCode 有新版本 ({{version}}) 可安装。",
+  "toast.update.description": "iKanban 有新版本 ({{version}}) 可安装。",
   "toast.update.action.installRestart": "安装并重启",
   "toast.update.action.notYet": "稍后",
 
@@ -472,7 +472,7 @@ export const dict = {
   "error.page.action.checking": "检查中...",
   "error.page.action.checkUpdates": "检查更新",
   "error.page.action.updateTo": "更新到 {{version}}",
-  "error.page.report.prefix": "请将此错误报告给 OpenCode 团队",
+  "error.page.report.prefix": "请将此错误报告给 iKanban 团队",
   "error.page.report.discord": "在 Discord 上",
   "error.page.version": "版本：{{version}}",
   "error.dev.rootNotFound":
@@ -520,7 +520,7 @@ export const dict = {
   "notification.session.error.fallbackDescription": "发生错误",
 
   "home.recentProjects": "最近项目",
-  "home.sessionBoard": "会话看板",
+  "home.sessionBoard": "Ikanban",
   "home.sessionBoard.description": "按 Progress 和 Idle 分组。",
   "home.sessionBoard.progress": "Progress",
   "home.sessionBoard.idle": "Idle",
@@ -624,7 +624,7 @@ export const dict = {
   "sidebar.workspaces.enable": "启用工作区",
   "sidebar.workspaces.disable": "禁用工作区",
   "sidebar.gettingStarted.title": "入门",
-  "sidebar.gettingStarted.line1": "OpenCode 提供免费模型，你可以立即开始使用。",
+  "sidebar.gettingStarted.line1": "iKanban 提供免费模型，你可以立即开始使用。",
   "sidebar.gettingStarted.line2":
     "连接任意提供商即可使用更多模型，如 Claude、GPT、Gemini 等。",
   "sidebar.project.recentSessions": "最近会话",
@@ -652,12 +652,12 @@ export const dict = {
   "settings.general.section.feed": "动态",
   "settings.general.section.display": "显示",
   "settings.general.row.language.title": "语言",
-  "settings.general.row.language.description": "更改 OpenCode 的显示语言",
+  "settings.general.row.language.description": "更改 iKanban 的显示语言",
   "settings.general.row.appearance.title": "外观",
   "settings.general.row.appearance.description":
-    "自定义 OpenCode 在你的设备上的外观",
+    "自定义 iKanban 在你的设备上的外观",
   "settings.general.row.theme.title": "主题",
-  "settings.general.row.theme.description": "自定义 OpenCode 的主题。",
+  "settings.general.row.theme.description": "自定义 iKanban 的主题。",
   "settings.general.row.font.title": "字体",
   "settings.general.row.font.description": "自定义代码块使用的等宽字体",
   "settings.general.row.reasoningSummaries.title": "显示推理摘要",
@@ -682,14 +682,14 @@ export const dict = {
   "settings.general.action.releaseNotesCurrent": "查看变更",
 
   "settings.updates.row.startup.title": "启动时检查更新",
-  "settings.updates.row.startup.description": "在 OpenCode 启动时自动检查更新",
+  "settings.updates.row.startup.description": "在 iKanban 启动时自动检查更新",
   "settings.updates.row.check.title": "检查更新",
   "settings.updates.row.check.description": "手动检查更新并在有更新时安装",
   "settings.updates.action.checkNow": "立即检查",
   "settings.updates.action.checking": "正在检查...",
   "settings.updates.toast.latest.title": "已是最新版本",
   "settings.updates.toast.latest.description":
-    "你正在使用最新版本的 OpenCode。",
+    "你正在使用最新版本的 iKanban。",
 
   "font.option.ibmPlexMono": "IBM Plex Mono",
   "font.option.cascadiaCode": "Cascadia Code",
