@@ -192,6 +192,17 @@ export function Titlebar() {
           </div>
         </Show>
         <div class="flex items-center gap-1 shrink-0">
+          <Show when={params.dir}>
+            <Tooltip placement="bottom" value={language.t("home.title")} openDelay={2000}>
+              <Button
+                variant="ghost"
+                icon="arrow-left"
+                class="titlebar-icon w-8 h-6 p-0 box-border"
+                onClick={() => navigate("/")}
+                aria-label={language.t("home.title")}
+              />
+            </Tooltip>
+          </Show>
           <TooltipKeybind
             class={web() ? "hidden xl:flex shrink-0 ml-14" : "hidden xl:flex shrink-0 ml-2"}
             placement="bottom"
