@@ -26,6 +26,7 @@ import { Persist, persisted } from "@/utils/persist"
 import type { InitError } from "../pages/error"
 import { useGlobalSDK } from "./global-sdk"
 import { bootstrapDirectory, bootstrapGlobal } from "./global-sync/bootstrap"
+import { shouldLoadProjectsOnBootstrap } from "./global-sync/bootstrap-mode"
 import { createChildStoreManager } from "./global-sync/child-store"
 import { applyDirectoryEvent, applyGlobalEvent } from "./global-sync/event-reducer"
 import { createRefreshQueue } from "./global-sync/queue"
@@ -334,6 +335,10 @@ function createGlobalSync() {
       unknownError: language.t("error.chain.unknown"),
       invalidConfigurationError: language.t("error.server.invalidConfiguration"),
       formatMoreCount: (count) => language.t("common.moreCountSuffix", { count }),
+      loadProjects: shouldLoadProjectsOnBootstrap(
+        globalThis.location?.pathname ?? "/",
+        import.meta.env.BASE_URL ?? "/",
+      ),
       setGlobalStore: setBootStore,
     })
   }

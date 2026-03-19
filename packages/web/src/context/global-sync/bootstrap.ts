@@ -39,6 +39,7 @@ export async function bootstrapGlobal(input: {
   unknownError: string
   invalidConfigurationError: string
   formatMoreCount: (count: number) => string
+  loadProjects?: boolean
   setGlobalStore: SetStoreFunction<GlobalStore>
 }) {
   const health = await input.globalSDK.global
@@ -67,16 +68,6 @@ export async function bootstrapGlobal(input: {
       }),
     ),
     retry(() =>
-      input.globalSDK.project.list().then((x) => {
-        const projects = (x.data ?? [])
-          .filter((p) => !!p?.id)
-          .filter((p) => !!p.worktree && !p.worktree.includes("opencode-test"))
-          .slice()
-          .sort((a, b) => cmp(a.id, b.id))
-        input.setGlobalStore("project", projects)
-      }),
-    ),
-    retry(() =>
       input.globalSDK.provider.list().then((x) => {
         input.setGlobalStore("provider", normalizeProviderList(x.data!))
       }),
@@ -87,6 +78,23 @@ export async function bootstrapGlobal(input: {
       }),
     ),
   ]
+
+  if (input.loadProjects !== false) {
+    tasks.splice(
+      2,
+      0,
+      retry(() =>
+        input.globalSDK.project.list().then((x) => {
+          const projects = (x.data ?? [])
+            .filter((p) => !!p?.id)
+            .filter((p) => !!p.worktree && !p.worktree.includes("opencode-test"))
+            .slice()
+            .sort((a, b) => cmp(a.id, b.id))
+          input.setGlobalStore("project", projects)
+        }),
+      ),
+    )
+  }
 
   const results = await Promise.allSettled(tasks)
   const errors = results.filter((r): r is PromiseRejectedResult => r.status === "rejected").map((r) => r.reason)

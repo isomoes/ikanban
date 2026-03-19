@@ -5,6 +5,8 @@ import {
   loadRootSessionsWithFallback,
   pickDirectoriesToEvict,
 } from "./global-sync"
+import { bootstrapGlobal } from "./global-sync/bootstrap"
+import { shouldLoadProjectsOnBootstrap } from "./global-sync/bootstrap-mode"
 
 describe("pickDirectoriesToEvict", () => {
   test("keeps pinned stores and evicts idle stores", () => {
@@ -122,5 +124,60 @@ describe("canDisposeDirectory", () => {
         loadingSessions: false,
       }),
     ).toBe(true)
+  })
+})
+
+describe("bootstrapGlobal", () => {
+  test("does not call project list when project loading is disabled", async () => {
+    let projectListCalls = 0
+    const project = {
+      list: async () => {
+        projectListCalls += 1
+        return { data: [] }
+      },
+    }
+
+    const updates: Array<[string, unknown]> = []
+
+    await bootstrapGlobal({
+      globalSDK: {
+        global: {
+          health: async () => ({ data: { healthy: true } }),
+          config: { get: async () => ({ data: {} }) },
+        },
+        path: { get: async () => ({ data: { state: "", config: "", worktree: "", directory: "", home: "" } }) },
+        project,
+        provider: {
+          list: async () => ({ data: { all: [], connected: [], default: {} } }),
+          auth: async () => ({ data: {} }),
+        },
+      } as never,
+      connectErrorTitle: "connect",
+      connectErrorDescription: "connect desc",
+      requestFailedTitle: "request",
+      unknownError: "unknown",
+      invalidConfigurationError: "invalid",
+      formatMoreCount: () => "",
+      setGlobalStore: ((key: string, value: unknown) => {
+        updates.push([key, value])
+        return value
+      }) as never,
+      loadProjects: false,
+    } as never)
+
+    expect(projectListCalls).toBe(0)
+    expect(updates.some(([key]) => key === "ready")).toBe(true)
+  })
+})
+
+describe("shouldLoadProjectsOnBootstrap", () => {
+  test("skips project loading on the home route", () => {
+    expect(shouldLoadProjectsOnBootstrap("/", "/")).toBe(false)
+    expect(shouldLoadProjectsOnBootstrap("/ikanban", "/ikanban/")).toBe(false)
+  })
+
+  test("loads projects away from the home route", () => {
+    expect(shouldLoadProjectsOnBootstrap("/dGVzdA", "/")).toBe(true)
+    expect(shouldLoadProjectsOnBootstrap("/ikanban/dGVzdA", "/ikanban/")).toBe(true)
   })
 })
