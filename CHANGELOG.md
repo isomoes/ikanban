@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.12]
+
+- Web: Separated server row actions in the server picker so hint navigation and row interactions behave more predictably. (@isomoes)
+- UI: Removed the desktop sidebar toggle to simplify the main web layout and reduce redundant navigation controls. (@isomoes)
+- Home: Skipped project bootstrap work on the home screen so the landing view loads with less unnecessary session setup. (@isomoes)
+- Branding: Updated iKanban naming and copy across the web UI to keep product text consistent. (@isomoes)
+- Docs: Refreshed the README Bilibili video link. (@isomoes)
+
 ## [0.2.11]
 
 - Web: Simplified home/session routing, hid the shell view on the home screen, and added a quick return shortcut so navigation feels cleaner when moving between the dashboard and active sessions. (@isomoes)
