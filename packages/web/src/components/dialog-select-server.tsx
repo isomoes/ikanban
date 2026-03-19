@@ -11,6 +11,7 @@ import { useNavigate } from "@solidjs/router"
 import { createEffect, createMemo, createResource, onCleanup, Show } from "solid-js"
 import { createStore, reconcile } from "solid-js/store"
 import { ServerHealthIndicator, ServerRow } from "@/components/server/server-row"
+import { ServerListItemFrame } from "@/components/server-list-item-frame"
 import { useLanguage } from "@/context/language"
 import { usePlatform } from "@/context/platform"
 import { normalizeServerUrl, ServerConnection, useServer } from "@/context/server"
@@ -532,6 +533,61 @@ export function DialogSelectServer() {
             emptyMessage={language.t("dialog.server.empty")}
             items={sortedItems}
             key={(x) => x.http.url}
+            itemWrapper={(item, node) => (
+              <Show
+                when={item.type === "http"}
+                fallback={node}
+              >
+                <ServerListItemFrame
+                  row={node}
+                  actions={
+                    <DropdownMenu>
+                      <DropdownMenu.Trigger
+                        as={IconButton}
+                        icon="dot-grid"
+                        variant="ghost"
+                        class="shrink-0 size-8 hover:bg-surface-base-hover data-[expanded]:bg-surface-base-active"
+                        onClick={(e: MouseEvent) => e.stopPropagation()}
+                        onPointerDown={(e: PointerEvent) => e.stopPropagation()}
+                      />
+                      <DropdownMenu.Portal>
+                        <DropdownMenu.Content class="mt-1">
+                          <DropdownMenu.Item
+                            onSelect={() => {
+                              if (item.type !== "http") return
+                              startEdit(item)
+                            }}
+                          >
+                            <DropdownMenu.ItemLabel>{language.t("dialog.server.menu.edit")}</DropdownMenu.ItemLabel>
+                          </DropdownMenu.Item>
+                          <Show when={canDefault() && defaultUrl() !== item.http.url}>
+                            <DropdownMenu.Item onSelect={() => setDefault(item.http.url)}>
+                              <DropdownMenu.ItemLabel>
+                                {language.t("dialog.server.menu.default")}
+                              </DropdownMenu.ItemLabel>
+                            </DropdownMenu.Item>
+                          </Show>
+                          <Show when={canDefault() && defaultUrl() === item.http.url}>
+                            <DropdownMenu.Item onSelect={() => setDefault(null)}>
+                              <DropdownMenu.ItemLabel>
+                                {language.t("dialog.server.menu.defaultRemove")}
+                              </DropdownMenu.ItemLabel>
+                            </DropdownMenu.Item>
+                          </Show>
+                          <DropdownMenu.Separator />
+                          <DropdownMenu.Item
+                            onSelect={() => handleRemove(ServerConnection.key(item))}
+                            class="text-text-on-critical-base hover:bg-surface-critical-weak"
+                          >
+                            <DropdownMenu.ItemLabel>{language.t("dialog.server.menu.delete")}</DropdownMenu.ItemLabel>
+                          </DropdownMenu.Item>
+                        </DropdownMenu.Content>
+                      </DropdownMenu.Portal>
+                    </DropdownMenu>
+                  }
+                />
+              </Show>
+            )}
             onSelect={(x) => {
               if (x) select(x)
             }}
@@ -559,57 +615,9 @@ export function DialogSelectServer() {
                     }
                     showCredentials
                   />
-                  <div class="flex items-center justify-center gap-4 pl-4">
-                    <Show when={ServerConnection.key(current()) === key}>
-                      <Icon name="check" class="h-6" />
-                    </Show>
-
-                    <Show when={i.type === "http"}>
-                      <DropdownMenu>
-                        <DropdownMenu.Trigger
-                          as={IconButton}
-                          icon="dot-grid"
-                          variant="ghost"
-                          class="shrink-0 size-8 hover:bg-surface-base-hover data-[expanded]:bg-surface-base-active"
-                          onClick={(e: MouseEvent) => e.stopPropagation()}
-                          onPointerDown={(e: PointerEvent) => e.stopPropagation()}
-                        />
-                        <DropdownMenu.Portal>
-                          <DropdownMenu.Content class="mt-1">
-                            <DropdownMenu.Item
-                              onSelect={() => {
-                                if (i.type !== "http") return
-                                startEdit(i)
-                              }}
-                            >
-                              <DropdownMenu.ItemLabel>{language.t("dialog.server.menu.edit")}</DropdownMenu.ItemLabel>
-                            </DropdownMenu.Item>
-                            <Show when={canDefault() && defaultUrl() !== i.http.url}>
-                              <DropdownMenu.Item onSelect={() => setDefault(i.http.url)}>
-                                <DropdownMenu.ItemLabel>
-                                  {language.t("dialog.server.menu.default")}
-                                </DropdownMenu.ItemLabel>
-                              </DropdownMenu.Item>
-                            </Show>
-                            <Show when={canDefault() && defaultUrl() === i.http.url}>
-                              <DropdownMenu.Item onSelect={() => setDefault(null)}>
-                                <DropdownMenu.ItemLabel>
-                                  {language.t("dialog.server.menu.defaultRemove")}
-                                </DropdownMenu.ItemLabel>
-                              </DropdownMenu.Item>
-                            </Show>
-                            <DropdownMenu.Separator />
-                            <DropdownMenu.Item
-                              onSelect={() => handleRemove(ServerConnection.key(i))}
-                              class="text-text-on-critical-base hover:bg-surface-critical-weak"
-                            >
-                              <DropdownMenu.ItemLabel>{language.t("dialog.server.menu.delete")}</DropdownMenu.ItemLabel>
-                            </DropdownMenu.Item>
-                          </DropdownMenu.Content>
-                        </DropdownMenu.Portal>
-                      </DropdownMenu>
-                    </Show>
-                  </div>
+                  <Show when={ServerConnection.key(current()) === key}>
+                    <Icon name="check" class="h-6" />
+                  </Show>
                 </div>
               )
             }}
