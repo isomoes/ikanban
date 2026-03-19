@@ -1,1 +1,1 @@
-export const sidebarExpanded = (mobile: boolean | undefined, opened: boolean) => !!mobile || opened
+export const sidebarExpanded = (mobile: boolean | undefined, _opened: boolean) => !!mobile

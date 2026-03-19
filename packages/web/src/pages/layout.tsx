@@ -771,13 +771,6 @@ export default function Layout(props: ParentProps) {
   command.register("layout", () => {
     const commands: CommandOption[] = [
       {
-        id: "sidebar.toggle",
-        title: language.t("command.sidebar.toggle"),
-        category: language.t("command.category.view"),
-        keybind: "mod+b",
-        onSelect: () => layout.sidebar.toggle(),
-      },
-      {
         id: "file.open",
         title: language.t("command.file.open"),
         description: params.dir ? language.t("palette.search.placeholder") : language.t("command.project.open"),
@@ -1471,12 +1464,7 @@ export default function Layout(props: ParentProps) {
   )
 
   createEffect(() => {
-    if (!hasDirectoryRoute()) {
-      document.documentElement.style.setProperty("--dialog-left-margin", "0px")
-      return
-    }
-    const sidebarWidth = layout.sidebar.opened() ? layout.sidebar.width() : 48
-    document.documentElement.style.setProperty("--dialog-left-margin", `${sidebarWidth}px`)
+    document.documentElement.style.setProperty("--dialog-left-margin", "0px")
   })
 
   const loadedSessionDirs = new Set<string>()
@@ -1922,137 +1910,58 @@ export default function Layout(props: ParentProps) {
       </Show>
       <div class="flex-1 min-h-0 flex">
         <Show when={hasDirectoryRoute()}>
-          <>
+          <div class="xl:hidden">
+            <div
+              classList={{
+                "fixed inset-x-0 top-10 bottom-0 z-40 transition-opacity duration-200": true,
+                "opacity-100 pointer-events-auto": layout.mobileSidebar.opened(),
+                "opacity-0 pointer-events-none": !layout.mobileSidebar.opened(),
+              }}
+              onClick={(e) => {
+                if (e.target === e.currentTarget) layout.mobileSidebar.hide()
+              }}
+            />
             <nav
               aria-label={language.t("sidebar.nav.projectsAndSessions")}
-              data-component="sidebar-nav-desktop"
+              data-component="sidebar-nav-mobile"
               classList={{
-                "hidden xl:block": true,
-                "relative shrink-0": true,
+                "@container fixed top-10 bottom-0 left-0 z-50 w-72 bg-background-base transition-transform duration-200 ease-out": true,
+                "translate-x-0": layout.mobileSidebar.opened(),
+                "-translate-x-full": !layout.mobileSidebar.opened(),
               }}
-              style={{ width: layout.sidebar.opened() ? `${Math.max(layout.sidebar.width(), 244)}px` : "64px" }}
-              ref={(el) => {
-                setState("nav", el)
-              }}
-              onMouseEnter={() => {
-                if (navLeave.current === undefined) return
-                clearTimeout(navLeave.current)
-                navLeave.current = undefined
-              }}
-              onMouseLeave={() => {
-                aim.reset()
-                if (!sidebarHovering()) return
-
-                if (navLeave.current !== undefined) clearTimeout(navLeave.current)
-                navLeave.current = window.setTimeout(() => {
-                  navLeave.current = undefined
-                  setHoverProject(undefined)
-                  setState("hoverSession", undefined)
-                }, 300)
-              }}
+              onClick={(e) => e.stopPropagation()}
             >
-              <div class="@container w-full h-full contain-strict">
-                <SidebarContent
-                  opened={() => layout.sidebar.opened()}
-                  aimMove={aim.move}
-                  projects={() => layout.projects.list()}
-                  renderProject={(project) => (
-                    <SortableProject ctx={projectSidebarCtx} project={project} sortNow={sortNow} />
-                  )}
-                  handleDragStart={handleDragStart}
-                  handleDragEnd={handleDragEnd}
-                  handleDragOver={handleDragOver}
-                  openProjectLabel={language.t("command.project.open")}
-                  openProjectKeybind={() => command.keybind("project.open")}
-                  onOpenProject={chooseProject}
-                  renderProjectOverlay={() => (
-                    <ProjectDragOverlay projects={() => layout.projects.list()} activeProject={() => store.activeProject} />
-                  )}
-                  settingsLabel={() => language.t("sidebar.settings")}
-                  settingsKeybind={() => command.keybind("settings.open")}
-                  onOpenSettings={openSettings}
-                  helpLabel={() => language.t("sidebar.help")}
-                  onOpenHelp={() => platform.openLink("https://github.com/isomoes/ikanban/issues")}
-                  renderPanel={() => (
-                    <Show when={currentProject()} keyed>
-                      {(project) => <SidebarPanel project={project} />}
-                    </Show>
-                  )}
-                />
-              </div>
-              <Show when={!layout.sidebar.opened() ? hoverProjectData()?.worktree : undefined} keyed>
-                {(worktree) => (
-                  <div class="absolute inset-y-0 left-16 z-50 flex" onMouseEnter={aim.reset}>
-                    <SidebarPanel project={hoverProjectData()} />
-                  </div>
+              <SidebarContent
+                mobile
+                opened={() => false}
+                aimMove={aim.move}
+                projects={() => layout.projects.list()}
+                renderProject={(project) => (
+                  <SortableProject ctx={projectSidebarCtx} project={project} sortNow={sortNow} mobile />
                 )}
-              </Show>
-              <Show when={layout.sidebar.opened()}>
-                <ResizeHandle
-                  direction="horizontal"
-                  size={layout.sidebar.width()}
-                  min={244}
-                  max={typeof window === "undefined" ? 1000 : window.innerWidth * 0.3 + 64}
-                  collapseThreshold={244}
-                  onResize={layout.sidebar.resize}
-                  onCollapse={layout.sidebar.close}
-                />
-              </Show>
-            </nav>
-            <div class="xl:hidden">
-              <div
-                classList={{
-                  "fixed inset-x-0 top-10 bottom-0 z-40 transition-opacity duration-200": true,
-                  "opacity-100 pointer-events-auto": layout.mobileSidebar.opened(),
-                  "opacity-0 pointer-events-none": !layout.mobileSidebar.opened(),
-                }}
-                onClick={(e) => {
-                  if (e.target === e.currentTarget) layout.mobileSidebar.hide()
-                }}
+                handleDragStart={handleDragStart}
+                handleDragEnd={handleDragEnd}
+                handleDragOver={handleDragOver}
+                openProjectLabel={language.t("command.project.open")}
+                openProjectKeybind={() => command.keybind("project.open")}
+                onOpenProject={chooseProject}
+                renderProjectOverlay={() => (
+                  <ProjectDragOverlay projects={() => layout.projects.list()} activeProject={() => store.activeProject} />
+                )}
+                settingsLabel={() => language.t("sidebar.settings")}
+                settingsKeybind={() => command.keybind("settings.open")}
+                onOpenSettings={openSettings}
+                helpLabel={() => language.t("sidebar.help")}
+                onOpenHelp={() => platform.openLink("https://github.com/isomoes/ikanban/issues")}
+                renderPanel={() => <SidebarPanel project={currentProject()} mobile />}
               />
-              <nav
-                aria-label={language.t("sidebar.nav.projectsAndSessions")}
-                data-component="sidebar-nav-mobile"
-                classList={{
-                  "@container fixed top-10 bottom-0 left-0 z-50 w-72 bg-background-base transition-transform duration-200 ease-out": true,
-                  "translate-x-0": layout.mobileSidebar.opened(),
-                  "-translate-x-full": !layout.mobileSidebar.opened(),
-                }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <SidebarContent
-                  mobile
-                  opened={() => layout.sidebar.opened()}
-                  aimMove={aim.move}
-                  projects={() => layout.projects.list()}
-                  renderProject={(project) => (
-                    <SortableProject ctx={projectSidebarCtx} project={project} sortNow={sortNow} mobile />
-                  )}
-                  handleDragStart={handleDragStart}
-                  handleDragEnd={handleDragEnd}
-                  handleDragOver={handleDragOver}
-                  openProjectLabel={language.t("command.project.open")}
-                  openProjectKeybind={() => command.keybind("project.open")}
-                  onOpenProject={chooseProject}
-                  renderProjectOverlay={() => (
-                    <ProjectDragOverlay projects={() => layout.projects.list()} activeProject={() => store.activeProject} />
-                  )}
-                  settingsLabel={() => language.t("sidebar.settings")}
-                  settingsKeybind={() => command.keybind("settings.open")}
-                  onOpenSettings={openSettings}
-                  helpLabel={() => language.t("sidebar.help")}
-                  onOpenHelp={() => platform.openLink("https://github.com/isomoes/ikanban/issues")}
-                  renderPanel={() => <SidebarPanel project={currentProject()} mobile />}
-                />
-              </nav>
-            </div>
-          </>
+            </nav>
+          </div>
         </Show>
 
         <main
           classList={{
             "size-full overflow-x-hidden flex flex-col items-start contain-strict border-t border-border-weak-base": true,
-            "xl:border-l xl:rounded-tl-[12px]": hasDirectoryRoute() && !layout.sidebar.opened(),
             "border-t-0": !hasDirectoryRoute(),
           }}
         >

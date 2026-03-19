@@ -8,7 +8,7 @@ import { Icon } from "ikanban-ui/icon"
 import { IconButton } from "ikanban-ui/icon-button"
 import { Tooltip } from "ikanban-ui/tooltip"
 import { createSortable } from "@thisbeyond/solid-dnd"
-import { useLayout, type LocalProject } from "@/context/layout"
+import { type LocalProject } from "@/context/layout"
 import { useGlobalSync } from "@/context/global-sync"
 import { useLanguage } from "@/context/language"
 import { useNotification } from "@/context/notification"
@@ -77,7 +77,6 @@ const ProjectTile = (props: {
   language: ReturnType<typeof useLanguage>
 }): JSX.Element => {
   const notification = useNotification()
-  const layout = useLayout()
   const unseenCount = createMemo(() =>
     props.dirs().reduce((total, directory) => total + notification.project.unseenCount(directory), 0),
   )
@@ -127,7 +126,6 @@ const ProjectTile = (props: {
         onClick={() => {
           if (props.selected()) {
             props.setSuppressHover(true)
-            layout.sidebar.toggle()
             return
           }
           props.setSuppressHover(false)

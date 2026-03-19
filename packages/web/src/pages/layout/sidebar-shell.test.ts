@@ -6,8 +6,8 @@ describe("sidebarExpanded", () => {
     expect(sidebarExpanded(true, false)).toBe(true)
   })
 
-  test("follows desktop open state when not mobile", () => {
-    expect(sidebarExpanded(false, true)).toBe(true)
+  test("stays closed on desktop now that the sidebar pane is removed", () => {
+    expect(sidebarExpanded(false, true)).toBe(false)
     expect(sidebarExpanded(false, false)).toBe(false)
   })
 })
