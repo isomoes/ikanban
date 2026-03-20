@@ -16,14 +16,7 @@ import { useGlobalSync } from "@/context/global-sync";
 import { useLanguage } from "@/context/language";
 import { IconButton } from "ikanban-ui/icon-button";
 import type { Session } from "@opencode-ai/sdk/v2/client";
-
-type BoardColumn = "progress" | "idle";
-
-type BoardCard = {
-  session: Session;
-  projectDirectory: string;
-  updatedAt: number;
-};
+import { buildBoardColumns, trackedProjectDirectories, type BoardCard, type BoardColumn } from "./home/helpers";
 
 const homeStyles = {
   border: { border: "1px solid var(--border-weak-base)" },
@@ -62,18 +55,10 @@ export default function Home() {
   const globalSDK = useGlobalSDK();
   const server = useServer();
   const language = useLanguage();
-  const projects = createMemo(() => {
-    return sync.data.project
-      .slice()
-      .sort(
-        (a, b) =>
-          (b.time.updated ?? b.time.created) -
-          (a.time.updated ?? a.time.created),
-      );
-  });
+  const trackedProjects = createMemo(() => trackedProjectDirectories(server.projects.list()));
 
   const [rootSessions, { mutate: mutateRootSessions }] = createResource(
-    () => projects().map((project) => project.worktree),
+    trackedProjects,
     async (directories) => {
       const entries = await Promise.all(
         directories.map(async (directory) => {
@@ -95,45 +80,24 @@ export default function Home() {
   );
 
   const boardColumns = createMemo<Record<BoardColumn, BoardCard[]>>(() => {
-    const now = Date.now();
-    const columns: Record<BoardColumn, BoardCard[]> = {
-      progress: [],
-      idle: [],
-    };
     const sessionsByProject = rootSessions() ?? {};
+    const statusesByProject = Object.fromEntries(
+      trackedProjects().map((directory) => {
+        const [store] = sync.child(directory);
+        return [directory, store.session_status] as const;
+      }),
+    );
 
-    for (const project of projects()) {
-      const [store] = sync.child(project.worktree);
-      const sessions = sessionsByProject[project.worktree] ?? [];
-
-      for (const session of sessions) {
-        const status = store.session_status[session.id];
-        const updatedAt = session.time.updated ?? session.time.created;
-        const card = {
-          session,
-          projectDirectory: project.worktree,
-          updatedAt,
-        };
-
-        if (status?.type === "busy" || status?.type === "retry") {
-          columns.progress.push(card);
-          continue;
-        }
-
-        columns.idle.push(card);
-      }
-    }
-
-    for (const key of Object.keys(columns) as BoardColumn[]) {
-      columns[key].sort((a, b) => b.updatedAt - a.updatedAt);
-    }
-
-    return columns;
+    return buildBoardColumns({
+      projectDirectories: trackedProjects(),
+      sessionsByProject,
+      statusesByProject,
+    });
   });
 
   createEffect(() => {
-    for (const project of projects()) {
-      sync.child(project.worktree);
+    for (const directory of trackedProjects()) {
+      sync.child(directory);
     }
   });
 
@@ -249,7 +213,7 @@ export default function Home() {
       </div>
 
       <Switch>
-        <Match when={projects().length > 0}>
+        <Match when={trackedProjects().length > 0}>
           <div class="mt-6 flex w-full flex-col gap-6">
             <section class="flex flex-col gap-4">
               <div class="grid gap-3 lg:grid-cols-2">
