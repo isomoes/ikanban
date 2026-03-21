@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.13]
+
+- Home: Limited the web home status board to opened sessions so the landing view stays focused on active work instead of showing every known session. (@isomoes)
+- UI: Unified inline tool duration formatting across tool cards and session turns so timing details render more consistently in the interface. (@isomoes)
+
 ## [0.2.12]
 
 - Web: Separated server row actions in the server picker so hint navigation and row interactions behave more predictably. (@isomoes)
