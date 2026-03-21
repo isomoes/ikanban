@@ -52,6 +52,7 @@ import { TextShimmer } from "./text-shimmer"
 import { AnimatedCountList } from "./tool-count-summary"
 import { ToolStatusTitle } from "./tool-status-title"
 import { animate } from "motion"
+import { buildDurationPrefix, buildInlineDurationDetail } from "./session-turn-duration"
 
 function ShellSubmessage(props: { text: string; animate?: boolean }) {
   let widthRef: HTMLSpanElement | undefined
@@ -141,6 +142,7 @@ export interface MessagePartProps {
   defaultOpen?: boolean
   showAssistantCopyPartID?: string | null
   turnDurationMs?: number
+  turnDurationLabel?: string
 }
 
 export type PartComponent = Component<MessagePartProps>
@@ -431,6 +433,7 @@ export function AssistantParts(props: {
   messages: AssistantMessage[]
   showAssistantCopyPartID?: string | null
   turnDurationMs?: number
+  turnDurationLabel?: string
   working?: boolean
   showReasoningSummaries?: boolean
   shellToolDefaultOpen?: boolean
@@ -481,7 +484,7 @@ export function AssistantParts(props: {
 
                 return (
                   <Show when={parts().length > 0}>
-                    <ContextToolGroup parts={parts()} busy={busy()} />
+                    <ContextToolGroup parts={parts()} busy={busy()} durationLabel={props.turnDurationLabel} />
                   </Show>
                 )
               })()}
@@ -507,6 +510,7 @@ export function AssistantParts(props: {
                             message={msg()}
                             showAssistantCopyPartID={props.showAssistantCopyPartID}
                             turnDurationMs={props.turnDurationMs}
+                            turnDurationLabel={props.turnDurationLabel}
                             defaultOpen={partDefaultOpen(p(), props.shellToolDefaultOpen, props.editToolDefaultOpen)}
                           />
                         )}
@@ -703,7 +707,7 @@ export function AssistantMessageDisplay(props: {
   )
 }
 
-function ContextToolGroup(props: { parts: ToolPart[]; busy?: boolean }) {
+function ContextToolGroup(props: { parts: ToolPart[]; busy?: boolean; durationLabel?: string }) {
   const i18n = useI18n()
   const [open, setOpen] = createSignal(false)
   const pending = createMemo(
@@ -711,11 +715,12 @@ function ContextToolGroup(props: { parts: ToolPart[]; busy?: boolean }) {
       !!props.busy || props.parts.some((part) => part.state.status === "pending" || part.state.status === "running"),
   )
   const summary = createMemo(() => contextToolSummary(props.parts))
+  const durationPrefix = createMemo(() => (pending() ? "" : buildDurationPrefix(props.durationLabel)))
 
   return (
     <Collapsible open={open()} onOpenChange={setOpen} variant="ghost">
       <Collapsible.Trigger>
-        <div data-component="context-tool-group-trigger">
+        <div data-component="context-tool-group-trigger" class="flex items-center gap-1.5 min-w-0">
           <span
             data-slot="context-tool-group-title"
             class="min-w-0 flex items-center gap-2 text-14-medium text-text-strong"
@@ -732,6 +737,11 @@ function ContextToolGroup(props: { parts: ToolPart[]; busy?: boolean }) {
               data-slot="context-tool-group-summary"
               class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap font-normal text-text-base"
             >
+              <Show when={durationPrefix()}>
+                <span data-slot="context-tool-group-duration-prefix" class="text-12-regular text-text-weak">
+                  {durationPrefix()}
+                </span>
+              </Show>
               <AnimatedCountList
                 items={[
                   {
@@ -1019,6 +1029,7 @@ export function Part(props: MessagePartProps) {
         defaultOpen={props.defaultOpen}
         showAssistantCopyPartID={props.showAssistantCopyPartID}
         turnDurationMs={props.turnDurationMs}
+        turnDurationLabel={props.turnDurationLabel}
       />
     </Show>
   )
@@ -1034,6 +1045,7 @@ export interface ToolProps {
   defaultOpen?: boolean
   forceOpen?: boolean
   locked?: boolean
+  turnDurationLabel?: string
 }
 
 export type ToolComponent = Component<ToolProps>
@@ -1162,6 +1174,7 @@ PART_MAPPING["tool"] = function ToolPartDisplay(props) {
               status={part().state.status}
               hideDetails={props.hideDetails}
               defaultOpen={props.defaultOpen}
+              turnDurationLabel={props.turnDurationLabel}
             />
           </Match>
         </Switch>
@@ -1430,6 +1443,7 @@ ToolRegistry.register({
       if (typeof value !== "string") return ""
       return value
     })
+    const detail = createMemo(() => buildInlineDurationDetail(url(), props.turnDurationLabel))
     return (
       <BasicTool
         {...props}
@@ -1441,7 +1455,7 @@ ToolRegistry.register({
               <span data-slot="basic-tool-tool-title">
                 <TextShimmer text={i18n.t("ui.tool.webfetch")} active={pending()} />
               </span>
-              <Show when={!pending() && url()}>
+              <Show when={!pending() && detail()}>
                 <a
                   data-slot="basic-tool-tool-subtitle"
                   class="clickable subagent-link"
@@ -1450,7 +1464,7 @@ ToolRegistry.register({
                   rel="noopener noreferrer"
                   onClick={(event) => event.stopPropagation()}
                 >
-                  {url()}
+                  {detail()}
                 </a>
               </Show>
             </div>
@@ -1478,6 +1492,7 @@ ToolRegistry.register({
       if (typeof value === "string") return value
       return undefined
     })
+    const detail = createMemo(() => buildInlineDurationDetail(description() ?? "", props.turnDurationLabel))
     const running = createMemo(() => props.status === "pending" || props.status === "running")
 
     const href = createMemo(() => {
@@ -1523,7 +1538,7 @@ ToolRegistry.register({
           <span data-slot="basic-tool-tool-title" class="capitalize agent-title">
             {titleContent()}
           </span>
-          <Show when={description()}>
+          <Show when={detail()}>
             <Switch>
               <Match when={href()}>
                 {(url) => (
@@ -1533,12 +1548,12 @@ ToolRegistry.register({
                     href={url()}
                     onClick={handleLinkClick}
                   >
-                    {description()}
+                    {detail()}
                   </a>
                 )}
               </Match>
               <Match when={true}>
-                <span data-slot="basic-tool-tool-subtitle">{description()}</span>
+                <span data-slot="basic-tool-tool-subtitle">{detail()}</span>
               </Match>
             </Switch>
           </Show>
@@ -1556,6 +1571,7 @@ ToolRegistry.register({
     const i18n = useI18n()
     const pending = () => props.status === "pending" || props.status === "running"
     const sawPending = pending()
+    const detail = createMemo(() => buildInlineDurationDetail(props.input.description ?? "", props.turnDurationLabel))
     const text = createMemo(() => {
       const cmd = props.input.command ?? props.metadata.command ?? ""
       const out = stripAnsi(props.output || props.metadata.output || "")
@@ -1581,8 +1597,8 @@ ToolRegistry.register({
               <span data-slot="basic-tool-tool-title">
                 <TextShimmer text={i18n.t("ui.tool.shell")} active={pending()} />
               </span>
-              <Show when={!pending() && props.input.description}>
-                <ShellSubmessage text={props.input.description} animate={sawPending} />
+              <Show when={!pending() && detail()}>
+                <ShellSubmessage text={detail()} animate={sawPending} />
               </Show>
             </div>
           </div>
@@ -1625,6 +1641,7 @@ ToolRegistry.register({
     const path = createMemo(() => props.metadata?.filediff?.file || props.input.filePath || "")
     const filename = () => getFilename(props.input.filePath ?? "")
     const pending = () => props.status === "pending" || props.status === "running"
+    const titleDetail = createMemo(() => buildInlineDurationDetail(filename(), props.turnDurationLabel))
     return (
       <div data-component="edit-tool">
         <BasicTool
@@ -1639,7 +1656,7 @@ ToolRegistry.register({
                     <TextShimmer text={i18n.t("ui.messagePart.title.edit")} active={pending()} />
                   </span>
                   <Show when={!pending()}>
-                    <span data-slot="message-part-title-filename">{filename()}</span>
+                    <span data-slot="message-part-title-filename">{titleDetail()}</span>
                   </Show>
                 </div>
                 <Show when={!pending() && props.input.filePath?.includes("/")}>
@@ -1695,6 +1712,7 @@ ToolRegistry.register({
     const path = createMemo(() => props.input.filePath || "")
     const filename = () => getFilename(props.input.filePath ?? "")
     const pending = () => props.status === "pending" || props.status === "running"
+    const titleDetail = createMemo(() => buildInlineDurationDetail(filename(), props.turnDurationLabel))
     return (
       <div data-component="write-tool">
         <BasicTool
@@ -1709,7 +1727,7 @@ ToolRegistry.register({
                     <TextShimmer text={i18n.t("ui.messagePart.title.write")} active={pending()} />
                   </span>
                   <Show when={!pending()}>
-                    <span data-slot="message-part-title-filename">{filename()}</span>
+                    <span data-slot="message-part-title-filename">{titleDetail()}</span>
                   </Show>
                 </div>
                 <Show when={!pending() && props.input.filePath?.includes("/")}>
@@ -1785,6 +1803,7 @@ ToolRegistry.register({
       if (count === 0) return ""
       return `${count} ${i18n.t(count > 1 ? "ui.common.file.other" : "ui.common.file.one")}`
     })
+    const singleTitleDetail = createMemo(() => buildInlineDurationDetail(getFilename(single()?.relativePath ?? ""), props.turnDurationLabel))
 
     return (
       <Show
@@ -1901,7 +1920,7 @@ ToolRegistry.register({
                         <TextShimmer text={i18n.t("ui.tool.patch")} active={pending()} />
                       </span>
                       <Show when={!pending()}>
-                        <span data-slot="message-part-title-filename">{getFilename(file().relativePath)}</span>
+                        <span data-slot="message-part-title-filename">{singleTitleDetail()}</span>
                       </Show>
                     </div>
                     <Show when={!pending() && file().relativePath.includes("/")}>
@@ -2063,6 +2082,7 @@ ToolRegistry.register({
     const running = createMemo(() => props.status === "pending" || props.status === "running")
 
     const titleContent = () => <TextShimmer text={title()} active={running()} />
+    const detail = createMemo(() => buildInlineDurationDetail("", props.turnDurationLabel))
 
     const trigger = () => (
       <div data-slot="basic-tool-tool-info-structured">
@@ -2070,6 +2090,9 @@ ToolRegistry.register({
           <span data-slot="basic-tool-tool-title" class="capitalize agent-title">
             {titleContent()}
           </span>
+          <Show when={detail() && !running()}>
+            <span data-slot="basic-tool-tool-subtitle">{detail()}</span>
+          </Show>
         </div>
       </div>
     )

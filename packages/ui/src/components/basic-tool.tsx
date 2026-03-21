@@ -3,6 +3,7 @@ import { animate, type AnimationPlaybackControls } from "motion"
 import { Collapsible } from "./collapsible"
 import type { IconProps } from "./icon"
 import { TextShimmer } from "./text-shimmer"
+import { buildInlineDurationDetail } from "./session-turn-duration"
 
 export type TriggerTitle = {
   title: string
@@ -32,6 +33,7 @@ export interface BasicToolProps {
   locked?: boolean
   animated?: boolean
   onSubtitleClick?: () => void
+  turnDurationLabel?: string
 }
 
 const SPRING = { type: "spring" as const, visualDuration: 0.35, bounce: 0 }
@@ -40,6 +42,10 @@ export function BasicTool(props: BasicToolProps) {
   const [open, setOpen] = createSignal(props.defaultOpen ?? false)
   const [ready, setReady] = createSignal(open())
   const pending = () => props.status === "pending" || props.status === "running"
+  const inlineSubtitle = () => {
+    if (!isTriggerTitle(props.trigger)) return ""
+    return buildInlineDurationDetail(props.trigger.subtitle ?? "", pending() ? undefined : props.turnDurationLabel)
+  }
 
   let frame: number | undefined
 
@@ -135,7 +141,7 @@ export function BasicTool(props: BasicToolProps) {
                           <TextShimmer text={trigger().title} active={pending()} />
                         </span>
                         <Show when={!pending()}>
-                          <Show when={trigger().subtitle}>
+                          <Show when={inlineSubtitle()}>
                             <span
                               data-slot="basic-tool-tool-subtitle"
                               classList={{
@@ -149,7 +155,7 @@ export function BasicTool(props: BasicToolProps) {
                                 }
                               }}
                             >
-                              {trigger().subtitle}
+                              {inlineSubtitle()}
                             </span>
                           </Show>
                           <Show when={trigger().args?.length}>

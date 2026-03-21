@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 import { AssistantMessage, type FileDiff, Message as MessageType, Part as PartType } from "@opencode-ai/sdk/v2/client"
 import type { SessionStatus } from "@opencode-ai/sdk/v2"
 import { useData } from "../context"
@@ -8,6 +9,7 @@ import { getDirectory, getFilename } from "ikanban-utils/path"
 import { createEffect, createMemo, createSignal, For, on, ParentProps, Show } from "solid-js"
 import { Dynamic } from "solid-js/web"
 import { AssistantParts, Message, Part, PART_MAPPING } from "./message-part"
+import { formatTurnDurationLabel, getTurnDurationMs } from "./session-turn-duration"
 import { Card } from "./card"
 import { Accordion } from "./accordion"
 import { StickyAccordionHeader } from "./sticky-accordion-header"
@@ -326,19 +328,11 @@ export function SessionTurn(
     return showAssistantCopyPartID() ?? null
   })
   const turnDurationMs = createMemo(() => {
-    const start = message()?.time.created
-    if (typeof start !== "number") return undefined
-
-    const end = assistantMessages().reduce<number | undefined>((max, item) => {
-      const completed = item.time.completed
-      if (typeof completed !== "number") return max
-      if (max === undefined) return completed
-      return Math.max(max, completed)
-    }, undefined)
-
-    if (typeof end !== "number") return undefined
-    if (end < start) return undefined
-    return end - start
+    return getTurnDurationMs(message(), assistantMessages())
+  })
+  const turnDurationLabel = createMemo(() => {
+    if (working()) return ""
+    return formatTurnDurationLabel(turnDurationMs())
   })
   const assistantVisible = createMemo(() =>
     assistantMessages().reduce((count, message) => {
@@ -411,6 +405,7 @@ export function SessionTurn(
                       messages={assistantMessages()}
                       showAssistantCopyPartID={assistantCopyPartID()}
                       turnDurationMs={turnDurationMs()}
+                      turnDurationLabel={turnDurationLabel() || undefined}
                       working={working()}
                       showReasoningSummaries={showReasoningSummaries()}
                       shellToolDefaultOpen={props.shellToolDefaultOpen}
