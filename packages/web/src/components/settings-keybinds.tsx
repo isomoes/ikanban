@@ -1,10 +1,10 @@
 import { Component, For, Show, createMemo, onCleanup, onMount } from "solid-js"
 import { createStore } from "solid-js/store"
-import { Button } from "ikanban-ui/button"
-import { Icon } from "ikanban-ui/icon"
-import { IconButton } from "ikanban-ui/icon-button"
-import { TextField } from "ikanban-ui/text-field"
-import { showToast } from "ikanban-ui/toast"
+import { Button } from "@/ui/components/button"
+import { Icon } from "@/ui/components/icon"
+import { IconButton } from "@/ui/components/icon-button"
+import { TextField } from "@/ui/components/text-field"
+import { showToast } from "@/ui/components/toast"
 import fuzzysort from "fuzzysort"
 import { formatKeybind, parseKeybind, useCommand } from "@/context/command"
 import { useLanguage } from "@/context/language"
@@ -14,7 +14,7 @@ const IS_MAC = typeof navigator === "object" && /(Mac|iPod|iPhone|iPad)/.test(na
 const PALETTE_ID = "command.palette"
 const DEFAULT_PALETTE_KEYBIND = "mod+shift+p"
 
-type KeybindGroup = "General" | "Session" | "Navigation" | "Model and agent" | "Terminal" | "Prompt"
+type KeybindGroup = "General" | "Session" | "Navigation" | "Model and agent" | "Prompt"
 
 type KeybindMeta = {
   title: string
@@ -24,14 +24,13 @@ type KeybindMeta = {
 type KeybindMap = Record<string, string | undefined>
 type CommandContext = ReturnType<typeof useCommand>
 
-const GROUPS: KeybindGroup[] = ["General", "Session", "Navigation", "Model and agent", "Terminal", "Prompt"]
+const GROUPS: KeybindGroup[] = ["General", "Session", "Navigation", "Model and agent", "Prompt"]
 
 type GroupKey =
   | "settings.shortcuts.group.general"
   | "settings.shortcuts.group.session"
   | "settings.shortcuts.group.navigation"
   | "settings.shortcuts.group.modelAndAgent"
-  | "settings.shortcuts.group.terminal"
   | "settings.shortcuts.group.prompt"
 
 const groupKey: Record<KeybindGroup, GroupKey> = {
@@ -39,13 +38,11 @@ const groupKey: Record<KeybindGroup, GroupKey> = {
   Session: "settings.shortcuts.group.session",
   Navigation: "settings.shortcuts.group.navigation",
   "Model and agent": "settings.shortcuts.group.modelAndAgent",
-  Terminal: "settings.shortcuts.group.terminal",
   Prompt: "settings.shortcuts.group.prompt",
 }
 
 function groupFor(id: string): KeybindGroup {
   if (id === PALETTE_ID) return "General"
-  if (id.startsWith("terminal.")) return "Terminal"
   if (id.startsWith("model.") || id.startsWith("agent.") || id.startsWith("mcp.")) return "Model and agent"
   if (id.startsWith("file.") || id.startsWith("fileTree.")) return "Navigation"
   if (id.startsWith("prompt.")) return "Prompt"

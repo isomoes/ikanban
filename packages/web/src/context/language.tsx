@@ -1,12 +1,12 @@
 import * as i18n from "@solid-primitives/i18n";
 import { createEffect, createMemo } from "solid-js";
 import { createStore } from "solid-js/store";
-import { createSimpleContext } from "ikanban-ui/context";
+import { createSimpleContext } from "@/ui/context/index";
 import { Persist, persisted } from "@/utils/persist";
 import { dict as en } from "@/i18n/en";
 import { dict as zh } from "@/i18n/zh";
-import { dict as uiEn } from "ikanban-ui/i18n/en";
-import { dict as uiZh } from "ikanban-ui/i18n/zh";
+import { dict as uiEn } from "@/ui/i18n/en";
+import { dict as uiZh } from "@/ui/i18n/zh";
 
 export type Locale = "en" | "zh";
 

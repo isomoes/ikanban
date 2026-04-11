@@ -9,7 +9,7 @@ beforeAll(async () => {
     useNavigate: () => () => undefined,
     useParams: () => ({}),
   }))
-  mock.module("ikanban-ui/context", () => ({
+  mock.module("@/ui/context/index", () => ({
     createSimpleContext: () => ({
       use: () => undefined,
       provider: () => undefined,

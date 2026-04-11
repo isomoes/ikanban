@@ -13,7 +13,6 @@ export const dict = {
   "command.category.language": "语言",
   "command.category.file": "文件",
   "command.category.context": "上下文",
-  "command.category.terminal": "终端",
   "command.category.model": "模型",
   "command.category.mcp": "MCP",
   "command.category.agent": "智能体",
@@ -63,14 +62,9 @@ export const dict = {
 
   "command.input.focus": "聚焦输入框",
 
-  "command.terminal.toggle": "切换终端",
-
   "command.fileTree.toggle": "切换文件树",
 
   "command.review.toggle": "切换审查",
-
-  "command.terminal.new": "新建终端",
-  "command.terminal.new.description": "创建新的终端标签页",
 
   "command.steps.toggle": "切换步骤",
   "command.steps.toggle.description": "显示或隐藏当前消息的步骤",
@@ -94,7 +88,6 @@ export const dict = {
   "command.model.variant.cycle": "切换思考强度",
   "command.model.variant.cycle.description": "切换到下一个强度等级",
 
-  "command.prompt.mode.shell": "Shell",
   "command.prompt.mode.normal": "Prompt",
 
   "command.permissions.autoaccept.enable": "自动接受权限",
@@ -261,14 +254,11 @@ export const dict = {
   "common.default": "默认",
   "common.attachment": "附件",
 
-  "prompt.placeholder.shell": "输入 shell 命令...",
   "prompt.placeholder.normal": '随便问点什么... "{{example}}"',
   "prompt.placeholder.simple": "随便问点什么...",
   "prompt.placeholder.summarizeComments": "总结评论…",
   "prompt.placeholder.summarizeComment": "总结该评论…",
-  "prompt.mode.shell": "Shell",
   "prompt.mode.normal": "Prompt",
-  "prompt.mode.shell.exit": "按 esc 退出",
   "prompt.example.1": "修复代码库中的一个 TODO",
   "prompt.example.2": "这个项目的技术栈是什么？",
   "prompt.example.3": "修复失败的测试",
@@ -316,7 +306,6 @@ export const dict = {
     "发送提示前请先选择智能体和模型。",
   "prompt.toast.worktreeCreateFailed.title": "创建工作树失败",
   "prompt.toast.sessionCreateFailed.title": "创建会话失败",
-  "prompt.toast.shellSendFailed.title": "发送 shell 命令失败",
   "prompt.toast.commandSendFailed.title": "发送命令失败",
   "prompt.toast.promptSendFailed.title": "发送提示失败",
   "prompt.toast.promptSendFailed.description": "无法获取会话",
@@ -595,14 +584,6 @@ export const dict = {
 
   "prompt.loading": "正在加载提示...",
 
-  "terminal.loading": "正在加载终端...",
-  "terminal.title": "终端",
-  "terminal.title.numbered": "终端 {{number}}",
-  "terminal.close": "关闭终端",
-  "terminal.connectionLost.title": "连接已丢失",
-  "terminal.connectionLost.description":
-    "终端连接已中断。这可能发生在服务器重启时。",
-
   "common.closeTab": "关闭标签页",
   "common.dismiss": "忽略",
   "common.requestFailed": "请求失败",
@@ -783,7 +764,6 @@ export const dict = {
   "settings.shortcuts.group.session": "会话",
   "settings.shortcuts.group.navigation": "导航",
   "settings.shortcuts.group.modelAndAgent": "模型与智能体",
-  "settings.shortcuts.group.terminal": "终端",
   "settings.shortcuts.group.prompt": "提示",
 
   "settings.providers.title": "提供商",

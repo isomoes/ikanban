@@ -50,11 +50,11 @@ beforeAll(async () => {
     },
   }))
 
-  mock.module("ikanban-ui/toast", () => ({
+  mock.module("@/ui/components/toast", () => ({
     showToast: () => 0,
   }))
 
-  mock.module("ikanban-utils/encode", () => ({
+  mock.module("@/util/encode", () => ({
     base64Encode: (value: string) => value,
   }))
 

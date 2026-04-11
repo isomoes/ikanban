@@ -1,8 +1,8 @@
 import { For, Show } from "solid-js"
 import type { PermissionRequest } from "@opencode-ai/sdk/v2"
-import { Button } from "ikanban-ui/button"
-import { DockPrompt } from "ikanban-ui/dock-prompt"
-import { Icon } from "ikanban-ui/icon"
+import { Button } from "@/ui/components/button"
+import { DockPrompt } from "@/ui/components/dock-prompt"
+import { Icon } from "@/ui/components/icon"
 import { useLanguage } from "@/context/language"
 
 export function SessionPermissionDock(props: {

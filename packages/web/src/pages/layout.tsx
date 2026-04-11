@@ -16,16 +16,16 @@ import { A, useNavigate, useParams } from "@solidjs/router"
 import { useLayout, LocalProject } from "@/context/layout"
 import { useGlobalSync } from "@/context/global-sync"
 import { Persist, persisted } from "@/utils/persist"
-import { base64Encode } from "ikanban-utils/encode"
+import { base64Encode } from "@/util/encode"
 import { decode64 } from "@/utils/base64"
-import { ResizeHandle } from "ikanban-ui/resize-handle"
-import { Button } from "ikanban-ui/button"
-import { Icon } from "ikanban-ui/icon"
-import { IconButton } from "ikanban-ui/icon-button"
-import { Tooltip, TooltipKeybind } from "ikanban-ui/tooltip"
-import { DropdownMenu } from "ikanban-ui/dropdown-menu"
-import { Dialog } from "ikanban-ui/dialog"
-import { getFilename } from "ikanban-utils/path"
+import { ResizeHandle } from "@/ui/components/resize-handle"
+import { Button } from "@/ui/components/button"
+import { Icon } from "@/ui/components/icon"
+import { IconButton } from "@/ui/components/icon-button"
+import { Tooltip, TooltipKeybind } from "@/ui/components/tooltip"
+import { DropdownMenu } from "@/ui/components/dropdown-menu"
+import { Dialog } from "@/ui/components/dialog"
+import { getFilename } from "@/util/path"
 import { Session, type Message } from "@opencode-ai/sdk/v2/client"
 import { usePlatform } from "@/context/platform"
 import { useSettings } from "@/context/settings"
@@ -33,19 +33,18 @@ import { createStore, produce, reconcile } from "solid-js/store"
 import { DragDropProvider, DragDropSensors, DragOverlay, SortableProvider, closestCenter } from "@thisbeyond/solid-dnd"
 import type { DragEvent } from "@thisbeyond/solid-dnd"
 import { useProviders } from "@/hooks/use-providers"
-import { showToast, Toast, toaster } from "ikanban-ui/toast"
+import { showToast, Toast, toaster } from "@/ui/components/toast"
 import { useGlobalSDK } from "@/context/global-sdk"
-import { clearWorkspaceTerminals } from "@/context/terminal"
 import { useNotification } from "@/context/notification"
 import { usePermission } from "@/context/permission"
-import { Binary } from "ikanban-utils/binary"
-import { retry } from "ikanban-utils/retry"
+import { Binary } from "@/util/binary"
+import { retry } from "@/util/retry"
 import { playSound, soundSrc } from "@/utils/sound"
 import { createAim } from "@/utils/aim"
 import { Worktree as WorktreeState } from "@/utils/worktree"
 
-import { useDialog } from "ikanban-ui/context/dialog"
-import { useTheme, type ColorScheme } from "ikanban-ui/theme"
+import { useDialog } from "@/ui/context/dialog"
+import { useTheme, type ColorScheme } from "@/ui/theme/index"
 import { DialogSelectProvider } from "@/components/dialog-select-provider"
 import { DialogSelectServer } from "@/components/dialog-select-server"
 import { DialogSettings } from "@/components/dialog-settings"
@@ -1228,11 +1227,6 @@ export default function Layout(props: ParentProps) {
       .then((x) => x.data ?? [])
       .catch(() => [])
 
-    clearWorkspaceTerminals(
-      directory,
-      sessions.map((s) => s.id),
-      platform,
-    )
     await globalSDK.client.instance.dispose({ directory }).catch(() => undefined)
 
     const result = await globalSDK.client.worktree

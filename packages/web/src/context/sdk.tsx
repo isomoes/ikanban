@@ -1,5 +1,5 @@
 import type { Event } from "@opencode-ai/sdk/v2/client"
-import { createSimpleContext } from "ikanban-ui/context"
+import { createSimpleContext } from "@/ui/context/index"
 import { createGlobalEmitter } from "@solid-primitives/event-bus"
 import { type Accessor, createEffect, createMemo, onCleanup } from "solid-js"
 import { useGlobalSDK } from "./global-sdk"

@@ -1,11 +1,11 @@
-import { TextField } from "ikanban-ui/text-field"
-import { Logo } from "ikanban-ui/logo"
-import { Button } from "ikanban-ui/button"
+import { TextField } from "@/ui/components/text-field"
+import { Logo } from "@/ui/components/logo"
+import { Button } from "@/ui/components/button"
 import { Component, Show } from "solid-js"
 import { createStore } from "solid-js/store"
 import { usePlatform } from "@/context/platform"
 import { useLanguage } from "@/context/language"
-import { Icon } from "ikanban-ui/icon"
+import { Icon } from "@/ui/components/icon"
 
 export type InitError = {
   name: string

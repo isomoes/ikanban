@@ -1,11 +1,11 @@
 import "@/index.css";
-import { File } from "ikanban-ui/file";
-import { I18nProvider } from "ikanban-ui/context";
-import { DialogProvider } from "ikanban-ui/context/dialog";
-import { FileComponentProvider } from "ikanban-ui/context/file";
-import { MarkedProvider } from "ikanban-ui/context/marked";
-import { Font } from "ikanban-ui/font";
-import { ThemeProvider } from "ikanban-ui/theme";
+import { File } from "@/ui/components/file";
+import { I18nProvider } from "@/ui/context/index";
+import { DialogProvider } from "@/ui/context/dialog";
+import { FileComponentProvider } from "@/ui/context/file";
+import { MarkedProvider } from "@/ui/context/marked";
+import { Font } from "@/ui/components/font";
+import { ThemeProvider } from "@/ui/theme/index";
 import { MetaProvider } from "@solidjs/meta";
 import { Route, Router } from "@solidjs/router";
 import {
@@ -35,7 +35,6 @@ import {
   useServer,
 } from "@/context/server";
 import { SettingsProvider } from "@/context/settings";
-import { TerminalProvider } from "@/context/terminal";
 import DirectoryLayout from "@/pages/directory-layout";
 import Layout from "@/pages/layout";
 import { ErrorPage } from "./pages/error";
@@ -110,13 +109,11 @@ function AppShellProviders(props: ParentProps) {
 
 function SessionProviders(props: ParentProps) {
   return (
-    <TerminalProvider>
-      <FileProvider>
-        <PromptProvider>
-          <CommentsProvider>{props.children}</CommentsProvider>
-        </PromptProvider>
-      </FileProvider>
-    </TerminalProvider>
+    <FileProvider>
+      <PromptProvider>
+        <CommentsProvider>{props.children}</CommentsProvider>
+      </PromptProvider>
+    </FileProvider>
   );
 }
 

@@ -1,4 +1,4 @@
-import { base64Decode } from "ikanban-utils/encode"
+import { base64Decode } from "@/util/encode"
 
 export function decode64(value: string | undefined) {
   if (value === undefined) return

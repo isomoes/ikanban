@@ -1,4 +1,4 @@
-import { Binary } from "ikanban-utils/binary";
+import { Binary } from "@/util/binary";
 import {
   produce,
   reconcile,

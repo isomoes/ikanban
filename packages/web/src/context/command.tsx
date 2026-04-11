@@ -1,7 +1,7 @@
 import { createEffect, createMemo, onCleanup, onMount, type Accessor } from "solid-js"
 import { createStore } from "solid-js/store"
-import { createSimpleContext } from "ikanban-ui/context"
-import { useDialog } from "ikanban-ui/context/dialog"
+import { createSimpleContext } from "@/ui/context/index"
+import { useDialog } from "@/ui/context/dialog"
 import { useLanguage } from "@/context/language"
 import { useSettings } from "@/context/settings"
 import { Persist, persisted } from "@/utils/persist"
@@ -11,7 +11,7 @@ const IS_MAC = typeof navigator === "object" && /(Mac|iPod|iPhone|iPad)/.test(na
 const PALETTE_ID = "command.palette"
 const DEFAULT_PALETTE_KEYBIND = "mod+shift+p"
 const SUGGESTED_PREFIX = "suggested."
-const EDITABLE_KEYBIND_IDS = new Set(["terminal.toggle", "terminal.new", "file.attach"])
+const EDITABLE_KEYBIND_IDS = new Set(["file.attach"])
 
 function actionId(id: string) {
   if (!id.startsWith(SUGGESTED_PREFIX)) return id

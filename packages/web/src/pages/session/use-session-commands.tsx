@@ -2,7 +2,7 @@ import { createMemo } from "solid-js";
 import { produce } from "solid-js/store";
 import { useNavigate, useParams } from "@solidjs/router";
 import { useCommand, type CommandOption } from "@/context/command";
-import { useDialog } from "ikanban-ui/context/dialog";
+import { useDialog } from "@/ui/context/dialog";
 import {
   useFile,
   selectionFromLines,
@@ -16,14 +16,13 @@ import { usePermission } from "@/context/permission";
 import { usePrompt } from "@/context/prompt";
 import { useSDK } from "@/context/sdk";
 import { useSync } from "@/context/sync";
-import { useTerminal } from "@/context/terminal";
 import { DialogSelectFile } from "@/components/dialog-select-file";
 import { DialogSelectModel } from "@/components/dialog-select-model";
 import { DialogSelectMcp } from "@/components/dialog-select-mcp";
 import { DialogFork } from "@/components/dialog-fork";
 import { DialogSessionTimeline } from "@/components/dialog-session-timeline";
-import { showToast } from "ikanban-ui/toast";
-import { findLast } from "ikanban-utils/array";
+import { showToast } from "@/ui/components/toast";
+import { findLast } from "@/util/array";
 import { extractPromptFromParts } from "@/utils/prompt";
 import { UserMessage } from "@opencode-ai/sdk/v2";
 import { canAddSelectionContext } from "@/pages/session/session-command-helpers";
@@ -51,7 +50,6 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
   const prompt = usePrompt();
   const sdk = useSDK();
   const sync = useSync();
-  const terminal = useTerminal();
   const layout = useLayout();
   const params = useParams();
   const navigate = useNavigate();
@@ -180,7 +178,6 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
   const fileCommand = withCategory(language.t("command.category.file"));
   const contextCommand = withCategory(language.t("command.category.context"));
   const viewCommand = withCategory(language.t("command.category.view"));
-  const terminalCommand = withCategory(language.t("command.category.terminal"));
   const modelCommand = withCategory(language.t("command.category.model"));
   const mcpCommand = withCategory(language.t("command.category.mcp"));
   const agentCommand = withCategory(language.t("command.category.agent"));
@@ -259,13 +256,6 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
 
   const viewCommands = createMemo(() => [
     viewCommand({
-      id: "terminal.toggle",
-      title: language.t("command.terminal.toggle"),
-      keybind: "ctrl+`",
-      slash: "terminal",
-      onSelect: () => view().terminal.toggle(),
-    }),
-    viewCommand({
       id: "review.toggle",
       title: language.t("command.review.toggle"),
       keybind: "mod+shift+r",
@@ -282,16 +272,6 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       title: language.t("command.input.focus"),
       keybind: "ctrl+i",
       onSelect: () => focusInput(),
-    }),
-    terminalCommand({
-      id: "terminal.new",
-      title: language.t("command.terminal.new"),
-      description: language.t("command.terminal.new.description"),
-      keybind: "ctrl+alt+t",
-      onSelect: () => {
-        if (terminal.all().length > 0) terminal.new();
-        view().terminal.open();
-      },
     }),
   ]);
 

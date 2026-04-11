@@ -1,5 +1,5 @@
 import { Show } from "solid-js"
-import { Tabs } from "ikanban-ui/tabs"
+import { Tabs } from "@/ui/components/tabs"
 import { useLanguage } from "@/context/language"
 
 export function SessionMobileTabs(props: {

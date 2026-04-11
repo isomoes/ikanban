@@ -1,6 +1,6 @@
 import { Show, createEffect, createMemo, createSignal, onCleanup } from "solid-js"
 import { useParams } from "@solidjs/router"
-import { useSpring } from "ikanban-ui/motion-spring"
+import { useSpring } from "@/ui/components/motion-spring"
 import { PromptInput } from "@/components/prompt-input"
 import { useLanguage } from "@/context/language"
 import { usePrompt } from "@/context/prompt"

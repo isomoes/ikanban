@@ -1,11 +1,11 @@
-import { useDialog } from "ikanban-ui/context/dialog"
-import { Dialog } from "ikanban-ui/dialog"
-import { FileIcon } from "ikanban-ui/file-icon"
-import { Icon } from "ikanban-ui/icon"
-import { Keybind } from "ikanban-ui/keybind"
-import { List } from "ikanban-ui/list"
-import { base64Encode } from "ikanban-utils/encode"
-import { getDirectory, getFilename } from "ikanban-utils/path"
+import { useDialog } from "@/ui/context/dialog"
+import { Dialog } from "@/ui/components/dialog"
+import { FileIcon } from "@/ui/components/file-icon"
+import { Icon } from "@/ui/components/icon"
+import { Keybind } from "@/ui/components/keybind"
+import { List } from "@/ui/components/list"
+import { base64Encode } from "@/util/encode"
+import { getDirectory, getFilename } from "@/util/path"
 import { useNavigate, useParams } from "@solidjs/router"
 import { createMemo, createSignal, Match, onCleanup, Show, Switch } from "solid-js"
 import { formatKeybind, useCommand, type CommandOption } from "@/context/command"
@@ -42,7 +42,6 @@ const COMMON_COMMAND_IDS = [
   "workspace.new",
   "session.previous",
   "session.next",
-  "terminal.toggle",
   "review.toggle",
 ] as const
 

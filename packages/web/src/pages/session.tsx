@@ -16,15 +16,15 @@ import { createResizeObserver } from "@solid-primitives/resize-observer"
 import { useLocal } from "@/context/local"
 import { selectionFromLines, useFile, type FileSelection, type SelectedLineRange } from "@/context/file"
 import { createStore } from "solid-js/store"
-import { ResizeHandle } from "ikanban-ui/resize-handle"
-import { Select } from "ikanban-ui/select"
-import { createAutoScroll } from "ikanban-ui/hooks"
-import { Mark } from "ikanban-ui/logo"
+import { ResizeHandle } from "@/ui/components/resize-handle"
+import { Select } from "@/ui/components/select"
+import { createAutoScroll } from "@/ui/hooks/index"
+import { Mark } from "@/ui/components/logo"
 
 import { useSync } from "@/context/sync"
 import { useLayout } from "@/context/layout"
-import { checksum, base64Encode } from "ikanban-utils/encode"
-import { useDialog } from "ikanban-ui/context/dialog"
+import { checksum, base64Encode } from "@/util/encode"
+import { useDialog } from "@/ui/context/dialog"
 import { useLanguage } from "@/context/language"
 import { useNavigate, useParams } from "@solidjs/router"
 import { UserMessage } from "@opencode-ai/sdk/v2"
@@ -36,7 +36,6 @@ import { same } from "@/utils/same"
 import { createOpenReviewFile } from "@/pages/session/helpers"
 import { createScrollSpy } from "@/pages/session/scroll-spy"
 import { SessionReviewTab, type DiffStyle, type SessionReviewTabProps } from "@/pages/session/review-tab"
-import { TerminalPanel } from "@/pages/session/terminal-panel"
 import { MessageTimeline } from "@/pages/session/message-timeline"
 import { useSessionCommands } from "@/pages/session/use-session-commands"
 import { SessionComposerRegion, createSessionComposerState } from "@/pages/session/composer"
@@ -681,9 +680,6 @@ export default function Page() {
       if (event.key === "Escape") inputRef?.blur()
       return
     }
-
-    // Don't autofocus chat if desktop terminal panel is open
-    if (isDesktop() && view().terminal.opened()) return
 
     // Only treat explicit scroll keys as potential "user scroll" gestures.
     if (event.key === "PageUp" || event.key === "PageDown" || event.key === "Home" || event.key === "End") {
@@ -1367,8 +1363,6 @@ export default function Page() {
           kinds={reviewKinds}
         />
       </div>
-
-      <TerminalPanel />
     </div>
   )
 }

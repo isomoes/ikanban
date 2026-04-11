@@ -1,20 +1,20 @@
 import { createMemo, createEffect, createResource, For, Match, Switch } from "solid-js";
-import { Button } from "ikanban-ui/button";
-import { Logo } from "ikanban-ui/logo";
+import { Button } from "@/ui/components/button";
+import { Logo } from "@/ui/components/logo";
 import { useLayout } from "@/context/layout";
 import { useNavigate } from "@solidjs/router";
-import { base64Encode } from "ikanban-utils/encode";
-import { Icon } from "ikanban-ui/icon";
+import { base64Encode } from "@/util/encode";
+import { Icon } from "@/ui/components/icon";
 import { usePlatform } from "@/context/platform";
 import { DateTime } from "luxon";
-import { useDialog } from "ikanban-ui/context/dialog";
+import { useDialog } from "@/ui/context/dialog";
 import { DialogSelectDirectory } from "@/components/dialog-select-directory";
 import { DialogSelectServer } from "@/components/dialog-select-server";
 import { useGlobalSDK } from "@/context/global-sdk";
 import { useServer } from "@/context/server";
 import { useGlobalSync } from "@/context/global-sync";
 import { useLanguage } from "@/context/language";
-import { IconButton } from "ikanban-ui/icon-button";
+import { IconButton } from "@/ui/components/icon-button";
 import type { Session } from "@opencode-ai/sdk/v2/client";
 import { buildBoardColumns, trackedProjectDirectories, type BoardCard, type BoardColumn } from "./home/helpers";
 

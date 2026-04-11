@@ -2,8 +2,8 @@ import { Component, createMemo } from "solid-js"
 import { useParams } from "@solidjs/router"
 import { useSync } from "@/context/sync"
 import { useLanguage } from "@/context/language"
-import { Dialog } from "ikanban-ui/dialog"
-import { List } from "ikanban-ui/list"
+import { Dialog } from "@/ui/components/dialog"
+import { List } from "@/ui/components/list"
 import type { TextPart as SDKTextPart, UserMessage } from "@opencode-ai/sdk/v2/client"
 
 interface TimelineMessage {

@@ -1,8 +1,8 @@
 import { useFile } from "@/context/file"
 import { encodeFilePath } from "@/context/file/path"
-import { Collapsible } from "ikanban-ui/collapsible"
-import { FileIcon } from "ikanban-ui/file-icon"
-import { Icon } from "ikanban-ui/icon"
+import { Collapsible } from "@/ui/components/collapsible"
+import { FileIcon } from "@/ui/components/file-icon"
+import { Icon } from "@/ui/components/icon"
 import {
   createEffect,
   createMemo,

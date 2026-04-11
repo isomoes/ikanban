@@ -1,7 +1,7 @@
 import { createSignal } from "solid-js"
-import { Dialog } from "ikanban-ui/dialog"
-import { Button } from "ikanban-ui/button"
-import { useDialog } from "ikanban-ui/context/dialog"
+import { Dialog } from "@/ui/components/dialog"
+import { Button } from "@/ui/components/button"
+import { useDialog } from "@/ui/context/dialog"
 import { useLanguage } from "@/context/language"
 import { useSettings } from "@/context/settings"
 

@@ -1,6 +1,6 @@
 import { createStore, produce } from "solid-js/store"
 import { batch, createEffect, createMemo, onCleanup, onMount, type Accessor } from "solid-js"
-import { createSimpleContext } from "ikanban-ui/context"
+import { createSimpleContext } from "@/ui/context/index"
 import { useGlobalSync } from "./global-sync"
 import { useGlobalSDK } from "./global-sdk"
 import { useServer } from "./server"

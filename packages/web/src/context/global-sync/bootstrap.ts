@@ -9,9 +9,9 @@ import type {
   QuestionRequest,
   Todo,
 } from "@opencode-ai/sdk/v2/client"
-import { showToast } from "ikanban-ui/toast"
-import { getFilename } from "ikanban-utils/path"
-import { retry } from "ikanban-utils/retry"
+import { showToast } from "@/ui/components/toast"
+import { getFilename } from "@/util/path"
+import { retry } from "@/util/retry"
 import { batch } from "solid-js"
 import { reconcile, type SetStoreFunction, type Store } from "solid-js/store"
 import type { State, VcsCache } from "./types"

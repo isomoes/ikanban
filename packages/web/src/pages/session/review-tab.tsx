@@ -1,11 +1,11 @@
 import { createEffect, onCleanup, type JSX } from "solid-js"
 import type { FileDiff } from "@opencode-ai/sdk/v2"
-import { SessionReview } from "ikanban-ui/session-review"
+import { SessionReview } from "@/ui/components/session-review"
 import type {
   SessionReviewCommentActions,
   SessionReviewCommentDelete,
   SessionReviewCommentUpdate,
-} from "ikanban-ui/session-review"
+} from "@/ui/components/session-review"
 import type { SelectedLineRange } from "@/context/file"
 import { useSDK } from "@/context/sdk"
 import { useLayout } from "@/context/layout"

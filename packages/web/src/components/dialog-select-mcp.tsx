@@ -1,9 +1,9 @@
 import { Component, createMemo, createSignal, Show } from "solid-js"
 import { useSync } from "@/context/sync"
 import { useSDK } from "@/context/sdk"
-import { Dialog } from "ikanban-ui/dialog"
-import { List } from "ikanban-ui/list"
-import { Switch } from "ikanban-ui/switch"
+import { Dialog } from "@/ui/components/dialog"
+import { List } from "@/ui/components/list"
+import { Switch } from "@/ui/components/switch"
 import { useLanguage } from "@/context/language"
 
 const statusLabels = {

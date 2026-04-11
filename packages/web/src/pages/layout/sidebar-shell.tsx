@@ -8,8 +8,8 @@ import {
   type DragEvent,
 } from "@thisbeyond/solid-dnd"
 import { ConstrainDragXAxis } from "@/utils/solid-dnd"
-import { IconButton } from "ikanban-ui/icon-button"
-import { Tooltip, TooltipKeybind } from "ikanban-ui/tooltip"
+import { IconButton } from "@/ui/components/icon-button"
+import { Tooltip, TooltipKeybind } from "@/ui/components/tooltip"
 import { type LocalProject } from "@/context/layout"
 import { sidebarExpanded } from "./sidebar-shell-helpers"
 

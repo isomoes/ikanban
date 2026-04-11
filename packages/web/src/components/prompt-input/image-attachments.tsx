@@ -1,5 +1,5 @@
 import { Component, For, Show } from "solid-js"
-import { Icon } from "ikanban-ui/icon"
+import { Icon } from "@/ui/components/icon"
 import type { ImageAttachmentPart } from "@/context/prompt"
 
 type PromptImageAttachmentsProps = {

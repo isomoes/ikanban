@@ -1,6 +1,6 @@
 import { createEffect, createSignal } from "solid-js"
 import { createStore } from "solid-js/store"
-import { createSimpleContext } from "ikanban-ui/context"
+import { createSimpleContext } from "@/ui/context/index"
 import { usePlatform } from "@/context/platform"
 import { persisted } from "@/utils/persist"
 

@@ -1,13 +1,13 @@
-import { AppIcon } from "ikanban-ui/app-icon"
-import { Button } from "ikanban-ui/button"
-import { DropdownMenu } from "ikanban-ui/dropdown-menu"
-import { Icon } from "ikanban-ui/icon"
-import { IconButton } from "ikanban-ui/icon-button"
-import { Keybind } from "ikanban-ui/keybind"
-import { Spinner } from "ikanban-ui/spinner"
-import { showToast } from "ikanban-ui/toast"
-import { TooltipKeybind } from "ikanban-ui/tooltip"
-import { getFilename } from "ikanban-utils/path"
+import { AppIcon } from "@/ui/components/app-icon"
+import { Button } from "@/ui/components/button"
+import { DropdownMenu } from "@/ui/components/dropdown-menu"
+import { Icon } from "@/ui/components/icon"
+import { IconButton } from "@/ui/components/icon-button"
+import { Keybind } from "@/ui/components/keybind"
+import { Spinner } from "@/ui/components/spinner"
+import { showToast } from "@/ui/components/toast"
+import { TooltipKeybind } from "@/ui/components/tooltip"
+import { getFilename } from "@/util/path"
 import { useParams } from "@solidjs/router"
 import { createEffect, createMemo, For, Show } from "solid-js"
 import { createStore } from "solid-js/store"
@@ -20,6 +20,7 @@ import { useServer } from "@/context/server"
 import { decode64 } from "@/utils/base64"
 import { Persist, persisted } from "@/utils/persist"
 import { StatusPopover } from "../status-popover"
+import { createTitlebarPortalMount } from "./titlebar-portal-mount"
 
 const OPEN_APPS = [
   "vscode",
@@ -248,8 +249,8 @@ export function SessionHeader() {
       .catch((err: unknown) => showRequestError(language, err))
   }
 
-  const centerMount = createMemo(() => document.getElementById("opencode-titlebar-center"))
-  const rightMount = createMemo(() => document.getElementById("opencode-titlebar-right"))
+  const centerMount = createTitlebarPortalMount("opencode-titlebar-center")
+  const rightMount = createTitlebarPortalMount("opencode-titlebar-right")
 
   return (
     <>
@@ -404,38 +405,6 @@ export function SessionHeader() {
               </Show>
               <div class="flex items-center gap-1">
                 <div class="hidden md:flex items-center gap-1 shrink-0">
-                  <TooltipKeybind
-                    title={language.t("command.terminal.toggle")}
-                    keybind={command.keybind("terminal.toggle")}
-                  >
-                    <Button
-                      variant="ghost"
-                      class="group/terminal-toggle titlebar-icon w-8 h-6 p-0 box-border"
-                      onClick={() => view().terminal.toggle()}
-                      aria-label={language.t("command.terminal.toggle")}
-                      aria-expanded={view().terminal.opened()}
-                      aria-controls="terminal-panel"
-                    >
-                      <div class="relative flex items-center justify-center size-4 [&>*]:absolute [&>*]:inset-0">
-                        <Icon
-                          size="small"
-                          name={view().terminal.opened() ? "layout-bottom-partial" : "layout-bottom"}
-                          class="group-hover/terminal-toggle:hidden"
-                        />
-                        <Icon
-                          size="small"
-                          name="layout-bottom-partial"
-                          class="hidden group-hover/terminal-toggle:inline-block"
-                        />
-                        <Icon
-                          size="small"
-                          name={view().terminal.opened() ? "layout-bottom" : "layout-bottom-partial"}
-                          class="hidden group-active/terminal-toggle:inline-block"
-                        />
-                      </div>
-                    </Button>
-                  </TooltipKeybind>
-
                   <TooltipKeybind
                     title={language.t("command.review.toggle")}
                     keybind={command.keybind("review.toggle")}

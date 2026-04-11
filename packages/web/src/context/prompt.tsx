@@ -1,10 +1,10 @@
 import { createStore, type SetStoreFunction } from "solid-js/store"
-import { createSimpleContext } from "ikanban-ui/context"
+import { createSimpleContext } from "@/ui/context/index"
 import { batch, createMemo, createRoot, onCleanup } from "solid-js"
 import { useParams } from "@solidjs/router"
 import type { FileSelection } from "@/context/file"
 import { Persist, persisted } from "@/utils/persist"
-import { checksum } from "ikanban-utils/encode"
+import { checksum } from "@/util/encode"
 
 interface PartBase {
   content: string

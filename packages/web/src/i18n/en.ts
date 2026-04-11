@@ -9,7 +9,6 @@ export const dict = {
   "command.category.language": "Language",
   "command.category.file": "File",
   "command.category.context": "Context",
-  "command.category.terminal": "Terminal",
   "command.category.model": "Model",
   "command.category.mcp": "MCP",
   "command.category.agent": "Agent",
@@ -50,11 +49,8 @@ export const dict = {
   "command.context.addSelection.description":
     "Add selected lines from the current file",
   "command.input.focus": "Focus input",
-  "command.terminal.toggle": "Toggle terminal",
   "command.fileTree.toggle": "Toggle file tree",
   "command.review.toggle": "Toggle review",
-  "command.terminal.new": "New terminal",
-  "command.terminal.new.description": "Create a new terminal tab",
   "command.steps.toggle": "Toggle steps",
   "command.steps.toggle.description":
     "Show or hide steps for the current message",
@@ -72,7 +68,6 @@ export const dict = {
   "command.agent.cycle.reverse.description": "Switch to the previous agent",
   "command.model.variant.cycle": "Cycle thinking effort",
   "command.model.variant.cycle.description": "Switch to the next effort level",
-  "command.prompt.mode.shell": "Shell",
   "command.prompt.mode.normal": "Prompt",
   "command.permissions.autoaccept.enable": "Auto-accept permissions",
   "command.permissions.autoaccept.disable": "Stop auto-accepting permissions",
@@ -251,14 +246,11 @@ export const dict = {
   "common.default": "Default",
   "common.attachment": "attachment",
 
-  "prompt.placeholder.shell": "Enter shell command...",
   "prompt.placeholder.normal": 'Ask anything... "{{example}}"',
   "prompt.placeholder.simple": "Ask anything...",
   "prompt.placeholder.summarizeComments": "Summarize comments…",
   "prompt.placeholder.summarizeComment": "Summarize comment…",
-  "prompt.mode.shell": "Shell",
   "prompt.mode.normal": "Prompt",
-  "prompt.mode.shell.exit": "esc to exit",
 
   "prompt.example.1": "Fix a TODO in the codebase",
   "prompt.example.2": "What is the tech stack of this project?",
@@ -310,7 +302,6 @@ export const dict = {
     "Choose an agent and model before sending a prompt.",
   "prompt.toast.worktreeCreateFailed.title": "Failed to create worktree",
   "prompt.toast.sessionCreateFailed.title": "Failed to create session",
-  "prompt.toast.shellSendFailed.title": "Failed to send shell command",
   "prompt.toast.commandSendFailed.title": "Failed to send command",
   "prompt.toast.promptSendFailed.title": "Failed to send prompt",
   "prompt.toast.promptSendFailed.description": "Unable to retrieve session",
@@ -631,14 +622,6 @@ export const dict = {
   "lsp.label.connected": "{{count}} LSP",
 
   "prompt.loading": "Loading prompt...",
-  "terminal.loading": "Loading terminal...",
-  "terminal.title": "Terminal",
-  "terminal.title.numbered": "Terminal {{number}}",
-  "terminal.close": "Close terminal",
-  "terminal.connectionLost.title": "Connection Lost",
-  "terminal.connectionLost.description":
-    "The terminal connection was interrupted. This can happen when the server restarts.",
-
   "common.closeTab": "Close tab",
   "common.dismiss": "Dismiss",
   "common.moreCountSuffix": " (+{{count}} more)",
@@ -837,7 +820,6 @@ export const dict = {
   "settings.shortcuts.group.session": "Session",
   "settings.shortcuts.group.navigation": "Navigation",
   "settings.shortcuts.group.modelAndAgent": "Model and agent",
-  "settings.shortcuts.group.terminal": "Terminal",
   "settings.shortcuts.group.prompt": "Prompt",
 
   "settings.providers.title": "Providers",

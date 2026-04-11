@@ -8,7 +8,6 @@ const ROOT = path.resolve(__dirname, '..');
 
 const PACKAGE_FILES = [
   'package.json',
-  'packages/ui/package.json',
   'packages/web/package.json',
 ];
 
@@ -41,7 +40,6 @@ if (fs.existsSync(lockPath)) {
   let lockContent = fs.readFileSync(lockPath, 'utf8');
 
   const workspaceEntries = [
-    { workspace: 'packages/ui', name: 'ikanban-ui' },
     { workspace: 'packages/web', name: 'ikanban-web' },
   ];
 

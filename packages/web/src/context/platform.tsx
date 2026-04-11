@@ -1,4 +1,4 @@
-import { createSimpleContext } from "ikanban-ui/context"
+import { createSimpleContext } from "@/ui/context/index"
 import type { AsyncStorage, SyncStorage } from "@solid-primitives/storage"
 import type { Accessor } from "solid-js"
 

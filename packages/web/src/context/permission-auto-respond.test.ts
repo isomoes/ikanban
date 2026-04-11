@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import type { PermissionRequest, Session } from "@opencode-ai/sdk/v2/client"
-import { base64Encode } from "ikanban-utils/encode"
+import { base64Encode } from "@/util/encode"
 import { autoRespondsPermission } from "./permission-auto-respond"
 
 const session = (input: { id: string; parentID?: string }) =>
