@@ -62,8 +62,6 @@ export const dict = {
 
   "command.input.focus": "聚焦输入框",
 
-  "command.fileTree.toggle": "切换文件树",
-
   "command.review.toggle": "切换审查",
 
   "command.steps.toggle": "切换步骤",
@@ -534,7 +532,6 @@ export const dict = {
     "未检测到 Git 版本控制系统，因此无法检测项目更改",
   "session.review.noChanges": "无更改",
   "session.files.selectToOpen": "选择要打开的文件",
-  "session.files.all": "所有文件",
   "session.files.binaryContent": "二进制文件（无法显示内容）",
   "session.messages.renderEarlier": "显示更早的消息",
   "session.messages.loadingEarlier": "正在加载更早的消息...",

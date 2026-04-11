@@ -49,7 +49,6 @@ export const dict = {
   "command.context.addSelection.description":
     "Add selected lines from the current file",
   "command.input.focus": "Focus input",
-  "command.fileTree.toggle": "Toggle file tree",
   "command.review.toggle": "Toggle review",
   "command.steps.toggle": "Toggle steps",
   "command.steps.toggle.description":
@@ -569,7 +568,6 @@ export const dict = {
   "session.review.noChanges": "No changes",
 
   "session.files.selectToOpen": "Select a file to open",
-  "session.files.all": "All files",
   "session.files.binaryContent": "Binary file (content cannot be displayed)",
 
   "session.messages.renderEarlier": "Render earlier messages",

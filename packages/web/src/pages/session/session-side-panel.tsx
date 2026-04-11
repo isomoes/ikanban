@@ -5,14 +5,12 @@ import { useParams } from "@solidjs/router"
 import { Tabs } from "@/ui/components/tabs"
 import { IconButton } from "@/ui/components/icon-button"
 import { TooltipKeybind } from "@/ui/components/tooltip"
-import { ResizeHandle } from "@/ui/components/resize-handle"
 import { Mark } from "@/ui/components/logo"
 import { DragDropProvider, DragDropSensors, DragOverlay, SortableProvider, closestCenter } from "@thisbeyond/solid-dnd"
 import type { DragEvent } from "@thisbeyond/solid-dnd"
 import { ConstrainDragYAxis, getDraggableId } from "@/utils/solid-dnd"
 import { useDialog } from "@/ui/context/dialog"
 
-import FileTree from "@/components/file-tree"
 import { SessionContextUsage } from "@/components/session-context-usage"
 import { DialogSelectFile } from "@/components/dialog-select-file"
 import { SessionContextTab, SortableTab, FileVisual } from "@/components/session"
@@ -50,7 +48,7 @@ export function SessionSidePanel(props: {
   const view = createMemo(() => layout.view(sessionKey))
 
   const reviewOpen = createMemo(() => isDesktop() && view().reviewPanel.opened())
-  const open = createMemo(() => isDesktop() && (view().reviewPanel.opened() || layout.fileTree.opened()))
+  const open = createMemo(() => reviewOpen())
   const reviewTab = createMemo(() => isDesktop())
 
   const normalizeTab = (tab: string) => {
@@ -97,30 +95,9 @@ export function SessionSidePanel(props: {
     return active
   })
 
-  const fileTreeTab = () => layout.fileTree.tab()
-
-  const setFileTreeTabValue = (value: string) => {
-    if (value !== "changes" && value !== "all") return
-    layout.fileTree.setTab(value)
-  }
-
-  const showAllFiles = () => {
-    if (fileTreeTab() !== "changes") return
-    layout.fileTree.setTab("all")
-  }
-
   const [store, setStore] = createStore({
     activeDraggable: undefined as string | undefined,
-    fileTreeScrolled: false,
   })
-
-  let changesEl: HTMLDivElement | undefined
-  let allEl: HTMLDivElement | undefined
-
-  const syncFileTreeScrolled = (el?: HTMLDivElement) => {
-    const next = (el?.scrollTop ?? 0) > 0
-    setStore("fileTreeScrolled", (current) => (current === next ? current : next))
-  }
 
   const handleDragStart = (event: unknown) => {
     const id = getDraggableId(event)
@@ -141,11 +118,6 @@ export function SessionSidePanel(props: {
   const handleDragEnd = () => {
     setStore("activeDraggable", undefined)
   }
-
-  createEffect(() => {
-    if (!layout.fileTree.opened()) return
-    syncFileTreeScrolled(fileTreeTab() === "changes" ? changesEl : allEl)
-  })
 
   createEffect(() => {
     if (!file.ready()) return
@@ -178,7 +150,7 @@ export function SessionSidePanel(props: {
           "flex-1": reviewOpen(),
           "shrink-0": !reviewOpen(),
         }}
-        style={{ width: reviewOpen() ? undefined : `${layout.fileTree.width()}px` }}
+        style={{ width: `${layout.session.width()}px` }}
       >
         <Show when={reviewOpen()}>
           <div class="flex-1 min-w-0 h-full">
@@ -245,14 +217,14 @@ export function SessionSidePanel(props: {
                         keybind={command.keybind("file.open")}
                         class="flex items-center"
                       >
-                        <IconButton
-                          icon="plus-small"
-                          variant="ghost"
-                          iconSize="large"
-                          class="!rounded-md"
-                          onClick={() => dialog.show(() => <DialogSelectFile mode="files" onOpenFile={showAllFiles} />)}
-                          aria-label={language.t("command.file.open")}
-                        />
+                          <IconButton
+                            icon="plus-small"
+                            variant="ghost"
+                            iconSize="large"
+                            class="!rounded-md"
+                            onClick={() => dialog.show(() => <DialogSelectFile mode="files" />)}
+                            aria-label={language.t("command.file.open")}
+                          />
                       </TooltipKeybind>
                     </StickyAddButton>
                   </Tabs.List>
@@ -304,90 +276,6 @@ export function SessionSidePanel(props: {
                 </Show>
               </DragOverlay>
             </DragDropProvider>
-          </div>
-        </Show>
-
-        <Show when={layout.fileTree.opened()}>
-          <div id="file-tree-panel" class="relative shrink-0 h-full" style={{ width: `${layout.fileTree.width()}px` }}>
-            <div
-              class="h-full flex flex-col overflow-hidden group/filetree"
-              classList={{ "border-l border-border-weak-base": reviewOpen() }}
-            >
-              <Tabs
-                variant="pill"
-                value={fileTreeTab()}
-                onChange={setFileTreeTabValue}
-                class="h-full"
-                data-scope="filetree"
-              >
-                <Tabs.List data-scrolled={store.fileTreeScrolled ? "" : undefined}>
-                  <Tabs.Trigger value="changes" class="flex-1" classes={{ button: "w-full" }}>
-                    {props.reviewCount()}{" "}
-                    {language.t(props.reviewCount() === 1 ? "session.review.change.one" : "session.review.change.other")}
-                  </Tabs.Trigger>
-                  <Tabs.Trigger value="all" class="flex-1" classes={{ button: "w-full" }}>
-                    {language.t("session.files.all")}
-                  </Tabs.Trigger>
-                </Tabs.List>
-                <Tabs.Content
-                  value="changes"
-                  ref={(el: HTMLDivElement) => (changesEl = el)}
-                  onScroll={(e: UIEvent & { currentTarget: HTMLDivElement }) => syncFileTreeScrolled(e.currentTarget)}
-                  class="bg-background-stronger px-3 py-0"
-                >
-                  <Switch>
-                    <Match when={props.hasReview()}>
-                      <Show
-                        when={props.diffsReady()}
-                        fallback={
-                          <div class="px-2 py-2 text-12-regular text-text-weak">
-                            {language.t("common.loading")}
-                            {language.t("common.loading.ellipsis")}
-                          </div>
-                        }
-                      >
-                        <FileTree
-                          path=""
-                          allowed={props.diffFiles()}
-                          kinds={props.kinds()}
-                          draggable={false}
-                          active={props.activeDiff}
-                          onFileClick={(node) => props.focusReviewDiff(node.path)}
-                        />
-                      </Show>
-                    </Match>
-                    <Match when={true}>
-                      <div class="mt-8 text-center text-12-regular text-text-weak">
-                        {language.t("session.review.noChanges")}
-                      </div>
-                    </Match>
-                  </Switch>
-                </Tabs.Content>
-                <Tabs.Content
-                  value="all"
-                  ref={(el: HTMLDivElement) => (allEl = el)}
-                  onScroll={(e: UIEvent & { currentTarget: HTMLDivElement }) => syncFileTreeScrolled(e.currentTarget)}
-                  class="bg-background-stronger px-3 py-0"
-                >
-                  <FileTree
-                    path=""
-                    modified={props.diffFiles()}
-                    kinds={props.kinds()}
-                    onFileClick={(node) => openTab(file.tab(node.path))}
-                  />
-                </Tabs.Content>
-              </Tabs>
-            </div>
-            <ResizeHandle
-              direction="horizontal"
-              edge="start"
-              size={layout.fileTree.width()}
-              min={200}
-              max={480}
-              collapseThreshold={160}
-              onResize={layout.fileTree.resize}
-              onCollapse={layout.fileTree.close}
-            />
           </div>
         </Show>
       </aside>

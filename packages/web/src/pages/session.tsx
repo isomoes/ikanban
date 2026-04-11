@@ -320,12 +320,10 @@ export default function Page() {
 
   const isDesktop = createMediaQuery("(min-width: 768px)")
   const desktopReviewOpen = createMemo(() => isDesktop() && view().reviewPanel.opened())
-  const desktopFileTreeOpen = createMemo(() => isDesktop() && layout.fileTree.opened())
-  const desktopSidePanelOpen = createMemo(() => desktopReviewOpen() || desktopFileTreeOpen())
+  const desktopSidePanelOpen = createMemo(() => desktopReviewOpen())
   const sessionPanelWidth = createMemo(() => {
     if (!desktopSidePanelOpen()) return "100%"
-    if (desktopReviewOpen()) return `${layout.session.width()}px`
-    return `calc(100% - ${layout.fileTree.width()}px)`
+    return `${layout.session.width()}px`
   })
   const centered = createMemo(() => isDesktop() && !desktopReviewOpen())
 
@@ -703,9 +701,6 @@ export default function Page() {
   const mobileChanges = createMemo(() => !isDesktop() && store.mobileTab === "changes")
   const reviewTab = createMemo(() => isDesktop())
 
-  const fileTreeTab = () => layout.fileTree.tab()
-  const setFileTreeTab = (value: "changes" | "all") => layout.fileTree.setTab(value)
-
   const [tree, setTree] = createStore({
     reviewScroll: undefined as HTMLDivElement | undefined,
     pendingDiff: undefined as string | undefined,
@@ -722,11 +717,6 @@ export default function Page() {
     ),
   )
 
-  const showAllFiles = () => {
-    if (fileTreeTab() !== "changes") return
-    setFileTreeTab("all")
-  }
-
   const focusInput = () => inputRef?.focus()
 
   useSessionCommands({
@@ -736,7 +726,6 @@ export default function Page() {
   })
 
   const openReviewFile = createOpenReviewFile({
-    showAllFiles,
     tabForPath: file.tab,
     openTab: tabs().open,
     loadFile: file.load,
@@ -888,19 +877,6 @@ export default function Page() {
     </div>
   )
 
-  createEffect(
-    on(
-      () => tabs().active(),
-      (active) => {
-        if (!active) return
-        if (fileTreeTab() !== "changes") return
-        if (!file.pathFromTab(active)) return
-        showAllFiles()
-      },
-      { defer: true },
-    ),
-  )
-
   const reviewDiffId = (path: string) => {
     const sum = checksum(path)
     if (!sum) return
@@ -1006,29 +982,12 @@ export default function Page() {
     tabs().setActive(next)
   })
 
-  createEffect(
-    on(
-      () => layout.fileTree.opened(),
-      (opened, prev) => {
-        if (prev === undefined) return
-        if (!isDesktop()) return
-
-        if (opened) {
-          const active = tabs().active()
-          const tab = active === "review" || (!active && hasAnyReview()) ? "changes" : "all"
-          layout.fileTree.setTab(tab)
-        }
-      },
-      { defer: true },
-    ),
-  )
-
   createEffect(() => {
     const id = params.id
     if (!id) return
 
     const wants = isDesktop()
-      ? desktopFileTreeOpen() || (desktopReviewOpen() && activeTab() === "review")
+      ? desktopReviewOpen() && activeTab() === "review"
       : store.mobileTab === "changes"
     if (!wants) return
     if (store.changes === "project") {
@@ -1046,20 +1005,6 @@ export default function Page() {
     }
     void sync.session.diff(id)
   })
-
-  let treeDir: string | undefined
-  createEffect(() => {
-    const dir = sdk.directory
-    if (!isDesktop()) return
-    if (!layout.fileTree.opened()) return
-    if (sync.status === "loading") return
-
-    fileTreeTab()
-    const refresh = treeDir !== dir
-    treeDir = dir
-    void (refresh ? file.tree.refresh("") : file.tree.list(""))
-  })
-
   createEffect(
     on(
       () => sdk.directory,

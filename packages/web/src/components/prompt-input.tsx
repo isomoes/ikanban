@@ -191,14 +191,12 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
     const wantsReview = item.commentOrigin === "review" || (item.commentOrigin !== "file" && commentInReview(item.path))
     if (wantsReview) {
       if (!view().reviewPanel.opened()) view().reviewPanel.open()
-      layout.fileTree.setTab("changes")
       tabs().setActive("review")
       queueCommentFocus()
       return
     }
 
     if (!view().reviewPanel.opened()) view().reviewPanel.open()
-    layout.fileTree.setTab("all")
     const tab = files.tab(item.path)
     tabs().open(tab)
     tabs().setActive(tab)

@@ -150,11 +150,6 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
     await redoToMessage(message);
   };
 
-  const showAllFiles = () => {
-    if (layout.fileTree.tab() !== "changes") return;
-    layout.fileTree.setTab("all");
-  };
-
   const selectionPreview = (path: string, selection: FileSelection) => {
     const content = file.get(path)?.content?.content;
     if (!content) return undefined;
@@ -202,8 +197,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       description: language.t("palette.search.placeholder"),
       keybind: "mod+p",
       slash: "open",
-      onSelect: () =>
-        dialog.show(() => <DialogSelectFile onOpenFile={showAllFiles} />),
+      onSelect: () => dialog.show(() => <DialogSelectFile />),
     }),
     fileCommand({
       id: "tab.close",
@@ -260,12 +254,6 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       title: language.t("command.review.toggle"),
       keybind: "mod+shift+r",
       onSelect: () => view().reviewPanel.toggle(),
-    }),
-    viewCommand({
-      id: "fileTree.toggle",
-      title: language.t("command.fileTree.toggle"),
-      keybind: "mod+\\",
-      onSelect: () => layout.fileTree.toggle(),
     }),
     viewCommand({
       id: "input.focus",

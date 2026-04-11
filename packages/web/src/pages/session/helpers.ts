@@ -1,34 +1,12 @@
 import { batch } from "solid-js"
 
-export const focusTerminalById = (id: string) => {
-  const wrapper = document.getElementById(`terminal-wrapper-${id}`)
-  const terminal = wrapper?.querySelector('[data-component="terminal"]')
-  if (!(terminal instanceof HTMLElement)) return false
-
-  const textarea = terminal.querySelector("textarea")
-  if (textarea instanceof HTMLTextAreaElement) {
-    textarea.focus()
-    return true
-  }
-
-  terminal.focus()
-  terminal.dispatchEvent(
-    typeof PointerEvent === "function"
-      ? new PointerEvent("pointerdown", { bubbles: true, cancelable: true })
-      : new MouseEvent("pointerdown", { bubbles: true, cancelable: true }),
-  )
-  return true
-}
-
 export const createOpenReviewFile = (input: {
-  showAllFiles: () => void
   tabForPath: (path: string) => string
   openTab: (tab: string) => void
   loadFile: (path: string) => any | Promise<void>
 }) => {
   return (path: string) => {
     batch(() => {
-      input.showAllFiles()
       const maybePromise = input.loadFile(path)
       const openTab = () => input.openTab(input.tabForPath(path))
       if (maybePromise instanceof Promise) maybePromise.then(openTab)

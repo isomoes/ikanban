@@ -252,7 +252,7 @@ function createSessionEntries(props: {
   return { sessions }
 }
 
-export function DialogSelectFile(props: { mode?: DialogSelectFileMode; onOpenFile?: (path: string) => void }) {
+export function DialogSelectFile(props: { mode?: DialogSelectFileMode }) {
   const command = useCommand()
   const language = useLanguage()
   const layout = useLayout()
@@ -346,8 +346,6 @@ export function DialogSelectFile(props: { mode?: DialogSelectFileMode; onOpenFil
     tabs().open(value)
     file.load(path)
     if (!view().reviewPanel.opened()) view().reviewPanel.open()
-    layout.fileTree.setTab("all")
-    props.onOpenFile?.(path)
     tabs().setActive(value)
   }
 
