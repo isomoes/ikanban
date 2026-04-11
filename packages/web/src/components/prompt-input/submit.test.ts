@@ -6,7 +6,7 @@ let createPromptSubmit: typeof import("./submit").createPromptSubmit
 const createdClients: string[] = []
 const createdSessions: string[] = []
 const enabledAutoAccept: Array<{ sessionID: string; directory: string }> = []
-const sentShell: string[] = []
+const sentPrompts: string[] = []
 const syncedDirectories: string[] = []
 
 let selected = "/repo/worktree-a"
@@ -21,11 +21,10 @@ const clientFor = (directory: string) => {
         createdSessions.push(directory)
         return { data: { id: `session-${createdSessions.length}` } }
       },
-      shell: async () => {
-        sentShell.push(directory)
+      promptAsync: async () => {
+        sentPrompts.push(directory)
         return { data: undefined }
       },
-      prompt: async () => ({ data: undefined }),
       command: async () => ({ data: undefined }),
       abort: async () => ({ data: undefined }),
     },
@@ -155,7 +154,7 @@ beforeEach(() => {
   createdClients.length = 0
   createdSessions.length = 0
   enabledAutoAccept.length = 0
-  sentShell.length = 0
+  sentPrompts.length = 0
   syncedDirectories.length = 0
   selected = "/repo/worktree-a"
 })
@@ -167,14 +166,12 @@ describe("prompt submit worktree selection", () => {
       imageAttachments: () => [],
       commentCount: () => 0,
       autoAccept: () => false,
-      mode: () => "shell",
       working: () => false,
       editor: () => undefined,
       queueScroll: () => undefined,
       promptLength: (value) => value.reduce((sum, part) => sum + ("content" in part ? part.content.length : 0), 0),
       addToHistory: () => undefined,
       resetHistoryNavigation: () => undefined,
-      setMode: () => undefined,
       setPopover: () => undefined,
       newSessionWorktree: () => selected,
       onNewSessionWorktreeReset: () => undefined,
@@ -189,7 +186,7 @@ describe("prompt submit worktree selection", () => {
 
     expect(createdClients).toEqual(["/repo/worktree-a", "/repo/worktree-b"])
     expect(createdSessions).toEqual(["/repo/worktree-a", "/repo/worktree-b"])
-    expect(sentShell).toEqual(["/repo/worktree-a", "/repo/worktree-b"])
+    expect(sentPrompts).toEqual(["/repo/worktree-a", "/repo/worktree-b"])
     expect(syncedDirectories).toEqual(["/repo/worktree-a", "/repo/worktree-b"])
   })
 
@@ -199,14 +196,12 @@ describe("prompt submit worktree selection", () => {
       imageAttachments: () => [],
       commentCount: () => 0,
       autoAccept: () => true,
-      mode: () => "shell",
       working: () => false,
       editor: () => undefined,
       queueScroll: () => undefined,
       promptLength: (value) => value.reduce((sum, part) => sum + ("content" in part ? part.content.length : 0), 0),
       addToHistory: () => undefined,
       resetHistoryNavigation: () => undefined,
-      setMode: () => undefined,
       setPopover: () => undefined,
       newSessionWorktree: () => selected,
       onNewSessionWorktreeReset: () => undefined,
