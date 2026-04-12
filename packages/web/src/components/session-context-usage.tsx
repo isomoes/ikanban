@@ -18,7 +18,7 @@ function openSessionContext(args: {
   view: ReturnType<ReturnType<typeof useLayout>["view"]>
   tabs: ReturnType<ReturnType<typeof useLayout>["tabs"]>
 }) {
-  if (!args.view.reviewPanel.opened()) args.view.reviewPanel.open()
+  if (!args.view.ikanbanPanel.opened()) args.view.ikanbanPanel.open()
   args.tabs.open("context")
   args.tabs.setActive("context")
 }

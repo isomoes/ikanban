@@ -33,3 +33,4 @@ node_modules/
 bun.lockb
 dist/
 .cache/
+/.opencode/package-lock.json

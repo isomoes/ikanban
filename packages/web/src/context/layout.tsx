@@ -745,7 +745,7 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
         const key = createSessionKeyReader(sessionKey, ensureKey)
         const s = createMemo(() => store.sessionView[key()] ?? { scroll: {} })
         const terminalOpened = createMemo(() => store.terminal?.opened ?? false)
-        const reviewPanelOpened = createMemo(() => store.review?.panelOpened ?? true)
+        const ikanbanPanelOpened = createMemo(() => store.review?.panelOpened ?? true)
 
         function setTerminalOpened(next: boolean) {
           const current = store.terminal
@@ -759,7 +759,7 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
           setStore("terminal", "opened", next)
         }
 
-        function setReviewPanelOpened(next: boolean) {
+        function setIkanbanPanelOpened(next: boolean) {
           const current = store.review
           if (!current) {
             setStore("review", { diffStyle: "split" as ReviewDiffStyle, panelOpened: next })
@@ -790,16 +790,16 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
               setTerminalOpened(!terminalOpened())
             },
           },
-          reviewPanel: {
-            opened: reviewPanelOpened,
+          ikanbanPanel: {
+            opened: ikanbanPanelOpened,
             open() {
-              setReviewPanelOpened(true)
+              setIkanbanPanelOpened(true)
             },
             close() {
-              setReviewPanelOpened(false)
+              setIkanbanPanelOpened(false)
             },
             toggle() {
-              setReviewPanelOpened(!reviewPanelOpened())
+              setIkanbanPanelOpened(!ikanbanPanelOpened())
             },
           },
           review: {

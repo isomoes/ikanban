@@ -20,7 +20,7 @@ export const createOpenSessionFileTab = (input: {
   openTab: (tab: string) => void
   pathFromTab: (tab: string) => string | undefined
   loadFile: (path: string) => void
-  openReviewPanel: () => void
+  openIkanbanPanel: () => void
   setActive: (tab: string) => void
 }) => {
   return (value: string) => {
@@ -31,7 +31,7 @@ export const createOpenSessionFileTab = (input: {
     if (!path) return
 
     input.loadFile(path)
-    input.openReviewPanel()
+    input.openIkanbanPanel()
     input.setActive(next)
   }
 }

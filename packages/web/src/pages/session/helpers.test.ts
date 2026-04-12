@@ -33,7 +33,7 @@ describe("createOpenSessionFileTab", () => {
         return tab.slice("file://".length)
       },
       loadFile: (path) => calls.push(`load:${path}`),
-      openReviewPanel: () => calls.push("review"),
+      openIkanbanPanel: () => calls.push("review"),
       setActive: (tab) => calls.push(`active:${tab}`),
     })
 

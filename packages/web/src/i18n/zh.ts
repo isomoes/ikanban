@@ -62,7 +62,7 @@ export const dict = {
 
   "command.input.focus": "聚焦输入框",
 
-  "command.review.toggle": "切换审查",
+  "command.review.toggle": "切换 Ikanban 面板",
 
   "command.steps.toggle": "切换步骤",
   "command.steps.toggle.description": "显示或隐藏当前消息的步骤",
@@ -460,7 +460,7 @@ export const dict = {
   "error.page.action.checkUpdates": "检查更新",
   "error.page.action.updateTo": "更新到 {{version}}",
   "error.page.report.prefix": "请将此错误报告给 iKanban 团队",
-  "error.page.report.discord": "在 Discord 上",
+  "error.page.report.discord": "在 GitHub Issues 上",
   "error.page.version": "版本：{{version}}",
   "error.dev.rootNotFound":
     "未找到根元素。你是不是忘了把它添加到 index.html？或者 id 属性拼写错了？",
@@ -518,9 +518,11 @@ export const dict = {
   "home.empty.description": "通过打开本地项目开始使用",
 
   "session.tab.session": "会话",
-  "session.tab.review": "审查",
+  "session.tab.review": "Ikanban",
   "session.tab.context": "上下文",
-  "session.panel.reviewAndFiles": "审查和文件",
+  "session.panel.reviewAndFiles": "Ikanban 和文件",
+  "session.panel.showFullFile": "完整文件",
+  "session.panel.showDiffContext": "差异上下文",
   "session.review.filesChanged": "{{count}} 个文件变更",
   "session.review.change.one": "更改",
   "session.review.change.other": "更改",

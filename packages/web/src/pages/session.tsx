@@ -17,7 +17,7 @@ import { useLocal } from "@/context/local"
 import { selectionFromLines, useFile, type FileSelection, type SelectedLineRange } from "@/context/file"
 import { createStore } from "solid-js/store"
 import { ResizeHandle } from "@/ui/components/resize-handle"
-import { Select } from "@/ui/components/select"
+import { Button } from "@/ui/components/button"
 import { createAutoScroll } from "@/ui/hooks/index"
 import { Mark } from "@/ui/components/logo"
 
@@ -319,7 +319,7 @@ export default function Page() {
   )
 
   const isDesktop = createMediaQuery("(min-width: 768px)")
-  const desktopReviewOpen = createMemo(() => isDesktop() && view().reviewPanel.opened())
+  const desktopReviewOpen = createMemo(() => isDesktop() && view().ikanbanPanel.opened())
   const desktopSidePanelOpen = createMemo(() => desktopReviewOpen())
   const sessionPanelWidth = createMemo(() => {
     if (!desktopSidePanelOpen()) return "100%"
@@ -344,8 +344,8 @@ export default function Page() {
     return next
   }
 
-  const openReviewPanel = () => {
-    if (!view().reviewPanel.opened()) view().reviewPanel.open()
+  const openIkanbanPanel = () => {
+    if (!view().ikanbanPanel.opened()) view().ikanbanPanel.open()
   }
 
   createEffect(() => {
@@ -731,24 +731,13 @@ export default function Page() {
     loadFile: file.load,
   })
 
-  const changesOptions = ["project", "session", "turn"] as const
-  const changesOptionsList = [...changesOptions]
+  const showFullFile = () => {
+    const next = tree.activeDiff
+    if (!next) return
+    void openReviewFile(next)
+  }
 
-  const changesTitle = () => (
-    <Select
-      options={changesOptionsList}
-      current={store.changes}
-      label={(option) => {
-        if (option === "project") return language.t("ui.sessionReview.title.project")
-        if (option === "turn") return language.t("ui.sessionReview.title.lastTurn")
-        return language.t("ui.sessionReview.title")
-      }}
-      onSelect={(option) => option && setStore("changes", option)}
-      variant="ghost"
-      size="small"
-      valueClass="text-14-medium"
-    />
-  )
+  const changesTitle = () => <div />
 
   const emptyTurn = () => (
     <div class="h-full pb-30 flex flex-col items-center justify-center text-center gap-6">
@@ -771,12 +760,15 @@ export default function Page() {
         <Match when={store.changes === "turn" && !!params.id}>
           <SessionReviewTab
             title={changesTitle()}
+            actions={
+              <Show when={tree.activeDiff}>
+                <Button size="small" variant="secondary" onClick={showFullFile}>
+                  {language.t("session.panel.showFullFile")}
+                </Button>
+              </Show>
+            }
             empty={emptyTurn()}
             diffs={reviewDiffs}
-            onRevealFile={(file) => {
-              if (store.changes !== "project") return
-              void sync.projectDiff.hydrate(file)
-            }}
             view={view}
             diffStyle={input.diffStyle}
             onDiffStyleChange={input.onDiffStyleChange}
@@ -802,11 +794,14 @@ export default function Page() {
           >
             <SessionReviewTab
               title={changesTitle()}
+              actions={
+                <Show when={tree.activeDiff}>
+                  <Button size="small" variant="secondary" onClick={showFullFile}>
+                    {language.t("session.panel.showFullFile")}
+                  </Button>
+                </Show>
+              }
               diffs={reviewDiffs}
-              onRevealFile={(file) => {
-                if (store.changes !== "project") return
-                void sync.projectDiff.hydrate(file)
-              }}
               view={view}
               diffStyle={input.diffStyle}
               onDiffStyleChange={input.onDiffStyleChange}
@@ -829,6 +824,13 @@ export default function Page() {
         <Match when={true}>
           <SessionReviewTab
             title={changesTitle()}
+            actions={
+              <Show when={tree.activeDiff}>
+                <Button size="small" variant="secondary" onClick={showFullFile}>
+                  {language.t("session.panel.showFullFile")}
+                </Button>
+              </Show>
+            }
             empty={
               store.changes === "turn" ? (
                 emptyTurn()
@@ -862,18 +864,9 @@ export default function Page() {
     </Show>
   )
 
-  const reviewPanel = () => (
+  const ikanbanPanel = () => (
     <div class="flex flex-col h-full overflow-hidden bg-background-stronger contain-strict">
-      <div class="relative pt-2 flex-1 min-h-0 overflow-hidden">
-        {reviewContent({
-          diffStyle: layout.review.diffStyle(),
-          onDiffStyleChange: layout.review.setDiffStyle,
-          wordWrap: layout.review.wordWrap(),
-          onWordWrapChange: layout.review.setWordWrap,
-          loadingClass: "px-6 py-4 text-text-weak",
-          emptyClass: "h-full pb-30 flex flex-col items-center justify-center text-center gap-6",
-        })}
-      </div>
+      <div class="flex-1 min-h-0" />
     </div>
   )
 
@@ -912,7 +905,7 @@ export default function Page() {
   }
 
   const focusReviewDiff = (path: string) => {
-    openReviewPanel()
+    openIkanbanPanel()
     const current = view().review.open() ?? []
     if (!current.includes(path)) view().review.setOpen([...current, path])
     setTree({ activeDiff: path, pendingDiff: path })
@@ -986,9 +979,7 @@ export default function Page() {
     const id = params.id
     if (!id) return
 
-    const wants = isDesktop()
-      ? desktopReviewOpen() && activeTab() === "review"
-      : store.mobileTab === "changes"
+    const wants = !isDesktop() && store.mobileTab === "changes"
     if (!wants) return
     if (store.changes === "project") {
       if (sync.data.project_diff[sdk.directory] !== undefined) return
@@ -1297,9 +1288,8 @@ export default function Page() {
         </div>
 
         <SessionSidePanel
-          reviewPanel={reviewPanel}
+          ikanbanPanel={ikanbanPanel}
           activeDiff={tree.activeDiff}
-          focusReviewDiff={focusReviewDiff}
           showReview={hasAnyReview}
           reviewCount={reviewCount}
           hasReview={hasReview}

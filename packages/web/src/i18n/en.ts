@@ -49,7 +49,7 @@ export const dict = {
   "command.context.addSelection.description":
     "Add selected lines from the current file",
   "command.input.focus": "Focus input",
-  "command.review.toggle": "Toggle review",
+  "command.review.toggle": "Toggle ikanban panel",
   "command.steps.toggle": "Toggle steps",
   "command.steps.toggle.description":
     "Show or hide steps for the current message",
@@ -488,7 +488,7 @@ export const dict = {
   "error.page.action.checkUpdates": "Check for updates",
   "error.page.action.updateTo": "Update to {{version}}",
   "error.page.report.prefix": "Please report this error to the iKanban team",
-  "error.page.report.discord": "on Discord",
+  "error.page.report.discord": "on GitHub Issues",
   "error.page.version": "Version: {{version}}",
 
   "error.dev.rootNotFound":
@@ -552,9 +552,11 @@ export const dict = {
   "home.empty.description": "Get started by opening a local project",
 
   "session.tab.session": "Session",
-  "session.tab.review": "Review",
+  "session.tab.review": "Ikanban",
   "session.tab.context": "Context",
-  "session.panel.reviewAndFiles": "Review and files",
+  "session.panel.reviewAndFiles": "Ikanban and files",
+  "session.panel.showFullFile": "Full file",
+  "session.panel.showDiffContext": "Diff context",
   "session.review.filesChanged": "{{count}} Files Changed",
   "session.review.change.one": "Change",
   "session.review.change.other": "Changes",

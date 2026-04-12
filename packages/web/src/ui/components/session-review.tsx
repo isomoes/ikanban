@@ -563,38 +563,40 @@ export const SessionReview = (props: SessionReviewProps) => {
     <div data-component="session-review" class={props.class} classList={props.classList}>
       <div data-slot="session-review-header" class={props.classes?.header}>
         <div data-slot="session-review-title">{props.title ?? i18n.t("ui.sessionReview.title")}</div>
-        <div data-slot="session-review-actions">
-          <Show when={hasDiffs() && props.onDiffStyleChange}>
-            <RadioGroup
-              options={["unified", "split"] as const}
-              current={diffStyle()}
-              size="small"
-              value={(style) => style}
-              label={(style) =>
-                i18n.t(style === "unified" ? "ui.sessionReview.diffStyle.unified" : "ui.sessionReview.diffStyle.split")
-              }
-              onSelect={(style) => style && props.onDiffStyleChange?.(style)}
-            />
-          </Show>
-          <Show when={hasDiffs() && props.onWordWrapChange}>
-            <Button size="small" variant="secondary" onClick={() => props.onWordWrapChange?.(!wordWrap())}>
-              {i18n.t(wordWrap() ? "ui.sessionReview.wordWrap.on" : "ui.sessionReview.wordWrap.off")}
-            </Button>
-          </Show>
-          <Show when={hasDiffs()}>
-            <Button
-              size="small"
-              icon="chevron-grabber-vertical"
-              class="w-[106px] justify-start"
-              onClick={handleExpandOrCollapseAll}
-            >
-              <Switch>
-                <Match when={open().length > 0}>{i18n.t("ui.sessionReview.collapseAll")}</Match>
-                <Match when={true}>{i18n.t("ui.sessionReview.expandAll")}</Match>
-              </Switch>
-            </Button>
-          </Show>
-          {props.actions}
+        <div data-slot="session-review-actions" class="flex min-w-0 flex-1 items-center gap-2">
+          <div class="shrink-0">{props.actions}</div>
+          <div class="ml-auto flex min-w-0 items-center gap-2">
+            <Show when={hasDiffs() && props.onDiffStyleChange}>
+              <RadioGroup
+                options={["unified", "split"] as const}
+                current={diffStyle()}
+                size="small"
+                value={(style) => style}
+                label={(style) =>
+                  i18n.t(style === "unified" ? "ui.sessionReview.diffStyle.unified" : "ui.sessionReview.diffStyle.split")
+                }
+                onSelect={(style) => style && props.onDiffStyleChange?.(style)}
+              />
+            </Show>
+            <Show when={hasDiffs() && props.onWordWrapChange}>
+              <Button size="small" variant="secondary" onClick={() => props.onWordWrapChange?.(!wordWrap())}>
+                {i18n.t(wordWrap() ? "ui.sessionReview.wordWrap.on" : "ui.sessionReview.wordWrap.off")}
+              </Button>
+            </Show>
+            <Show when={hasDiffs()}>
+              <Button
+                size="small"
+                icon="chevron-grabber-vertical"
+                class="w-[106px] justify-start"
+                onClick={handleExpandOrCollapseAll}
+              >
+                <Switch>
+                  <Match when={open().length > 0}>{i18n.t("ui.sessionReview.collapseAll")}</Match>
+                  <Match when={true}>{i18n.t("ui.sessionReview.expandAll")}</Match>
+                </Switch>
+              </Button>
+            </Show>
+          </div>
         </div>
       </div>
 

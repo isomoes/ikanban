@@ -412,15 +412,15 @@ export function SessionHeader() {
                     <Button
                       variant="ghost"
                       class="group/review-toggle titlebar-icon w-8 h-6 p-0 box-border"
-                      onClick={() => view().reviewPanel.toggle()}
+                      onClick={() => view().ikanbanPanel.toggle()}
                       aria-label={language.t("command.review.toggle")}
-                      aria-expanded={view().reviewPanel.opened()}
-                      aria-controls="review-panel"
+                      aria-expanded={view().ikanbanPanel.opened()}
+                      aria-controls="ikanban-panel"
                     >
                       <div class="relative flex items-center justify-center size-4 [&>*]:absolute [&>*]:inset-0">
                         <Icon
                           size="small"
-                          name={view().reviewPanel.opened() ? "layout-right-partial" : "layout-right"}
+                          name={view().ikanbanPanel.opened() ? "layout-right-partial" : "layout-right"}
                           class="group-hover/review-toggle:hidden"
                         />
                         <Icon
@@ -430,7 +430,7 @@ export function SessionHeader() {
                         />
                         <Icon
                           size="small"
-                          name={view().reviewPanel.opened() ? "layout-right" : "layout-right-partial"}
+                          name={view().ikanbanPanel.opened() ? "layout-right" : "layout-right-partial"}
                           class="hidden group-active/review-toggle:inline-block"
                         />
                       </div>

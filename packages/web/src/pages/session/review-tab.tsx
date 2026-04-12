@@ -15,6 +15,7 @@ export type DiffStyle = "unified" | "split"
 
 export interface SessionReviewTabProps {
   title?: JSX.Element
+  actions?: JSX.Element
   empty?: JSX.Element
   diffs: () => FileDiff[]
   view: () => ReturnType<ReturnType<typeof useLayout>["view"]>
@@ -143,6 +144,7 @@ export function SessionReviewTab(props: SessionReviewTabProps) {
   return (
     <SessionReview
       title={props.title}
+      actions={props.actions}
       empty={props.empty}
       scrollRef={(el) => {
         scroll = el

@@ -14,6 +14,7 @@ import { useGlobalSync } from "@/context/global-sync"
 import { useLayout } from "@/context/layout"
 import { useFile } from "@/context/file"
 import { useLanguage } from "@/context/language"
+import { useSync } from "@/context/sync"
 import { decode64 } from "@/utils/base64"
 import { getRelativeTime } from "@/utils/time"
 
@@ -257,6 +258,7 @@ export function DialogSelectFile(props: { mode?: DialogSelectFileMode }) {
   const language = useLanguage()
   const layout = useLayout()
   const file = useFile()
+  const sync = useSync()
   const dialog = useDialog()
   const params = useParams()
   const navigate = useNavigate()
@@ -341,12 +343,15 @@ export function DialogSelectFile(props: { mode?: DialogSelectFileMode }) {
     state.cleanup = item.option?.onHighlight?.()
   }
 
-  const open = (path: string) => {
+  const open = async (path: string) => {
     const value = file.tab(path)
     tabs().open(value)
     file.load(path)
-    if (!view().reviewPanel.opened()) view().reviewPanel.open()
+    if (!view().ikanbanPanel.opened()) view().ikanbanPanel.open()
     tabs().setActive(value)
+
+    await sync.projectDiff.diff()
+    sync.projectDiff.hydrate(path)
   }
 
   const handleSelect = (item: Entry | undefined) => {
@@ -367,7 +372,7 @@ export function DialogSelectFile(props: { mode?: DialogSelectFileMode }) {
     }
 
     if (!item.path) return
-    open(item.path)
+    void open(item.path)
   }
 
   onCleanup(() => {

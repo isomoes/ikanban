@@ -1,4 +1,4 @@
-import { createEffect, createMemo, Match, on, onCleanup, Switch } from "solid-js"
+import { createEffect, createMemo, Match, on, onCleanup, Show, Switch } from "solid-js"
 import { createStore } from "solid-js/store"
 import { Dynamic } from "solid-js/web"
 import { useParams } from "@solidjs/router"
@@ -8,6 +8,7 @@ import { cloneSelectedLineRange, previewSelectedLines } from "@/ui/pierre/select
 import { createLineCommentController } from "@/ui/components/line-comment-annotations"
 import { sampledChecksum } from "@/util/encode"
 import { DropdownMenu } from "@/ui/components/dropdown-menu"
+import { Button } from "@/ui/components/button"
 import { IconButton } from "@/ui/components/icon-button"
 import { Tabs } from "@/ui/components/tabs"
 import { ScrollView } from "@/ui/components/scroll-view"
@@ -17,7 +18,10 @@ import { selectionFromLines, useFile, type FileSelection, type SelectedLineRange
 import { useComments } from "@/context/comments"
 import { useLanguage } from "@/context/language"
 import { usePrompt } from "@/context/prompt"
+import { useSDK } from "@/context/sdk"
+import { useSync } from "@/context/sync"
 import { getSessionHandoff } from "@/pages/session/handoff"
+import { SessionReviewTab } from "@/pages/session/review-tab"
 
 function FileCommentMenu(props: {
   moreLabel: string
@@ -60,6 +64,8 @@ export function FileTabContent(props: { tab: string }) {
   const language = useLanguage()
   const prompt = usePrompt()
   const fileComponent = useFileComponent()
+  const sdk = useSDK()
+  const sync = useSync()
 
   const sessionKey = createMemo(() => `${params.dir}${params.id ? "/" + params.id : ""}`)
   const tabs = createMemo(() => layout.tabs(sessionKey))
@@ -167,6 +173,10 @@ export function FileTabContent(props: { tab: string }) {
     selected: null as SelectedLineRange | null,
   })
 
+  const [mode, setMode] = createStore({
+    override: undefined as "file" | "diff" | undefined,
+  })
+
   const syncSelected = (range: SelectedLineRange | null) => {
     const p = path()
     if (!p) return
@@ -253,10 +263,34 @@ export function FileTabContent(props: { tab: string }) {
       path,
       () => {
         commentsUi.note.reset()
+        setMode("override", undefined)
       },
       { defer: true },
     ),
   )
+
+  createEffect(
+    on(
+      () => [tabs().active() === props.tab, path()] as const,
+      ([active, current]) => {
+        if (!active || !current) return
+        void Promise.resolve(sync.projectDiff.diff()).then(() => {
+          sync.projectDiff.hydrate(current)
+        })
+      },
+      { defer: true },
+    ),
+  )
+
+  const projectDiff = createMemo(() => {
+    const current = path()
+    if (!current) return
+    return (sync.data.project_diff[sdk.directory] ?? []).find((item) => item.file === current)
+  })
+
+  const modeValue = createMemo<"file" | "diff">(() => {
+    return mode.override ?? (projectDiff() ? "diff" : "file")
+  })
 
   createEffect(() => {
     const focus = comments.focus()
@@ -427,7 +461,7 @@ export function FileTabContent(props: { tab: string }) {
           commentsUi.onLineSelectionEnd(range)
         }}
         search={search}
-        overflow="scroll"
+        overflow={layout.review.wordWrap() ? "wrap" : "scroll"}
         class="select-text"
         media={{
           mode: "auto",
@@ -447,23 +481,63 @@ export function FileTabContent(props: { tab: string }) {
   )
 
   return (
-    <Tabs.Content value={props.tab} class="mt-3 relative h-full">
-      <ScrollView
-        class="h-full"
-        viewportRef={(el: HTMLDivElement) => {
-          scroll = el
-          restoreScroll()
-        }}
-        onScroll={handleScroll as any}
-      >
-        <Switch>
-          <Match when={state()?.loaded}>{renderFile(contents())}</Match>
-          <Match when={state()?.loading}>
-            <div class="px-6 py-4 text-text-weak">{language.t("common.loading")}...</div>
-          </Match>
-          <Match when={state()?.error}>{(err) => <div class="px-6 py-4 text-text-weak">{err()}</div>}</Match>
-        </Switch>
-      </ScrollView>
+    <Tabs.Content value={props.tab} class="relative flex h-full flex-col overflow-hidden">
+      <Switch>
+        <Match when={modeValue() === "diff" && projectDiff()}>
+          <div class="pt-2 min-h-0 flex-1 overflow-hidden">
+            <SessionReviewTab
+              title={<div />}
+              actions={
+                <Button
+                  size="small"
+                  variant="secondary"
+                  onClick={() => {
+                    layout.review.setWordWrap(true)
+                    setMode("override", "file")
+                  }}
+                >
+                  {language.t("session.panel.showFullFile")}
+                </Button>
+              }
+              diffs={() => (projectDiff() ? [projectDiff()!] : [])}
+              view={view}
+              diffStyle={layout.review.diffStyle()}
+              onDiffStyleChange={layout.review.setDiffStyle}
+              wordWrap={layout.review.wordWrap()}
+              onWordWrapChange={layout.review.setWordWrap}
+              focusedFile={path()}
+              classes={{ header: "px-3", container: "pl-3" }}
+            />
+          </div>
+        </Match>
+        <Match when={true}>
+          <Show when={projectDiff()}>
+            <div class="shrink-0 px-3 pt-2">
+              <div class="flex items-center justify-end gap-2">
+                <Button size="small" variant="secondary" onClick={() => setMode("override", "diff")}>
+                  {language.t("session.panel.showDiffContext")}
+                </Button>
+              </div>
+            </div>
+          </Show>
+          <ScrollView
+            class="mt-3 h-full flex-1"
+            viewportRef={(el: HTMLDivElement) => {
+              scroll = el
+              restoreScroll()
+            }}
+            onScroll={handleScroll as any}
+          >
+            <Switch>
+              <Match when={state()?.loaded}>{renderFile(contents())}</Match>
+              <Match when={state()?.loading}>
+                <div class="px-6 py-4 text-text-weak">{language.t("common.loading")}...</div>
+              </Match>
+              <Match when={state()?.error}>{(err) => <div class="px-6 py-4 text-text-weak">{err()}</div>}</Match>
+            </Switch>
+          </ScrollView>
+        </Match>
+      </Switch>
     </Tabs.Content>
   )
 }

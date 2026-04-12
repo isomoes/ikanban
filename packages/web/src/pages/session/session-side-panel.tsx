@@ -25,9 +25,8 @@ import { StickyAddButton } from "@/pages/session/review-tab"
 import { setSessionHandoff } from "@/pages/session/handoff"
 
 export function SessionSidePanel(props: {
-  reviewPanel: () => JSX.Element
+  ikanbanPanel: () => JSX.Element
   activeDiff?: string
-  focusReviewDiff: (path: string) => void
   showReview: () => boolean
   reviewCount: () => number
   hasReview: () => boolean
@@ -47,7 +46,7 @@ export function SessionSidePanel(props: {
   const tabs = createMemo(() => layout.tabs(sessionKey))
   const view = createMemo(() => layout.view(sessionKey))
 
-  const reviewOpen = createMemo(() => isDesktop() && view().reviewPanel.opened())
+  const reviewOpen = createMemo(() => isDesktop() && view().ikanbanPanel.opened())
   const open = createMemo(() => reviewOpen())
   const reviewTab = createMemo(() => isDesktop())
 
@@ -56,8 +55,8 @@ export function SessionSidePanel(props: {
     return file.tab(tab)
   }
 
-  const openReviewPanel = () => {
-    if (!view().reviewPanel.opened()) view().reviewPanel.open()
+  const openIkanbanPanel = () => {
+    if (!view().ikanbanPanel.opened()) view().ikanbanPanel.open()
   }
 
   const openTab = createOpenSessionFileTab({
@@ -65,7 +64,7 @@ export function SessionSidePanel(props: {
     openTab: tabs().open,
     pathFromTab: file.pathFromTab,
     loadFile: file.load,
-    openReviewPanel,
+    openIkanbanPanel,
     setActive: tabs().setActive,
   })
 
@@ -82,10 +81,10 @@ export function SessionSidePanel(props: {
     if (active === "review" && reviewTab()) return "review"
     if (active && file.pathFromTab(active)) return normalizeTab(active)
 
-    const first = openedTabs()[0]
-    if (first) return first
     if (contextOpen()) return "context"
     if (reviewTab() && props.showReview()) return "review"
+    const first = openedTabs()[0]
+    if (first) return first
     return "empty"
   })
 
@@ -143,7 +142,7 @@ export function SessionSidePanel(props: {
   return (
     <Show when={open()}>
       <aside
-        id="review-panel"
+        id="ikanban-panel"
         aria-label={language.t("session.panel.reviewAndFiles")}
         class="relative min-w-0 h-full border-l border-border-weak-base flex"
         classList={{
@@ -172,12 +171,7 @@ export function SessionSidePanel(props: {
                   >
                     <Show when={reviewTab()}>
                       <Tabs.Trigger value="review">
-                        <div class="flex items-center gap-1.5">
-                          <div>{language.t("session.tab.review")}</div>
-                          <Show when={props.hasReview()}>
-                            <div>{props.reviewCount()}</div>
-                          </Show>
-                        </div>
+                        <div>{language.t("session.tab.review")}</div>
                       </Tabs.Trigger>
                     </Show>
                     <Show when={contextOpen()}>
@@ -217,14 +211,14 @@ export function SessionSidePanel(props: {
                         keybind={command.keybind("file.open")}
                         class="flex items-center"
                       >
-                          <IconButton
-                            icon="plus-small"
-                            variant="ghost"
-                            iconSize="large"
-                            class="!rounded-md"
-                            onClick={() => dialog.show(() => <DialogSelectFile mode="files" />)}
-                            aria-label={language.t("command.file.open")}
-                          />
+                        <IconButton
+                          icon="plus-small"
+                          variant="ghost"
+                          iconSize="large"
+                          class="!rounded-md"
+                          onClick={() => dialog.show(() => <DialogSelectFile mode="files" />)}
+                          aria-label={language.t("command.file.open")}
+                        />
                       </TooltipKeybind>
                     </StickyAddButton>
                   </Tabs.List>
@@ -232,7 +226,7 @@ export function SessionSidePanel(props: {
 
                 <Show when={reviewTab()}>
                   <Tabs.Content value="review" class="flex flex-col h-full overflow-hidden contain-strict">
-                    <Show when={activeTab() === "review"}>{props.reviewPanel()}</Show>
+                    <Show when={activeTab() === "review"}>{props.ikanbanPanel()}</Show>
                   </Tabs.Content>
                 </Show>
 
