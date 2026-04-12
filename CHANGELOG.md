@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.15]
+
+- Build: Replaced broken `packages/web/public` asset symlinks with real tracked files so release and GitHub Pages builds no longer fail after the UI package cleanup. (@isomoes)
+
 ## [0.2.14]
 
 - Review: Moved diff context into file tabs, removed the separate file tree review flow, and restored renderable file diff context so change review stays simpler and more reliable. (@isomoes)
