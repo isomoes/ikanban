@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.14]
+
+- Review: Moved diff context into file tabs, removed the separate file tree review flow, and restored renderable file diff context so change review stays simpler and more reliable. (@isomoes)
+- Skills: Added support for task-scoped `ikanban` skill outputs so skill results stay isolated to the active task flow. (@isomoes)
+- Build: Vendored the remaining shared UI code and removed obsolete workspace packages to simplify the project structure. (@isomoes)
+- Dependencies: Updated `@opencode-ai/sdk` to `1.3.2` to stay current with upstream fixes and compatibility updates. (@isomoes)
+
 ## [0.2.13]
 
 - Home: Limited the web home status board to opened sessions so the landing view stays focused on active work instead of showing every known session. (@isomoes)
