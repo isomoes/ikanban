@@ -1,6 +1,6 @@
 # ikanban
 
-iKanban is a Web interface for the [OpenCode](https://opencode.ai) AI coding agent. It unifies chat, terminal, and board workflows in a single interface so teams can plan, execute, and track coding tasks.
+iKanban is a multi-agent coding workspace powered by [OpenCode](https://opencode.ai). It is built for driving, reviewing, and coordinating parallel agent work across projects, with session management, diff review and project-aware navigation in one place.
 
 **Bilibili Video** [why do it](https://www.bilibili.com/video/BV1t9AhztEjX/) [v0.1](https://www.bilibili.com/video/BV1W3Pgz8ExJ/) [v0.2](https://www.bilibili.com/video/BV1ZNP1znEn5/) [v0.2.11 how to use](https://www.bilibili.com/video/BV1Y9wMzKE2b/?vd_source=7c4f5b1516707ddaefcbbf124fa84a48)
 
