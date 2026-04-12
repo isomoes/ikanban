@@ -23,6 +23,7 @@ import { FileTabContent } from "@/pages/session/file-tabs"
 import { createOpenSessionFileTab, getTabReorderIndex } from "@/pages/session/helpers"
 import { StickyAddButton } from "@/pages/session/review-tab"
 import { setSessionHandoff } from "@/pages/session/handoff"
+import type { FileDiff } from "@opencode-ai/sdk/v2"
 
 export function SessionSidePanel(props: {
   ikanbanPanel: () => JSX.Element
@@ -32,6 +33,7 @@ export function SessionSidePanel(props: {
   hasReview: () => boolean
   diffsReady: () => boolean
   diffFiles: () => string[]
+  fileDiffs: () => Map<string, FileDiff>
   kinds: () => Map<string, "add" | "del" | "mix">
 }) {
   const params = useParams()
@@ -254,7 +256,11 @@ export function SessionSidePanel(props: {
                 </Show>
 
                 <Show when={activeFileTab()} keyed>
-                  {(tab) => <FileTabContent tab={tab} />}
+                  {(tab) => <FileTabContent tab={tab} diff={() => {
+                    const path = file.pathFromTab(tab)
+                    if (!path) return
+                    return props.fileDiffs().get(path)
+                  }} />}
                 </Show>
               </Tabs>
               <DragOverlay>

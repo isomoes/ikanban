@@ -27,7 +27,7 @@ import { checksum, base64Encode } from "@/util/encode"
 import { useDialog } from "@/ui/context/dialog"
 import { useLanguage } from "@/context/language"
 import { useNavigate, useParams } from "@solidjs/router"
-import { UserMessage } from "@opencode-ai/sdk/v2"
+import { UserMessage, type FileDiff } from "@opencode-ai/sdk/v2"
 import { useSDK } from "@/context/sdk"
 import { usePrompt } from "@/context/prompt"
 import { useComments } from "@/context/comments"
@@ -382,6 +382,40 @@ export default function Page() {
     emptyUserMessages,
     { equals: same },
   )
+  const messagePartDiffs = createMemo(() => {
+    const out = new Map<string, FileDiff>()
+    for (const message of messages()) {
+      const parts = sync.data.part[message.id] ?? []
+      for (const part of parts) {
+        const tool = part as {
+          type?: string
+          tool?: string
+          metadata?: { filediff?: FileDiff }
+          state?: {
+            input?: {
+              filePath?: string
+              oldString?: string
+              newString?: string
+            }
+          }
+        }
+        if (tool.type !== "tool" || tool.tool !== "edit") continue
+        const input = tool.state?.input
+        const meta = tool.metadata?.filediff
+        const file = meta?.file || input?.filePath
+        if (!file) continue
+        out.set(file, {
+          file,
+          status: meta?.status,
+          additions: meta?.additions ?? 0,
+          deletions: meta?.deletions ?? 0,
+          before: meta?.before ?? input?.oldString ?? "",
+          after: meta?.after ?? input?.newString ?? "",
+        })
+      }
+    }
+    return out
+  })
   const visibleUserMessages = createMemo(
     () => {
       const revert = revertMessageID()
@@ -427,6 +461,13 @@ export default function Page() {
   }, sessionKey())
 
   const turnDiffs = createMemo(() => lastUserMessage()?.summary?.diffs ?? [])
+  const normalizeDiffPath = (path: string) => {
+    const normalized = path.replaceAll("\\", "/")
+    const root = sdk.directory.replaceAll("\\", "/").replace(/\/+$/, "")
+    if (normalized === root) return ""
+    if (normalized.startsWith(root + "/")) return normalized.slice(root.length + 1)
+    return normalized.replace(/^\.\//, "")
+  }
   const reviewDiffs = createMemo(() => {
     if (store.changes === "project") return projectDiffs()
     if (store.changes === "turn") return turnDiffs()
@@ -463,6 +504,14 @@ export default function Page() {
   const hasAnyReview = createMemo(
     () => sessionDiffs().length > 0 || projectDiffs().length > 0 || turnDiffs().length > 0,
   )
+  const fileDiffs = createMemo(() => {
+    const out = new Map<string, FileDiff>()
+    for (const diff of projectDiffs()) out.set(normalizeDiffPath(diff.file), diff)
+    for (const diff of sessionDiffs()) out.set(normalizeDiffPath(diff.file), diff)
+    for (const diff of turnDiffs()) out.set(normalizeDiffPath(diff.file), diff)
+    for (const [file, diff] of messagePartDiffs()) out.set(normalizeDiffPath(file), diff)
+    return out
+  })
 
   const newSessionWorktree = createMemo(() => {
     if (store.newSessionWorktree === "create") return "create"
@@ -1295,6 +1344,7 @@ export default function Page() {
           hasReview={hasReview}
           diffsReady={diffsReady}
           diffFiles={reviewDiffFiles}
+          fileDiffs={fileDiffs}
           kinds={reviewKinds}
         />
       </div>

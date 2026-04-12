@@ -22,6 +22,21 @@ import { useSDK } from "@/context/sdk"
 import { useSync } from "@/context/sync"
 import { getSessionHandoff } from "@/pages/session/handoff"
 import { SessionReviewTab } from "@/pages/session/review-tab"
+import type { FileDiff } from "@opencode-ai/sdk/v2"
+
+function hasRenderableDiff(diff: FileDiff | undefined) {
+  if (!diff) return false
+  if (typeof (diff as FileDiff & { preloaded?: unknown }).preloaded !== "undefined") return true
+  if (typeof diff.before === "string") return true
+  if (typeof diff.after === "string") return true
+  return false
+}
+
+function canHydrateDiff(diff: FileDiff | undefined) {
+  if (!diff) return false
+  const entry = diff as FileDiff & { lazy?: boolean; loading?: boolean; binary?: boolean }
+  return Boolean(entry.lazy || entry.loading || entry.binary)
+}
 
 function FileCommentMenu(props: {
   moreLabel: string
@@ -56,7 +71,7 @@ function FileCommentMenu(props: {
   )
 }
 
-export function FileTabContent(props: { tab: string }) {
+export function FileTabContent(props: { tab: string; diff?: () => FileDiff | undefined }) {
   const params = useParams()
   const layout = useLayout()
   const file = useFile()
@@ -274,6 +289,9 @@ export function FileTabContent(props: { tab: string }) {
       () => [tabs().active() === props.tab, path()] as const,
       ([active, current]) => {
         if (!active || !current) return
+        if (params.id) {
+          void sync.session.diff(params.id)
+        }
         void Promise.resolve(sync.projectDiff.diff()).then(() => {
           sync.projectDiff.hydrate(current)
         })
@@ -282,14 +300,35 @@ export function FileTabContent(props: { tab: string }) {
     ),
   )
 
+  const sessionDiff = createMemo(() => {
+    const id = params.id
+    const current = path()
+    if (!id || !current) return
+    return (sync.data.session_diff[id] ?? []).find((item) => item.file === current)
+  })
+
   const projectDiff = createMemo(() => {
     const current = path()
     if (!current) return
     return (sync.data.project_diff[sdk.directory] ?? []).find((item) => item.file === current)
   })
 
+  const diffHint = createMemo(() => props.diff?.() ?? sessionDiff() ?? projectDiff())
+  const diffEntry = createMemo(() => {
+    const project = projectDiff()
+    if (canHydrateDiff(project) || hasRenderableDiff(project)) return project
+
+    const session = sessionDiff()
+    if (hasRenderableDiff(session)) return session
+
+    const hinted = props.diff?.()
+    if (hasRenderableDiff(hinted)) return hinted
+
+    return project ?? session ?? hinted
+  })
+
   const modeValue = createMemo<"file" | "diff">(() => {
-    return mode.override ?? (projectDiff() ? "diff" : "file")
+    return mode.override ?? (diffHint() ? "diff" : "file")
   })
 
   createEffect(() => {
@@ -483,7 +522,7 @@ export function FileTabContent(props: { tab: string }) {
   return (
     <Tabs.Content value={props.tab} class="relative flex h-full flex-col overflow-hidden">
       <Switch>
-        <Match when={modeValue() === "diff" && projectDiff()}>
+        <Match when={modeValue() === "diff" && diffEntry()}>
           <div class="pt-2 min-h-0 flex-1 overflow-hidden">
             <SessionReviewTab
               title={<div />}
@@ -499,7 +538,10 @@ export function FileTabContent(props: { tab: string }) {
                   {language.t("session.panel.showFullFile")}
                 </Button>
               }
-              diffs={() => (projectDiff() ? [projectDiff()!] : [])}
+              diffs={() => (diffEntry() ? [diffEntry()!] : [])}
+              onRevealFile={(file) => {
+                sync.projectDiff.hydrate(file)
+              }}
               view={view}
               diffStyle={layout.review.diffStyle()}
               onDiffStyleChange={layout.review.setDiffStyle}
@@ -511,7 +553,7 @@ export function FileTabContent(props: { tab: string }) {
           </div>
         </Match>
         <Match when={true}>
-          <Show when={projectDiff()}>
+          <Show when={diffHint()}>
             <div class="shrink-0 px-3 pt-2">
               <div class="flex items-center justify-end gap-2">
                 <Button size="small" variant="secondary" onClick={() => setMode("override", "diff")}>
