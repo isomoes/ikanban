@@ -3,6 +3,7 @@ import {
   Show,
   Match,
   Switch,
+  For,
   createMemo,
   createEffect,
   createComputed,
@@ -36,6 +37,7 @@ import { same } from "@/utils/same"
 import { createOpenReviewFile } from "@/pages/session/helpers"
 import { createScrollSpy } from "@/pages/session/scroll-spy"
 import { SessionReviewTab, type DiffStyle, type SessionReviewTabProps } from "@/pages/session/review-tab"
+import { SessionIkanbanPane, type IkanbanNodeDetail } from "@/pages/session/session-ikanban-pane"
 import { MessageTimeline } from "@/pages/session/message-timeline"
 import { useSessionCommands } from "@/pages/session/use-session-commands"
 import { SessionComposerRegion, createSessionComposerState } from "@/pages/session/composer"
@@ -569,6 +571,7 @@ export default function Page() {
 
   let inputRef!: HTMLDivElement
   let promptDock: HTMLDivElement | undefined
+  const [ikanbanDetail, setIkanbanDetail] = createSignal<IkanbanNodeDetail | null>(null)
   let dockHeight = 0
   let scroller: HTMLDivElement | undefined
   let content: HTMLDivElement | undefined
@@ -913,11 +916,14 @@ export default function Page() {
     </Show>
   )
 
-  const ikanbanPanel = () => (
-    <div class="flex flex-col h-full overflow-hidden bg-background-stronger contain-strict">
-      <div class="flex-1 min-h-0" />
-    </div>
-  )
+  const openIkanbanDetailFile = (path: string) => {
+    const tab = file.tab(path)
+    tabs().open(tab)
+    void file.load(path)
+    tabs().setActive(tab)
+  }
+
+  const ikanbanPanel = () => <SessionIkanbanPane onDetailChange={setIkanbanDetail} />
 
   const reviewDiffId = (path: string) => {
     const sum = checksum(path)
@@ -1305,6 +1311,73 @@ export default function Page() {
                 />
               </Match>
             </Switch>
+
+            <Show when={desktopReviewOpen() && ikanbanDetail()}>
+              {(detail) => (
+                <div class="pointer-events-none absolute inset-y-4 left-4 z-20 flex w-[min(320px,calc(100%-2rem))] items-start">
+                  <div class="pointer-events-auto w-full rounded-xl border border-border-weak-base bg-background-base/95 p-4 shadow-xl backdrop-blur-sm">
+                    <div class="flex items-start justify-between gap-3">
+                      <div class="min-w-0">
+                        <div class="text-14-medium text-text-strong">{detail().label} {detail().node.name}</div>
+                        <div class="pt-1 text-12-regular text-text-weak">{detail().node.id}</div>
+                      </div>
+                      <Button size="small" variant="secondary" onClick={() => openIkanbanDetailFile(detail().promptPath)}>
+                        {detail().label}
+                      </Button>
+                    </div>
+
+                    <div class="pt-3 text-13-regular text-text-base">{detail().node.description}</div>
+
+                    <div class="pt-4 flex flex-wrap gap-2">
+                      <Button size="small" variant="secondary" onClick={() => openIkanbanDetailFile(detail().taskPath)}>
+                        {detail().taskId}
+                      </Button>
+                      <Button size="small" variant="ghost" onClick={() => setIkanbanDetail(null)}>
+                        Close
+                      </Button>
+                    </div>
+
+                    <div class="pt-4 grid gap-4 md:grid-cols-2">
+                      <div>
+                        <div class="pb-2 text-12-medium text-text-weak uppercase tracking-[0.08em]">Depends on</div>
+                        <Show
+                          when={detail().dependencies.length > 0}
+                          fallback={<div class="text-12-regular text-text-weak">No dependencies.</div>}
+                        >
+                          <div class="flex flex-wrap gap-2">
+                            <For each={detail().dependencies}>
+                              {(dependency) => (
+                                <div class="rounded-md border border-border-weak-base bg-background-stronger px-2 py-1 text-12-regular text-text-base">
+                                  {dependency.label} {dependency.name}
+                                </div>
+                              )}
+                            </For>
+                          </div>
+                        </Show>
+                      </div>
+
+                      <div>
+                        <div class="pb-2 text-12-medium text-text-weak uppercase tracking-[0.08em]">Required for</div>
+                        <Show
+                          when={detail().dependents.length > 0}
+                          fallback={<div class="text-12-regular text-text-weak">No downstream nodes.</div>}
+                        >
+                          <div class="flex flex-wrap gap-2">
+                            <For each={detail().dependents}>
+                              {(dependent) => (
+                                <div class="rounded-md border border-border-weak-base bg-background-stronger px-2 py-1 text-12-regular text-text-base">
+                                  {dependent.label} {dependent.name}
+                                </div>
+                              )}
+                            </For>
+                          </div>
+                        </Show>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </Show>
           </div>
 
           <SessionComposerRegion
