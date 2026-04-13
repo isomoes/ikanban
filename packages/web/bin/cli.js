@@ -27,8 +27,8 @@ const args = process.argv.slice(2)
 const portFlag = args.indexOf("--port")
 const PORT = portFlag !== -1 ? parseInt(args[portFlag + 1], 10) : 3000
 
-// OpenCode backend: honour OPENCODE_URL or default to localhost:4096
-const OPENCODE_URL = process.env.OPENCODE_URL || "http://localhost:4096"
+// OpenCode backend: honour OPENCODE_URL or default to localhost:4097
+const OPENCODE_URL = process.env.OPENCODE_URL || "http://localhost:4097"
 
 function proxyRequest(req, res, overridePath) {
   const target = new URL(req.url, OPENCODE_URL)

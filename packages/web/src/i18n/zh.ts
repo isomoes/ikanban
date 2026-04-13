@@ -334,7 +334,7 @@ export const dict = {
   "dialog.server.empty": "暂无服务器",
   "dialog.server.add.title": "添加服务器",
   "dialog.server.add.url": "服务器 URL",
-  "dialog.server.add.placeholder": "http://localhost:4096",
+  "dialog.server.add.placeholder": "http://localhost:4097",
   "dialog.server.add.error": "无法连接到服务器",
   "dialog.server.add.checking": "检查中...",
   "dialog.server.add.button": "添加服务器",

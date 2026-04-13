@@ -103,7 +103,7 @@ beforeAll(async () => {
       const sdk = {
         directory: "/repo/main",
         client: rootClient,
-        url: "http://localhost:4096",
+        url: "http://localhost:4097",
         createClient(opts: any) {
           return clientFor(opts.directory)
         },
