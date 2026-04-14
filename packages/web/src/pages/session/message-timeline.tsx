@@ -17,6 +17,7 @@ import { getFilename } from "@/util/path"
 import { shouldMarkBoundaryGesture, normalizeWheelDelta } from "@/pages/session/message-gesture"
 import { SessionContextUsage } from "@/components/session-context-usage"
 import { useDialog } from "@/ui/context/dialog"
+import { useBrowserArchive } from "@/context/browser-archive"
 import { useLanguage } from "@/context/language"
 import { useSettings } from "@/context/settings"
 import { useSDK } from "@/context/sdk"
@@ -216,6 +217,7 @@ export function MessageTimeline(props: {
   const sync = useSync()
   const settings = useSettings()
   const dialog = useDialog()
+  const browserArchive = useBrowserArchive()
   const language = useLanguage()
 
   const rendered = createMemo(() => props.renderedUserMessages.map((message) => message.id))
@@ -360,34 +362,19 @@ export function MessageTimeline(props: {
     const session = sync.session.get(sessionID)
     if (!session) return
 
-    const sessions = sync.data.session ?? []
+    const sessions = (sync.data.session ?? []).filter((item) => browserArchive.isVisibleSession(item))
     const index = sessions.findIndex((s) => s.id === sessionID)
     const nextSession = index === -1 ? undefined : (sessions[index + 1] ?? sessions[index - 1])
 
-    await sdk.client.session
-      .update({ sessionID, time: { archived: Date.now() } })
-      .then(() => {
-        sync.set(
-          produce((draft) => {
-            const index = draft.session.findIndex((s) => s.id === sessionID)
-            if (index !== -1) draft.session.splice(index, 1)
-          }),
-        )
-        navigateAfterSessionRemoval(sessionID, session.parentID, nextSession?.id)
-      })
-      .catch((err) => {
-        showToast({
-          title: language.t("common.requestFailed"),
-          description: errorMessage(err),
-        })
-      })
+    browserArchive.archiveSession(session)
+    navigateAfterSessionRemoval(sessionID, session.parentID, nextSession?.id)
   }
 
   const deleteSession = async (sessionID: string) => {
     const session = sync.session.get(sessionID)
     if (!session) return false
 
-    const sessions = (sync.data.session ?? []).filter((s) => !s.parentID && !s.time?.archived)
+    const sessions = (sync.data.session ?? []).filter((s) => !s.parentID && browserArchive.isVisibleSession(s))
     const index = sessions.findIndex((s) => s.id === sessionID)
     const nextSession = index === -1 ? undefined : (sessions[index + 1] ?? sessions[index - 1])
 

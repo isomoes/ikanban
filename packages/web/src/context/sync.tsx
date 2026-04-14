@@ -4,6 +4,7 @@ import { Binary } from "@/util/binary"
 import { retry } from "@/util/retry"
 import { createSimpleContext } from "@/ui/context/index"
 import { applyPatch, parsePatch, reversePatch, type StructuredPatch } from "diff"
+import { useBrowserArchive } from "./browser-archive"
 import { useGlobalSync } from "./global-sync"
 import { useSDK } from "./sdk"
 import type { File as SDKFile, FileContent, FileDiff, Message, Part } from "@opencode-ai/sdk/v2/client"
@@ -262,6 +263,7 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
   name: "Sync",
   init: () => {
     const globalSync = useGlobalSync()
+    const browserArchive = useBrowserArchive()
     const sdk = useSDK()
 
     type Child = ReturnType<(typeof globalSync)["child"]>
@@ -509,15 +511,7 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
         more: createMemo(() => current()[0].session.length >= current()[0].limit),
         archive: async (sessionID: string) => {
           const directory = sdk.directory
-          const client = sdk.client
-          const [, setStore] = globalSync.child(directory)
-          await client.session.update({ sessionID, time: { archived: Date.now() } })
-          setStore(
-            produce((draft) => {
-              const match = Binary.search(draft.session, sessionID, (s) => s.id)
-              if (match.found) draft.session.splice(match.index, 1)
-            }),
-          )
+          browserArchive.archiveSession({ directory, sessionID })
         },
       },
       projectDiff: {

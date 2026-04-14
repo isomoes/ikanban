@@ -14,6 +14,7 @@ import { Spinner } from "@/ui/components/spinner"
 import { Tooltip } from "@/ui/components/tooltip"
 import { type Session } from "@opencode-ai/sdk/v2/client"
 import { type LocalProject } from "@/context/layout"
+import { useBrowserArchive } from "@/context/browser-archive"
 import { useGlobalSync } from "@/context/global-sync"
 import { useLanguage } from "@/context/language"
 import { NewSessionItem, SessionItem, SessionSkeleton } from "./sidebar-items"
@@ -61,6 +62,7 @@ export const WorkspaceDragOverlay = (props: {
   workspaceLabel: (directory: string, branch?: string, projectId?: string) => string
 }): JSX.Element => {
   const globalSync = useGlobalSync()
+  const browserArchive = useBrowserArchive()
   const language = useLanguage()
   const label = createMemo(() => {
     const project = props.sidebarProject()
@@ -307,6 +309,7 @@ export const SortableWorkspace = (props: {
 }): JSX.Element => {
   const navigate = useNavigate()
   const params = useParams()
+  const browserArchive = useBrowserArchive()
   const globalSync = useGlobalSync()
   const language = useLanguage()
   const sortable = createSortable(props.directory)
@@ -316,7 +319,7 @@ export const SortableWorkspace = (props: {
     pendingRename: false,
   })
   const slug = createMemo(() => base64Encode(props.directory))
-  const sessions = createMemo(() => sortedRootSessions(workspaceStore, props.sortNow()))
+  const sessions = createMemo(() => sortedRootSessions(workspaceStore, props.sortNow(), browserArchive.isVisibleSession))
   const children = createMemo(() => childMapByParent(workspaceStore.session))
   const local = createMemo(() => props.directory === props.project.worktree)
   const active = createMemo(() => props.ctx.currentDir() === props.directory)
@@ -328,7 +331,7 @@ export const SortableWorkspace = (props: {
   const open = createMemo(() => props.ctx.workspaceExpanded(props.directory, local()))
   const boot = createMemo(() => open() || active())
   const booted = createMemo((prev) => prev || workspaceStore.status === "complete", false)
-  const hasMore = createMemo(() => workspaceStore.sessionTotal > sessions().length)
+  const hasMore = createMemo(() => workspaceStore.sessionTotal > workspaceStore.session.filter((session) => !session.parentID).length)
   const busy = createMemo(() => props.ctx.isBusy(props.directory))
   const wasBusy = createMemo((prev) => prev || busy(), false)
   const loading = createMemo(() => open() && !booted() && sessions().length === 0 && !wasBusy())
@@ -469,17 +472,18 @@ export const LocalWorkspace = (props: {
   mobile?: boolean
 }): JSX.Element => {
   const globalSync = useGlobalSync()
+  const browserArchive = useBrowserArchive()
   const language = useLanguage()
   const workspace = createMemo(() => {
     const [store, setStore] = globalSync.child(props.project.worktree)
     return { store, setStore }
   })
   const slug = createMemo(() => base64Encode(props.project.worktree))
-  const sessions = createMemo(() => sortedRootSessions(workspace().store, props.sortNow()))
+  const sessions = createMemo(() => sortedRootSessions(workspace().store, props.sortNow(), browserArchive.isVisibleSession))
   const children = createMemo(() => childMapByParent(workspace().store.session))
   const booted = createMemo((prev) => prev || workspace().store.status === "complete", false)
   const loading = createMemo(() => !booted() && sessions().length === 0)
-  const hasMore = createMemo(() => workspace().store.sessionTotal > sessions().length)
+  const hasMore = createMemo(() => workspace().store.sessionTotal > workspace().store.session.filter((session) => !session.parentID).length)
   const loadMore = async () => {
     workspace().setStore("limit", (limit) => (limit ?? 0) + 5)
     await globalSync.project.loadSessions(props.project.worktree)

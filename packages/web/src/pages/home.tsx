@@ -1,4 +1,4 @@
-import { createMemo, createEffect, createResource, For, Match, Switch } from "solid-js";
+import { createMemo, createEffect, For, Match, Switch } from "solid-js";
 import { Button } from "@/ui/components/button";
 import { Logo } from "@/ui/components/logo";
 import { useLayout } from "@/context/layout";
@@ -9,13 +9,12 @@ import { usePlatform } from "@/context/platform";
 import { DateTime } from "luxon";
 import { useDialog } from "@/ui/context/dialog";
 import { DialogSelectDirectory } from "@/components/dialog-select-directory";
+import { useBrowserArchive } from "@/context/browser-archive";
 import { DialogSelectServer } from "@/components/dialog-select-server";
-import { useGlobalSDK } from "@/context/global-sdk";
 import { useServer } from "@/context/server";
 import { useGlobalSync } from "@/context/global-sync";
 import { useLanguage } from "@/context/language";
 import { IconButton } from "@/ui/components/icon-button";
-import type { Session } from "@opencode-ai/sdk/v2/client";
 import { buildBoardColumns, trackedProjectDirectories, type BoardCard, type BoardColumn } from "./home/helpers";
 
 const homeStyles = {
@@ -48,39 +47,25 @@ const homeStyles = {
 
 export default function Home() {
   const sync = useGlobalSync();
+  const browserArchive = useBrowserArchive();
   const layout = useLayout();
   const platform = usePlatform();
   const dialog = useDialog();
   const navigate = useNavigate();
-  const globalSDK = useGlobalSDK();
   const server = useServer();
   const language = useLanguage();
   const trackedProjects = createMemo(() => trackedProjectDirectories(server.projects.list()));
 
-  const [rootSessions, { mutate: mutateRootSessions }] = createResource(
-    trackedProjects,
-    async (directories) => {
-      const entries = await Promise.all(
-        directories.map(async (directory) => {
-          const result = await globalSDK.client.session.list({
-            directory,
-            roots: true,
-          });
-
-          const sessions = (result.data ?? []).filter(
-            (session): session is Session => !!session?.id && !session.time?.archived,
-          );
-
-          return [directory, sessions] as const;
-        }),
-      );
-
-      return Object.fromEntries(entries) as Record<string, Session[]>;
-    },
-  );
-
   const boardColumns = createMemo<Record<BoardColumn, BoardCard[]>>(() => {
-    const sessionsByProject = rootSessions() ?? {};
+    const sessionsByProject = Object.fromEntries(
+      trackedProjects().map((directory) => {
+        const [store] = sync.child(directory);
+        return [
+          directory,
+          store.session.filter((session) => !!session?.id && browserArchive.isVisibleSession(session)),
+        ] as const;
+      }),
+    );
     const statusesByProject = Object.fromEntries(
       trackedProjects().map((directory) => {
         const [store] = sync.child(directory);
@@ -98,6 +83,7 @@ export default function Home() {
   createEffect(() => {
     for (const directory of trackedProjects()) {
       sync.child(directory);
+      void sync.project.loadSessions(directory);
     }
   });
 
@@ -121,22 +107,7 @@ export default function Home() {
   }
 
   async function archiveSession(directory: string, sessionID: string) {
-    const [, setStore] = sync.child(directory, { bootstrap: false });
-    await globalSDK.client.session.update({
-      sessionID,
-      time: { archived: Date.now() },
-    });
-    mutateRootSessions((current) => {
-      if (!current?.[directory]) return current;
-      return {
-        ...current,
-        [directory]: current[directory].filter((session) => session.id !== sessionID),
-      };
-    });
-    setStore(
-      "session",
-      (sessions) => sessions.filter((session) => session.id !== sessionID),
-    );
+    browserArchive.archiveSession({ directory, sessionID });
   }
 
   async function chooseProject() {

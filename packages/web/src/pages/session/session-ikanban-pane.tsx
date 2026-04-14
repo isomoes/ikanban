@@ -1,13 +1,26 @@
 import { createResizeObserver } from "@solid-primitives/resize-observer"
 import type { FileNode } from "@opencode-ai/sdk/v2"
-import { useParams } from "@solidjs/router"
+import { useNavigate, useParams } from "@solidjs/router"
 import { createEffect, createMemo, createResource, createSignal, For, Match, Show, Switch } from "solid-js"
+import { useBrowserArchive } from "@/context/browser-archive"
+import { useLocal } from "@/context/local"
 import { useFile } from "@/context/file"
 import { useLanguage } from "@/context/language"
 import { useLayout } from "@/context/layout"
 import { useSDK } from "@/context/sdk"
+import { showToast } from "@/ui/components/toast"
 import { Button } from "@/ui/components/button"
+import { base64Encode } from "@/util/encode"
 import { parseIkanbanTaskYaml, taskStages, type IkanbanTask } from "./ikanban-task"
+import { resolveNodeSessionState, type NodeSessionState } from "./session-ikanban-node-state"
+import {
+  getStoredNodeTaskFinished,
+  getStoredNodeTaskSession,
+  nodeTaskPromptPath,
+  nodeTaskSessionKey,
+  setStoredNodeTaskFinished,
+  startNodeTaskSession,
+} from "./session-ikanban-node-session"
 
 type GraphNodeLayout = {
   id: string
@@ -43,6 +56,47 @@ function edgePath(from: GraphNodeLayout, to: GraphNodeLayout, radius: number) {
   const endY = to.y - radius - 4
   const bend = Math.max(28, (endY - startY) * 0.28)
   return `M ${startX} ${startY} C ${startX} ${startY + bend}, ${endX} ${endY - bend}, ${endX} ${endY}`
+}
+
+function nodeVisualState(input: { state: NodeSessionState; active: boolean; related: boolean }) {
+  const palette = (() => {
+    switch (input.state) {
+      case "starting":
+        return {
+          outer: "rgba(59,130,246,0.18)",
+          fill: "rgba(59,130,246,0.18)",
+          stroke: "rgba(125,211,252,0.9)",
+          inner: "rgba(8,47,73,0.55)",
+          text: "rgba(240,249,255,1)",
+        }
+      case "finish":
+        return {
+          outer: "rgba(34,197,94,0.16)",
+          fill: "rgba(34,197,94,0.14)",
+          stroke: "rgba(134,239,172,0.88)",
+          inner: "rgba(20,83,45,0.55)",
+          text: "rgba(240,253,244,1)",
+        }
+      default:
+        return {
+          outer: "rgba(255,255,255,0.04)",
+          fill: input.related ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.06)",
+          stroke: input.related ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.32)",
+          inner: "rgba(17,24,39,0.48)",
+          text: "rgba(255,255,255,0.92)",
+        }
+    }
+  })()
+
+  if (!input.active) return palette
+
+  return {
+    outer: input.state === "unstart" ? "rgba(186,230,253,0.08)" : palette.outer,
+    fill: input.state === "unstart" ? "rgba(186,230,253,0.12)" : palette.fill,
+    stroke: input.state === "unstart" ? "rgba(186,230,253,0.78)" : palette.stroke,
+    inner: palette.inner,
+    text: input.state === "unstart" ? "rgba(240,249,255,1)" : palette.text,
+  }
 }
 
 async function listTaskYamlPaths(list: (path: string) => Promise<FileNode[]>, root = ".ikanban") {
@@ -100,8 +154,18 @@ async function loadTasks(list: (path: string) => Promise<FileNode[]>, read: (pat
   return { tasks, invalid } satisfies TaskLoadResult
 }
 
-function GraphTask(props: { task: IkanbanTask }) {
+function GraphTask(props: {
+  task: IkanbanTask
+  startingNodeKey?: string
+  updatingNodeKey?: string
+  getStoredNodeSessionID: (taskPath: string, nodeID: string) => string | undefined
+  getStoredNodeFinished: (taskPath: string, nodeID: string) => boolean
+  getNodeSessionState: (taskPath: string, nodeID: string) => NodeSessionState
+  onStartNodeTask: (taskPath: string, node: IkanbanTask["nodes"][number]) => void
+  onToggleNodeTaskFinished: (taskPath: string, node: IkanbanTask["nodes"][number], finished: boolean) => void
+}) {
   const params = useParams()
+  const language = useLanguage()
   const layoutCtx = useLayout()
   const file = useFile()
   let graphRoot: HTMLDivElement | undefined
@@ -177,7 +241,7 @@ function GraphTask(props: { task: IkanbanTask }) {
   const promptPath = createMemo(() => {
     const node = selectedNode()
     if (!node) return ""
-    return props.task.filePath.replace(/\/task\.yaml$/, `/${node.id}.md`)
+    return nodeTaskPromptPath(props.task.filePath, node.id)
   })
   const selectedLabel = createMemo(() => {
     const node = selectedNode()
@@ -206,12 +270,10 @@ function GraphTask(props: { task: IkanbanTask }) {
     if (!node) return null
 
     return {
-      taskId: props.task.id,
-      taskName: props.task.name,
-      taskPath: props.task.filePath,
       node,
       label: selectedLabel(),
-      promptPath: promptPath(),
+      sessionID: props.getStoredNodeSessionID(props.task.filePath, node.id),
+      finished: props.getStoredNodeFinished(props.task.filePath, node.id),
       dependencies: dependencies().map((item) => ({
         id: item.id,
         label: nodeLabels().get(item.id) ?? item.id,
@@ -290,6 +352,8 @@ function GraphTask(props: { task: IkanbanTask }) {
                   {(item) => {
                     const active = () => selectedId() === item.id
                     const related = () => relatedIds().has(item.id)
+                    const state = () => props.getNodeSessionState(props.task.filePath, item.id)
+                    const visual = () => nodeVisualState({ state: state(), active: active(), related: related() })
 
                     return (
                     <g
@@ -299,25 +363,25 @@ function GraphTask(props: { task: IkanbanTask }) {
                       >
                         <circle
                           r={nodeRadius + 5}
-                          fill={active() ? "rgba(186,230,253,0.08)" : "rgba(255,255,255,0.04)"}
+                          fill={visual().outer}
                           stroke="none"
                         />
                         <circle
                           r={nodeRadius}
-                          fill={active() ? "rgba(186,230,253,0.12)" : related() ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.06)"}
-                          stroke={active() ? "rgba(186,230,253,0.78)" : related() ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.32)"}
+                          fill={visual().fill}
+                          stroke={visual().stroke}
                           stroke-width={active() ? "2.2" : "2"}
                         />
                         <circle
                           r={nodeRadius - 4}
-                          fill="rgba(17,24,39,0.48)"
-                          stroke={active() ? "rgba(186,230,253,0.3)" : "rgba(255,255,255,0.18)"}
+                          fill={visual().inner}
+                          stroke={active() ? "rgba(255,255,255,0.24)" : "rgba(255,255,255,0.14)"}
                           stroke-width="1"
                         />
                         <text
                           text-anchor="middle"
                           dominant-baseline="middle"
-                          fill={active() ? "rgba(240,249,255,1)" : "rgba(255,255,255,0.92)"}
+                          fill={visual().text}
                           class="select-none"
                           style={{ "font-size": "13px", "font-weight": active() ? "700" : "600" }}
                         >
@@ -340,9 +404,36 @@ function GraphTask(props: { task: IkanbanTask }) {
               <div class="min-w-0">
                 <div class="text-14-medium text-text-strong">{selected().node.name}</div>
               </div>
-              <Button size="small" variant="secondary" onClick={() => openFile(selected().promptPath)}>
-                {selected().label}
-              </Button>
+              <div class="flex items-center gap-2">
+                <Button
+                  size="small"
+                  variant="secondary"
+                  disabled={
+                    props.startingNodeKey === nodeTaskSessionKey(props.task.filePath, selected().node.id) ||
+                    props.updatingNodeKey === nodeTaskSessionKey(props.task.filePath, selected().node.id)
+                  }
+                  onClick={() => props.onStartNodeTask(props.task.filePath, selected().node)}
+                >
+                  {props.startingNodeKey === nodeTaskSessionKey(props.task.filePath, selected().node.id)
+                    ? language.t("session.ikanban.node.starting")
+                    : selected().sessionID
+                      ? language.t("session.ikanban.node.openSession")
+                      : language.t("session.ikanban.node.start")}
+                </Button>
+                <Show when={selected().sessionID}>
+                  <Button
+                    size="small"
+                    variant="secondary"
+                    disabled={props.updatingNodeKey === nodeTaskSessionKey(props.task.filePath, selected().node.id)}
+                    onClick={() => props.onToggleNodeTaskFinished(props.task.filePath, selected().node, !selected().finished)}
+                  >
+                    {selected().finished ? language.t("session.ikanban.node.back") : language.t("session.ikanban.node.finish")}
+                  </Button>
+                </Show>
+                <Button size="small" variant="secondary" onClick={() => openFile(promptPath())}>
+                  {selected().label}
+                </Button>
+              </div>
             </div>
 
             <div class="pt-3 text-13-regular text-text-base">{selected().node.description}</div>
@@ -386,8 +477,15 @@ function GraphTask(props: { task: IkanbanTask }) {
 }
 
 export function SessionIkanbanPane() {
+  const navigate = useNavigate()
   const sdk = useSDK()
+  const browserArchive = useBrowserArchive()
+  const local = useLocal()
   const language = useLanguage()
+  const layout = useLayout()
+  const [startingNodeKey, setStartingNodeKey] = createSignal<string | undefined>()
+  const [updatingNodeKey, setUpdatingNodeKey] = createSignal<string | undefined>()
+  const [storageRevision, setStorageRevision] = createSignal(0)
   const [tasks] = createResource(
     () => sdk.directory,
     () =>
@@ -399,6 +497,130 @@ export function SessionIkanbanPane() {
 
   const validTasks = createMemo(() => tasks()?.tasks ?? [])
   const invalidPaths = createMemo(() => tasks()?.invalid ?? [])
+
+  const errorMessage = (err: unknown) => {
+    if (err && typeof err === "object" && "data" in err) {
+      const data = (err as { data?: { message?: string } }).data
+      if (data?.message) return data.message
+    }
+    if (err instanceof Error) return err.message
+    return language.t("common.requestFailed")
+  }
+
+  const storedNodeSessionID = (taskPath: string, nodeID: string) => {
+    storageRevision()
+    if (typeof localStorage === "undefined") return undefined
+    return getStoredNodeTaskSession(localStorage, sdk.directory, taskPath, nodeID)
+  }
+
+  const storedNodeFinished = (taskPath: string, nodeID: string) => {
+    storageRevision()
+    if (typeof localStorage === "undefined") return false
+    return getStoredNodeTaskFinished(localStorage, sdk.directory, taskPath, nodeID)
+  }
+
+  const nodeSessionState = (taskPath: string, nodeID: string) => {
+    const sessionID = storedNodeSessionID(taskPath, nodeID)
+    return resolveNodeSessionState({
+      sessionID,
+      finished: storedNodeFinished(taskPath, nodeID),
+    })
+  }
+
+  const bumpStorageRevision = () => {
+    setStorageRevision((value) => value + 1)
+  }
+
+  const navigateToSession = (sessionID: string) => {
+    const slug = base64Encode(sdk.directory)
+    layout.handoff.setTabs(slug, sessionID)
+    navigate(`/${slug}/${sessionID}`)
+  }
+
+  const startNodeTask = async (taskPath: string, node: IkanbanTask["nodes"][number]) => {
+    if (typeof localStorage === "undefined") {
+      showToast({
+        title: language.t("session.ikanban.node.startFailed.title"),
+        description: language.t("common.requestFailed"),
+      })
+      return
+    }
+
+    const currentModel = local.model.current()
+    const currentAgent = local.agent.current()
+    if (!currentModel || !currentAgent) {
+      showToast({
+        title: language.t("prompt.toast.modelAgentRequired.title"),
+        description: language.t("prompt.toast.modelAgentRequired.description"),
+      })
+      return
+    }
+
+    const activeKey = nodeTaskSessionKey(taskPath, node.id)
+    if (startingNodeKey() === activeKey) return
+
+    setStartingNodeKey(activeKey)
+
+    try {
+      await startNodeTaskSession({
+        storage: localStorage,
+        directory: sdk.directory,
+        taskPath,
+        nodeID: node.id,
+        agent: currentAgent.name,
+        model: { providerID: currentModel.provider.id, modelID: currentModel.id },
+        variant: local.model.variant.current(),
+        readPrompt: async (path) => fileText(await sdk.client.file.read({ path }).then((result) => result.data)) ?? "",
+        createSession: async () => {
+          const session = await sdk.client.session.create().then((result) => result.data)
+          if (!session) throw new Error(language.t("common.requestFailed"))
+          return session
+        },
+        promptSession: (input) => sdk.client.session.promptAsync(input).then(() => undefined),
+        navigateToSession,
+      })
+      bumpStorageRevision()
+    } catch (err) {
+      showToast({
+        title: language.t("session.ikanban.node.startFailed.title"),
+        description: errorMessage(err),
+      })
+    } finally {
+      setStartingNodeKey(undefined)
+    }
+  }
+
+  const toggleNodeTaskFinished = async (taskPath: string, node: IkanbanTask["nodes"][number], finished: boolean) => {
+    if (typeof localStorage === "undefined") {
+      showToast({
+        title: language.t("session.ikanban.node.updateFailed.title"),
+        description: language.t("common.requestFailed"),
+      })
+      return
+    }
+
+    const sessionID = getStoredNodeTaskSession(localStorage, sdk.directory, taskPath, node.id)
+    if (!sessionID) return
+
+    const activeKey = nodeTaskSessionKey(taskPath, node.id)
+    if (updatingNodeKey() === activeKey) return
+
+    setUpdatingNodeKey(activeKey)
+
+    try {
+      if (finished) browserArchive.archiveSession({ directory: sdk.directory, sessionID })
+      else browserArchive.unarchiveSession({ directory: sdk.directory, sessionID })
+      setStoredNodeTaskFinished(localStorage, sdk.directory, taskPath, node.id, finished)
+      bumpStorageRevision()
+    } catch (err) {
+      showToast({
+        title: language.t("session.ikanban.node.updateFailed.title"),
+        description: errorMessage(err),
+      })
+    } finally {
+      setUpdatingNodeKey(undefined)
+    }
+  }
 
   return (
     <div class="flex h-full min-h-0 flex-col overflow-hidden bg-background-stronger contain-strict">
@@ -414,7 +636,24 @@ export function SessionIkanbanPane() {
                   {language.t("session.ikanban.invalid", { count: invalidPaths().length })}
                 </div>
               </Show>
-              <For each={validTasks()}>{(task) => <GraphTask task={task} />}</For>
+              <For each={validTasks()}>
+                {(task) => (
+                  <GraphTask
+                    task={task}
+                    startingNodeKey={startingNodeKey()}
+                    updatingNodeKey={updatingNodeKey()}
+                    getStoredNodeSessionID={storedNodeSessionID}
+                    getStoredNodeFinished={storedNodeFinished}
+                    getNodeSessionState={nodeSessionState}
+                    onStartNodeTask={(taskPath, node) => {
+                      void startNodeTask(taskPath, node)
+                    }}
+                    onToggleNodeTaskFinished={(taskPath, node, finished) => {
+                      void toggleNodeTaskFinished(taskPath, node, finished)
+                    }}
+                  />
+                )}
+              </For>
             </div>
           </Match>
           <Match when={true}>

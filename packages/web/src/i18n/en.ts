@@ -54,6 +54,13 @@ export const dict = {
   "session.ikanban.invalid": "Skipped {{count}} invalid task graph file(s).",
   "session.ikanban.empty.title": "No task graphs found",
   "session.ikanban.empty.description": "Add `.ikanban/<task-id>/task.yaml` files to this project to render their dependency graph here.",
+  "session.ikanban.node.start": "Start",
+  "session.ikanban.node.openSession": "Open session",
+  "session.ikanban.node.finish": "Finish",
+  "session.ikanban.node.back": "Back",
+  "session.ikanban.node.starting": "Starting...",
+  "session.ikanban.node.startFailed.title": "Failed to start task session",
+  "session.ikanban.node.updateFailed.title": "Failed to update task session",
   "command.steps.toggle": "Toggle steps",
   "command.steps.toggle.description":
     "Show or hide steps for the current message",

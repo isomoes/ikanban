@@ -64,6 +64,18 @@ export const dict = {
 
   "command.review.toggle": "切换 Ikanban 面板",
 
+  "session.ikanban.loading": "正在加载任务图...",
+  "session.ikanban.invalid": "已跳过 {{count}} 个无效任务图文件。",
+  "session.ikanban.empty.title": "未找到任务图",
+  "session.ikanban.empty.description": "在项目中添加 `.ikanban/<task-id>/task.yaml` 文件即可渲染依赖图。",
+  "session.ikanban.node.start": "开始",
+  "session.ikanban.node.openSession": "打开会话",
+  "session.ikanban.node.finish": "完成",
+  "session.ikanban.node.back": "返回",
+  "session.ikanban.node.starting": "启动中...",
+  "session.ikanban.node.startFailed.title": "启动任务会话失败",
+  "session.ikanban.node.updateFailed.title": "更新任务会话失败",
+
   "command.steps.toggle": "切换步骤",
   "command.steps.toggle.description": "显示或隐藏当前消息的步骤",
 
