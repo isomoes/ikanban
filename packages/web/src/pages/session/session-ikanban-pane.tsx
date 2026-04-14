@@ -7,18 +7,7 @@ import { useLanguage } from "@/context/language"
 import { useLayout } from "@/context/layout"
 import { useSDK } from "@/context/sdk"
 import { Button } from "@/ui/components/button"
-import { parseIkanbanTaskYaml, taskStages, type IkanbanTask, type IkanbanTaskNode } from "./ikanban-task"
-
-export type IkanbanNodeDetail = {
-  taskId: string
-  taskName: string
-  taskPath: string
-  node: IkanbanTaskNode
-  label: string
-  promptPath: string
-  dependencies: Array<{ id: string; label: string; name: string }>
-  dependents: Array<{ id: string; label: string; name: string }>
-}
+import { parseIkanbanTaskYaml, taskStages, type IkanbanTask } from "./ikanban-task"
 
 type GraphNodeLayout = {
   id: string
@@ -111,7 +100,7 @@ async function loadTasks(list: (path: string) => Promise<FileNode[]>, read: (pat
   return { tasks, invalid } satisfies TaskLoadResult
 }
 
-function GraphTask(props: { task: IkanbanTask; onDetailChange?: (detail: IkanbanNodeDetail | null) => void }) {
+function GraphTask(props: { task: IkanbanTask }) {
   const params = useParams()
   const layoutCtx = useLayout()
   const file = useFile()
@@ -212,7 +201,7 @@ function GraphTask(props: { task: IkanbanTask; onDetailChange?: (detail: Ikanban
     setSelectedId((current) => (current === id ? undefined : id))
   }
 
-  const detail = createMemo<IkanbanNodeDetail | null>(() => {
+  const detail = createMemo(() => {
     const node = selectedNode()
     if (!node) return null
 
@@ -234,10 +223,6 @@ function GraphTask(props: { task: IkanbanTask; onDetailChange?: (detail: Ikanban
         name: item.name,
       })),
     }
-  })
-
-  createEffect(() => {
-    props.onDetailChange?.(detail())
   })
 
   createResizeObserver(
@@ -345,16 +330,62 @@ function GraphTask(props: { task: IkanbanTask; onDetailChange?: (detail: Ikanban
               </g>
             </svg>
           </div>
-          <div class="pt-3 text-center text-12-regular text-text-weak">Click a node to inspect its details.</div>
         </div>
       </div>
 
-      <div class="pt-3 text-12-regular text-text-weak">{props.task.filePath}</div>
+      <Show when={detail()}>
+        {(selected) => (
+          <div class="mt-3 rounded-xl border border-border-weak-base bg-background-base/95 p-4 shadow-xl backdrop-blur-sm">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <div class="text-14-medium text-text-strong">{selected().node.name}</div>
+              </div>
+              <Button size="small" variant="secondary" onClick={() => openFile(selected().promptPath)}>
+                {selected().label}
+              </Button>
+            </div>
+
+            <div class="pt-3 text-13-regular text-text-base">{selected().node.description}</div>
+
+            <div class="grid gap-4 pt-4 md:grid-cols-2">
+              <div>
+                <div class="pb-2 text-12-medium uppercase tracking-[0.08em] text-text-weak">Depends on</div>
+                <Show when={selected().dependencies.length > 0} fallback={<div class="text-12-regular text-text-weak">No dependencies.</div>}>
+                  <div class="flex flex-wrap gap-2">
+                    <For each={selected().dependencies}>
+                      {(dependency) => (
+                        <div class="rounded-md border border-border-weak-base bg-background-stronger px-2 py-1 text-12-regular text-text-base">
+                          {dependency.label} {dependency.name}
+                        </div>
+                      )}
+                    </For>
+                  </div>
+                </Show>
+              </div>
+
+              <div>
+                <div class="pb-2 text-12-medium uppercase tracking-[0.08em] text-text-weak">Required for</div>
+                <Show when={selected().dependents.length > 0} fallback={<div class="text-12-regular text-text-weak">No downstream nodes.</div>}>
+                  <div class="flex flex-wrap gap-2">
+                    <For each={selected().dependents}>
+                      {(dependent) => (
+                        <div class="rounded-md border border-border-weak-base bg-background-stronger px-2 py-1 text-12-regular text-text-base">
+                          {dependent.label} {dependent.name}
+                        </div>
+                      )}
+                    </For>
+                  </div>
+                </Show>
+              </div>
+            </div>
+          </div>
+        )}
+      </Show>
     </section>
   )
 }
 
-export function SessionIkanbanPane(props: { onDetailChange?: (detail: IkanbanNodeDetail | null) => void }) {
+export function SessionIkanbanPane() {
   const sdk = useSDK()
   const language = useLanguage()
   const [tasks] = createResource(
@@ -383,7 +414,7 @@ export function SessionIkanbanPane(props: { onDetailChange?: (detail: IkanbanNod
                   {language.t("session.ikanban.invalid", { count: invalidPaths().length })}
                 </div>
               </Show>
-              <For each={validTasks()}>{(task) => <GraphTask task={task} onDetailChange={props.onDetailChange} />}</For>
+              <For each={validTasks()}>{(task) => <GraphTask task={task} />}</For>
             </div>
           </Match>
           <Match when={true}>
