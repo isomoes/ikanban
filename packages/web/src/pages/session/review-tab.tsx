@@ -43,7 +43,7 @@ export interface SessionReviewTabProps {
 
 export function StickyAddButton(props: { children: JSX.Element }) {
   return (
-    <div class="bg-background-stronger h-full shrink-0 sticky right-0 z-10 flex items-center justify-center pr-3">
+    <div class="bg-background-base border-b border-border-weak-base h-full shrink-0 sticky right-0 z-10 flex items-center justify-center pr-3">
       {props.children}
     </div>
   )
