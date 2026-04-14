@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0]
+
+- Web: Added a session ikanban task graph, moved node details into the main pane, restored session tab borders, and persisted archive state in browser storage so session workflows stay clearer and more durable. (@isomoes)
+- Config: Switched the default local server to port `4097` to better match the current local setup. (@isomoes)
+- Docs: Expanded the multi-agent intro, added a release prompt checklist, and refreshed the README with a star history chart. (@isomoes)
+
 ## [0.2.15]
 
 - Build: Replaced broken `packages/web/public` asset symlinks with real tracked files so release and GitHub Pages builds no longer fail after the UI package cleanup. (@isomoes)
