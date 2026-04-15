@@ -30,6 +30,7 @@ export function buildBoardColumns(input: {
     const statuses = input.statusesByProject[directory] ?? {}
 
     for (const session of sessions) {
+      if (session.parentID) continue
       if (!session?.id || session.time?.archived) continue
 
       const updatedAt = session.time.updated ?? session.time.created ?? 0

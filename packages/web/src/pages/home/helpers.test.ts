@@ -59,4 +59,20 @@ describe("buildBoardColumns", () => {
     expect(columns.progress[0]?.session.id).toBe("session-1")
     expect(columns.idle).toEqual([])
   })
+
+  test("ignores child sessions so the board only shows root sessions", () => {
+    const columns = buildBoardColumns({
+      projectDirectories: ["/open"],
+      sessionsByProject: {
+        "/open": [
+          session({ id: "root-session", title: "Root session" }),
+          session({ id: "child-session", parentID: "root-session", title: "Child session" }),
+        ],
+      },
+      statusesByProject: {},
+    })
+
+    expect(columns.idle.map((card) => card.session.id)).toEqual(["root-session"])
+    expect(columns.progress).toEqual([])
+  })
 })
