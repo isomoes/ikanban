@@ -4,7 +4,13 @@ iKanban is a multi-agent coding workspace powered by [OpenCode](https://opencode
 
 **Bilibili Video** [why do it](https://www.bilibili.com/video/BV1t9AhztEjX/) [v0.1](https://www.bilibili.com/video/BV1W3Pgz8ExJ/) [v0.2](https://www.bilibili.com/video/BV1ZNP1znEn5/) [v0.2.11 how to use](https://www.bilibili.com/video/BV1Y9wMzKE2b/?vd_source=7c4f5b1516707ddaefcbbf124fa84a48)
 
-<img width="3258" height="1460" alt="Image" src="https://github.com/user-attachments/assets/2dc21dcc-124e-4a89-9577-357ebe30b8f0" />
+<details>
+  <summary>UI Screenshots</summary>
+
+  <img width="3258" height="1460" alt="Image" src="https://github.com/user-attachments/assets/2dc21dcc-124e-4a89-9577-357ebe30b8f0" />
+
+  <img width="3258" height="1460" alt="Image" src="https://github.com/user-attachments/assets/b3cc7c31-0b9c-45ac-98d8-90178af31e2f" />
+</details>
 
 ## Quick Start
 
