@@ -1142,7 +1142,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
             </Show>
           </div>
 
-          <div class="pointer-events-none absolute bottom-2 right-2 flex items-center gap-2">
+          <div class="pointer-events-none absolute bottom-2 right-2">
             <input
               ref={fileInputRef}
               type="file"
@@ -1155,9 +1155,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
               }}
             />
 
-            <div
-              class="flex items-center gap-1"
-            >
+            <div class="pointer-events-auto flex items-center gap-1">
               <TooltipKeybind
                 placement="top"
                 title={language.t("prompt.action.attachFile")}
