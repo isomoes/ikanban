@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.1]
+
+- Home: Excluded child sessions from the home idle board so starting an ikanban task no longer shows duplicate session cards. (@isomoes)
+
 ## [0.3.0]
 
 - Web: Added a session ikanban task graph, moved node details into the main pane, restored session tab borders, and persisted archive state in browser storage so session workflows stay clearer and more durable. (@isomoes)
