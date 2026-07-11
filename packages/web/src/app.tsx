@@ -6,7 +6,7 @@ import { FileComponentProvider } from "@/ui/context/file";
 import { MarkedProvider } from "@/ui/context/marked";
 import { Font } from "@/ui/components/font";
 import { ThemeProvider } from "@/ui/theme/index";
-import { MetaProvider } from "@solidjs/meta";
+import { MetaProvider, Title } from "@solidjs/meta";
 import { Route, Router } from "@solidjs/router";
 import {
   ErrorBoundary,
@@ -154,6 +154,7 @@ function ServerKey(props: ParentProps) {
   const server = useServer();
   return (
     <Show when={server.key} keyed>
+      <Title>{server.name ? `IKanban - ${server.name}` : "IKanban"}</Title>
       {props.children}
     </Show>
   );
