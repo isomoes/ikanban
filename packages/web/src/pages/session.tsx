@@ -36,7 +36,6 @@ import { same } from "@/utils/same"
 import { createOpenReviewFile } from "@/pages/session/helpers"
 import { createScrollSpy } from "@/pages/session/scroll-spy"
 import { SessionReviewTab, type DiffStyle, type SessionReviewTabProps } from "@/pages/session/review-tab"
-import { SessionIkanbanPane } from "@/pages/session/session-ikanban-pane"
 import { MessageTimeline } from "@/pages/session/message-timeline"
 import { useSessionCommands } from "@/pages/session/use-session-commands"
 import { SessionComposerRegion, createSessionComposerState } from "@/pages/session/composer"
@@ -914,7 +913,11 @@ export default function Page() {
     </Show>
   )
 
-  const ikanbanPanel = () => <SessionIkanbanPane />
+  const ikanbanPanel = () => (
+    <div class="flex flex-col h-full overflow-hidden bg-background-stronger contain-strict">
+      <div class="flex-1 min-h-0" />
+    </div>
+  )
 
   const reviewDiffId = (path: string) => {
     const sum = checksum(path)
