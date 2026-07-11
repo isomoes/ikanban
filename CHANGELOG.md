@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.3]
+
+- Web: Showed the active server name in the page title and let the meta title control the page title so browser tabs reflect the current server. (@isomoes)
+- Web: Removed the ikanban node graph function and simplified the project structure by clearing out dead code. (@isomoes)
+
 ## [0.3.2]
 
 - Web: Removed the session ikanban task graph, including the task graph pane, node details, and related session/state helpers, reverting the ikanban panel to an empty placeholder. (@isomoes)
