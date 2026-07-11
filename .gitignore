@@ -1,7 +1,3 @@
-# Rust
-/target/
-Cargo.lock
-
 # Database
 *.db
 *.db-journal
@@ -25,7 +21,6 @@ Thumbs.db
 # Environment
 .env
 .env.local
-.termdbms
 
 # Bun
 node_modules/

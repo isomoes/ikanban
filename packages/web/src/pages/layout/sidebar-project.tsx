@@ -1,6 +1,6 @@
 import { createEffect, createMemo, For, Show, type Accessor, type JSX } from "solid-js"
 import { createStore } from "solid-js/store"
-import { base64Encode } from "@/util/encode"
+import { base64Encode } from "@/utils/encode"
 import { Button } from "@/ui/components/button"
 import { ContextMenu } from "@/ui/components/context-menu"
 import { HoverCard } from "@/ui/components/hover-card"

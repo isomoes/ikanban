@@ -4,7 +4,7 @@ import { batch, createMemo, createRoot, onCleanup } from "solid-js"
 import { useParams } from "@solidjs/router"
 import type { FileSelection } from "@/context/file"
 import { Persist, persisted } from "@/utils/persist"
-import { checksum } from "@/util/encode"
+import { checksum } from "@/utils/encode"
 
 interface PartBase {
   content: string

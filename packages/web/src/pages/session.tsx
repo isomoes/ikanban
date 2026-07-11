@@ -23,7 +23,7 @@ import { Mark } from "@/ui/components/logo"
 
 import { useSync } from "@/context/sync"
 import { useLayout } from "@/context/layout"
-import { checksum, base64Encode } from "@/util/encode"
+import { checksum, base64Encode } from "@/utils/encode"
 import { useDialog } from "@/ui/context/dialog"
 import { useLanguage } from "@/context/language"
 import { useNavigate, useParams } from "@solidjs/router"

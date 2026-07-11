@@ -22,7 +22,7 @@ import { DialogSelectMcp } from "@/components/dialog-select-mcp";
 import { DialogFork } from "@/components/dialog-fork";
 import { DialogSessionTimeline } from "@/components/dialog-session-timeline";
 import { showToast } from "@/ui/components/toast";
-import { findLast } from "@/util/array";
+import { findLast } from "@/utils/array";
 import { extractPromptFromParts } from "@/utils/prompt";
 import { UserMessage } from "@opencode-ai/sdk/v2";
 import { canAddSelectionContext } from "@/pages/session/session-command-helpers";

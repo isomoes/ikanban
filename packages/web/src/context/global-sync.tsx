@@ -8,7 +8,7 @@ import type {
   Todo,
 } from "@opencode-ai/sdk/v2/client"
 import { showToast } from "@/ui/components/toast"
-import { getFilename } from "@/util/path"
+import { getFilename } from "@/utils/path"
 import {
   createContext,
   getOwner,
@@ -410,6 +410,3 @@ export function useGlobalSync() {
   if (!context) throw new Error("useGlobalSync must be used within GlobalSyncProvider")
   return context
 }
-
-export { canDisposeDirectory, pickDirectoriesToEvict } from "./global-sync/eviction"
-export { estimateRootSessionTotal, loadRootSessionsWithFallback } from "./global-sync/session-load"

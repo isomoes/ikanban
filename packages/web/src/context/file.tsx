@@ -3,8 +3,9 @@ import { createStore, produce, reconcile } from "solid-js/store"
 import { createSimpleContext } from "@/ui/context/index"
 import { showToast } from "@/ui/components/toast"
 import { useParams } from "@solidjs/router"
-import { getFilename } from "@/util/path"
+import { getFilename } from "@/utils/path"
 import { useSDK } from "./sdk"
+import { useGlobalSDK } from "./global-sdk"
 import { useSync } from "./sync"
 import { useLanguage } from "@/context/language"
 import { useLayout } from "@/context/layout"
@@ -54,6 +55,7 @@ export const { use: useFile, provider: FileProvider } = createSimpleContext({
   gate: false,
   init: () => {
     const sdk = useSDK()
+    const globalSDK = useGlobalSDK()
     useSync()
     const params = useParams()
     const language = useLanguage()
@@ -200,7 +202,8 @@ export const { use: useFile, provider: FileProvider } = createSimpleContext({
         () => [],
       )
 
-    const stop = sdk.event.listen((e) => {
+    const stop = globalSDK.event.listen((e) => {
+      if (e.name !== sdk.directory) return
       invalidateFromWatcher(e.details, {
         normalize: path.normalize,
         hasFile: (file) => Boolean(store.file[file]),

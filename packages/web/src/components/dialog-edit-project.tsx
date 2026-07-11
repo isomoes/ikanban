@@ -8,7 +8,7 @@ import { createStore } from "solid-js/store"
 import { useGlobalSDK } from "@/context/global-sdk"
 import { useGlobalSync } from "@/context/global-sync"
 import { type LocalProject, getAvatarColors } from "@/context/layout"
-import { getFilename } from "@/util/path"
+import { getFilename } from "@/utils/path"
 import { Avatar } from "@/ui/components/avatar"
 import { useLanguage } from "@/context/language"
 

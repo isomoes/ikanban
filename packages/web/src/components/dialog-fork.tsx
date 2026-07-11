@@ -9,7 +9,7 @@ import { List } from "@/ui/components/list"
 import { showToast } from "@/ui/components/toast"
 import { extractPromptFromParts } from "@/utils/prompt"
 import type { TextPart as SDKTextPart } from "@opencode-ai/sdk/v2/client"
-import { base64Encode } from "@/util/encode"
+import { base64Encode } from "@/utils/encode"
 import { useLanguage } from "@/context/language"
 
 interface ForkableMessage {

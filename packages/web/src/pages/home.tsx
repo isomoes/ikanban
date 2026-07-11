@@ -3,7 +3,7 @@ import { Button } from "@/ui/components/button";
 import { Logo } from "@/ui/components/logo";
 import { useLayout } from "@/context/layout";
 import { useNavigate } from "@solidjs/router";
-import { base64Encode } from "@/util/encode";
+import { base64Encode } from "@/utils/encode";
 import { Icon } from "@/ui/components/icon";
 import { usePlatform } from "@/context/platform";
 import { DateTime } from "luxon";

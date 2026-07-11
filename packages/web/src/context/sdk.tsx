@@ -1,12 +1,6 @@
-import type { Event } from "@opencode-ai/sdk/v2/client"
 import { createSimpleContext } from "@/ui/context/index"
-import { createGlobalEmitter } from "@solid-primitives/event-bus"
-import { type Accessor, createEffect, createMemo, onCleanup } from "solid-js"
+import { type Accessor, createMemo } from "solid-js"
 import { useGlobalSDK } from "./global-sdk"
-
-type SDKEventMap = {
-  [key in Event["type"]]: Extract<Event, { type: key }>
-}
 
 export const { use: useSDK, provider: SDKProvider } = createSimpleContext({
   name: "SDK",
@@ -21,15 +15,6 @@ export const { use: useSDK, provider: SDKProvider } = createSimpleContext({
       }),
     )
 
-    const emitter = createGlobalEmitter<SDKEventMap>()
-
-    createEffect(() => {
-      const unsub = globalSDK.event.on(directory(), (event) => {
-        emitter.emit(event.type, event)
-      })
-      onCleanup(unsub)
-    })
-
     return {
       get directory() {
         return directory()
@@ -37,7 +22,6 @@ export const { use: useSDK, provider: SDKProvider } = createSimpleContext({
       get client() {
         return client()
       },
-      event: emitter,
       get url() {
         return globalSDK.url
       },

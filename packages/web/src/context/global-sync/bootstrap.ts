@@ -10,8 +10,8 @@ import type {
   Todo,
 } from "@opencode-ai/sdk/v2/client"
 import { showToast } from "@/ui/components/toast"
-import { getFilename } from "@/util/path"
-import { retry } from "@/util/retry"
+import { getFilename } from "@/utils/path"
+import { retry } from "@/utils/retry"
 import { batch } from "solid-js"
 import { reconcile, type SetStoreFunction, type Store } from "solid-js/store"
 import type { State, VcsCache } from "./types"

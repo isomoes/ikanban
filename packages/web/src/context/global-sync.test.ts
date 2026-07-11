@@ -1,10 +1,6 @@
 import { describe, expect, test } from "bun:test"
-import {
-  canDisposeDirectory,
-  estimateRootSessionTotal,
-  loadRootSessionsWithFallback,
-  pickDirectoriesToEvict,
-} from "./global-sync"
+import { canDisposeDirectory, pickDirectoriesToEvict } from "./global-sync/eviction"
+import { estimateRootSessionTotal, loadRootSessionsWithFallback } from "./global-sync/session-load"
 import { bootstrapGlobal } from "./global-sync/bootstrap"
 import { shouldLoadProjectsOnBootstrap } from "./global-sync/bootstrap-mode"
 

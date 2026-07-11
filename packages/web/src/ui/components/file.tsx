@@ -1,4 +1,4 @@
-import { sampledChecksum } from "@/util/encode"
+import { sampledChecksum } from "@/utils/encode"
 import {
   DEFAULT_VIRTUAL_FILE_METRICS,
   type ExpansionDirections,

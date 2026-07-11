@@ -53,7 +53,7 @@ beforeAll(async () => {
     showToast: () => 0,
   }))
 
-  mock.module("@/util/encode", () => ({
+  mock.module("@/utils/encode", () => ({
     base64Encode: (value: string) => value,
   }))
 

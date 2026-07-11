@@ -1,4 +1,4 @@
-import { Binary } from "@/util/binary";
+import { Binary } from "@/utils/binary";
 import {
   produce,
   reconcile,

@@ -1,4 +1,4 @@
-import { base64Encode } from "@/util/encode"
+import { base64Encode } from "@/utils/encode"
 
 export function acceptKey(sessionID: string, directory?: string) {
   if (!directory) return sessionID

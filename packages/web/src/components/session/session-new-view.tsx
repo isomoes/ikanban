@@ -4,7 +4,7 @@ import { useSync } from "@/context/sync"
 import { useSDK } from "@/context/sdk"
 import { useLanguage } from "@/context/language"
 import { Icon } from "@/ui/components/icon"
-import { getDirectory, getFilename } from "@/util/path"
+import { getDirectory, getFilename } from "@/utils/path"
 
 const MAIN_WORKTREE = "main"
 const CREATE_WORKTREE = "create"
