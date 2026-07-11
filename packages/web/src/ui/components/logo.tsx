@@ -15,6 +15,26 @@ export const Mark = (props: { class?: string }) => {
   )
 }
 
+export const KanbanMark = (props: { class?: string }) => {
+  return (
+    <svg
+      data-component="kanban-mark"
+      classList={{ [props.class ?? ""]: !!props.class }}
+      viewBox="0 0 512 512"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <rect x="96" y="120" width="88" height="112" rx="16" fill="var(--icon-strong-base)" />
+      <rect x="96" y="248" width="88" height="144" rx="16" fill="var(--icon-weak-base)" />
+      <rect x="212" y="120" width="88" height="176" rx="16" fill="var(--icon-weak-base)" />
+      <rect x="212" y="312" width="88" height="80" rx="16" fill="var(--icon-strong-base)" />
+      <rect x="328" y="120" width="88" height="80" rx="16" fill="var(--icon-strong-base)" />
+      <rect x="328" y="216" width="88" height="112" rx="16" fill="var(--icon-weak-base)" />
+      <rect x="328" y="344" width="88" height="48" rx="16" fill="var(--icon-strong-base)" />
+    </svg>
+  )
+}
+
 export const Splash = (props: Pick<ComponentProps<"svg">, "ref" | "class">) => {
   return (
     <svg

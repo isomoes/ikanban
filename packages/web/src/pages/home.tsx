@@ -1,6 +1,6 @@
 import { createMemo, createEffect, For, Match, Switch } from "solid-js";
 import { Button } from "@/ui/components/button";
-import { Logo } from "@/ui/components/logo";
+import { KanbanMark } from "@/ui/components/logo";
 import { useLayout } from "@/context/layout";
 import { useNavigate } from "@solidjs/router";
 import { base64Encode } from "@/utils/encode";
@@ -144,7 +144,7 @@ export default function Home() {
               class="flex size-10 items-center justify-center rounded-2xl border shadow-xs-border-base"
               style={homeStyles.heroIcon}
             >
-              <Logo class="w-6 opacity-90" />
+              <KanbanMark class="w-6 opacity-90" />
             </div>
             <div>
               <div class="text-18-medium text-text-strong">
