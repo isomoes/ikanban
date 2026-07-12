@@ -9,6 +9,7 @@ import { DropdownMenu } from "@/ui/components/dropdown-menu"
 import { Dialog } from "@/ui/components/dialog"
 import { InlineInput } from "@/ui/components/inline-input"
 import { SessionTurn } from "@/ui/components/session-turn"
+import { formatTurnDurationLabel } from "@/ui/components/session-turn-duration"
 import { ScrollView } from "@/ui/components/scroll-view"
 import type { AssistantMessage, Message as MessageType, Part, TextPart, UserMessage } from "@opencode-ai/sdk/v2"
 import { showToast } from "@/ui/components/toast"
@@ -238,6 +239,34 @@ export function MessageTimeline(props: {
     if (!id) return idle
     return sync.data.session_status[id] ?? idle
   })
+  const totalRunMs = createMemo(() => {
+    let total = 0
+    let start: number | undefined
+    let end: number | undefined
+
+    const flush = () => {
+      if (typeof start === "number" && typeof end === "number" && end > start) total += end - start
+      start = undefined
+      end = undefined
+    }
+
+    for (const message of sessionMessages()) {
+      if (message.role === "user") {
+        flush()
+        start = message.time?.created
+        continue
+      }
+      if (message.role === "assistant") {
+        const completed = message.time.completed
+        if (typeof completed !== "number") continue
+        end = end === undefined ? completed : Math.max(end, completed)
+      }
+    }
+    flush()
+
+    return total
+  })
+  const totalRunLabel = createMemo(() => formatTurnDurationLabel(totalRunMs()))
   const activeMessageID = createMemo(() => {
     const parentID = pending()?.parentID
     if (parentID) {
@@ -565,7 +594,7 @@ export function MessageTimeline(props: {
                       when={title.editing}
                       fallback={
                         <h1
-                          class="text-14-medium text-text-strong truncate grow-1 min-w-0 pl-2"
+                          class="text-14-medium text-text-strong truncate min-w-0 pl-2"
                           onDblClick={openTitleEditor}
                         >
                           {titleValue()}
@@ -596,6 +625,14 @@ export function MessageTimeline(props: {
                         onBlur={closeTitleEditor}
                       />
                     </Show>
+                  </Show>
+                  <Show when={!title.editing && totalRunLabel()}>
+                    <span
+                      class="shrink-0 text-12-regular text-text-weak cursor-default"
+                      title={language.t("session.messages.totalRunTime")}
+                    >
+                      {totalRunLabel()}
+                    </span>
                   </Show>
                 </div>
                 <Show when={sessionID()}>

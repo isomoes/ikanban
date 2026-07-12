@@ -33,6 +33,30 @@ export function formatTurnDurationLabel(ms: number | undefined) {
   return `${minutes}m ${String(seconds).padStart(2, "0")}s`
 }
 
+type ToolTimeState = {
+  status?: string
+  time?: {
+    start?: number
+    end?: number
+  }
+}
+
+export function getToolDurationMs(state: ToolTimeState | undefined) {
+  if (!state) return undefined
+  if (state.status !== "completed" && state.status !== "error") return undefined
+  const start = state.time?.start
+  const end = state.time?.end
+  if (typeof start !== "number" || typeof end !== "number") return undefined
+  if (end < start) return undefined
+  return end - start
+}
+
+export function formatToolDurationLabel(ms: number | undefined) {
+  if (!(typeof ms === "number" && ms >= 0)) return ""
+  if (ms < 10_000) return `${(ms / 1000).toFixed(1)}s`
+  return formatTurnDurationLabel(ms)
+}
+
 export function buildInlineDurationDetail(detail: string, durationLabel?: string) {
   if (!durationLabel) return detail
   if (!detail) return durationLabel

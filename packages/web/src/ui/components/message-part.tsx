@@ -52,7 +52,12 @@ import { TextShimmer } from "./text-shimmer"
 import { AnimatedCountList } from "./tool-count-summary"
 import { ToolStatusTitle } from "./tool-status-title"
 import { animate } from "motion"
-import { buildDurationPrefix, buildInlineDurationDetail } from "./session-turn-duration"
+import {
+  buildDurationPrefix,
+  buildInlineDurationDetail,
+  formatToolDurationLabel,
+  getToolDurationMs,
+} from "./session-turn-duration"
 
 function ShellSubmessage(props: { text: string; animate?: boolean }) {
   let widthRef: HTMLSpanElement | undefined
@@ -715,7 +720,15 @@ function ContextToolGroup(props: { parts: ToolPart[]; busy?: boolean; durationLa
       !!props.busy || props.parts.some((part) => part.state.status === "pending" || part.state.status === "running"),
   )
   const summary = createMemo(() => contextToolSummary(props.parts))
-  const durationPrefix = createMemo(() => (pending() ? "" : buildDurationPrefix(props.durationLabel)))
+  const groupDurationLabel = createMemo(() => {
+    const total = props.parts.reduce<number | undefined>((sum, part) => {
+      const ms = getToolDurationMs(part.state)
+      if (typeof ms !== "number") return sum
+      return (sum ?? 0) + ms
+    }, undefined)
+    return formatToolDurationLabel(total) || props.durationLabel
+  })
+  const durationPrefix = createMemo(() => (pending() ? "" : buildDurationPrefix(groupDurationLabel())))
 
   return (
     <Collapsible open={open()} onOpenChange={setOpen} variant="ghost">
@@ -778,6 +791,7 @@ function ContextToolGroup(props: { parts: ToolPart[]; busy?: boolean; durationLa
               const running = createMemo(
                 () => partAccessor().state.status === "pending" || partAccessor().state.status === "running",
               )
+              const durationLabel = createMemo(() => formatToolDurationLabel(getToolDurationMs(partAccessor().state)))
               return (
                 <div data-slot="context-tool-group-item">
                   <div data-component="tool-trigger">
@@ -795,6 +809,9 @@ function ContextToolGroup(props: { parts: ToolPart[]; busy?: boolean; durationLa
                               <For each={trigger().args}>
                                 {(arg) => <span data-slot="basic-tool-tool-arg">{arg}</span>}
                               </For>
+                            </Show>
+                            <Show when={!running() && durationLabel()}>
+                              <span data-slot="basic-tool-tool-arg">{durationLabel()}</span>
                             </Show>
                           </div>
                         </div>
@@ -1126,6 +1143,11 @@ PART_MAPPING["tool"] = function ToolPartDisplay(props) {
 
   const render = createMemo(() => ToolRegistry.render(part().tool) ?? GenericTool)
 
+  const toolDurationLabel = createMemo(() => {
+    const label = formatToolDurationLabel(getToolDurationMs(part().state))
+    return label || props.turnDurationLabel
+  })
+
   return (
     <Show when={!hideQuestion()}>
       <div data-component="tool-part-wrapper">
@@ -1174,7 +1196,7 @@ PART_MAPPING["tool"] = function ToolPartDisplay(props) {
               status={part().state.status}
               hideDetails={props.hideDetails}
               defaultOpen={props.defaultOpen}
-              turnDurationLabel={props.turnDurationLabel}
+              turnDurationLabel={toolDurationLabel()}
             />
           </Match>
         </Switch>
