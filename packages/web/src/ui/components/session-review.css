@@ -22,13 +22,19 @@
   [data-slot="session-review-header"] {
     z-index: 120;
     background-color: var(--background-stronger);
-    height: 40px;
     padding-bottom: 8px;
     flex-shrink: 0;
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    row-gap: 8px;
     align-self: stretch;
+  }
+
+  [data-slot="session-review-summary"] {
+    display: flex;
+    align-items: center;
+    column-gap: 12px;
+    min-height: 32px;
   }
 
   [data-slot="session-review-title"] {
@@ -39,23 +45,167 @@
     color: var(--text-strong);
   }
 
+  [data-slot="session-review-stats"] {
+    display: flex;
+    align-items: baseline;
+    column-gap: 8px;
+    font-family: var(--font-family-sans);
+    white-space: nowrap;
+  }
+
+  [data-slot="session-review-stat-files"] {
+    font-size: var(--font-size-large);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-large);
+    color: var(--text-strong);
+  }
+
+  [data-slot="session-review-stat-additions"],
+  [data-slot="session-review-stat-deletions"] {
+    font-size: var(--font-size-small);
+    font-weight: var(--font-weight-medium);
+    font-variant-numeric: tabular-nums;
+  }
+
+  [data-slot="session-review-stat-additions"] {
+    color: var(--icon-diff-add-base);
+  }
+
+  [data-slot="session-review-stat-deletions"] {
+    color: var(--icon-diff-delete-base);
+  }
+
+  [data-slot="session-review-viewed-progress"] {
+    font-family: var(--font-family-sans);
+    font-size: var(--font-size-small);
+    color: var(--text-weak);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  [data-slot="session-review-toolbar"] {
+    display: flex;
+    align-items: center;
+    column-gap: 8px;
+  }
+
+  [data-slot="session-review-toolbar-actions"] {
+    display: flex;
+    align-items: center;
+    column-gap: 8px;
+    flex-shrink: 0;
+  }
+
+  [data-slot="session-review-filter"] {
+    flex: 1 1 auto;
+    min-width: 80px;
+    display: flex;
+    align-items: center;
+    column-gap: 6px;
+    height: 28px;
+    padding: 0 8px;
+    border: 1px solid var(--border-weak-base);
+    border-radius: 6px;
+    background: var(--background-stronger);
+    color: var(--text-weak);
+
+    &:focus-within {
+      border-color: var(--border-base);
+      color: var(--text-base);
+    }
+  }
+
+  [data-slot="session-review-filter-input"] {
+    flex: 1 1 auto;
+    min-width: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: var(--font-family-sans);
+    font-size: var(--font-size-small);
+    color: var(--text-strong);
+
+    &::placeholder {
+      color: var(--text-weak);
+    }
+  }
+
+  [data-slot="session-review-filter-clear"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-weak);
+    cursor: pointer;
+
+    &:hover {
+      color: var(--text-strong);
+      background: var(--surface-base);
+    }
+  }
+
+  [data-slot="session-review-filter-empty"] {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 16px 0;
+    font-family: var(--font-family-sans);
+    font-size: var(--font-size-small);
+    color: var(--text-weak);
+    word-break: break-word;
+  }
+
   [data-slot="session-review-actions"] {
     display: flex;
     align-items: center;
     column-gap: 12px;
   }
 
-  [data-slot="session-review-actions"] [data-component="radio-group"] {
-    [data-slot="radio-group-wrapper"],
-    [data-slot="radio-group-indicator"],
-    [data-slot="radio-group-item-control"] {
-      border-radius: 6px;
-    }
+  [data-slot="session-review-style-toggle"] {
+    display: inline-flex;
+    align-items: stretch;
+    gap: 3px;
+    height: 24px;
+    background-color: var(--surface-inset-base);
+    border-radius: 6px;
+    box-shadow: var(--shadow-xxs-border);
+    padding: 2px;
 
-    [data-slot="radio-group-item-input"]:not([data-checked], [data-disabled])
-      + [data-slot="radio-group-item-label"]:hover
-      [data-slot="radio-group-item-control"] {
+    button {
+      all: unset;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 8px;
       border-radius: 4px;
+      font-family: var(--font-family-sans);
+      font-size: 12px;
+      font-weight: var(--font-weight-medium);
+      line-height: 1;
+      color: var(--text-weak);
+      cursor: pointer;
+      transition:
+        color 200ms ease-out,
+        background-color 200ms ease-out;
+      user-select: none;
+
+      &:hover:not([data-checked]) {
+        background-color: var(--surface-inset-base);
+      }
+
+      &[data-checked] {
+        background: var(--button-secondary-base);
+        box-shadow: var(--shadow-xs-border-base);
+        color: var(--text-strong);
+      }
+
+      &:focus-visible {
+        box-shadow: var(--shadow-xs-border-focus);
+      }
     }
   }
 
@@ -182,6 +332,42 @@
     &:hover {
       color: var(--text-strong);
       background: var(--surface-base);
+    }
+  }
+
+  [data-slot="session-review-viewed-toggle"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    padding: 2px;
+    flex-shrink: 0;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-weak-base);
+    background: transparent;
+    color: transparent;
+    cursor: pointer;
+    transition:
+      border-color 220ms var(--tool-motion-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+      background-color 220ms var(--tool-motion-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+      color 180ms var(--tool-motion-ease, cubic-bezier(0.22, 1, 0.36, 1));
+
+    &:hover {
+      border-color: var(--border-base);
+    }
+
+    &[data-checked] {
+      border-color: var(--border-base);
+      background: var(--surface-base);
+      color: var(--icon-base);
+    }
+  }
+
+  [data-slot="accordion-item"][data-viewed] {
+    [data-slot="session-review-file-info"],
+    [data-slot="session-review-trigger-actions"] {
+      opacity: 0.55;
     }
   }
 

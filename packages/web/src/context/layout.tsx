@@ -39,6 +39,7 @@ type SessionTabs = {
 type SessionView = {
   scroll: Record<string, SessionScroll>
   reviewOpen?: string[]
+  reviewViewed?: string[]
   pendingMessage?: string
   pendingMessageAt?: number
 }
@@ -817,6 +818,21 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
 
               if (same(current.reviewOpen, open)) return
               setStore("sessionView", session, "reviewOpen", open)
+            },
+            viewed: createMemo(() => s().reviewViewed ?? []),
+            setViewed(viewed: string[]) {
+              const session = key()
+              const current = store.sessionView[session]
+              if (!current) {
+                setStore("sessionView", session, {
+                  scroll: {},
+                  reviewViewed: viewed,
+                })
+                return
+              }
+
+              if (same(current.reviewViewed ?? [], viewed)) return
+              setStore("sessionView", session, "reviewViewed", viewed)
             },
           },
         }

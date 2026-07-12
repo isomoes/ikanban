@@ -62,7 +62,7 @@ export const dict = {
 
   "command.input.focus": "聚焦输入框",
 
-  "command.review.toggle": "切换 Ikanban 面板",
+  "command.review.toggle": "切换差异面板",
 
   "command.steps.toggle": "切换步骤",
   "command.steps.toggle.description": "显示或隐藏当前消息的步骤",
@@ -518,9 +518,9 @@ export const dict = {
   "home.empty.description": "通过打开本地项目开始使用",
 
   "session.tab.session": "会话",
-  "session.tab.review": "Ikanban",
+  "session.tab.review": "差异",
   "session.tab.context": "上下文",
-  "session.panel.reviewAndFiles": "Ikanban 和文件",
+  "session.panel.reviewAndFiles": "差异和文件",
   "session.panel.showFullFile": "完整文件",
   "session.panel.showDiffContext": "差异上下文",
   "session.review.filesChanged": "{{count}} 个文件变更",

@@ -49,7 +49,7 @@ export const dict = {
   "command.context.addSelection.description":
     "Add selected lines from the current file",
   "command.input.focus": "Focus input",
-  "command.review.toggle": "Toggle ikanban panel",
+  "command.review.toggle": "Toggle diff panel",
   "command.steps.toggle": "Toggle steps",
   "command.steps.toggle.description":
     "Show or hide steps for the current message",
@@ -552,9 +552,9 @@ export const dict = {
   "home.empty.description": "Get started by opening a local project",
 
   "session.tab.session": "Session",
-  "session.tab.review": "Ikanban",
+  "session.tab.review": "Diff",
   "session.tab.context": "Context",
-  "session.panel.reviewAndFiles": "Ikanban and files",
+  "session.panel.reviewAndFiles": "Diff and files",
   "session.panel.showFullFile": "Full file",
   "session.panel.showDiffContext": "Diff context",
   "session.review.filesChanged": "{{count}} Files Changed",

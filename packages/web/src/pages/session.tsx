@@ -916,7 +916,21 @@ export default function Page() {
 
   const ikanbanPanel = () => (
     <div class="flex flex-col h-full overflow-hidden bg-background-stronger contain-strict">
-      <div class="flex-1 min-h-0" />
+      <div class="flex-1 min-h-0 overflow-hidden">
+        {reviewContent({
+          diffStyle: layout.review.diffStyle(),
+          onDiffStyleChange: layout.review.setDiffStyle,
+          wordWrap: layout.review.wordWrap(),
+          onWordWrapChange: layout.review.setWordWrap,
+          classes: {
+            root: "pb-8",
+            header: "px-4",
+            container: "px-4",
+          },
+          loadingClass: "px-4 py-4 text-text-weak",
+          emptyClass: "h-full pb-30 flex flex-col items-center justify-center text-center gap-6",
+        })}
+      </div>
     </div>
   )
 
@@ -1029,7 +1043,9 @@ export default function Page() {
     const id = params.id
     if (!id) return
 
-    const wants = !isDesktop() && store.mobileTab === "changes"
+    // Load diffs when the changes view is visible: the desktop diff panel
+    // (side dock) or the mobile "changes" tab.
+    const wants = desktopReviewOpen() || (!isDesktop() && store.mobileTab === "changes")
     if (!wants) return
     if (store.changes === "project") {
       if (sync.data.project_diff[sdk.directory] !== undefined) return

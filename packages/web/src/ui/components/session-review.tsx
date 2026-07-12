@@ -1,7 +1,6 @@
 import { Accordion } from "./accordion"
 import { Button } from "./button"
 import { DropdownMenu } from "./dropdown-menu"
-import { RadioGroup } from "./radio-group"
 import { DiffChanges } from "./diff-changes"
 import { FileIcon } from "./file-icon"
 import { Icon } from "./icon"
@@ -83,6 +82,8 @@ export interface SessionReviewProps {
   focusedFile?: string
   open?: string[]
   onOpenChange?: (open: string[]) => void
+  viewed?: string[]
+  onViewedChange?: (viewed: string[]) => void
   scrollRef?: (el: HTMLDivElement) => void
   onScroll?: JSX.EventHandlerUnion<HTMLDivElement, Event>
   class?: string
@@ -148,8 +149,9 @@ export const SessionReview = (props: SessionReviewProps) => {
   const anchors = new Map<string, HTMLElement>()
   const searchHandles = new Map<string, FileSearchHandle>()
   const readyFiles = new Set<string>()
-  const [store, setStore] = createStore<{ open: string[]; force: Record<string, boolean> }>({
+  const [store, setStore] = createStore<{ open: string[]; viewed: string[]; force: Record<string, boolean> }>({
     open: props.diffs.length > 10 ? [] : props.diffs.map((d) => d.file),
+    viewed: [],
     force: {},
   })
 
@@ -160,6 +162,7 @@ export const SessionReview = (props: SessionReviewProps) => {
   const [searchQuery, setSearchQuery] = createSignal("")
   const [searchActive, setSearchActive] = createSignal(0)
   const [searchPos, setSearchPos] = createSignal({ top: 8, right: 8 })
+  const [filterQuery, setFilterQuery] = createSignal("")
 
   const open = () => props.open ?? store.open
   const files = createMemo(() => props.diffs.map((d) => d.file))
@@ -170,14 +173,57 @@ export const SessionReview = (props: SessionReviewProps) => {
   const searchValue = createMemo(() => searchQuery().trim())
   const searchExpanded = createMemo(() => searchValue().length > 0)
 
+  const filterValue = createMemo(() => filterQuery().trim().toLowerCase())
+  const visibleFiles = createMemo(() => {
+    const query = filterValue()
+    if (!query) return files()
+    return files().filter((file) => file.toLowerCase().includes(query))
+  })
+
+  const viewedList = () => props.viewed ?? store.viewed
+  const viewedSet = createMemo(() => new Set(viewedList()))
+  const viewedCount = createMemo(() => {
+    const set = viewedSet()
+    return files().reduce((count, file) => (set.has(file) ? count + 1 : count), 0)
+  })
+
+  const totals = createMemo(() => {
+    let additions = 0
+    let deletions = 0
+    for (const diff of props.diffs) {
+      additions += diff.additions
+      deletions += diff.deletions
+    }
+    return { additions, deletions }
+  })
+
   const handleChange = (open: string[]) => {
     props.onOpenChange?.(open)
     if (props.open !== undefined) return
     setStore("open", open)
   }
 
+  const handleViewedChange = (viewed: string[]) => {
+    props.onViewedChange?.(viewed)
+    if (props.viewed !== undefined) return
+    setStore("viewed", viewed)
+  }
+
+  const toggleViewed = (file: string, value: boolean) => {
+    const current = viewedList()
+    const next = value ? [...current.filter((item) => item !== file), file] : current.filter((item) => item !== file)
+    handleViewedChange(next)
+
+    const openList = open()
+    if (value && openList.includes(file)) {
+      handleChange(openList.filter((item) => item !== file))
+    } else if (!value && !openList.includes(file)) {
+      handleChange([...openList, file])
+    }
+  }
+
   const handleExpandOrCollapseAll = () => {
-    const next = open().length > 0 ? [] : files()
+    const next = open().length > 0 ? [] : visibleFiles()
     handleChange(next)
   }
 
@@ -231,6 +277,7 @@ export const SessionReview = (props: SessionReviewProps) => {
     buildSessionSearchHits({
       query: searchQuery(),
       files: props.diffs.flatMap((diff) => {
+        if (!visibleFiles().includes(diff.file)) return []
         if (mediaKindFromPath(diff.file)) return []
 
         return [
@@ -563,28 +610,97 @@ export const SessionReview = (props: SessionReviewProps) => {
   return (
     <div data-component="session-review" class={props.class} classList={props.classList}>
       <div data-slot="session-review-header" class={props.classes?.header}>
-        <div data-slot="session-review-title">{props.title ?? i18n.t("ui.sessionReview.title")}</div>
-        <div data-slot="session-review-actions" class="flex min-w-0 flex-1 items-center gap-2">
-          <div class="shrink-0">{props.actions}</div>
-          <div class="ml-auto flex min-w-0 items-center gap-2">
-            <Show when={hasDiffs() && props.onDiffStyleChange}>
-              <RadioGroup
-                options={["unified", "split"] as const}
-                current={diffStyle()}
-                size="small"
-                value={(style) => style}
-                label={(style) =>
-                  i18n.t(style === "unified" ? "ui.sessionReview.diffStyle.unified" : "ui.sessionReview.diffStyle.split")
-                }
-                onSelect={(style) => style && props.onDiffStyleChange?.(style)}
+        <div data-slot="session-review-summary">
+          <Show when={props.title}>
+            <div data-slot="session-review-title">{props.title}</div>
+          </Show>
+          <Show
+            when={hasDiffs()}
+            fallback={<div data-slot="session-review-stat-files">{i18n.t("ui.sessionReview.title")}</div>}
+          >
+            <div data-slot="session-review-stats">
+              <span data-slot="session-review-stat-files">
+                {i18n.t(files().length === 1 ? "ui.sessionReview.summary.file" : "ui.sessionReview.summary.files", {
+                  count: files().length.toLocaleString(),
+                })}
+              </span>
+              <span data-slot="session-review-stat-additions">+{totals().additions.toLocaleString()}</span>
+              <span data-slot="session-review-stat-deletions">&minus;{totals().deletions.toLocaleString()}</span>
+            </div>
+          </Show>
+          <div data-slot="session-review-actions" class="flex min-w-0 flex-1 items-center gap-2">
+            <div class="shrink-0">{props.actions}</div>
+            <div class="ml-auto flex min-w-0 items-center gap-2">
+              <Show when={hasDiffs()}>
+                <span data-slot="session-review-viewed-progress">
+                  {i18n.t("ui.sessionReview.viewedProgress", {
+                    viewed: viewedCount().toLocaleString(),
+                    total: files().length.toLocaleString(),
+                  })}
+                </span>
+              </Show>
+            </div>
+          </div>
+        </div>
+        <Show when={hasDiffs()}>
+          <div data-slot="session-review-toolbar">
+            <div data-slot="session-review-filter">
+              <Icon name="magnifying-glass" size="small" />
+              <input
+                data-slot="session-review-filter-input"
+                type="text"
+                value={filterQuery()}
+                placeholder={i18n.t("ui.sessionReview.filter.placeholder")}
+                spellcheck={false}
+                onInput={(event) => setFilterQuery(event.currentTarget.value)}
+                onKeyDown={(event) => {
+                  if (event.key !== "Escape") return
+                  event.preventDefault()
+                  setFilterQuery("")
+                  event.currentTarget.blur()
+                }}
               />
-            </Show>
-            <Show when={hasDiffs() && props.onWordWrapChange}>
-              <Button size="small" variant="secondary" onClick={() => props.onWordWrapChange?.(!wordWrap())}>
-                {i18n.t(wordWrap() ? "ui.sessionReview.wordWrap.on" : "ui.sessionReview.wordWrap.off")}
-              </Button>
-            </Show>
-            <Show when={hasDiffs()}>
+              <Show when={filterQuery().length > 0}>
+                <button
+                  data-slot="session-review-filter-clear"
+                  type="button"
+                  aria-label={i18n.t("ui.list.clearFilter")}
+                  onClick={() => setFilterQuery("")}
+                >
+                  <Icon name="close-small" size="small" />
+                </button>
+              </Show>
+            </div>
+            <div data-slot="session-review-toolbar-actions">
+              <Show when={props.onDiffStyleChange}>
+                <div
+                  data-slot="session-review-style-toggle"
+                  role="group"
+                  aria-label={i18n.t("ui.sessionReview.diffStyle.label")}
+                >
+                  <For each={["unified", "split"] as const}>
+                    {(style) => (
+                      <button
+                        type="button"
+                        data-checked={diffStyle() === style ? "" : undefined}
+                        aria-pressed={diffStyle() === style}
+                        onClick={() => props.onDiffStyleChange?.(style)}
+                      >
+                        {i18n.t(
+                          style === "unified"
+                            ? "ui.sessionReview.diffStyle.unified"
+                            : "ui.sessionReview.diffStyle.split",
+                        )}
+                      </button>
+                    )}
+                  </For>
+                </div>
+              </Show>
+              <Show when={props.onWordWrapChange}>
+                <Button size="small" variant="secondary" onClick={() => props.onWordWrapChange?.(!wordWrap())}>
+                  {i18n.t(wordWrap() ? "ui.sessionReview.wordWrap.on" : "ui.sessionReview.wordWrap.off")}
+                </Button>
+              </Show>
               <Button
                 size="small"
                 icon="chevron-grabber-vertical"
@@ -596,9 +712,9 @@ export const SessionReview = (props: SessionReviewProps) => {
                   <Match when={true}>{i18n.t("ui.sessionReview.expandAll")}</Match>
                 </Switch>
               </Button>
-            </Show>
+            </div>
           </div>
-        </div>
+        </Show>
       </div>
 
       <ScrollView
@@ -635,9 +751,17 @@ export const SessionReview = (props: SessionReviewProps) => {
 
         <div data-slot="session-review-container" class={props.classes?.container}>
           <Show when={hasDiffs()} fallback={props.empty}>
+            <Show when={visibleFiles().length > 0} fallback={
+              <div data-slot="session-review-filter-empty">
+                <div>{i18n.t("ui.sessionReview.filter.noMatches", { query: filterQuery().trim() })}</div>
+                <Button size="small" variant="secondary" onClick={() => setFilterQuery("")}>
+                  {i18n.t("ui.list.clearFilter")}
+                </Button>
+              </div>
+            }>
             <div class="pb-6">
               <Accordion collapsible multiple value={open()} onChange={handleChange}>
-                <For each={files()}>
+                <For each={visibleFiles()}>
                   {(file) => {
                     let wrapper: HTMLDivElement | undefined
 
@@ -645,6 +769,7 @@ export const SessionReview = (props: SessionReviewProps) => {
                     const item = () => diff()!
 
                     const expanded = createMemo(() => open().includes(file))
+                    const isViewed = createMemo(() => viewedSet().has(file))
                     const force = () => !!store.force[file]
                     const toggleFile = () => {
                       const current = open()
@@ -769,6 +894,7 @@ export const SessionReview = (props: SessionReviewProps) => {
                         data-file={file}
                         data-slot="session-review-accordion-item"
                         data-selected={props.focusedFile === file ? "" : undefined}
+                        data-viewed={isViewed() ? "" : undefined}
                       >
                         <StickyAccordionHeader>
                           <div data-slot="session-review-header-row">
@@ -811,6 +937,33 @@ export const SessionReview = (props: SessionReviewProps) => {
                               </div>
                             </Accordion.Trigger>
                             <div data-slot="session-review-header-actions">
+                              <Tooltip value={i18n.t("ui.sessionReview.viewed")} placement="top" gutter={4}>
+                                <button
+                                  data-slot="session-review-viewed-toggle"
+                                  type="button"
+                                  role="checkbox"
+                                  aria-checked={isViewed()}
+                                  aria-label={i18n.t("ui.sessionReview.viewed")}
+                                  data-checked={isViewed() ? "" : undefined}
+                                  onClick={() => toggleViewed(file, !isViewed())}
+                                >
+                                  <svg
+                                    viewBox="0 0 12 12"
+                                    fill="none"
+                                    width="10"
+                                    height="10"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    aria-hidden="true"
+                                  >
+                                    <path
+                                      d="M3 7.17905L5.02703 8.85135L9 3.5"
+                                      stroke="currentColor"
+                                      stroke-width="1.5"
+                                      stroke-linecap="square"
+                                    />
+                                  </svg>
+                                </button>
+                              </Tooltip>
                               <Show when={props.onViewFile}>
                                 <Tooltip value={openFileLabel()} placement="top" gutter={4}>
                                   <button
@@ -942,6 +1095,7 @@ export const SessionReview = (props: SessionReviewProps) => {
                 </For>
               </Accordion>
             </div>
+            </Show>
           </Show>
         </div>
       </ScrollView>

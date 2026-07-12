@@ -7,7 +7,7 @@ import { applyPatch, parsePatch, reversePatch, type StructuredPatch } from "diff
 import { useBrowserArchive } from "./browser-archive"
 import { useGlobalSync } from "./global-sync"
 import { useSDK } from "./sdk"
-import type { File as SDKFile, FileContent, Message, Part } from "@opencode-ai/sdk/v2/client"
+import type { FileContent, Message, Part, VcsFileStatus } from "@opencode-ai/sdk/v2/client"
 import { snapshotToFileDiff, type FileDiff } from "@/context/file/types"
 
 type ProjectDiffEntry = FileDiff & {
@@ -16,33 +16,34 @@ type ProjectDiffEntry = FileDiff & {
   binary?: boolean
 }
 
-const PROJECT_DIFF_INITIAL_READ_LIMIT = 20
+/**
+ * Context lines requested from `vcs.diff` so per-file patches carry the full
+ * file contents. This lets the UI reconstruct complete before/after texts from
+ * a single request instead of reading every changed file individually.
+ */
+const PROJECT_DIFF_CONTEXT_LINES = 100_000
 const PROJECT_DIFF_READ_CONCURRENCY = 4
-const PROJECT_DIFF_MAX_EAGER_CHANGED_LINES = 400
 const BINARY_FILE_RE = /\.(?:png|jpe?g|gif|webp|bmp|ico|avif|mp3|wav|ogg|flac|mp4|mov|avi|mkv|webm|pdf|zip|gz|tar|7z|woff2?|ttf|eot|otf|exe|bin|so|dylib|dll|class|jar|wasm)$/i
 
 function isLikelyBinaryPath(path: string) {
   return BINARY_FILE_RE.test(path)
 }
 
-function createProjectPlaceholder(file: SDKFile, input: { lazy?: boolean; loading?: boolean; binary?: boolean } = {}): ProjectDiffEntry {
+function createProjectPlaceholder(
+  file: VcsFileStatus,
+  input: { lazy?: boolean; loading?: boolean; binary?: boolean } = {},
+): ProjectDiffEntry {
   return {
-    file: file.path,
+    file: file.file,
     before: "",
     after: "",
-    additions: file.added,
-    deletions: file.removed,
+    additions: file.additions,
+    deletions: file.deletions,
     status: file.status,
     lazy: input.lazy,
     loading: input.loading,
     binary: input.binary,
   }
-}
-
-function shouldEagerLoadProjectDiff(file: SDKFile) {
-  if (isLikelyBinaryPath(file.path)) return false
-  if (file.added + file.removed > PROJECT_DIFF_MAX_EAGER_CHANGED_LINES) return false
-  return true
 }
 
 function getStructuredPatch(content?: FileContent): StructuredPatch | undefined {
@@ -67,7 +68,12 @@ function getStructuredPatch(content?: FileContent): StructuredPatch | undefined 
   }
 }
 
-function buildWorkspaceDiff(file: SDKFile, content?: FileContent): ProjectDiffEntry | undefined {
+/**
+ * Fallback for files the single `vcs.diff` call cannot cover (for example
+ * binary files, or edge cases where a changed file is missing from the patch
+ * set). Reads the file once and reconstructs `before` from the patch metadata.
+ */
+function buildWorkspaceDiff(file: VcsFileStatus, content?: FileContent): ProjectDiffEntry | undefined {
   const patch = getStructuredPatch(content)
 
   if (content?.type === "binary") {
@@ -77,11 +83,11 @@ function buildWorkspaceDiff(file: SDKFile, content?: FileContent): ProjectDiffEn
   if (file.status === "added") {
     const after = content?.content ?? (patch ? applyPatch("", patch) || "" : "")
     return {
-      file: file.path,
+      file: file.file,
       before: "",
       after,
-      additions: file.added,
-      deletions: file.removed,
+      additions: file.additions,
+      deletions: file.deletions,
       status: file.status,
     }
   }
@@ -89,11 +95,11 @@ function buildWorkspaceDiff(file: SDKFile, content?: FileContent): ProjectDiffEn
   if (file.status === "deleted") {
     const before = content?.content ?? (patch ? applyPatch("", reversePatch(patch)) || "" : "")
     return {
-      file: file.path,
+      file: file.file,
       before,
       after: "",
-      additions: file.added,
-      deletions: file.removed,
+      additions: file.additions,
+      deletions: file.deletions,
       status: file.status,
     }
   }
@@ -101,34 +107,24 @@ function buildWorkspaceDiff(file: SDKFile, content?: FileContent): ProjectDiffEn
   const after = content?.content ?? ""
   const before = patch ? applyPatch(after, reversePatch(patch)) || after : after
 
-  if (!patch && file.added + file.removed === 0) return
+  if (!patch && file.additions + file.deletions === 0) return
 
   return {
-    file: file.path,
+    file: file.file,
     before,
     after,
-    additions: file.added,
-    deletions: file.removed,
+    additions: file.additions,
+    deletions: file.deletions,
     status: file.status,
   }
-}
-
-async function fetchProjectDiffs(client: ReturnType<typeof useSDK>["client"], directory: string): Promise<FileDiff[]> {
-  const files = await retry(() => client.file.status({ directory })).then((result) => result.data ?? [])
-  return files.map((file) =>
-    createProjectPlaceholder(file, {
-      lazy: !shouldEagerLoadProjectDiff(file),
-      loading: false,
-    }),
-  )
 }
 
 async function hydrateProjectDiffFile(
   client: ReturnType<typeof useSDK>["client"],
   directory: string,
-  file: SDKFile,
+  file: VcsFileStatus,
 ): Promise<ProjectDiffEntry> {
-  const content = await retry(() => client.file.read({ path: file.path, directory }))
+  const content = await retry(() => client.file.read({ path: file.file, directory }))
     .then((result) => result.data)
     .catch(() => undefined)
   return buildWorkspaceDiff(file, content) ?? createProjectPlaceholder(file)
@@ -161,10 +157,10 @@ async function hydrateProjectDiffBatch(input: {
     const chunk = input.entries.slice(i, i + PROJECT_DIFF_READ_CONCURRENCY)
     await Promise.all(
       chunk.map(async (entry) => {
-        const file: SDKFile = {
-          path: entry.file,
-          added: entry.additions,
-          removed: entry.deletions,
+        const file: VcsFileStatus = {
+          file: entry.file,
+          additions: entry.additions,
+          deletions: entry.deletions,
           status: entry.status ?? "modified",
         }
         const hydrated = await hydrateProjectDiffFile(input.client, input.directory, file)
@@ -525,29 +521,55 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
 
           const key = `project\n${directory}`
           return runInflight(inflightDiff, key, async () => {
-            const diff = (await fetchProjectDiffs(client, directory)) as ProjectDiffEntry[]
-            const eagerFiles = new Set(
-              diff
-                .filter((entry) => !entry.lazy)
-                .slice(0, PROJECT_DIFF_INITIAL_READ_LIMIT)
-                .map((entry) => entry.file),
+            // Fast pass: seed placeholders from the lightweight VCS status so
+            // the pane paints file names and +/- counts immediately.
+            const status = await retry(() => client.vcs.status({ directory })).then((result) => result.data ?? [])
+            const placeholders = status.map((file) =>
+              createProjectPlaceholder(file, {
+                loading: true,
+                binary: isLikelyBinaryPath(file.file),
+              }),
             )
-            const seeded = diff.map((entry) => ({
-              ...entry,
-              lazy: entry.lazy || !eagerFiles.has(entry.file),
-              loading: eagerFiles.has(entry.file),
-            }))
-            setStore("project_diff", directory, reconcile(seeded, { key: "file" }))
+            setStore("project_diff", directory, reconcile(placeholders, { key: "file" }))
+            if (!status.length) return
 
-            const eager = seeded.filter((entry) => eagerFiles.has(entry.file))
+            // Full pass: one `vcs.diff` call returns full-context patches for
+            // the entire working tree (uncommitted changes, not commits).
+            const patches = await retry(() =>
+              client.vcs.diff({ directory, mode: "git", context: PROJECT_DIFF_CONTEXT_LINES }),
+            )
+              .then((result) => result.data ?? [])
+              .catch(() => [])
+            const byFile = new Map(patches.map((patch) => [patch.file, patch] as const))
 
-            if (!eager.length) return
+            const missing: ProjectDiffEntry[] = []
+            const resolved = status.map((file) => {
+              const patch = byFile.get(file.file)
+              if (patch?.patch && !isLikelyBinaryPath(file.file)) {
+                return {
+                  ...snapshotToFileDiff(patch),
+                  file: file.file,
+                  status: patch.status ?? file.status,
+                } as ProjectDiffEntry
+              }
+              const placeholder = createProjectPlaceholder(file, {
+                loading: true,
+                binary: isLikelyBinaryPath(file.file),
+              })
+              missing.push(placeholder)
+              return placeholder
+            })
+            setStore("project_diff", directory, reconcile(resolved, { key: "file" }))
 
+            if (!missing.length) return
+
+            // Fallback pass: read the few files the VCS diff could not cover
+            // (binary/media files, untracked edge cases).
             await hydrateProjectDiffBatch({
               client,
               directory,
               setStore,
-              entries: eager,
+              entries: missing,
             })
           })
         },
@@ -566,10 +588,10 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
               loading: true,
             }))
 
-            const file: SDKFile = {
-              path: existing.file,
-              added: existing.additions,
-              removed: existing.deletions,
+            const file: VcsFileStatus = {
+              file: existing.file,
+              additions: existing.additions,
+              deletions: existing.deletions,
               status: existing.status ?? "modified",
             }
             const hydrated = await hydrateProjectDiffFile(client, directory, file)

@@ -1,5 +1,5 @@
 import type { FileContent, SnapshotFileDiff } from "@opencode-ai/sdk/v2"
-import { applyPatch, parsePatch, reversePatch } from "diff"
+import { parsePatch, type StructuredPatch } from "diff"
 
 /**
  * Canonical diff shape used throughout the app UI.
@@ -20,10 +20,45 @@ export type FileDiff = {
 }
 
 /**
- * Convert the SDK `SnapshotFileDiff` shape (returned by `session.diff()` and
- * carried on `UserMessage.summary.diffs`) into the app's canonical `FileDiff`.
- * Snapshot diffs are patch-only, so `before`/`after` are reconstructed from the
- * patch when available.
+ * Rebuild `before`/`after` texts directly from patch hunk lines. Works for
+ * added, deleted, and modified files alike, as long as the patch carries the
+ * full file as context (which both snapshot diffs and `vcs.diff` requested
+ * with a large `context` do). Unlike `applyPatch("", …)`, this does not
+ * require the patch context to match an empty source.
+ */
+export function patchToTexts(patch: StructuredPatch): { before: string; after: string } {
+  let before = ""
+  let after = ""
+  let lastMarker = ""
+  for (const hunk of patch.hunks) {
+    for (const raw of hunk.lines) {
+      const marker = raw[0]
+      if (marker === "\\") {
+        // "\ No newline at end of file": strip the newline added for the previous line.
+        if (lastMarker === " " || lastMarker === "-") before = before.replace(/\n$/, "")
+        if (lastMarker === " " || lastMarker === "+") after = after.replace(/\n$/, "")
+        continue
+      }
+      const text = raw.slice(1) + "\n"
+      if (marker === " ") {
+        before += text
+        after += text
+      } else if (marker === "-") {
+        before += text
+      } else if (marker === "+") {
+        after += text
+      }
+      lastMarker = marker
+    }
+  }
+  return { before, after }
+}
+
+/**
+ * Convert the SDK `SnapshotFileDiff` shape (returned by `session.diff()`,
+ * `vcs.diff()`, and carried on `UserMessage.summary.diffs`) into the app's
+ * canonical `FileDiff`. These diffs are patch-only, so `before`/`after` are
+ * reconstructed from the patch when available.
  */
 export function snapshotToFileDiff(snapshot: SnapshotFileDiff): FileDiff {
   const file = snapshot.file ?? ""
@@ -33,14 +68,9 @@ export function snapshotToFileDiff(snapshot: SnapshotFileDiff): FileDiff {
   let before = ""
   let after = ""
   if (patch) {
-    if (status === "added") {
-      after = applyPatch("", patch) || ""
-    } else if (status === "deleted") {
-      before = applyPatch("", reversePatch(patch)) || ""
-    } else {
-      after = applyPatch("", patch) || ""
-      before = applyPatch(after, reversePatch(patch)) || after
-    }
+    const texts = patchToTexts(patch)
+    before = status === "added" ? "" : texts.before
+    after = status === "deleted" ? "" : texts.after
   }
 
   return {
