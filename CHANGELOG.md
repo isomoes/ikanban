@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.4]
+
+- Web: Showed per-tool call durations and the session total run time in the title bar so long-running work is easier to track. (@isomoes)
+- Web: Replaced OpenCode branding with the iKanban icon and defaulted the ikanban panel to closed on session entry. (@isomoes)
+- Docs: Added a Chinese README plus an English translation with a remote control agent section. (@isomoes)
+- Dependencies: Updated `@opencode-ai/sdk` to `1.17.18` to stay current with upstream fixes. (@isomoes)
+
 ## [0.3.3]
 
 - Web: Showed the active server name in the page title and let the meta title control the page title so browser tabs reflect the current server. (@isomoes)
