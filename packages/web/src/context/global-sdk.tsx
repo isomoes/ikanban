@@ -1,4 +1,8 @@
-import type { Event } from "@opencode-ai/sdk/v2/client"
+import type { GlobalEvent } from "@opencode-ai/sdk/v2/client"
+// The streamed event payload is a broader union than the top-level `Event`
+// type; alias it from the stream shape so the coalescing pipeline stays in sync
+// with the SDK.
+type Event = GlobalEvent["payload"]
 import { createSimpleContext } from "@/ui/context/index"
 import { createGlobalEmitter } from "@solid-primitives/event-bus"
 import { batch, onCleanup } from "solid-js"

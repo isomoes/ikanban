@@ -22,7 +22,7 @@ import { useSDK } from "@/context/sdk"
 import { useSync } from "@/context/sync"
 import { getSessionHandoff } from "@/pages/session/handoff"
 import { SessionReviewTab } from "@/pages/session/review-tab"
-import type { FileDiff } from "@opencode-ai/sdk/v2"
+import type { FileDiff } from "@/context/file/types"
 
 function hasRenderableDiff(diff: FileDiff | undefined) {
   if (!diff) return false

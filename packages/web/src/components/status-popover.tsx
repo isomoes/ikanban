@@ -400,7 +400,9 @@ export function StatusPopover() {
                     {(plugin) => (
                       <div class="flex items-center gap-2 w-full px-2 py-1">
                         <div class="size-1.5 rounded-full shrink-0 bg-icon-success-base" />
-                        <span class="text-14-regular text-text-base truncate">{plugin}</span>
+                        <span class="text-14-regular text-text-base truncate">
+                          {Array.isArray(plugin) ? plugin[0] : plugin}
+                        </span>
                       </div>
                     )}
                   </For>

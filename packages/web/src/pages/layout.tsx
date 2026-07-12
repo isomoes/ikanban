@@ -1561,7 +1561,7 @@ export default function Layout(props: ParentProps) {
         return undefined
       })
 
-    if (!created?.directory) return
+    if (!created?.directory || !created.branch) return
 
     setWorkspaceName(created.directory, created.branch, project.id, created.branch)
 

@@ -2,7 +2,6 @@ import type {
   Agent,
   Command,
   Config,
-  FileDiff,
   LspStatus,
   McpStatus,
   Message,
@@ -17,6 +16,7 @@ import type {
   Todo,
   VcsInfo,
 } from "@opencode-ai/sdk/v2/client"
+import type { FileDiff } from "@/context/file/types"
 import type { Accessor } from "solid-js"
 import type { SetStoreFunction, Store } from "solid-js/store"
 

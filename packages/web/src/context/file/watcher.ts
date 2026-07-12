@@ -1,8 +1,11 @@
 import type { FileNode } from "@opencode-ai/sdk/v2"
 
+// Minimal structural shape the invalidation logic reads. The full SDK event
+// payload union is assignable to this, and test fixtures can construct it
+// directly without carrying every SDK field.
 type WatcherEvent = {
   type: string
-  properties: unknown
+  properties?: unknown
 }
 
 type WatcherOps = {

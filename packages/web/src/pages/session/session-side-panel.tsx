@@ -23,7 +23,7 @@ import { FileTabContent } from "@/pages/session/file-tabs"
 import { createOpenSessionFileTab, getTabReorderIndex } from "@/pages/session/helpers"
 import { StickyAddButton } from "@/pages/session/review-tab"
 import { setSessionHandoff } from "@/pages/session/handoff"
-import type { FileDiff } from "@opencode-ai/sdk/v2"
+import type { FileDiff } from "@/context/file/types"
 
 export function SessionSidePanel(props: {
   ikanbanPanel: () => JSX.Element

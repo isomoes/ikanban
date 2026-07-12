@@ -26,14 +26,16 @@ import { createFileTreeStore } from "./file/tree-store"
 import { invalidateFromWatcher } from "./file/watcher"
 import {
   selectionFromLines,
+  snapshotToFileDiff,
   type FileState,
   type FileSelection,
   type FileViewState,
   type SelectedLineRange,
+  type FileDiff,
 } from "./file/types"
 
-export type { FileSelection, SelectedLineRange, FileViewState, FileState }
-export { selectionFromLines }
+export type { FileSelection, SelectedLineRange, FileViewState, FileState, FileDiff }
+export { selectionFromLines, snapshotToFileDiff }
 export {
   evictContentLru,
   getFileContentBytesTotal,

@@ -6,7 +6,6 @@ import {
   type Store,
 } from "solid-js/store";
 import type {
-  FileDiff,
   Message,
   Part,
   PermissionRequest,
@@ -14,8 +13,10 @@ import type {
   QuestionRequest,
   Session,
   SessionStatus,
+  SnapshotFileDiff,
   Todo,
 } from "@opencode-ai/sdk/v2/client";
+import { snapshotToFileDiff } from "@/context/file/types";
 import type { State, VcsCache } from "./types";
 import { trimSessions } from "./session-trim";
 
@@ -173,11 +174,11 @@ export function applyDirectoryEvent(input: {
       break;
     }
     case "session.diff": {
-      const props = event.properties as { sessionID: string; diff: FileDiff[] };
+      const props = event.properties as { sessionID: string; diff: SnapshotFileDiff[] };
       input.setStore(
         "session_diff",
         props.sessionID,
-        reconcile(props.diff, { key: "file" }),
+        reconcile(props.diff.map(snapshotToFileDiff), { key: "file" }),
       );
       break;
     }

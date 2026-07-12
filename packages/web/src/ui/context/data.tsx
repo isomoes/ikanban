@@ -1,4 +1,5 @@
-import type { Message, Session, Part, FileDiff, SessionStatus, ProviderListResponse } from "@opencode-ai/sdk/v2"
+import type { Message, Session, Part, SessionStatus, ProviderListResponse } from "@opencode-ai/sdk/v2"
+import type { FileDiff } from "@/context/file/types"
 import { createSimpleContext } from "./helper"
 import { PreloadMultiFileDiffResult } from "@pierre/diffs/ssr"
 

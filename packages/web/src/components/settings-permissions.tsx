@@ -171,8 +171,13 @@ export const SettingsPermissions: Component = () => {
       showToast({ title: language.t("settings.permissions.toast.updateFailed.title"), description: message })
     }
 
-    globalSync.set("config", "permission", { ...map, [id]: nextValue })
-    globalSync.updateConfig({ permission: { [id]: nextValue } }).catch(rollback)
+    // The SDK's `PermissionConfig` is a structured object type, but this
+    // component intentionally treats the permission config as a flat map
+    // (including legacy array values), so cast at the store boundary.
+    globalSync.set("config", "permission", { ...map, [id]: nextValue } as typeof before)
+    globalSync
+      .updateConfig({ permission: { [id]: nextValue } as NonNullable<typeof before> })
+      .catch(rollback)
   }
 
   return (

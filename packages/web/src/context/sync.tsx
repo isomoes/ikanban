@@ -7,7 +7,8 @@ import { applyPatch, parsePatch, reversePatch, type StructuredPatch } from "diff
 import { useBrowserArchive } from "./browser-archive"
 import { useGlobalSync } from "./global-sync"
 import { useSDK } from "./sdk"
-import type { File as SDKFile, FileContent, FileDiff, Message, Part } from "@opencode-ai/sdk/v2/client"
+import type { File as SDKFile, FileContent, Message, Part } from "@opencode-ai/sdk/v2/client"
+import { snapshotToFileDiff, type FileDiff } from "@/context/file/types"
 
 type ProjectDiffEntry = FileDiff & {
   lazy?: boolean
@@ -433,7 +434,8 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
           const key = keyFor(directory, sessionID)
           return runInflight(inflightDiff, key, () =>
             retry(() => client.session.diff({ sessionID })).then((diff) => {
-              setStore("session_diff", sessionID, reconcile(diff.data ?? [], { key: "file" }))
+              const converted = (diff.data ?? []).map(snapshotToFileDiff)
+              setStore("session_diff", sessionID, reconcile(converted, { key: "file" }))
             }),
           )
         },

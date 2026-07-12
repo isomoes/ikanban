@@ -1,6 +1,7 @@
 /** @jsxImportSource solid-js */
-import { AssistantMessage, type FileDiff, Message as MessageType, Part as PartType } from "@opencode-ai/sdk/v2/client"
+import { AssistantMessage, Message as MessageType, Part as PartType } from "@opencode-ai/sdk/v2/client"
 import type { SessionStatus } from "@opencode-ai/sdk/v2"
+import { snapshotToFileDiff, type FileDiff } from "@/context/file/types"
 import { useData } from "../context"
 import { useFileComponent } from "../context/file"
 
@@ -244,9 +245,10 @@ export function SessionTurn(
     const seen = new Set<string>()
     return files
       .reduceRight<FileDiff[]>((result, diff) => {
-        if (seen.has(diff.file)) return result
-        seen.add(diff.file)
-        result.push(diff)
+        const converted = snapshotToFileDiff(diff)
+        if (seen.has(converted.file)) return result
+        seen.add(converted.file)
+        result.push(converted)
         return result
       }, [])
       .reverse()

@@ -27,7 +27,8 @@ import { checksum, base64Encode } from "@/utils/encode"
 import { useDialog } from "@/ui/context/dialog"
 import { useLanguage } from "@/context/language"
 import { useNavigate, useParams } from "@solidjs/router"
-import { UserMessage, type FileDiff } from "@opencode-ai/sdk/v2"
+import { UserMessage } from "@opencode-ai/sdk/v2"
+import { snapshotToFileDiff, type FileDiff } from "@/context/file/types"
 import { useSDK } from "@/context/sdk"
 import { usePrompt } from "@/context/prompt"
 import { useComments } from "@/context/comments"
@@ -460,7 +461,7 @@ export default function Page() {
     return key
   }, sessionKey())
 
-  const turnDiffs = createMemo(() => lastUserMessage()?.summary?.diffs ?? [])
+  const turnDiffs = createMemo(() => (lastUserMessage()?.summary?.diffs ?? []).map(snapshotToFileDiff))
   const normalizeDiffPath = (path: string) => {
     const normalized = path.replaceAll("\\", "/")
     const root = sdk.directory.replaceAll("\\", "/").replace(/\/+$/, "")
