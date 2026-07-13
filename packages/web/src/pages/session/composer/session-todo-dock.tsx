@@ -55,7 +55,7 @@ export function SessionTodoDock(props: {
   countWidthDuration?: number
 }) {
   const [store, setStore] = createStore({
-    collapsed: false,
+    collapsed: true,
   })
 
   const toggle = () => setStore("collapsed", (value) => !value)
