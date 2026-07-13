@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.5]
+
+- Web: Redesigned the diff panel with a PR-style review UI, fetching the project diff via a single full-context VCS diff call instead of per-file reads and fixing empty diffs for modified files. Added a summary header with file counts and +/- totals, a file filter, and per-file viewed progress that persists. (@isomoes)
+- Web: Defaulted the session todo dock to collapsed so sessions start with a cleaner composer. (@isomoes)
+
 ## [0.3.4]
 
 - Web: Showed per-tool call durations and the session total run time in the title bar so long-running work is easier to track. (@isomoes)
