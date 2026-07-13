@@ -11,7 +11,7 @@ iKanban is a multi-agent coding workspace powered by [OpenCode](https://opencode
 
   <img width="3258" height="1460" alt="Image" src="https://github.com/user-attachments/assets/2dc21dcc-124e-4a89-9577-357ebe30b8f0" />
 
-  <img width="3258" height="1460" alt="Image" src="https://github.com/user-attachments/assets/b3cc7c31-0b9c-45ac-98d8-90178af31e2f" />
+  <img width="3688" height="1988" alt="Image" src="https://github.com/user-attachments/assets/c94c5114-b55c-4cd6-959b-f16a4ba4ff8b" />
 </details>
 
 ## Quick Start
