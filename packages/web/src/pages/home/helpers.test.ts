@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import type { Session } from "@opencode-ai/sdk/v2/client"
-import { buildBoardColumns, trackedProjectDirectories } from "./helpers"
+import { buildBoardColumns, formatRelativeTime, performArchive, trackedProjectDirectories } from "./helpers"
 
 const session = (input: Partial<Session> & Pick<Session, "id">) =>
   ({
@@ -74,5 +74,28 @@ describe("buildBoardColumns", () => {
 
     expect(columns.idle.map((card) => card.session.id)).toEqual(["root-session"])
     expect(columns.progress).toEqual([])
+  })
+})
+
+describe("session card helpers", () => {
+  test("formats relative time against the current clock", () => {
+    expect(formatRelativeTime(60_000, 180_000)).toBe("2 minutes ago")
+  })
+
+  test("clears pending state and reports archive failures", async () => {
+    const pending: boolean[] = []
+    const errors: unknown[] = []
+    const error = new Error("offline")
+
+    await performArchive(
+      async () => {
+        throw error
+      },
+      (value) => pending.push(value),
+      (value) => errors.push(value),
+    )
+
+    expect(pending).toEqual([true, false])
+    expect(errors).toEqual([error])
   })
 })

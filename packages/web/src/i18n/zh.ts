@@ -327,6 +327,8 @@ export const dict = {
 
   "dialog.directory.search.placeholder": "搜索文件夹",
   "dialog.directory.empty": "未找到文件夹",
+  "dialog.directory.selected": "已选择 {{count}} 个",
+  "dialog.directory.openSelected": "打开所选项目",
 
   "dialog.server.title": "服务器",
   "dialog.server.description": "切换此应用连接的 OpenCode 服务器。",
@@ -514,6 +516,12 @@ export const dict = {
   "home.sessionBoard.emptyProgress": "当前没有正在运行的会话。",
   "home.sessionBoard.emptyIdle": "还没有空闲会话。",
   "home.sessionBoard.emptyOther": "当前没有需要额外关注的会话。",
+  "home.sessionBoard.openSession": "打开会话",
+  "home.sessionBoard.archiveConfirm": "要归档此会话吗？",
+  "home.sessionBoard.archiveFailed": "归档会话失败",
+  "home.server.connected": "已连接",
+  "home.server.disconnected": "已断开连接",
+  "home.server.checking": "正在检查连接",
   "home.empty.title": "没有最近项目",
   "home.empty.description": "通过打开本地项目开始使用",
 

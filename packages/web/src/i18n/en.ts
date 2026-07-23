@@ -323,6 +323,8 @@ export const dict = {
 
   "dialog.directory.search.placeholder": "Search folders",
   "dialog.directory.empty": "No folders found",
+  "dialog.directory.selected": "{{count}} selected",
+  "dialog.directory.openSelected": "Open selected",
 
   "dialog.server.title": "Servers",
   "dialog.server.description":
@@ -548,6 +550,12 @@ export const dict = {
   "home.sessionBoard.emptyProgress": "No sessions are actively running.",
   "home.sessionBoard.emptyIdle": "No idle sessions yet.",
   "home.sessionBoard.emptyOther": "No sessions need extra attention.",
+  "home.sessionBoard.openSession": "Open session",
+  "home.sessionBoard.archiveConfirm": "Archive this session?",
+  "home.sessionBoard.archiveFailed": "Failed to archive session",
+  "home.server.connected": "Connected",
+  "home.server.disconnected": "Disconnected",
+  "home.server.checking": "Checking connection",
   "home.empty.title": "No recent projects",
   "home.empty.description": "Get started by opening a local project",
 

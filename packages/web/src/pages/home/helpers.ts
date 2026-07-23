@@ -1,4 +1,5 @@
 import type { Session } from "@opencode-ai/sdk/v2/client"
+import { DateTime } from "luxon"
 
 export type BoardColumn = "progress" | "idle"
 
@@ -16,6 +17,25 @@ type SessionStatus = {
 
 export function trackedProjectDirectories(projects: OpenProject[]) {
   return [...new Set(projects.map((project) => project.worktree).filter(Boolean))]
+}
+
+export function formatRelativeTime(updatedAt: number, now: number) {
+  return DateTime.fromMillis(updatedAt).toRelative({ base: DateTime.fromMillis(now) }) ?? ""
+}
+
+export async function performArchive(
+  archive: () => Promise<unknown>,
+  setPending: (pending: boolean) => void,
+  onError: (error: unknown) => void,
+) {
+  setPending(true)
+  try {
+    await archive()
+  } catch (error) {
+    onError(error)
+  } finally {
+    setPending(false)
+  }
 }
 
 export function buildBoardColumns(input: {

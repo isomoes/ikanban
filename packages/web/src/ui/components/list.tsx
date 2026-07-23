@@ -46,6 +46,7 @@ export interface ListProps<T> extends FilteredListProps<T> {
   divider?: boolean
   add?: ListAddProps
   groupHeader?: (group: { category: string; items: T[] }) => JSX.Element
+  selected?: (item: T) => boolean
 }
 
 export interface ListRef {
@@ -163,6 +164,8 @@ export function List<T>(props: ListProps<T> & { ref?: (ref: ListRef) => void }) 
   const handleSelect = (item: T | undefined, index: number) => {
     props.onSelect?.(item, index)
   }
+
+  const isSelected = (item: T) => props.selected?.(item) ?? item === props.current
 
   const handleKey = (e: KeyboardEvent) => {
     setStore("mouseActive", false)
@@ -334,7 +337,8 @@ export function List<T>(props: ListProps<T> & { ref?: (ref: ListRef) => void }) 
                             data-slot="list-item"
                             data-key={props.key(item)}
                             data-active={props.key(item) === active()}
-                            data-selected={item === props.current}
+                            data-selected={isSelected(item)}
+                            aria-pressed={props.selected ? isSelected(item) : undefined}
                             onClick={() => handleSelect(item, i())}
                             onKeyDown={handleKey}
                             type="button"
@@ -349,7 +353,7 @@ export function List<T>(props: ListProps<T> & { ref?: (ref: ListRef) => void }) 
                             }}
                           >
                             {props.children(item)}
-                            <Show when={item === props.current}>
+                            <Show when={isSelected(item)}>
                               <span data-slot="list-item-selected-icon">
                                 <Icon name="check-small" />
                               </span>

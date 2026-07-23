@@ -1,4 +1,5 @@
-import { createMemo, createEffect, For, Match, Switch } from "solid-js";
+import { createMemo, createEffect, For, Match, onCleanup, Switch } from "solid-js";
+import { createStore } from "solid-js/store";
 import { Button } from "@/ui/components/button";
 import { KanbanMark } from "@/ui/components/logo";
 import { useLayout } from "@/context/layout";
@@ -6,7 +7,6 @@ import { useNavigate } from "@solidjs/router";
 import { base64Encode } from "@/utils/encode";
 import { Icon } from "@/ui/components/icon";
 import { usePlatform } from "@/context/platform";
-import { DateTime } from "luxon";
 import { useDialog } from "@/ui/context/dialog";
 import { DialogSelectDirectory } from "@/components/dialog-select-directory";
 import { DialogSelectServer } from "@/components/dialog-select-server";
@@ -14,7 +14,15 @@ import { useServer } from "@/context/server";
 import { useGlobalSync } from "@/context/global-sync";
 import { useLanguage } from "@/context/language";
 import { IconButton } from "@/ui/components/icon-button";
-import { buildBoardColumns, trackedProjectDirectories, type BoardCard, type BoardColumn } from "./home/helpers";
+import { showToast } from "@/ui/components/toast";
+import {
+  buildBoardColumns,
+  formatRelativeTime,
+  performArchive,
+  trackedProjectDirectories,
+  type BoardCard,
+  type BoardColumn,
+} from "./home/helpers";
 
 const homeStyles = {
   border: { border: "1px solid var(--border-weak-base)" },
@@ -52,7 +60,14 @@ export default function Home() {
   const navigate = useNavigate();
   const server = useServer();
   const language = useLanguage();
+  const [homeState, setHomeState] = createStore({
+    now: Date.now(),
+    archiving: {} as Record<string, boolean>,
+  });
   const trackedProjects = createMemo(() => trackedProjectDirectories(server.projects.list()));
+
+  const relativeTimeInterval = setInterval(() => setHomeState("now", Date.now()), 60_000);
+  onCleanup(() => clearInterval(relativeTimeInterval));
 
   const boardColumns = createMemo<Record<BoardColumn, BoardCard[]>>(() => {
     const sessionsByProject = Object.fromEntries(
@@ -92,6 +107,13 @@ export default function Home() {
     return "bg-border-weak-base";
   });
 
+  const serverHealthLabel = createMemo(() => {
+    const healthy = server.healthy();
+    if (healthy === true) return language.t("home.server.connected");
+    if (healthy === false) return language.t("home.server.disconnected");
+    return language.t("home.server.checking");
+  });
+
   function openProject(directory: string) {
     layout.projects.open(directory);
     server.projects.touch(directory);
@@ -105,7 +127,15 @@ export default function Home() {
   }
 
   async function archiveSession(directory: string, sessionID: string) {
-    await sync.project.archiveSession(directory, sessionID);
+    await performArchive(
+      () => sync.project.archiveSession(directory, sessionID),
+      (pending) => setHomeState("archiving", sessionID, pending),
+      () =>
+        showToast({
+          variant: "error",
+          title: language.t("home.sessionBoard.archiveFailed"),
+        }),
+    );
   }
 
   async function chooseProject() {
@@ -171,12 +201,14 @@ export default function Home() {
             onClick={() => dialog.show(() => <DialogSelectServer />)}
           >
             <div
+              aria-hidden="true"
               classList={{
                 "size-2 rounded-full": true,
                 [serverDotClass()]: true,
               }}
             />
             {server.name}
+            <span class="sr-only">{serverHealthLabel()}</span>
           </Button>
         </div>
       </div>
@@ -193,6 +225,8 @@ export default function Home() {
                   cards={boardColumns().progress}
                   onOpen={openSession}
                   onArchive={archiveSession}
+                  archiving={homeState.archiving}
+                  now={homeState.now}
                   empty={language.t("home.sessionBoard.emptyProgress")}
                 />
                 <BoardColumnView
@@ -202,6 +236,8 @@ export default function Home() {
                   cards={boardColumns().idle}
                   onOpen={openSession}
                   onArchive={archiveSession}
+                  archiving={homeState.archiving}
+                  now={homeState.now}
                   empty={language.t("home.sessionBoard.emptyIdle")}
                 />
               </div>
@@ -245,9 +281,13 @@ function BoardColumnView(props: {
   tone: BoardColumn;
   cards: BoardCard[];
   empty: string;
+  archiving: Record<string, boolean>;
+  now: number;
   onOpen: (directory: string, sessionID: string) => void;
   onArchive: (directory: string, sessionID: string) => void | Promise<void>;
 }) {
+  const language = useLanguage();
+
   const toneClass = () => {
     if (props.tone === "progress")
       return "bg-surface-base-hover text-icon-success-base border-border-weak-base";
@@ -268,7 +308,7 @@ function BoardColumnView(props: {
         };
 
   return (
-    <section class="rounded-2xl p-3 md:p-4 min-h-72 shadow-xs-border-base" style={sectionStyle()}>
+    <section class="rounded-2xl p-3 md:p-4 min-h-0 lg:min-h-72 shadow-xs-border-base" style={sectionStyle()}>
       <div class="flex items-center justify-between gap-3">
         <div class="flex items-center gap-2 min-w-0">
           <div
@@ -287,49 +327,50 @@ function BoardColumnView(props: {
             <For each={props.cards}>
               {(card) => (
                 <div
-                  class="overflow-hidden rounded-xl transition-colors"
+                  class="relative overflow-hidden rounded-xl transition-colors"
                   style={homeStyles.card}
                 >
-                  <div class="flex items-start justify-between gap-3 px-3 pt-3">
-                    <div class="min-w-0 flex-1 pt-1">
-                      <div class="truncate text-14-medium leading-tight text-text-strong">
-                        {card.session.title}
-                      </div>
-                    </div>
-                    <IconButton
-                      icon="archive"
-                      variant="ghost"
-                      class="size-7 rounded-md"
-                      aria-label="Archive session"
-                      onClick={(event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        void props.onArchive(card.projectDirectory, card.session.id);
-                      }}
-                    />
-                  </div>
                   <Button
                     variant="ghost"
-                    class="flex h-auto w-full min-w-0 items-center justify-between gap-3 rounded-none border-0 bg-transparent px-3 pb-3 pt-2 text-left"
+                    aria-label={`${language.t("home.sessionBoard.openSession")}: ${card.session.title}`}
+                    class="flex h-auto w-full min-w-0 flex-col items-stretch gap-2 rounded-none border-0 bg-transparent px-3 py-3 pr-12 text-left"
                     onClick={() =>
                       props.onOpen(card.projectDirectory, card.session.id)
                     }
                   >
-                    <span class="min-w-0 flex-1 truncate text-12-regular text-text-weak">
-                      {card.projectDirectory.replace(
-                        /^.*?([^/\\]+(?:[/\\][^/\\]+)?)$/,
-                        "$1",
-                      )}
+                    <span class="truncate text-14-medium leading-tight text-text-strong">
+                      {card.session.title}
                     </span>
-                    <div class="flex shrink-0 items-center gap-2 text-12-regular text-text-weak">
-                      <span>{DateTime.fromMillis(card.updatedAt).toRelative()}</span>
-                      <Icon
-                        name="arrow-right"
-                        size="small"
-                        class="text-icon-weak shrink-0"
-                      />
-                    </div>
+                    <span class="flex min-w-0 items-center justify-between gap-3">
+                      <span class="min-w-0 flex-1 truncate text-12-regular text-text-weak">
+                        {card.projectDirectory.replace(
+                          /^.*?([^/\\]+(?:[/\\][^/\\]+)?)$/,
+                          "$1",
+                        )}
+                      </span>
+                      <span class="flex shrink-0 items-center gap-2 text-12-regular text-text-weak">
+                        <span>{formatRelativeTime(card.updatedAt, Math.max(props.now, Date.now()))}</span>
+                        <Icon
+                          name="arrow-right"
+                          size="small"
+                          class="text-icon-weak shrink-0"
+                        />
+                      </span>
+                    </span>
                   </Button>
+                  <IconButton
+                    icon="archive"
+                    variant="ghost"
+                    class="absolute right-2 top-2 size-7 rounded-md"
+                    disabled={props.archiving[card.session.id]}
+                    aria-label={`${language.t("common.archive")}: ${card.session.title}`}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      if (!window.confirm(language.t("home.sessionBoard.archiveConfirm"))) return;
+                      void props.onArchive(card.projectDirectory, card.session.id);
+                    }}
+                  />
                 </div>
               )}
             </For>
