@@ -4,6 +4,7 @@ import { createStore } from "solid-js/store"
 import { usePlatform } from "@/context/platform"
 import { Persist, persisted } from "@/utils/persist"
 import { checkServerHealth } from "@/utils/server-health"
+import { ServerSession } from "@/utils/server-session"
 
 type StoredProject = { worktree: string; expanded: boolean }
 type StoredServer = string | ServerConnection.HttpBase | ServerConnection.Http
@@ -135,7 +136,7 @@ export const { use: useServer, provider: ServerProvider } = createSimpleContext(
     })
 
     const [state, setState] = createStore({
-      active: props.defaultServer,
+      active: ServerConnection.Key.make(ServerSession.read(props.defaultServer)),
       healthy: undefined as boolean | undefined,
     })
 
@@ -167,7 +168,9 @@ export const { use: useServer, provider: ServerProvider } = createSimpleContext(
     }
 
     function setActive(input: ServerConnection.Key) {
-      if (state.active !== input) setState("active", input)
+      if (state.active === input) return
+      setState("active", input)
+      ServerSession.write(input)
     }
 
     function add(input: ServerConnection.Http) {
@@ -186,7 +189,7 @@ export const { use: useServer, provider: ServerProvider } = createSimpleContext(
         if (store.deleted.includes(connKey)) {
           setStore("deleted", store.deleted.filter((k) => k !== connKey))
         }
-        setState("active", connKey)
+        setActive(connKey)
         return conn
       })
     }
@@ -210,7 +213,7 @@ export const { use: useServer, provider: ServerProvider } = createSimpleContext(
             : nextProp
               ? ServerConnection.key(nextProp)
               : props.defaultServer
-          setState("active", nextKey)
+          setActive(nextKey)
         }
       })
     }
