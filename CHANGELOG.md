@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.8]
+
+- Web: Refined session interactions and spacing, including improved mobile viewport handling and cleaner home and session layouts. (@isomoes)
+- Docs: Added the MIT license and updated package and README licensing details. (@isomoes)
+
 ## [0.3.7]
 
 - Web: Refined the cockpit layout across sessions, prompts, settings, dialogs, mobile navigation, and error states with denser responsive styling and stronger accessibility behavior. (@isomoes)
