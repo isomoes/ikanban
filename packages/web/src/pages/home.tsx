@@ -367,7 +367,6 @@ function BoardColumnView(props: {
                     onClick={(event) => {
                       event.preventDefault();
                       event.stopPropagation();
-                      if (!window.confirm(language.t("home.sessionBoard.archiveConfirm"))) return;
                       void props.onArchive(card.projectDirectory, card.session.id);
                     }}
                   />

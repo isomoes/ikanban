@@ -30,6 +30,18 @@
     />
     <meta property="og:image" content="/social-share.png" />
     <meta property="twitter:image" content="/social-share.png" />
+    <style>
+      .skip-link {
+        position: fixed;
+        top: 0;
+        left: 0;
+        transform: translateY(calc(-100% - 1rem));
+      }
+
+      .skip-link:focus {
+        transform: translateY(0);
+      }
+    </style>
     <script id="oc-theme-preload-script" src="/oc-theme-preload.js"></script>
   </head>
   <body class="antialiased overscroll-none text-12-regular overflow-hidden">

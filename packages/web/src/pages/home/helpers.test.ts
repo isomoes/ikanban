@@ -2,6 +2,8 @@ import { describe, expect, test } from "bun:test"
 import type { Session } from "@opencode-ai/sdk/v2/client"
 import { buildBoardColumns, formatRelativeTime, performArchive, trackedProjectDirectories } from "./helpers"
 
+const homeSource = await Bun.file(new URL("../home.tsx", import.meta.url)).text()
+
 const session = (input: Partial<Session> & Pick<Session, "id">) =>
   ({
     title: input.id,
@@ -78,6 +80,10 @@ describe("buildBoardColumns", () => {
 })
 
 describe("session card helpers", () => {
+  test("archives from the session card without a confirmation popup", () => {
+    expect(homeSource).not.toContain("window.confirm")
+  })
+
   test("formats relative time against the current clock", () => {
     expect(formatRelativeTime(60_000, 180_000)).toBe("2 minutes ago")
   })

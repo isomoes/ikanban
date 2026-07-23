@@ -13,6 +13,15 @@ describe("App shell accessibility", () => {
     expect(layoutSource).toContain('id="main-content"')
   })
 
+  test("hides the skip link before application styles load", () => {
+    const criticalStyle = documentSource.indexOf(".skip-link {")
+    expect(criticalStyle).toBeGreaterThan(-1)
+    expect(criticalStyle).toBeLessThan(documentSource.indexOf("</head>"))
+    expect(documentSource.slice(criticalStyle, documentSource.indexOf("</style>", criticalStyle))).toContain(
+      "transform: translateY(calc(-100% - 1rem))",
+    )
+  })
+
   test("announces route loading", () => {
     expect(appSource).toContain('role="status"')
     expect(appSource).toContain('data-component="route-loading"')
