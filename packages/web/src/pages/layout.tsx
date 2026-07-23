@@ -14,7 +14,6 @@ import {
 } from "solid-js"
 import { A, useNavigate, useParams } from "@solidjs/router"
 import { useLayout, LocalProject } from "@/context/layout"
-import { useBrowserArchive } from "@/context/browser-archive"
 import { useGlobalSync } from "@/context/global-sync"
 import { Persist, persisted } from "@/utils/persist"
 import { base64Encode } from "@/utils/encode"
@@ -99,7 +98,6 @@ export default function Layout(props: ParentProps) {
 
   const params = useParams()
   const globalSDK = useGlobalSDK()
-  const browserArchive = useBrowserArchive()
   const globalSync = useGlobalSync()
   const layout = useLayout()
   const layoutReady = createMemo(() => layout.ready())
@@ -486,7 +484,7 @@ export default function Layout(props: ParentProps) {
     const result: Session[] = []
     for (const dir of dirs) {
       const [dirStore] = globalSync.child(dir, { bootstrap: true })
-      const dirSessions = sortedRootSessions(dirStore, now, browserArchive.isVisibleSession)
+      const dirSessions = sortedRootSessions(dirStore, now)
       result.push(...dirSessions)
     }
     return result
@@ -745,11 +743,11 @@ export default function Layout(props: ParentProps) {
   async function archiveSession(session: Session) {
     const [store] = globalSync.child(session.directory)
     const sessions = store.session ?? []
-    const visibleSessions = sessions.filter((item) => browserArchive.isVisibleSession(item))
+    const visibleSessions = sessions.filter((item) => !item.time.archived)
     const index = visibleSessions.findIndex((s) => s.id === session.id)
     const nextSession = index === -1 ? undefined : (visibleSessions[index + 1] ?? visibleSessions[index - 1])
 
-    browserArchive.archiveSession(session)
+    await globalSync.project.archiveSession(session.directory, session.id)
     if (session.id === params.id) {
       if (nextSession) {
         navigate(`/${params.dir}/${nextSession.id}`)
@@ -1238,9 +1236,11 @@ export default function Layout(props: ParentProps) {
       return
     }
 
-    sessions
-      .filter((session) => browserArchive.isVisibleSession(session))
-      .forEach((session) => browserArchive.archiveSession({ directory: session.directory, sessionID: session.id }))
+    await Promise.all(
+      sessions
+        .filter((session) => !session.time.archived)
+        .map((session) => globalSync.project.archiveSession(session.directory, session.id)),
+    )
 
     setBusy(directory, false)
     dismiss()
@@ -1336,7 +1336,7 @@ export default function Layout(props: ParentProps) {
         .list({ directory: props.directory })
         .then((x) => x.data ?? [])
         .catch(() => [])
-      const active = sessions.filter((session) => browserArchive.isVisibleSession(session))
+      const active = sessions.filter((session) => !session.time.archived)
       setState({ sessions: active })
     }
 

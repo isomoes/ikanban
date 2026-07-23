@@ -9,7 +9,6 @@ import { usePlatform } from "@/context/platform";
 import { DateTime } from "luxon";
 import { useDialog } from "@/ui/context/dialog";
 import { DialogSelectDirectory } from "@/components/dialog-select-directory";
-import { useBrowserArchive } from "@/context/browser-archive";
 import { DialogSelectServer } from "@/components/dialog-select-server";
 import { useServer } from "@/context/server";
 import { useGlobalSync } from "@/context/global-sync";
@@ -47,7 +46,6 @@ const homeStyles = {
 
 export default function Home() {
   const sync = useGlobalSync();
-  const browserArchive = useBrowserArchive();
   const layout = useLayout();
   const platform = usePlatform();
   const dialog = useDialog();
@@ -62,7 +60,7 @@ export default function Home() {
         const [store] = sync.child(directory);
         return [
           directory,
-          store.session.filter((session) => !!session?.id && browserArchive.isVisibleSession(session)),
+          store.session.filter((session) => !!session?.id && !session.time?.archived),
         ] as const;
       }),
     );
@@ -107,7 +105,7 @@ export default function Home() {
   }
 
   async function archiveSession(directory: string, sessionID: string) {
-    browserArchive.archiveSession({ directory, sessionID });
+    await sync.project.archiveSession(directory, sessionID);
   }
 
   async function chooseProject() {

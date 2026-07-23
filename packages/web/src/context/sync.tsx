@@ -4,7 +4,6 @@ import { Binary } from "@/utils/binary"
 import { retry } from "@/utils/retry"
 import { createSimpleContext } from "@/ui/context/index"
 import { applyPatch, parsePatch, reversePatch, type StructuredPatch } from "diff"
-import { useBrowserArchive } from "./browser-archive"
 import { useGlobalSync } from "./global-sync"
 import { useSDK } from "./sdk"
 import type { FileContent, Message, Part, VcsFileStatus } from "@opencode-ai/sdk/v2/client"
@@ -260,7 +259,6 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
   name: "Sync",
   init: () => {
     const globalSync = useGlobalSync()
-    const browserArchive = useBrowserArchive()
     const sdk = useSDK()
 
     type Child = ReturnType<(typeof globalSync)["child"]>
@@ -508,8 +506,7 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
         },
         more: createMemo(() => current()[0].session.length >= current()[0].limit),
         archive: async (sessionID: string) => {
-          const directory = sdk.directory
-          browserArchive.archiveSession({ directory, sessionID })
+          return globalSync.project.archiveSession(sdk.directory, sessionID)
         },
       },
       projectDiff: {

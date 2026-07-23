@@ -18,7 +18,6 @@ import { getFilename } from "@/utils/path"
 import { shouldMarkBoundaryGesture, normalizeWheelDelta } from "@/pages/session/message-gesture"
 import { SessionContextUsage } from "@/components/session-context-usage"
 import { useDialog } from "@/ui/context/dialog"
-import { useBrowserArchive } from "@/context/browser-archive"
 import { useLanguage } from "@/context/language"
 import { useSettings } from "@/context/settings"
 import { useSDK } from "@/context/sdk"
@@ -218,7 +217,6 @@ export function MessageTimeline(props: {
   const sync = useSync()
   const settings = useSettings()
   const dialog = useDialog()
-  const browserArchive = useBrowserArchive()
   const language = useLanguage()
 
   const rendered = createMemo(() => props.renderedUserMessages.map((message) => message.id))
@@ -391,11 +389,11 @@ export function MessageTimeline(props: {
     const session = sync.session.get(sessionID)
     if (!session) return
 
-    const sessions = (sync.data.session ?? []).filter((item) => browserArchive.isVisibleSession(item))
+    const sessions = (sync.data.session ?? []).filter((item) => !item.time.archived)
     const index = sessions.findIndex((s) => s.id === sessionID)
     const nextSession = index === -1 ? undefined : (sessions[index + 1] ?? sessions[index - 1])
 
-    browserArchive.archiveSession(session)
+    await sync.session.archive(sessionID)
     navigateAfterSessionRemoval(sessionID, session.parentID, nextSession?.id)
   }
 
@@ -403,7 +401,7 @@ export function MessageTimeline(props: {
     const session = sync.session.get(sessionID)
     if (!session) return false
 
-    const sessions = (sync.data.session ?? []).filter((s) => !s.parentID && browserArchive.isVisibleSession(s))
+    const sessions = (sync.data.session ?? []).filter((s) => !s.parentID && !s.time.archived)
     const index = sessions.findIndex((s) => s.id === sessionID)
     const nextSession = index === -1 ? undefined : (sessions[index + 1] ?? sessions[index - 1])
 

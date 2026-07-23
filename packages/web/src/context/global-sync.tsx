@@ -31,6 +31,7 @@ import { createChildStoreManager } from "./global-sync/child-store"
 import { applyDirectoryEvent, applyGlobalEvent } from "./global-sync/event-reducer"
 import { createRefreshQueue } from "./global-sync/queue"
 import { estimateRootSessionTotal, loadRootSessionsWithFallback } from "./global-sync/session-load"
+import { archiveSessionOnServer } from "./global-sync/session-archive"
 import { trimSessions } from "./global-sync/session-trim"
 import type { ProjectMeta } from "./global-sync/types"
 import { SESSION_RECENT_LIMIT } from "./global-sync/types"
@@ -349,6 +350,17 @@ function createGlobalSync() {
 
   const projectApi = {
     loadSessions,
+    async archiveSession(directory: string, sessionID: string) {
+      const info = await archiveSessionOnServer(sdkFor(directory), { directory, sessionID })
+      if (!info) return
+
+      const existing = children.children[directory]
+      if (!existing) return info
+      const [store, setStore] = existing
+      const index = store.session.findIndex((session) => session.id === sessionID)
+      if (index !== -1) setStore("session", index, reconcile(info))
+      return info
+    },
     meta(directory: string, patch: ProjectMeta) {
       children.projectMeta(directory, patch)
     },

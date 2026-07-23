@@ -10,7 +10,6 @@ import { Tooltip } from "@/ui/components/tooltip"
 import { createSortable } from "@thisbeyond/solid-dnd"
 import { type LocalProject } from "@/context/layout"
 import { useGlobalSync } from "@/context/global-sync"
-import { useBrowserArchive } from "@/context/browser-archive"
 import { useLanguage } from "@/context/language"
 import { useNotification } from "@/context/notification"
 import { ProjectIcon, SessionItem, type SessionItemProps } from "./sidebar-items"
@@ -284,7 +283,6 @@ export const SortableProject = (props: {
   sortNow: Accessor<number>
 }): JSX.Element => {
   const globalSync = useGlobalSync()
-  const browserArchive = useBrowserArchive()
   const language = useLanguage()
   const sortable = createSortable(props.project.worktree)
   const selected = createMemo(() =>
@@ -334,12 +332,12 @@ export const SortableProject = (props: {
 
   const projectStore = createMemo(() => globalSync.child(props.project.worktree, { bootstrap: false })[0])
   const projectSessions = createMemo(() =>
-    sortedRootSessions(projectStore(), props.sortNow(), browserArchive.isVisibleSession).slice(0, 2),
+    sortedRootSessions(projectStore(), props.sortNow()).slice(0, 2),
   )
   const projectChildren = createMemo(() => childMapByParent(projectStore().session))
   const workspaceSessions = (directory: string) => {
     const [data] = globalSync.child(directory, { bootstrap: false })
-    return sortedRootSessions(data, props.sortNow(), browserArchive.isVisibleSession).slice(0, 2)
+    return sortedRootSessions(data, props.sortNow()).slice(0, 2)
   }
   const workspaceChildren = (directory: string) => {
     const [data] = globalSync.child(directory, { bootstrap: false })

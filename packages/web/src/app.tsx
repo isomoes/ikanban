@@ -17,7 +17,6 @@ import {
   Suspense,
 } from "solid-js";
 import { CommandProvider } from "@/context/command";
-import { BrowserArchiveProvider } from "@/context/browser-archive";
 import { CommentsProvider } from "@/context/comments";
 import { FileProvider } from "@/context/file";
 import { GlobalSDKProvider } from "@/context/global-sdk";
@@ -170,22 +169,20 @@ export function AppInterface(props: {
       <ServerKey>
         <GlobalSDKProvider>
           <GlobalSyncProvider>
-            <BrowserArchiveProvider>
-              <Router
-                base={(import.meta.env.BASE_URL ?? "/").replace(/\/+$/, "")}
-                root={(routerProps) => (
-                  <RouterRoot appChildren={props.children}>
-                    {routerProps.children}
-                  </RouterRoot>
-                )}
-              >
-                <Route path="/" component={HomeRoute} />
-                <Route path="/:dir" component={DirectoryLayout}>
-                  <Route path="/" component={SessionIndexRoute} />
-                  <Route path="/:id?" component={SessionRoute} />
-                </Route>
-              </Router>
-            </BrowserArchiveProvider>
+            <Router
+              base={(import.meta.env.BASE_URL ?? "/").replace(/\/+$/, "")}
+              root={(routerProps) => (
+                <RouterRoot appChildren={props.children}>
+                  {routerProps.children}
+                </RouterRoot>
+              )}
+            >
+              <Route path="/" component={HomeRoute} />
+              <Route path="/:dir" component={DirectoryLayout}>
+                <Route path="/" component={SessionIndexRoute} />
+                <Route path="/:id?" component={SessionRoute} />
+              </Route>
+            </Router>
           </GlobalSyncProvider>
         </GlobalSDKProvider>
       </ServerKey>
