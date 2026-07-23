@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.7]
+
+- Web: Refined the cockpit layout across sessions, prompts, settings, dialogs, mobile navigation, and error states with denser responsive styling and stronger accessibility behavior. (@isomoes)
+- Web: Improved home board interactions and simplified project directory selection to a single workspace at a time. (@isomoes)
+- Skills: Added the `design-taste-frontend` skill for more deliberate frontend design and redesign workflows. (@isomoes)
+
 ## [0.3.6]
 
 - Web: Preserved the active server independently per browser tab so switching servers in one tab no longer changes another tab's selection. (@isomoes)
