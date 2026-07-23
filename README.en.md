@@ -59,12 +59,6 @@ Then add the server URL in settings (supports HTTP, Basic auth, and switching be
 - Inspired by and thanks to the [openchamber](https://github.com/btriapitsyn/openchamber) project.
 - [opencode web UI](https://github.com/anomalyco/opencode/tree/dev/packages/app)
 
-## Star History
+## License
 
-<a href="https://star-history.com/#isomoes/ikanban&Date">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=isomoes/ikanban&type=Date&theme=dark" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=isomoes/ikanban&type=Date" />
-    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=isomoes/ikanban&type=Date" />
-  </picture>
-</a>
+This project is licensed under the [MIT License](./LICENSE).

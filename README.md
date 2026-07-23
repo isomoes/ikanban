@@ -59,12 +59,6 @@ opencode serve --port <PORT> --cors https://isomoes.github.io
 - 灵感来源于 [openchamber](https://github.com/btriapitsyn/openchamber) 项目，并向其致谢。
 - [opencode web UI](https://github.com/anomalyco/opencode/tree/dev/packages/app)
 
-## Star 历史
+## 许可证
 
-<a href="https://star-history.com/#isomoes/ikanban&Date">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=isomoes/ikanban&type=Date&theme=dark" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=isomoes/ikanban&type=Date" />
-    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=isomoes/ikanban&type=Date" />
-  </picture>
-</a>
+本项目基于 [MIT 许可证](./LICENSE) 开源。
