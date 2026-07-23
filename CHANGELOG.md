@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.6]
+
+- Web: Preserved the active server independently per browser tab so switching servers in one tab no longer changes another tab's selection. (@isomoes)
+- Web: Persisted archived sessions through the OpenCode SDK so archive state is shared with the server instead of remaining browser-local. (@isomoes)
+- Docs: Refreshed the README diff panel preview to reflect the current review UI. (@isomoes)
+
 ## [0.3.5]
 
 - Web: Redesigned the diff panel with a PR-style review UI, fetching the project diff via a single full-context VCS diff call instead of per-file reads and fixing empty diffs for modified files. Added a summary header with file counts and +/- totals, a file filter, and per-file viewed progress that persists. (@isomoes)
