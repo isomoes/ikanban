@@ -1,5 +1,5 @@
 import { Dialog as Kobalte } from "@kobalte/core/dialog"
-import { ComponentProps, JSXElement, Match, ParentProps, Show, Switch } from "solid-js"
+import { ComponentProps, JSXElement, ParentProps, Show } from "solid-js"
 import { useI18n } from "../context/i18n"
 import { IconButton } from "./icon-button"
 
@@ -45,18 +45,16 @@ export function Dialog(props: DialogProps) {
               <Show when={props.title}>
                 <Kobalte.Title data-slot="dialog-title">{props.title}</Kobalte.Title>
               </Show>
-              <Switch>
-                <Match when={props.action}>{props.action}</Match>
-                <Match when={true}>
-                  <Kobalte.CloseButton
-                    data-slot="dialog-close-button"
-                    as={IconButton}
-                    icon="close"
-                    variant="ghost"
-                    aria-label={i18n.t("ui.common.close")}
-                  />
-                </Match>
-              </Switch>
+              <Show when={props.action}>
+                <div data-slot="dialog-action">{props.action}</div>
+              </Show>
+              <Kobalte.CloseButton
+                data-slot="dialog-close-button"
+                as={IconButton}
+                icon="close"
+                variant="ghost"
+                aria-label={i18n.t("ui.common.close")}
+              />
             </div>
           </Show>
           <Show when={props.description}>

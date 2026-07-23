@@ -121,6 +121,20 @@ export const Font = () => {
     <>
       <Style>{`
         @font-face {
+          font-family: "Geist UI";
+          src: url("${geistMono}") format("woff2");
+          font-display: swap;
+          font-style: normal;
+          font-weight: 400 600;
+        }
+        @font-face {
+          font-family: "Geist UI";
+          src: url("${geistMonoBold}") format("woff2");
+          font-display: swap;
+          font-style: normal;
+          font-weight: 700;
+        }
+        @font-face {
           font-family: "Inter";
           src: url("${inter}") format("woff2-variations");
           font-display: swap;
@@ -167,6 +181,7 @@ export const Font = () => {
 ${monoNerdCss}
       `}</Style>
       <Link rel="preload" href={inter} as="font" type="font/woff2" crossorigin="anonymous" />
+      <Link rel="preload" href={geistMono} as="font" type="font/woff2" crossorigin="anonymous" />
       <Link rel="preload" href={ibmPlexMonoRegular} as="font" type="font/woff2" crossorigin="anonymous" />
     </>
   )

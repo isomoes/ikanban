@@ -13,7 +13,7 @@ const fallbackClass = "size-16 rounded-md bg-surface-base flex items-center just
 const imageClass =
   "size-16 rounded-md object-cover border border-border-base hover:border-border-strong-base transition-colors"
 const removeClass =
-  "absolute -top-1.5 -right-1.5 size-5 rounded-full bg-surface-raised-stronger-non-alpha border border-border-base flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-surface-raised-base-hover"
+  "absolute -top-1.5 -right-1.5 size-5 rounded-full bg-surface-raised-stronger-non-alpha border border-border-base flex items-center justify-center opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity hover:bg-surface-raised-base-hover"
 const nameClass = "absolute bottom-0 left-0 right-0 px-1 py-0.5 bg-black/50 rounded-b-md"
 
 export const PromptImageAttachments: Component<PromptImageAttachmentsProps> = (props) => {
@@ -23,21 +23,27 @@ export const PromptImageAttachments: Component<PromptImageAttachmentsProps> = (p
         <For each={props.attachments}>
           {(attachment) => (
             <div class="relative group">
-              <Show
-                when={attachment.mime.startsWith("image/")}
-                fallback={
-                  <div class={fallbackClass}>
-                    <Icon name="folder" class="size-6 text-text-weak" />
-                  </div>
-                }
+              <button
+                type="button"
+                data-action="prompt-image-open"
+                class="block"
+                aria-label={attachment.filename}
+                onClick={() => props.onOpen(attachment)}
               >
-                <img
-                  src={attachment.dataUrl}
-                  alt={attachment.filename}
-                  class={imageClass}
-                  onClick={() => props.onOpen(attachment)}
-                />
-              </Show>
+                <Show
+                  when={attachment.mime.startsWith("image/")}
+                  fallback={
+                    <span class={fallbackClass}>
+                      <Icon name="folder" class="size-6 text-text-weak" />
+                    </span>
+                  }
+                >
+                  <img src={attachment.dataUrl} alt={attachment.filename} class={imageClass} />
+                </Show>
+                <span class={nameClass}>
+                  <span class="text-10-regular text-white truncate block">{attachment.filename}</span>
+                </span>
+              </button>
               <button
                 type="button"
                 onClick={() => props.onRemove(attachment.id)}
@@ -46,9 +52,6 @@ export const PromptImageAttachments: Component<PromptImageAttachmentsProps> = (p
               >
                 <Icon name="close" class="size-3 text-text-weak" />
               </button>
-              <div class={nameClass}>
-                <span class="text-10-regular text-white truncate block">{attachment.filename}</span>
-              </div>
             </div>
           )}
         </For>

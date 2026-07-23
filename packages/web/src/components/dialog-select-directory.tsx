@@ -5,19 +5,16 @@ import { List } from "@/ui/components/list"
 import type { ListRef } from "@/ui/components/list"
 import { getDirectory, getFilename } from "@/utils/path"
 import fuzzysort from "fuzzysort"
-import { createMemo, createResource, createSignal, Show } from "solid-js"
+import { createMemo, createResource, createSignal } from "solid-js"
 import { useGlobalSDK } from "@/context/global-sdk"
 import { useGlobalSync } from "@/context/global-sync"
 import { useLayout } from "@/context/layout"
 import { useLanguage } from "@/context/language"
-import { Button } from "@/ui/components/button"
-import { createStore } from "solid-js/store"
-import { listInitialDirectories, toggleSelectedDirectory } from "./dialog-select-directory-helpers"
+import { listInitialDirectories } from "./dialog-select-directory-helpers"
 
 interface DialogSelectDirectoryProps {
   title?: string
-  multiple?: boolean
-  onSelect: (result: string | string[] | null) => void
+  onSelect: (result: string | null) => void
 }
 
 type Row = {
@@ -282,7 +279,6 @@ export function DialogSelectDirectory(props: DialogSelectDirectoryProps) {
     home,
     start,
   })
-  const [selection, setSelection] = createStore({ directories: [] as string[] })
 
   const recentProjects = createMemo(() => {
     const projects = layout.projects.list()
@@ -323,18 +319,7 @@ export function DialogSelectDirectory(props: DialogSelectDirectoryProps) {
   }
 
   function resolve(absolute: string) {
-    if (props.multiple) {
-      setSelection("directories", toggleSelectedDirectory(selection.directories, absolute))
-      return
-    }
-
     props.onSelect(absolute)
-    dialog.close()
-  }
-
-  function submitSelection() {
-    if (selection.directories.length === 0) return
-    props.onSelect(selection.directories)
     dialog.close()
   }
 
@@ -355,7 +340,6 @@ export function DialogSelectDirectory(props: DialogSelectDirectoryProps) {
         groupHeader={(group) =>
           group.category === "recent" ? language.t("home.recentProjects") : language.t("command.project.open")
         }
-        selected={props.multiple ? (item) => selection.directories.includes(item.absolute) : undefined}
         ref={(r) => (list = r)}
         onFilter={(value) => setFilter(cleanInput(value))}
         onKeyEvent={(e, item) => {
@@ -405,26 +389,6 @@ export function DialogSelectDirectory(props: DialogSelectDirectoryProps) {
           )
         }}
       </List>
-      <Show when={props.multiple}>
-        <div class="flex items-center justify-between gap-3 border-t border-border-weak-base px-3 pt-3">
-          <span class="text-12-regular text-text-weak">
-            {language.t("dialog.directory.selected", { count: selection.directories.length })}
-          </span>
-          <div class="flex items-center gap-2">
-            <Button variant="ghost" class="px-3" onClick={() => dialog.close()}>
-              {language.t("common.cancel")}
-            </Button>
-            <Button
-              variant="primary"
-              class="px-3"
-              disabled={selection.directories.length === 0}
-              onClick={submitSelection}
-            >
-              {language.t("dialog.directory.openSelected")}
-            </Button>
-          </div>
-        </div>
-      </Show>
     </Dialog>
   )
 }

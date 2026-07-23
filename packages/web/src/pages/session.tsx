@@ -43,6 +43,7 @@ import { SessionComposerRegion, createSessionComposerState } from "@/pages/sessi
 import { SessionMobileTabs } from "@/pages/session/session-mobile-tabs"
 import { SessionSidePanel } from "@/pages/session/session-side-panel"
 import { useSessionHashScroll } from "@/pages/session/use-session-hash-scroll"
+import "@/pages/session/session-cockpit.css"
 
 const emptyUserMessages: UserMessage[] = []
 
@@ -319,7 +320,7 @@ export default function Page() {
     ),
   )
 
-  const isDesktop = createMediaQuery("(min-width: 768px)")
+  const isDesktop = createMediaQuery("(min-width: 1100px)")
   const desktopReviewOpen = createMemo(() => isDesktop() && view().ikanbanPanel.opened())
   const desktopSidePanelOpen = createMemo(() => desktopReviewOpen())
   const sessionPanelWidth = createMemo(() => {
@@ -1230,7 +1231,7 @@ export default function Page() {
   return (
     <div class="relative bg-background-base size-full overflow-hidden flex flex-col">
       <SessionHeader />
-      <div class="flex-1 min-h-0 flex flex-col md:flex-row">
+      <div data-slot="session-workspace" class="session-cockpit__workspace flex-1 min-h-0 flex flex-col">
         <SessionMobileTabs
           open={!isDesktop() && !!params.id}
           mobileTab={store.mobileTab}
@@ -1254,53 +1255,85 @@ export default function Page() {
           <div class="flex-1 min-h-0 overflow-hidden">
             <Switch>
               <Match when={params.id}>
-                <Show when={activeMessage()}>
-                  <MessageTimeline
-                    mobileChanges={mobileChanges()}
-                    mobileFallback={reviewContent({
-                      diffStyle: "unified",
-                      wordWrap: layout.review.wordWrap(),
-                      onWordWrapChange: layout.review.setWordWrap,
-                      classes: {
-                        root: "pb-8",
-                        header: "px-4",
-                        container: "px-4",
-                      },
-                      loadingClass: "px-4 py-4 text-text-weak",
-                      emptyClass: "h-full pb-30 flex flex-col items-center justify-center text-center gap-6",
-                    })}
-                    scroll={ui.scroll}
-                    onResumeScroll={resumeScroll}
-                    setScrollRef={setScrollRef}
-                    onScheduleScrollState={scheduleScrollState}
-                    onAutoScrollHandleScroll={autoScroll.handleScroll}
-                    isUserScrolled={autoScroll.userScrolled}
-                    onMarkScrollGesture={markScrollGesture}
-                    hasScrollGesture={hasScrollGesture}
-                    isDesktop={isDesktop()}
-                    onScrollSpyScroll={scrollSpy.onScroll}
-                    onTurnBackfillScroll={historyWindow.onScrollerScroll}
-                    onAutoScrollInteraction={autoScroll.handleInteraction}
-                    centered={centered()}
-                    setContentRef={(el) => {
-                      content = el
-                      autoScroll.contentRef(el)
+                <Switch>
+                  <Match when={!messagesReady()}>
+                    <div
+                      data-slot="session-body"
+                      data-state="loading"
+                      class="session-cockpit__state"
+                      role="status"
+                      aria-busy="true"
+                    >
+                      {language.t("session.messages.loading")}
+                    </div>
+                  </Match>
+                  <Match when={!activeMessage()}>
+                    <div
+                      data-slot="session-body"
+                      data-state="empty"
+                      class="session-cockpit__state"
+                      role="status"
+                      aria-busy="false"
+                    >
+                      {language.t("dialog.timeline.empty")}
+                    </div>
+                  </Match>
+                  <Match when={activeMessage()}>
+                    <div
+                      data-slot="session-body"
+                      data-state="ready"
+                      class="session-cockpit__body"
+                      role="status"
+                      aria-busy="false"
+                    >
+                      <MessageTimeline
+                        mobileChanges={mobileChanges()}
+                        mobileFallback={reviewContent({
+                          diffStyle: "unified",
+                          wordWrap: layout.review.wordWrap(),
+                          onWordWrapChange: layout.review.setWordWrap,
+                          classes: {
+                            root: "pb-8",
+                            header: "px-4",
+                            container: "px-4",
+                          },
+                          loadingClass: "px-4 py-4 text-text-weak",
+                          emptyClass: "h-full pb-30 flex flex-col items-center justify-center text-center gap-6",
+                        })}
+                        scroll={ui.scroll}
+                        onResumeScroll={resumeScroll}
+                        setScrollRef={setScrollRef}
+                        onScheduleScrollState={scheduleScrollState}
+                        onAutoScrollHandleScroll={autoScroll.handleScroll}
+                        isUserScrolled={autoScroll.userScrolled}
+                        onMarkScrollGesture={markScrollGesture}
+                        hasScrollGesture={hasScrollGesture}
+                        isDesktop={isDesktop()}
+                        onScrollSpyScroll={scrollSpy.onScroll}
+                        onTurnBackfillScroll={historyWindow.onScrollerScroll}
+                        onAutoScrollInteraction={autoScroll.handleInteraction}
+                        centered={centered()}
+                        setContentRef={(el) => {
+                          content = el
+                          autoScroll.contentRef(el)
 
-                      const root = scroller
-                      if (root) scheduleScrollState(root)
-                    }}
-                    turnStart={historyWindow.turnStart()}
-                    historyMore={historyMore()}
-                    historyLoading={historyLoading()}
-                    onLoadEarlier={() => {
-                      void historyWindow.loadAndReveal()
-                    }}
-                    renderedUserMessages={historyWindow.renderedUserMessages()}
-                    anchor={anchor}
-                    onRegisterMessage={scrollSpy.register}
-                    onUnregisterMessage={scrollSpy.unregister}
-                  />
-                </Show>
+                          const root = scroller
+                          if (root) scheduleScrollState(root)
+                        }}
+                        turnStart={historyWindow.turnStart()}
+                        historyMore={historyMore()}
+                        historyLoading={historyLoading()}
+                        onLoadEarlier={() => {
+                          void historyWindow.loadAndReveal()
+                        }}
+                        renderedUserMessages={historyWindow.renderedUserMessages()}
+                        anchor={anchor}
+                        onRegisterMessage={scrollSpy.register}
+                        onUnregisterMessage={scrollSpy.unregister}
+                      />
+                    </div>
+                  </Match>
+                </Switch>
               </Match>
               <Match when={true}>
                 <NewSessionView

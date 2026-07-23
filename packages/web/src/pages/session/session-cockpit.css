@@ -1,0 +1,105 @@
+.session-cockpit__workspace {
+  flex-direction: column;
+}
+
+.session-cockpit__body,
+.session-cockpit__timeline {
+  min-height: 0;
+  height: 100%;
+}
+
+.session-cockpit__timeline {
+  display: flex;
+  flex-direction: column;
+}
+
+.session-cockpit__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.session-cockpit__state {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  color: var(--text-weak);
+  font-size: var(--font-size-small);
+}
+
+.session-cockpit__rail {
+  display: flex;
+  min-height: 40px;
+  width: 100%;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border-weak-base);
+  background: var(--background-stronger);
+}
+
+.session-cockpit__rail-title,
+.session-cockpit__rail-meta {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+}
+
+.session-cockpit__rail-title {
+  flex: 1 1 auto;
+  gap: 4px;
+}
+
+.session-cockpit__rail-meta {
+  flex: 0 0 auto;
+  gap: 12px;
+  color: var(--text-weak);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-small);
+  font-feature-settings: var(--font-family-mono--font-feature-settings);
+  font-variant-numeric: tabular-nums;
+}
+
+[data-slot="session-runtime-status"] {
+  text-transform: uppercase;
+}
+
+[data-slot="session-runtime-status"]::before {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--icon-weak-base);
+  content: "";
+}
+
+[data-slot="session-runtime-status"][data-status="busy"]::before,
+[data-slot="session-runtime-status"][data-status="retry"]::before {
+  background: var(--icon-warning-base);
+}
+
+.session-cockpit__turns {
+  gap: 28px;
+}
+
+.session-cockpit__worktree-select {
+  margin-left: 4px;
+  font-family: var(--font-family-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 1100px) {
+  .session-cockpit__workspace {
+    flex-direction: row;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1099.98px) {
+  #ikanban-panel {
+    display: none;
+  }
+}

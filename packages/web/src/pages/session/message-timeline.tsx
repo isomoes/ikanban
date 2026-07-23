@@ -291,7 +291,6 @@ export function MessageTimeline(props: {
   })
   const titleValue = createMemo(() => info()?.title)
   const parentID = createMemo(() => info()?.parentID)
-  const showHeader = createMemo(() => !!(titleValue() || parentID()))
   const stageCfg = { init: 1, batch: 3 }
   const staging = createTimelineStaging({
     sessionKey,
@@ -496,7 +495,7 @@ export function MessageTimeline(props: {
       when={!props.mobileChanges}
       fallback={<div class="relative h-full overflow-hidden">{props.mobileFallback}</div>}
     >
-      <div class="relative w-full h-full min-w-0">
+      <div class="session-cockpit__timeline relative w-full h-full min-w-0">
         <div
           class="absolute left-1/2 -translate-x-1/2 bottom-6 z-[60] pointer-events-none transition-all duration-200 ease-out"
           classList={{
@@ -512,6 +511,113 @@ export function MessageTimeline(props: {
           >
             <Icon name="arrow-down-to-line" />
           </button>
+        </div>
+        <div
+          data-slot="session-status-rail"
+          classList={{
+            "session-cockpit__rail": true,
+            "md:max-w-200 md:mx-auto 2xl:max-w-[1000px]": props.centered,
+          }}
+        >
+          <div class="session-cockpit__rail-title">
+            <Show when={parentID()}>
+              <IconButton
+                tabIndex={-1}
+                icon="arrow-left"
+                variant="ghost"
+                onClick={navigateParent}
+                aria-label={language.t("common.goBack")}
+              />
+            </Show>
+            <Show
+              when={title.editing}
+              fallback={
+                <h1 class="text-14-medium text-text-strong truncate min-w-0" onDblClick={openTitleEditor}>
+                  {titleValue()}
+                </h1>
+              }
+            >
+              <InlineInput
+                ref={(el) => {
+                  titleRef = el
+                }}
+                value={title.draft}
+                disabled={title.saving}
+                class="text-14-medium text-text-strong grow-1 min-w-0 rounded-[6px]"
+                style={{ "--inline-input-shadow": "var(--shadow-xs-border-select)" }}
+                onInput={(event) => setTitle("draft", event.currentTarget.value)}
+                onKeyDown={(event) => {
+                  event.stopPropagation()
+                  if (event.key === "Enter") {
+                    event.preventDefault()
+                    void saveTitleEditor()
+                    return
+                  }
+                  if (event.key === "Escape") {
+                    event.preventDefault()
+                    closeTitleEditor()
+                  }
+                }}
+                onBlur={closeTitleEditor}
+              />
+            </Show>
+          </div>
+          <div class="session-cockpit__rail-meta">
+            <span data-slot="session-runtime-status" data-status={sessionStatus().type} role="status">
+              {sessionStatus().type}
+            </span>
+            <Show when={totalRunLabel()}>
+              <span title={language.t("session.messages.totalRunTime")}>{totalRunLabel()}</span>
+            </Show>
+            <Show when={sessionID()}>
+              {(id) => (
+                <>
+                  <SessionContextUsage placement="bottom" />
+                  <DropdownMenu
+                    gutter={4}
+                    placement="bottom-end"
+                    open={title.menuOpen}
+                    onOpenChange={(open) => setTitle("menuOpen", open)}
+                  >
+                    <DropdownMenu.Trigger
+                      as={IconButton}
+                      icon="dot-grid"
+                      variant="ghost"
+                      class="size-6 rounded-md data-[expanded]:bg-surface-base-active"
+                      aria-label={language.t("common.moreOptions")}
+                    />
+                    <DropdownMenu.Portal>
+                      <DropdownMenu.Content
+                        style={{ "min-width": "104px" }}
+                        onCloseAutoFocus={(event) => {
+                          if (!title.pendingRename) return
+                          event.preventDefault()
+                          setTitle("pendingRename", false)
+                          openTitleEditor()
+                        }}
+                      >
+                        <DropdownMenu.Item
+                          onSelect={() => {
+                            setTitle("pendingRename", true)
+                            setTitle("menuOpen", false)
+                          }}
+                        >
+                          <DropdownMenu.ItemLabel>{language.t("common.rename")}</DropdownMenu.ItemLabel>
+                        </DropdownMenu.Item>
+                        <DropdownMenu.Item onSelect={() => void archiveSession(id())}>
+                          <DropdownMenu.ItemLabel>{language.t("common.archive")}</DropdownMenu.ItemLabel>
+                        </DropdownMenu.Item>
+                        <DropdownMenu.Separator />
+                        <DropdownMenu.Item onSelect={() => dialog.show(() => <DialogDeleteSession sessionID={id()} />)}>
+                          <DropdownMenu.ItemLabel>{language.t("common.delete")}</DropdownMenu.ItemLabel>
+                        </DropdownMenu.Item>
+                      </DropdownMenu.Content>
+                    </DropdownMenu.Portal>
+                  </DropdownMenu>
+                </>
+              )}
+            </Show>
+          </div>
         </div>
         <ScrollView
           viewportRef={props.setScrollRef}
@@ -559,138 +665,16 @@ export function MessageTimeline(props: {
             if (props.isDesktop) props.onScrollSpyScroll()
           }}
           onClick={props.onAutoScrollInteraction}
-          class="relative min-w-0 w-full h-full"
+          class="session-cockpit__scroll relative min-w-0 w-full"
           style={{
-            "--session-title-height": showHeader() ? "40px" : "0px",
-            "--sticky-accordion-top": showHeader() ? "48px" : "0px",
+            "--session-title-height": "0px",
+            "--sticky-accordion-top": "0px",
           }}
         >
-          <Show when={showHeader()}>
-            <div
-              data-session-title
-              classList={{
-                "sticky top-0 z-30 bg-[linear-gradient(to_bottom,var(--background-stronger)_48px,transparent)]": true,
-                "w-full": true,
-                "pb-4": true,
-                "pl-2 pr-3 md:pl-4 md:pr-3": true,
-                "md:max-w-200 md:mx-auto 2xl:max-w-[1000px]": props.centered,
-              }}
-            >
-              <div class="h-12 w-full flex items-center justify-between gap-2">
-                <div class="flex items-center gap-1 min-w-0 flex-1 pr-3">
-                  <Show when={parentID()}>
-                    <IconButton
-                      tabIndex={-1}
-                      icon="arrow-left"
-                      variant="ghost"
-                      onClick={navigateParent}
-                      aria-label={language.t("common.goBack")}
-                    />
-                  </Show>
-                  <Show when={titleValue() || title.editing}>
-                    <Show
-                      when={title.editing}
-                      fallback={
-                        <h1
-                          class="text-14-medium text-text-strong truncate min-w-0 pl-2"
-                          onDblClick={openTitleEditor}
-                        >
-                          {titleValue()}
-                        </h1>
-                      }
-                    >
-                      <InlineInput
-                        ref={(el) => {
-                          titleRef = el
-                        }}
-                        value={title.draft}
-                        disabled={title.saving}
-                        class="text-14-medium text-text-strong grow-1 min-w-0 pl-2 rounded-[6px]"
-                        style={{ "--inline-input-shadow": "var(--shadow-xs-border-select)" }}
-                        onInput={(event) => setTitle("draft", event.currentTarget.value)}
-                        onKeyDown={(event) => {
-                          event.stopPropagation()
-                          if (event.key === "Enter") {
-                            event.preventDefault()
-                            void saveTitleEditor()
-                            return
-                          }
-                          if (event.key === "Escape") {
-                            event.preventDefault()
-                            closeTitleEditor()
-                          }
-                        }}
-                        onBlur={closeTitleEditor}
-                      />
-                    </Show>
-                  </Show>
-                  <Show when={!title.editing && totalRunLabel()}>
-                    <span
-                      class="shrink-0 text-12-regular text-text-weak cursor-default"
-                      title={language.t("session.messages.totalRunTime")}
-                    >
-                      {totalRunLabel()}
-                    </span>
-                  </Show>
-                </div>
-                <Show when={sessionID()}>
-                  {(id) => (
-                    <div class="shrink-0 flex items-center gap-3">
-                      <SessionContextUsage placement="bottom" />
-                      <DropdownMenu
-                        gutter={4}
-                        placement="bottom-end"
-                        open={title.menuOpen}
-                        onOpenChange={(open) => setTitle("menuOpen", open)}
-                      >
-                        <DropdownMenu.Trigger
-                          as={IconButton}
-                          icon="dot-grid"
-                          variant="ghost"
-                          class="size-6 rounded-md data-[expanded]:bg-surface-base-active"
-                          aria-label={language.t("common.moreOptions")}
-                        />
-                        <DropdownMenu.Portal>
-                          <DropdownMenu.Content
-                            style={{ "min-width": "104px" }}
-                            onCloseAutoFocus={(event) => {
-                              if (!title.pendingRename) return
-                              event.preventDefault()
-                              setTitle("pendingRename", false)
-                              openTitleEditor()
-                            }}
-                          >
-                            <DropdownMenu.Item
-                              onSelect={() => {
-                                setTitle("pendingRename", true)
-                                setTitle("menuOpen", false)
-                              }}
-                            >
-                              <DropdownMenu.ItemLabel>{language.t("common.rename")}</DropdownMenu.ItemLabel>
-                            </DropdownMenu.Item>
-                            <DropdownMenu.Item onSelect={() => void archiveSession(id())}>
-                              <DropdownMenu.ItemLabel>{language.t("common.archive")}</DropdownMenu.ItemLabel>
-                            </DropdownMenu.Item>
-                            <DropdownMenu.Separator />
-                            <DropdownMenu.Item
-                              onSelect={() => dialog.show(() => <DialogDeleteSession sessionID={id()} />)}
-                            >
-                              <DropdownMenu.ItemLabel>{language.t("common.delete")}</DropdownMenu.ItemLabel>
-                            </DropdownMenu.Item>
-                          </DropdownMenu.Content>
-                        </DropdownMenu.Portal>
-                      </DropdownMenu>
-                    </div>
-                  )}
-                </Show>
-              </div>
-            </div>
-          </Show>
-
           <div
             ref={props.setContentRef}
             role="log"
-            class="flex flex-col gap-12 items-start justify-start pb-16 transition-[margin]"
+            class="session-cockpit__turns flex flex-col items-start justify-start pb-16 transition-[margin]"
             classList={{
               "w-full": true,
               "md:max-w-200 md:mx-auto 2xl:max-w-[1000px]": props.centered,

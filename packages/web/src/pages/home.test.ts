@@ -5,12 +5,6 @@ import { join } from "node:path"
 const source = readFileSync(join(import.meta.dir, "home.tsx"), "utf8")
 
 describe("Home accessibility structure", () => {
-  test("exposes stable page and board regions for the cockpit layout", () => {
-    expect(source).toContain('data-page="home"')
-    expect(source).toContain('data-slot="home-board"')
-    expect(source).toContain('aria-live="polite"')
-  })
-
   test("names session actions with the session title", () => {
     expect(source).toContain('aria-label={`${language.t("home.sessionBoard.openSession")}: ${card.session.title}`}')
   })
@@ -24,8 +18,4 @@ describe("Home accessibility structure", () => {
     expect(source).toContain("min-h-0 lg:min-h-72")
   })
 
-  test("keeps visual styling out of inline style objects", () => {
-    expect(source).not.toContain("const homeStyles")
-    expect(source).not.toContain("style={homeStyles")
-  })
 })

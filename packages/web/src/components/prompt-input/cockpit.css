@@ -1,0 +1,39 @@
+[data-component="prompt-composer"] [data-component="dock-shell-form"] {
+  min-height: 0;
+}
+
+[data-component="prompt-composer"] [data-action="prompt-context-open"]:focus-visible,
+[data-component="prompt-composer"] [data-action="prompt-image-open"]:focus-visible {
+  outline: 2px solid var(--border-interactive-focus);
+  outline-offset: 1px;
+}
+
+[data-component="prompt-composer"] [data-action="prompt-image-open"] {
+  border-radius: var(--radius-md);
+}
+
+@media (max-width: 47.99rem) {
+  [data-component="prompt-composer"] {
+    max-height: min(62dvh, 26rem);
+  }
+
+  [data-component="prompt-composer"] [data-component="dock-tray"] > div {
+    overflow-x: auto;
+    padding-top: 1.125rem;
+    scrollbar-width: thin;
+  }
+
+  [data-component="prompt-composer"] [data-component="dock-tray"] > div > div {
+    min-width: max-content;
+  }
+
+  [data-component="prompt-composer"] [data-action="prompt-context-open"] {
+    max-width: 10rem;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  [data-component="prompt-composer"] .group [aria-label] {
+    opacity: 1;
+  }
+}

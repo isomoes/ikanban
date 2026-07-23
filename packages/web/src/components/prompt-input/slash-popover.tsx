@@ -17,6 +17,10 @@ export interface SlashCommand {
   source?: "command" | "mcp" | "skill"
 }
 
+export const PROMPT_POPOVER_ID = "prompt-suggestions"
+export const promptOptionId = (type: "at" | "slash", key: string) =>
+  `prompt-option-${type}-${key.replace(/[^a-zA-Z0-9_-]/g, "-")}`
+
 type PromptPopoverProps = {
   popover: "at" | "slash" | null
   setSlashPopoverRef: (el: HTMLDivElement) => void
@@ -37,6 +41,8 @@ export const PromptPopover: Component<PromptPopoverProps> = (props) => {
   return (
     <Show when={props.popover}>
       <div
+        id={PROMPT_POPOVER_ID}
+        role="listbox"
         ref={(el) => {
           if (props.popover === "slash") props.setSlashPopoverRef(el)
         }}
@@ -58,6 +64,9 @@ export const PromptPopover: Component<PromptPopoverProps> = (props) => {
                   if (item.type === "agent") {
                     return (
                       <button
+                        id={promptOptionId("at", key)}
+                        role="option"
+                        aria-selected={props.atActive === key}
                         class="w-full flex items-center gap-x-2 rounded-md px-2 py-0.5"
                         classList={{ "bg-surface-raised-base-hover": props.atActive === key }}
                         onClick={() => props.onAtSelect(item)}
@@ -75,6 +84,9 @@ export const PromptPopover: Component<PromptPopoverProps> = (props) => {
 
                   return (
                     <button
+                      id={promptOptionId("at", key)}
+                      role="option"
+                      aria-selected={props.atActive === key}
                       class="w-full flex items-center gap-x-2 rounded-md px-2 py-0.5"
                       classList={{ "bg-surface-raised-base-hover": props.atActive === key }}
                       onClick={() => props.onAtSelect(item)}
@@ -101,6 +113,9 @@ export const PromptPopover: Component<PromptPopoverProps> = (props) => {
               <For each={props.slashFlat}>
                 {(cmd) => (
                   <button
+                    id={promptOptionId("slash", cmd.id)}
+                    role="option"
+                    aria-selected={props.slashActive === cmd.id}
                     data-slash-id={cmd.id}
                     classList={{
                       "w-full flex items-center justify-between gap-4 rounded-md px-2 py-1": true,

@@ -8,10 +8,6 @@ type DirectoryClient = {
   }
 }
 
-export function toggleSelectedDirectory(selected: string[], directory: string) {
-  return selected.includes(directory) ? selected.filter((item) => item !== directory) : [...selected, directory]
-}
-
 export async function listInitialDirectories(sdk: DirectoryClient, directory: string) {
   const result = await sdk.client.file.list({ directory, path: "" })
   return (result.data ?? [])

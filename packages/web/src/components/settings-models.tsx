@@ -57,8 +57,14 @@ export const SettingsModels: Component = () => {
   })
 
   return (
-    <div class="flex flex-col h-full overflow-y-auto no-scrollbar px-4 pb-10 sm:px-10 sm:pb-10">
-      <div class="sticky top-0 z-10 bg-[linear-gradient(to_bottom,var(--surface-stronger-non-alpha)_calc(100%_-_24px),transparent)]">
+    <div
+      class="flex flex-col h-full overflow-y-auto no-scrollbar px-4 pb-10 sm:px-10 sm:pb-10"
+      data-component="settings-page"
+    >
+      <div
+        class="sticky top-0 z-10 bg-[linear-gradient(to_bottom,var(--surface-stronger-non-alpha)_calc(100%_-_24px),transparent)]"
+        data-component="settings-header"
+      >
         <div class="flex flex-col gap-4 pt-6 pb-6 max-w-[720px]">
           <h2 class="text-16-medium text-text-strong">{language.t("settings.models.title")}</h2>
           <div class="flex items-center gap-2 px-3 h-9 rounded-lg bg-surface-base">
@@ -95,7 +101,7 @@ export const SettingsModels: Component = () => {
           >
             <For each={list.grouped.latest}>
               {(group) => (
-                <div class="flex flex-col gap-1">
+                <div class="flex flex-col gap-1" data-component="settings-section">
                   <div class="flex items-center gap-2 pb-2">
                     <ProviderIcon id={group.category} class="size-5 shrink-0 icon-strong-base" />
                     <span class="text-14-medium text-text-strong">{group.items[0].provider.name}</span>
@@ -105,7 +111,10 @@ export const SettingsModels: Component = () => {
                       {(item) => {
                         const key = { providerID: item.provider.id, modelID: item.id }
                         return (
-                          <div class="flex flex-wrap items-center justify-between gap-4 py-3 border-b border-border-weak-base last:border-none">
+                          <div
+                            class="flex flex-wrap items-center justify-between gap-4 py-3 border-b border-border-weak-base last:border-none"
+                            data-component="settings-row"
+                          >
                             <div class="min-w-0">
                               <span class="text-14-regular text-text-strong truncate block">{item.name}</span>
                             </div>

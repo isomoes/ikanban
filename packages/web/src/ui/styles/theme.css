@@ -1,6 +1,6 @@
 :root {
-  --font-family-sans: "Inter", "Inter Fallback";
-  --font-family-sans--font-feature-settings: "ss03" 1;
+  --font-family-sans: "Geist UI", "Inter Fallback";
+  --font-family-sans--font-feature-settings: "ss01" 1, "tnum" 1;
   --font-family-mono: "IBM Plex Mono", "IBM Plex Mono Fallback";
   --font-family-mono--font-feature-settings: "ss01" 1;
 
@@ -10,6 +10,7 @@
   --font-size-x-large: 20px;
   --font-weight-regular: 400;
   --font-weight-medium: 500;
+  --font-weight-semibold: 600;
   --line-height-normal: 130%;
   --line-height-large: 150%;
   --line-height-x-large: 180%;

@@ -152,12 +152,12 @@ export default function Home() {
     if (platform.openDirectoryPickerDialog && server.isLocal()) {
       const result = await platform.openDirectoryPickerDialog?.({
         title: language.t("command.project.open"),
-        multiple: true,
+        multiple: false,
       });
       resolve(result);
     } else {
       dialog.show(
-        () => <DialogSelectDirectory multiple={true} onSelect={resolve} />,
+        () => <DialogSelectDirectory onSelect={resolve} />,
         () => resolve(null),
       );
     }

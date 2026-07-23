@@ -47,12 +47,19 @@ import {
   promptLength,
 } from "./prompt-input/history"
 import { createPromptSubmit } from "./prompt-input/submit"
-import { PromptPopover, type AtOption, type SlashCommand } from "./prompt-input/slash-popover"
+import {
+  PROMPT_POPOVER_ID,
+  PromptPopover,
+  promptOptionId,
+  type AtOption,
+  type SlashCommand,
+} from "./prompt-input/slash-popover"
 import { PromptContextItems } from "./prompt-input/context-items"
 import { PromptImageAttachments } from "./prompt-input/image-attachments"
 import { PromptDragOverlay } from "./prompt-input/drag-overlay"
 import { promptPlaceholder } from "./prompt-input/placeholder"
 import { ImagePreview } from "@/ui/components/image-preview"
+import "./prompt-input/cockpit.css"
 
 interface PromptInputProps {
   class?: string
@@ -1041,7 +1048,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
   }
 
   return (
-    <div class="relative size-full _max-h-[320px] flex flex-col gap-0">
+    <div data-component="prompt-composer" class="relative size-full flex max-h-[min(70dvh,32rem)] flex-col gap-0">
       <PromptPopover
         popover={store.popover}
         setSlashPopoverRef={(el) => (slashPopoverRef = el)}
@@ -1113,7 +1120,18 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
                 editorRef = el
                 props.ref?.(el)
               }}
-              role="textbox"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-haspopup="listbox"
+              aria-controls={PROMPT_POPOVER_ID}
+              aria-expanded={store.popover !== null}
+              aria-activedescendant={
+                store.popover === "at" && atActive()
+                  ? promptOptionId("at", atActive()!)
+                  : store.popover === "slash" && slashActive()
+                    ? promptOptionId("slash", slashActive()!)
+                    : undefined
+              }
               aria-multiline="true"
               aria-label={placeholder()}
               contenteditable="true"

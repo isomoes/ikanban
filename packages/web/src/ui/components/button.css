@@ -10,6 +10,16 @@
   cursor: default;
   outline: none;
   white-space: nowrap;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 120ms ease;
+
+  &:active:not(:disabled) {
+    transform: translateY(1px) scale(0.985);
+  }
 
   &[data-variant="primary"] {
     background-color: var(--button-primary-base);
@@ -96,7 +106,7 @@
     }
     &:disabled {
       border-color: var(--border-disabled);
-      background-color: var(--surface-disabled);
+      background-color: var(--input-disabled);
       color: var(--text-weak);
       cursor: not-allowed;
     }
@@ -164,7 +174,7 @@
     letter-spacing: var(--letter-spacing-normal);
   }
 
-  &:focus {
+  &:focus:not(:focus-visible) {
     outline: none;
   }
 }
@@ -179,4 +189,14 @@
 
 [data-component="button"].titlebar-icon[data-variant="ghost"][aria-expanded="true"]:hover:not(:disabled) {
   background-color: var(--surface-base-active);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-component="button"] {
+    transition: none;
+
+    &:active:not(:disabled) {
+      transform: none;
+    }
+  }
 }

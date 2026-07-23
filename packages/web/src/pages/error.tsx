@@ -218,12 +218,13 @@ export const ErrorPage: Component<ErrorPageProps> = (props) => {
   const language = useLanguage()
   const [store, setStore] = createStore({
     checking: false,
+    installing: false,
     version: undefined as string | undefined,
     actionError: undefined as string | undefined,
   })
 
   async function checkForUpdates() {
-    if (!platform.checkUpdate) return
+    if (!platform.checkUpdate || store.checking || store.installing) return
     setStore("checking", true)
     await platform
       .checkUpdate()
@@ -240,7 +241,8 @@ export const ErrorPage: Component<ErrorPageProps> = (props) => {
   }
 
   async function installUpdate() {
-    if (!platform.update || !platform.restart) return
+    if (!platform.update || !platform.restart || store.installing) return
+    setStore("installing", true)
     await platform
       .update()
       .then(() => platform.restart!())
@@ -248,66 +250,89 @@ export const ErrorPage: Component<ErrorPageProps> = (props) => {
       .catch((err) => {
         setStore("actionError", formatError(err, language.t))
       })
+      .finally(() => {
+        setStore("installing", false)
+      })
   }
 
   return (
-    <div class="relative flex-1 h-screen w-screen min-h-0 flex flex-col items-center justify-center bg-background-base font-sans">
-      <div class="w-2/3 max-w-3xl flex flex-col items-center justify-center gap-8">
-        <div class="flex flex-col items-center gap-2 text-center">
-          <h1 class="text-lg font-medium text-text-strong">{language.t("error.page.title")}</h1>
-          <p class="text-sm text-text-weak">{language.t("error.page.description")}</p>
-        </div>
-        <TextField
-          value={formatError(props.error, language.t)}
-          readOnly
-          copyable
-          multiline
-          class="max-h-96 w-full font-mono text-xs no-scrollbar"
-          label={language.t("error.page.details.label")}
-          hideLabel
-        />
-        <div class="flex items-center gap-3">
-          <Button size="large" onClick={platform.restart}>
-            {language.t("error.page.action.restart")}
-          </Button>
-          <Show when={platform.checkUpdate}>
-            <Show
-              when={store.version}
-              fallback={
-                <Button size="large" variant="ghost" onClick={checkForUpdates} disabled={store.checking}>
-                  {store.checking
-                    ? language.t("error.page.action.checking")
-                    : language.t("error.page.action.checkUpdates")}
-                </Button>
-              }
-            >
-              <Button size="large" onClick={installUpdate}>
-                {language.t("error.page.action.updateTo", { version: store.version ?? "" })}
-              </Button>
-            </Show>
-          </Show>
-        </div>
-        <Show when={store.actionError}>
-          {(message) => <p class="text-xs text-text-danger-base text-center max-w-2xl">{message()}</p>}
-        </Show>
-        <div class="flex flex-col items-center gap-2">
-          <div class="flex items-center justify-center gap-1">
-            {language.t("error.page.report.prefix")}
-            <button
-              type="button"
-              class="flex items-center text-text-interactive-base gap-1"
-              onClick={() => platform.openLink("https://github.com/isomoes/ikanban/issues")}
-            >
-              <div>{language.t("error.page.report.discord")}</div>
-            </button>
+    <div class="relative flex min-h-dvh w-full items-center justify-center bg-background-base px-4 py-6 font-sans sm:px-6">
+      <main class="grid w-full max-w-5xl overflow-hidden border border-border-weak-base bg-surface-raised-base lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+        <section class="flex flex-col justify-between gap-6 p-6 sm:p-8" data-component="error-summary">
+          <div class="flex flex-col gap-2">
+            <h1 class="text-lg font-medium text-text-strong">{language.t("error.page.title")}</h1>
+            <p class="text-sm text-text-weak">{language.t("error.page.description")}</p>
           </div>
-          <Show when={platform.version}>
-            {(version) => (
-              <p class="text-xs text-text-weak">{language.t("error.page.version", { version: version() })}</p>
-            )}
-          </Show>
-        </div>
-      </div>
+          <div class="flex flex-col gap-4">
+            <div class="flex flex-wrap items-center gap-3">
+              <Show when={platform.restart}>
+                <Button size="large" onClick={platform.restart} disabled={store.checking || store.installing}>
+                  {language.t("error.page.action.restart")}
+                </Button>
+              </Show>
+              <Show when={platform.checkUpdate && platform.update && platform.restart}>
+                <Show
+                  when={store.version}
+                  fallback={
+                    <Button
+                      size="large"
+                      variant="ghost"
+                      onClick={checkForUpdates}
+                      disabled={store.checking || store.installing}
+                    >
+                      {store.checking
+                        ? language.t("error.page.action.checking")
+                        : language.t("error.page.action.checkUpdates")}
+                    </Button>
+                  }
+                >
+                  <Button size="large" onClick={installUpdate} disabled={store.checking || store.installing}>
+                    {language.t("error.page.action.updateTo", { version: store.version ?? "" })}
+                  </Button>
+                </Show>
+              </Show>
+            </div>
+            <Show when={store.actionError}>
+              {(message) => (
+                <p role="alert" class="whitespace-pre-wrap text-xs text-text-danger-base">
+                  {message()}
+                </p>
+              )}
+            </Show>
+            <div class="flex flex-col gap-2 text-sm text-text-weak">
+              <div class="flex flex-wrap items-center gap-1">
+                {language.t("error.page.report.prefix")}
+                <button
+                  type="button"
+                  class="text-text-interactive-base underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2"
+                  onClick={() => platform.openLink("https://github.com/isomoes/ikanban/issues")}
+                >
+                  {language.t("error.page.report.discord")}
+                </button>
+              </div>
+              <Show when={platform.version}>
+                {(version) => (
+                  <p class="text-xs text-text-weak">{language.t("error.page.version", { version: version() })}</p>
+                )}
+              </Show>
+            </div>
+          </div>
+        </section>
+        <section
+          class="min-w-0 border-t border-border-weak-base bg-surface-base p-4 sm:p-6 lg:border-l lg:border-t-0"
+          data-component="error-diagnostics"
+        >
+          <TextField
+            value={formatError(props.error, language.t)}
+            readOnly
+            copyable
+            multiline
+            class="max-h-[65dvh] w-full font-mono text-xs no-scrollbar"
+            label={language.t("error.page.details.label")}
+            hideLabel
+          />
+        </section>
+      </main>
     </div>
   )
 }

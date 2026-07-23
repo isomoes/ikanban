@@ -123,7 +123,7 @@ export const SettingsGeneral: Component = () => {
   })
 
   const AppearanceSection = () => (
-    <div class="flex flex-col gap-1">
+    <div class="flex flex-col gap-1" data-component="settings-section">
       <h3 class="text-14-medium text-text-strong pb-2">{language.t("settings.general.section.appearance")}</h3>
 
       <div class="bg-surface-raised-base px-4 rounded-lg">
@@ -224,7 +224,7 @@ export const SettingsGeneral: Component = () => {
   )
 
   const FeedSection = () => (
-    <div class="flex flex-col gap-1">
+    <div class="flex flex-col gap-1" data-component="settings-section">
       <h3 class="text-14-medium text-text-strong pb-2">{language.t("settings.general.section.feed")}</h3>
 
       <div class="bg-surface-raised-base px-4 rounded-lg">
@@ -268,7 +268,7 @@ export const SettingsGeneral: Component = () => {
   )
 
   const NotificationsSection = () => (
-    <div class="flex flex-col gap-1">
+    <div class="flex flex-col gap-1" data-component="settings-section">
       <h3 class="text-14-medium text-text-strong pb-2">{language.t("settings.general.section.notifications")}</h3>
 
       <div class="bg-surface-raised-base px-4 rounded-lg">
@@ -312,7 +312,7 @@ export const SettingsGeneral: Component = () => {
   )
 
   const SoundsSection = () => (
-    <div class="flex flex-col gap-1">
+    <div class="flex flex-col gap-1" data-component="settings-section">
       <h3 class="text-14-medium text-text-strong pb-2">{language.t("settings.general.section.sounds")}</h3>
 
       <div class="bg-surface-raised-base px-4 rounded-lg">
@@ -365,7 +365,7 @@ export const SettingsGeneral: Component = () => {
   )
 
   const ReleaseNotesSection = () => (
-    <div class="flex flex-col gap-1">
+    <div class="flex flex-col gap-1" data-component="settings-section">
       <h3 class="text-14-medium text-text-strong pb-2">{language.t("settings.general.section.releaseNotes")}</h3>
 
       <div class="bg-surface-raised-base px-4 rounded-lg">
@@ -382,8 +382,14 @@ export const SettingsGeneral: Component = () => {
   )
 
   return (
-    <div class="flex flex-col h-full overflow-y-auto no-scrollbar px-4 pb-10 sm:px-10 sm:pb-10">
-      <div class="sticky top-0 z-10 bg-[linear-gradient(to_bottom,var(--surface-stronger-non-alpha)_calc(100%_-_24px),transparent)]">
+    <div
+      class="flex flex-col h-full overflow-y-auto no-scrollbar px-4 pb-10 sm:px-10 sm:pb-10"
+      data-component="settings-page"
+    >
+      <div
+        class="sticky top-0 z-10 bg-[linear-gradient(to_bottom,var(--surface-stronger-non-alpha)_calc(100%_-_24px),transparent)]"
+        data-component="settings-header"
+      >
         <div class="flex flex-col gap-1 pt-6 pb-8">
           <h2 class="text-16-medium text-text-strong">{language.t("settings.tab.general")}</h2>
         </div>
@@ -406,7 +412,7 @@ export const SettingsGeneral: Component = () => {
             const enabled = () => (enabledResource.state === "pending" ? undefined : enabledResource.latest)
 
             return (
-              <div class="flex flex-col gap-1">
+              <div class="flex flex-col gap-1" data-component="settings-section">
                 <h3 class="text-14-medium text-text-strong pb-2">{language.t("settings.desktop.section.wsl")}</h3>
 
                 <div class="bg-surface-raised-base px-4 rounded-lg">
@@ -476,7 +482,10 @@ interface SettingsRowProps {
 
 const SettingsRow: Component<SettingsRowProps> = (props) => {
   return (
-    <div class="flex flex-wrap items-center justify-between gap-4 py-3 border-b border-border-weak-base last:border-none">
+    <div
+      class="flex flex-wrap items-center justify-between gap-4 py-3 border-b border-border-weak-base last:border-none"
+      data-component="settings-row"
+    >
       <div class="flex flex-col gap-0.5 min-w-0">
         <span class="text-14-medium text-text-strong">{props.title}</span>
         <span class="text-12-regular text-text-weak">{props.description}</span>

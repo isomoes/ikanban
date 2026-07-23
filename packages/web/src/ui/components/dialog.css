@@ -4,7 +4,8 @@
   position: fixed;
   inset: 0;
   z-index: 50;
-  background-color: hsl(from var(--background-base) h s l / 0.2);
+  background-color: hsl(from var(--background-base) h s l / 0.58);
+  backdrop-filter: blur(2px);
 }
 
 [data-component="dialog"] {
@@ -38,11 +39,18 @@
       overflow: auto;
       pointer-events: auto;
 
-      /* Hide scrollbar */
-      scrollbar-width: none;
-      -ms-overflow-style: none;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-strong-base) transparent;
+
       &::-webkit-scrollbar {
-        display: none;
+        width: 8px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        border: 2px solid transparent;
+        border-radius: var(--radius-md);
+        background-color: var(--border-strong-base);
+        background-clip: padding-box;
       }
 
       /* padding: 8px; */
@@ -54,9 +62,10 @@
 
       [data-slot="dialog-header"] {
         display: flex;
-        padding: 16px 20px;
-        justify-content: space-between;
+        gap: 8px;
+        padding: 10px 12px;
         align-items: center;
+        justify-content: flex-end;
         flex-shrink: 0;
         align-self: stretch;
 
@@ -70,16 +79,18 @@
           font-weight: var(--font-weight-medium);
           line-height: var(--line-height-x-large); /* 150% */
           letter-spacing: var(--letter-spacing-tight);
+          margin-right: auto;
         }
-        /* [data-slot="dialog-close-button"] {} */
+
+        [data-slot="dialog-action"] {
+          display: flex;
+          align-items: center;
+        }
       }
 
       [data-slot="dialog-description"] {
         display: flex;
-        padding: 16px;
-        padding-left: 24px;
-        padding-top: 0;
-        margin-top: -8px;
+        padding: 0 12px 10px;
         justify-content: space-between;
         align-items: center;
         flex-shrink: 0;
@@ -177,5 +188,11 @@
   to {
     opacity: 0;
     transform: scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-component="dialog"][data-transition] [data-slot="dialog-content"] {
+    animation: none;
   }
 }

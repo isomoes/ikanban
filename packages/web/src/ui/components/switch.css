@@ -73,7 +73,7 @@
   }
 
   [data-slot="switch-error"] {
-    color: var(--text-error);
+    color: var(--text-on-critical-base);
     font-family: var(--font-family-sans);
     font-size: 12px;
     font-weight: var(--font-weight-regular);
@@ -83,7 +83,7 @@
 
   &:hover:not([data-disabled], [data-readonly]) [data-slot="switch-control"] {
     border-color: var(--border-hover);
-    background-color: var(--surface-hover);
+    background-color: var(--surface-base-hover);
   }
 
   &:not([data-readonly]) [data-slot="switch-input"]:focus-visible ~ [data-slot="switch-control"] {
@@ -104,8 +104,8 @@
   }
 
   &[data-checked]:hover:not([data-disabled], [data-readonly]) [data-slot="switch-control"] {
-    border-color: var(--border-hover);
-    background-color: var(--surface-hover);
+    border-color: var(--icon-strong-hover);
+    background-color: var(--icon-strong-hover);
   }
 
   &[data-disabled] {
@@ -114,7 +114,7 @@
 
   &[data-disabled] [data-slot="switch-control"] {
     border-color: var(--border-disabled);
-    background-color: var(--surface-disabled);
+    background-color: var(--input-disabled);
   }
 
   &[data-disabled] [data-slot="switch-thumb"] {
@@ -122,11 +122,20 @@
   }
 
   &[data-invalid] [data-slot="switch-control"] {
-    border-color: var(--border-error);
+    border-color: var(--border-critical-base);
   }
 
   &[data-readonly] {
     cursor: default;
     pointer-events: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-component="switch"] {
+    [data-slot="switch-control"],
+    [data-slot="switch-thumb"] {
+      transition: none;
+    }
   }
 }

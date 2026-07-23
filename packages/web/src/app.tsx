@@ -41,7 +41,18 @@ import { ErrorPage } from "./pages/error";
 
 const Home = lazy(() => import("@/pages/home"));
 const Session = lazy(() => import("@/pages/session"));
-const Loading = () => <div class="size-full" />;
+const Loading = () => (
+  <div
+    data-component="route-loading"
+    role="status"
+    aria-live="polite"
+    class="size-full"
+  >
+    <span class="sr-only">Loading</span>
+    <div data-slot="route-loading-rail" />
+    <div data-slot="route-loading-body" />
+  </div>
+);
 
 const HomeRoute = () => (
   <Suspense fallback={<Loading />}>

@@ -7,6 +7,15 @@
   user-select: none;
   aspect-ratio: 1;
   flex-shrink: 0;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 120ms ease;
+
+  &:active:not(:disabled) {
+    transform: translateY(1px) scale(0.96);
+  }
 
   &[data-variant="primary"] {
     background-color: var(--icon-strong-base);
@@ -139,7 +148,7 @@
     letter-spacing: var(--letter-spacing-normal);
   }
 
-  &:focus {
+  &:focus:not(:focus-visible) {
     outline: none;
   }
 }

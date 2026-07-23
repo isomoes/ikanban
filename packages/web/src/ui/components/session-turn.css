@@ -35,6 +35,10 @@
     width: 100%;
     min-width: 0;
     max-width: 100%;
+
+    [data-component="markdown"] {
+      max-width: min(100%, 720px);
+    }
   }
 
   [data-slot="session-turn-compaction"] {
@@ -85,6 +89,10 @@
     flex-direction: column;
     align-self: stretch;
     gap: 12px;
+
+    [data-component="markdown"] {
+      max-width: min(100%, 720px);
+    }
 
     > :first-child > [data-component="markdown"]:first-child {
       margin-top: 0;

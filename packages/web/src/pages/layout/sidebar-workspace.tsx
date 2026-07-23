@@ -160,8 +160,8 @@ const WorkspaceActions = (props: {
   <div
     class="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 transition-opacity"
     classList={{
-      "opacity-100 pointer-events-auto": props.menuOpen(),
-      "opacity-0 pointer-events-none": !props.menuOpen(),
+      "opacity-100 pointer-events-auto": props.menuOpen() || props.mobile || props.touch(),
+      "opacity-0 pointer-events-none": !props.menuOpen() && !props.mobile && !props.touch(),
       "group-hover/workspace:opacity-100 group-hover/workspace:pointer-events-auto": true,
       "group-focus-within/workspace:opacity-100 group-focus-within/workspace:pointer-events-auto": true,
     }}
@@ -249,7 +249,7 @@ const WorkspaceSessionList = (props: {
   loadMore: () => Promise<void>
   language: ReturnType<typeof useLanguage>
 }): JSX.Element => (
-  <nav class="flex flex-col gap-1 px-2">
+  <nav data-component="sidebar-session-list" class="flex flex-col px-2">
     <Show when={props.showNew()}>
       <NewSessionItem
         slug={props.slug()}
@@ -374,8 +374,10 @@ export const SortableWorkspace = (props: {
                 fallback={
                   <Collapsible.Trigger
                     class={`flex items-center justify-between w-full pl-2 py-1.5 rounded-md hover:bg-surface-raised-base-hover transition-[padding] duration-200 ${
-                      menu.open ? "pr-16" : "pr-2"
+                      menu.open || props.mobile || touch() ? "pr-16" : "pr-2"
                     } group-hover/workspace:pr-16 group-focus-within/workspace:pr-16`}
+                    data-current={active() ? true : undefined}
+                    aria-current={active() ? "page" : undefined}
                     data-action="workspace-toggle"
                     data-workspace={base64Encode(props.directory)}
                   >
@@ -398,7 +400,7 @@ export const SortableWorkspace = (props: {
               >
                 <div
                   class={`flex items-center justify-between w-full pl-2 py-1.5 rounded-md transition-[padding] duration-200 ${
-                    menu.open ? "pr-16" : "pr-2"
+                    menu.open || props.mobile || touch() ? "pr-16" : "pr-2"
                   } group-hover/workspace:pr-16 group-focus-within/workspace:pr-16`}
                 >
                   <WorkspaceHeader
@@ -490,7 +492,7 @@ export const LocalWorkspace = (props: {
       ref={(el) => props.ctx.setScrollContainerRef(el, props.mobile)}
       class="size-full flex flex-col py-2 overflow-y-auto no-scrollbar [overflow-anchor:none]"
     >
-      <nav class="flex flex-col gap-1 px-2">
+      <nav data-component="sidebar-session-list" class="flex flex-col px-2">
         <Show when={loading()}>
           <SessionSkeleton />
         </Show>

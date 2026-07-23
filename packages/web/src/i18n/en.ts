@@ -323,8 +323,6 @@ export const dict = {
 
   "dialog.directory.search.placeholder": "Search folders",
   "dialog.directory.empty": "No folders found",
-  "dialog.directory.selected": "{{count}} selected",
-  "dialog.directory.openSelected": "Open selected",
 
   "dialog.server.title": "Servers",
   "dialog.server.description":

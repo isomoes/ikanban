@@ -366,8 +366,14 @@ export const SettingsKeybinds: Component = () => {
   })
 
   return (
-    <div class="flex flex-col h-full overflow-y-auto no-scrollbar px-4 pb-10 sm:px-10 sm:pb-10">
-      <div class="sticky top-0 z-10 bg-[linear-gradient(to_bottom,var(--surface-stronger-non-alpha)_calc(100%_-_24px),transparent)]">
+    <div
+      class="flex flex-col h-full overflow-y-auto no-scrollbar px-4 pb-10 sm:px-10 sm:pb-10"
+      data-component="settings-page"
+    >
+      <div
+        class="sticky top-0 z-10 bg-[linear-gradient(to_bottom,var(--surface-stronger-non-alpha)_calc(100%_-_24px),transparent)]"
+        data-component="settings-header"
+      >
         <div class="flex flex-col gap-4 pt-6 pb-6 max-w-[720px]">
           <div class="flex items-center justify-between gap-4">
             <h2 class="text-16-medium text-text-strong">{language.t("settings.shortcuts.title")}</h2>
@@ -401,12 +407,15 @@ export const SettingsKeybinds: Component = () => {
         <For each={GROUPS}>
           {(group) => (
             <Show when={(filtered().get(group) ?? []).length > 0}>
-              <div class="flex flex-col gap-1">
+              <div class="flex flex-col gap-1" data-component="settings-section">
                 <h3 class="text-14-medium text-text-strong pb-2">{language.t(groupKey[group])}</h3>
                 <div class="bg-surface-raised-base px-4 rounded-lg">
                   <For each={filtered().get(group) ?? []}>
                     {(id) => (
-                      <div class="flex items-center justify-between gap-4 py-3 border-b border-border-weak-base last:border-none">
+                      <div
+                        class="flex items-center justify-between gap-4 py-3 border-b border-border-weak-base last:border-none"
+                        data-component="settings-row"
+                      >
                         <span class="text-14-regular text-text-strong">{title(id)}</span>
                         <button
                           type="button"

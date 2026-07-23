@@ -11,7 +11,7 @@ import { ConstrainDragXAxis } from "@/utils/solid-dnd"
 import { IconButton } from "@/ui/components/icon-button"
 import { Tooltip, TooltipKeybind } from "@/ui/components/tooltip"
 import { type LocalProject } from "@/context/layout"
-import { sidebarExpanded } from "./sidebar-shell-helpers"
+import "./sidebar-cockpit.css"
 
 export const SidebarContent = (props: {
   mobile?: boolean
@@ -33,13 +33,13 @@ export const SidebarContent = (props: {
   onOpenHelp: () => void
   renderPanel: () => JSX.Element
 }): JSX.Element => {
-  const expanded = createMemo(() => sidebarExpanded(props.mobile, props.opened()))
+  const expanded = createMemo(() => !!props.mobile || props.opened())
   const placement = () => (props.mobile ? "bottom" : "right")
 
   return (
-    <div class="flex h-full w-full overflow-hidden">
+    <div class="sidebar-cockpit flex h-full w-full overflow-hidden">
       <div
-        class="w-16 shrink-0 bg-background-base flex flex-col items-center overflow-hidden"
+        class="sidebar-project-rail w-16 shrink-0 bg-background-base flex flex-col items-center overflow-hidden"
         onMouseMove={props.aimMove}
       >
         <div class="flex-1 min-h-0 w-full">
@@ -51,7 +51,10 @@ export const SidebarContent = (props: {
           >
             <DragDropSensors />
             <ConstrainDragXAxis />
-            <div class="h-full w-full flex flex-col items-center gap-3 px-3 py-3 overflow-y-auto no-scrollbar">
+            <div
+              data-component="sidebar-project-list"
+              class="h-full w-full flex flex-col items-center px-3 py-3 overflow-y-auto no-scrollbar"
+            >
               <SortableProvider ids={props.projects().map((p) => p.worktree)}>
                 <For each={props.projects()}>{(project) => props.renderProject(project)}</For>
               </SortableProvider>

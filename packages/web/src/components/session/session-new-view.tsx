@@ -4,6 +4,7 @@ import { useSync } from "@/context/sync"
 import { useSDK } from "@/context/sdk"
 import { useLanguage } from "@/context/language"
 import { Icon } from "@/ui/components/icon"
+import { Select } from "@/ui/components/select"
 import { getDirectory, getFilename } from "@/utils/path"
 
 const MAIN_WORKTREE = "main"
@@ -60,7 +61,16 @@ export function NewSessionView(props: NewSessionViewProps) {
       </div>
       <div class="flex justify-center items-center gap-1">
         <Icon name="branch" size="small" />
-        <div class="text-12-medium text-text-weak select-text ml-2">{label(current())}</div>
+        <Select
+          data-slot="session-worktree-select"
+          class="session-cockpit__worktree-select"
+          options={options()}
+          current={current()}
+          label={label}
+          onSelect={(value) => value && props.onWorktreeChange(value)}
+          variant="ghost"
+          size="small"
+        />
       </div>
       <Show when={sync.project}>
         {(project) => (
