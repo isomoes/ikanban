@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.9]
+
+- Web: Added an expandable prompt composer with localized controls, responsive styling, and accessibility coverage for a more flexible writing area. (@isomoes)
+
 ## [0.3.8]
 
 - Web: Refined session interactions and spacing, including improved mobile viewport handling and cleaner home and session layouts. (@isomoes)
