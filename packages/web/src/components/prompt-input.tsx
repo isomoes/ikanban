@@ -247,6 +247,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
     draggingType: "image" | "@mention" | null
     applyingHistory: boolean
     pendingAutoAccept: boolean
+    expanded: boolean
   }>({
     popover: null,
     historyIndex: -1,
@@ -255,6 +256,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
     draggingType: null,
     applyingHistory: false,
     pendingAutoAccept: false,
+    expanded: false,
   })
 
   const commentCount = createMemo(() => prompt.context.items().filter((item) => !!item.comment?.trim()).length)
@@ -958,20 +960,25 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
       }
     }
 
-    if (event.key === "Escape") {
-      if (store.popover) {
-        closePopover()
-        event.preventDefault()
-        event.stopPropagation()
-        return
-      }
+    if (event.key === "Escape" && store.popover) {
+      closePopover()
+      event.preventDefault()
+      event.stopPropagation()
+      return
+    }
 
-      if (escBlur()) {
-        editorRef.blur()
-        event.preventDefault()
-        event.stopPropagation()
-        return
-      }
+    if (event.key === "Escape" && store.expanded) {
+      setStore("expanded", false)
+      event.preventDefault()
+      event.stopPropagation()
+      return
+    }
+
+    if (event.key === "Escape" && escBlur()) {
+      editorRef.blur()
+      event.preventDefault()
+      event.stopPropagation()
+      return
     }
 
     // Handle Shift+Enter BEFORE IME check - Shift+Enter is never used for IME input
@@ -1048,7 +1055,11 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
   }
 
   return (
-    <div data-component="prompt-composer" class="relative size-full flex max-h-[min(70dvh,32rem)] flex-col gap-0">
+    <div
+      data-component="prompt-composer"
+      data-expanded={store.expanded}
+      class="relative size-full flex max-h-[min(70dvh,32rem)] flex-col gap-0"
+    >
       <PromptPopover
         popover={store.popover}
         setSlashPopoverRef={(el) => (slashPopoverRef = el)}
@@ -1068,6 +1079,8 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
         onSubmit={handleSubmit}
         classList={{
           "group/prompt-input": true,
+          "flex flex-col": true,
+          "flex-1": store.expanded,
           "focus-within:shadow-xs-border": true,
           "border-icon-info-active border-dashed": store.draggingType !== null,
           [props.class ?? ""]: !!props.class,
@@ -1077,35 +1090,45 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
           type={store.draggingType}
           label={language.t(store.draggingType === "@mention" ? "prompt.dropzone.file.label" : "prompt.dropzone.label")}
         />
-        <PromptContextItems
-          items={contextItems()}
-          active={(item) => {
-            const active = comments.active()
-            return !!item.commentID && item.commentID === active?.id && item.path === active?.file
-          }}
-          openComment={openComment}
-          remove={(item) => {
-            if (item.commentID) comments.remove(item.path, item.commentID)
-            prompt.context.remove(item.key)
-          }}
-          t={(key) => language.t(key as Parameters<typeof language.t>[0])}
-        />
-        <PromptImageAttachments
-          attachments={imageAttachments()}
-          onOpen={(attachment) =>
-            dialog.show(() => <ImagePreview src={attachment.dataUrl} alt={attachment.filename} />)
-          }
-          onRemove={removeImageAttachment}
-          removeLabel={language.t("prompt.attachment.remove")}
-        />
+        <Show when={contextItems().length > 0 || imageAttachments().length > 0}>
+          <div
+            data-component="prompt-supporting-context"
+            role="region"
+            aria-label={language.t("prompt.context.region")}
+            tabindex="0"
+          >
+            <PromptContextItems
+              items={contextItems()}
+              active={(item) => {
+                const active = comments.active()
+                return !!item.commentID && item.commentID === active?.id && item.path === active?.file
+              }}
+              openComment={openComment}
+              remove={(item) => {
+                if (item.commentID) comments.remove(item.path, item.commentID)
+                prompt.context.remove(item.key)
+              }}
+              t={(key) => language.t(key as Parameters<typeof language.t>[0])}
+            />
+            <PromptImageAttachments
+              attachments={imageAttachments()}
+              onOpen={(attachment) =>
+                dialog.show(() => <ImagePreview src={attachment.dataUrl} alt={attachment.filename} />)
+              }
+              onRemove={removeImageAttachment}
+              removeLabel={language.t("prompt.attachment.remove")}
+            />
+          </div>
+        </Show>
         <div
+          data-component="prompt-editor-shell"
           class="relative"
           onMouseDown={(e) => {
             const target = e.target
             if (!(target instanceof HTMLElement)) return
             if (
               target.closest(
-                '[data-action="prompt-attach"], [data-action="prompt-submit"], [data-action="prompt-permissions"]',
+                '[data-action="prompt-attach"], [data-action="prompt-expand"], [data-action="prompt-submit"], [data-action="prompt-permissions"]',
               )
             ) {
               return
@@ -1113,7 +1136,11 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
             editorRef?.focus()
           }}
         >
-          <div class="relative max-h-[240px] overflow-y-auto no-scrollbar" ref={(el) => (scrollRef = el)}>
+          <div
+            data-component="prompt-scroll"
+            class="relative max-h-[240px] overflow-y-auto no-scrollbar"
+            ref={(el) => (scrollRef = el)}
+          >
             <div
               data-component="prompt-input"
               ref={(el) => {
@@ -1190,6 +1217,29 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
                   <Icon name="plus" class="size-4.5" />
                 </Button>
               </TooltipKeybind>
+
+              <Tooltip
+                placement="top"
+                value={language.t(store.expanded ? "prompt.action.collapse" : "prompt.action.expand")}
+              >
+                <Button
+                  data-action="prompt-expand"
+                  type="button"
+                  variant="ghost"
+                  class="size-8 p-0"
+                  onClick={() => {
+                    setStore("expanded", (value) => !value)
+                    requestAnimationFrame(() => {
+                      editorRef.focus()
+                      queueScroll()
+                    })
+                  }}
+                  aria-label={language.t(store.expanded ? "prompt.action.collapse" : "prompt.action.expand")}
+                  aria-expanded={store.expanded}
+                >
+                  <Icon name={store.expanded ? "collapse" : "expand"} class="size-4.5" />
+                </Button>
+              </Tooltip>
 
               <Tooltip
                 placement="top"

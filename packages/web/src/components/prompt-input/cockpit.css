@@ -1,5 +1,41 @@
-[data-component="prompt-composer"] [data-component="dock-shell-form"] {
+[data-component="prompt-composer"] [data-dock-surface="shell"] {
   min-height: 0;
+}
+
+[data-component="prompt-composer"] [data-dock-surface="tray"] {
+  flex-shrink: 0;
+}
+
+[data-component="prompt-composer"] [data-component="prompt-supporting-context"] {
+  flex-shrink: 1;
+  min-height: 0;
+  max-height: min(24dvh, 10rem);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+[data-component="prompt-composer"] [data-component="prompt-supporting-context"]:focus-visible {
+  outline: 2px solid var(--border-interactive-focus);
+  outline-offset: -2px;
+}
+
+[data-component="prompt-composer"][data-expanded="true"] {
+  height: min(76dvh, 48rem);
+  max-height: calc(100dvh - 2rem);
+}
+
+[data-component="prompt-composer"][data-expanded="true"] [data-component="prompt-editor-shell"] {
+  flex: 1;
+  min-height: 0;
+}
+
+[data-component="prompt-composer"][data-expanded="true"] [data-component="prompt-scroll"] {
+  height: 100%;
+  max-height: none;
+}
+
+[data-component="prompt-composer"][data-expanded="true"] [data-component="prompt-input"] {
+  min-height: 100%;
 }
 
 [data-component="prompt-composer"] [data-action="prompt-context-open"]:focus-visible,
@@ -17,13 +53,22 @@
     max-height: min(62dvh, 26rem);
   }
 
-  [data-component="prompt-composer"] [data-component="dock-tray"] > div {
+  [data-component="prompt-composer"][data-expanded="true"] {
+    height: min(72dvh, 40rem);
+    max-height: calc(100dvh - 1rem);
+  }
+
+  [data-component="prompt-composer"] [data-component="prompt-supporting-context"] {
+    max-height: min(20dvh, 8rem);
+  }
+
+  [data-component="prompt-composer"] [data-dock-surface="tray"] > div {
     overflow-x: auto;
     padding-top: 1.125rem;
     scrollbar-width: thin;
   }
 
-  [data-component="prompt-composer"] [data-component="dock-tray"] > div > div {
+  [data-component="prompt-composer"] [data-dock-surface="tray"] > div > div {
     min-width: max-content;
   }
 
