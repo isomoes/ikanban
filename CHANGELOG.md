@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.10]
+
+- Web: Showed historical session changes in the sidebar so completed work remains visible when reviewing past sessions. (@isomoes)
+- Web: Added distinct badges for tool calls so different tool types are easier to identify at a glance. (@isomoes)
+
 ## [0.3.9]
 
 - Web: Added an expandable prompt composer with localized controls, responsive styling, and accessibility coverage for a more flexible writing area. (@isomoes)
