@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.12]
+
+- Web: Refined chat history spacing across conversation turns, thinking rows, context tools, and assistant text for clearer visual separation. (@isomoes)
+
 ## [0.3.11]
 
 - Web: Compacted tool-call history and timing details for a denser, easier-to-scan conversation view. (@isomoes)
