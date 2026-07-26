@@ -58,6 +58,7 @@ import {
   getToolDurationMs,
   resolveToolDurationLabel,
 } from "./session-turn-duration"
+import { applyPatchFileDiff, type ApplyPatchFile } from "@/context/file/apply-patch"
 
 function ShellSubmessage(props: { text: string; animate?: boolean }) {
   let widthRef: HTMLSpanElement | undefined
@@ -1790,24 +1791,14 @@ ToolRegistry.register({
   },
 })
 
-interface ApplyPatchFile {
-  filePath: string
-  relativePath: string
-  type: "add" | "update" | "delete" | "move"
-  diff: string
-  before: string
-  after: string
-  additions: number
-  deletions: number
-  movePath?: string
-}
-
 ToolRegistry.register({
   name: "apply_patch",
   render(props) {
     const i18n = useI18n()
     const fileComponent = useFileComponent()
-    const files = createMemo(() => (props.metadata.files ?? []) as ApplyPatchFile[])
+    const files = createMemo(() =>
+      ((props.metadata.files ?? []) as ApplyPatchFile[]).map((file) => ({ ...file, ...applyPatchFileDiff(file) })),
+    )
     const pending = createMemo(() => props.status === "pending" || props.status === "running")
     const single = createMemo(() => {
       const list = files()
