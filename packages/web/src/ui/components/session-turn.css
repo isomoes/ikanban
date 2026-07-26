@@ -26,7 +26,7 @@
     align-items: flex-start;
     align-self: stretch;
     min-width: 0;
-    gap: 14px;
+    gap: 0;
     overflow-anchor: none;
   }
 
@@ -50,7 +50,7 @@
   [data-slot="session-turn-thinking"] {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 0;
     width: 100%;
     min-width: 0;
     color: var(--text-weak);
@@ -88,7 +88,7 @@
     display: flex;
     flex-direction: column;
     align-self: stretch;
-    gap: 8px;
+    gap: 0;
 
     [data-component="markdown"] {
       max-width: min(100%, 720px);

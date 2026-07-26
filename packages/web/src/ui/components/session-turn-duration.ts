@@ -53,8 +53,14 @@ export function getToolDurationMs(state: ToolTimeState | undefined) {
 
 export function formatToolDurationLabel(ms: number | undefined) {
   if (!(typeof ms === "number" && ms >= 0)) return ""
+  if (ms < 50) return ""
   if (ms < 10_000) return `${(ms / 1000).toFixed(1)}s`
   return formatTurnDurationLabel(ms)
+}
+
+export function resolveToolDurationLabel(ms: number | undefined, turnDurationLabel?: string) {
+  if (typeof ms === "number") return formatToolDurationLabel(ms)
+  return turnDurationLabel ?? ""
 }
 
 export function buildInlineDurationDetail(detail: string, durationLabel?: string) {

@@ -8,6 +8,7 @@ import { useGlobalSync } from "./global-sync"
 import { useSDK } from "./sdk"
 import type { FileContent, Message, Part, VcsFileStatus } from "@opencode-ai/sdk/v2/client"
 import { snapshotToFileDiff, type FileDiff } from "@/context/file/types"
+import { loadSessionDiff } from "@/context/session-diff"
 
 type ProjectDiffEntry = FileDiff & {
   lazy?: boolean
@@ -427,9 +428,15 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
 
           const key = keyFor(directory, sessionID)
           return runInflight(inflightDiff, key, () =>
-            retry(() => client.session.diff({ sessionID })).then((diff) => {
-              const converted = (diff.data ?? []).map(snapshotToFileDiff)
-              setStore("session_diff", sessionID, reconcile(converted, { key: "file" }))
+            loadSessionDiff({
+              messages: () =>
+                retry(() => client.session.messages({ sessionID })).then((result) =>
+                  (result.data ?? []).map((item) => item.info),
+                ),
+              diff: (messageID) =>
+                retry(() => client.session.diff({ sessionID, messageID })).then((result) => result.data ?? []),
+            }).then((diff) => {
+              setStore("session_diff", sessionID, reconcile(diff, { key: "file" }))
             }),
           )
         },

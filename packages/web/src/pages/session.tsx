@@ -29,6 +29,7 @@ import { useLanguage } from "@/context/language"
 import { useNavigate, useParams } from "@solidjs/router"
 import { UserMessage } from "@opencode-ai/sdk/v2"
 import { snapshotToFileDiff, type FileDiff } from "@/context/file/types"
+import { applyPatchFileDiff, type ApplyPatchFile } from "@/context/file/apply-patch"
 import { useSDK } from "@/context/sdk"
 import { usePrompt } from "@/context/prompt"
 import { useComments } from "@/context/comments"
@@ -392,7 +393,7 @@ export default function Page() {
         const tool = part as {
           type?: string
           tool?: string
-          metadata?: { filediff?: FileDiff }
+          metadata?: { filediff?: FileDiff; files?: ApplyPatchFile[] }
           state?: {
             input?: {
               filePath?: string
@@ -401,7 +402,15 @@ export default function Page() {
             }
           }
         }
-        if (tool.type !== "tool" || tool.tool !== "edit") continue
+        if (tool.type !== "tool") continue
+        if (tool.tool === "apply_patch") {
+          for (const file of tool.metadata?.files ?? []) {
+            const diff = applyPatchFileDiff(file)
+            out.set(diff.file, diff)
+          }
+          continue
+        }
+        if (tool.tool !== "edit") continue
         const input = tool.state?.input
         const meta = tool.metadata?.filediff
         const file = meta?.file || input?.filePath

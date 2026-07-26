@@ -56,6 +56,7 @@ import {
   buildInlineDurationDetail,
   formatToolDurationLabel,
   getToolDurationMs,
+  resolveToolDurationLabel,
 } from "./session-turn-duration"
 
 function ShellSubmessage(props: { text: string; animate?: boolean }) {
@@ -725,7 +726,7 @@ function ContextToolGroup(props: { parts: ToolPart[]; busy?: boolean; durationLa
       if (typeof ms !== "number") return sum
       return (sum ?? 0) + ms
     }, undefined)
-    return formatToolDurationLabel(total) || props.durationLabel
+    return resolveToolDurationLabel(total, props.durationLabel)
   })
   const durationPrefix = createMemo(() => (pending() ? "" : buildDurationPrefix(groupDurationLabel())))
 
@@ -733,10 +734,10 @@ function ContextToolGroup(props: { parts: ToolPart[]; busy?: boolean; durationLa
     <Collapsible open={open()} onOpenChange={setOpen} variant="ghost">
       <Collapsible.Trigger>
         <div data-component="context-tool-group-trigger" class="flex items-center gap-1.5 min-w-0">
-          <ToolBadge icon="glasses" badge="CONTEXT" />
+          <ToolBadge icon="glasses" badge="CTX" />
           <span
             data-slot="context-tool-group-title"
-            class="min-w-0 flex items-center gap-2 text-14-medium text-text-strong"
+            class="min-w-0 flex items-center text-14-medium text-text-strong"
           >
             <span data-slot="context-tool-group-label" class="shrink-0">
               <ToolStatusTitle
@@ -1148,8 +1149,7 @@ PART_MAPPING["tool"] = function ToolPartDisplay(props) {
   const render = createMemo(() => ToolRegistry.render(part().tool) ?? GenericTool)
 
   const toolDurationLabel = createMemo(() => {
-    const label = formatToolDurationLabel(getToolDurationMs(part().state))
-    return label || props.turnDurationLabel
+    return resolveToolDurationLabel(getToolDurationMs(part().state), props.turnDurationLabel)
   })
 
   return (
