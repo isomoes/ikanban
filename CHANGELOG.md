@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.11]
+
+- Web: Compacted tool-call history and timing details for a denser, easier-to-scan conversation view. (@isomoes)
+- Web: Reconstructed session and apply-patch file diffs so historical changes render reliably in review views and tool output. (@isomoes)
+
 ## [0.3.10]
 
 - Web: Showed historical session changes in the sidebar so completed work remains visible when reviewing past sessions. (@isomoes)
