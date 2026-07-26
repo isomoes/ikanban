@@ -310,7 +310,7 @@
   align-items: start;
   gap: 8px;
 
-  [data-slot="icon-svg"] {
+  > [data-component="icon"] [data-slot="icon-svg"] {
     color: var(--icon-critical-base);
     margin-top: 4px;
   }

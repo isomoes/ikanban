@@ -32,8 +32,7 @@ import { useData } from "../context"
 import { useFileComponent } from "../context/file"
 import { useDialog } from "../context/dialog"
 import { useI18n } from "../context/i18n"
-import { BasicTool } from "./basic-tool"
-import { GenericTool } from "./basic-tool"
+import { BasicTool, GenericTool, ToolBadge } from "./basic-tool"
 import { Accordion } from "./accordion"
 import { StickyAccordionHeader } from "./sticky-accordion-header"
 import { Card } from "./card"
@@ -734,6 +733,7 @@ function ContextToolGroup(props: { parts: ToolPart[]; busy?: boolean; durationLa
     <Collapsible open={open()} onOpenChange={setOpen} variant="ghost">
       <Collapsible.Trigger>
         <div data-component="context-tool-group-trigger" class="flex items-center gap-1.5 min-w-0">
+          <ToolBadge icon="glasses" badge="CONTEXT" />
           <span
             data-slot="context-tool-group-title"
             class="min-w-0 flex items-center gap-2 text-14-medium text-text-strong"
@@ -795,7 +795,11 @@ function ContextToolGroup(props: { parts: ToolPart[]; busy?: boolean; durationLa
               return (
                 <div data-slot="context-tool-group-item">
                   <div data-component="tool-trigger">
-                    <div data-slot="basic-tool-tool-trigger-content">
+                    <div data-slot="basic-tool-tool-trigger-content" data-hide-title="true">
+                      <ToolBadge
+                        icon={getToolInfo(partAccessor().tool, partAccessor().state.input ?? {}).icon}
+                        tool={partAccessor().tool}
+                      />
                       <div data-slot="basic-tool-tool-info">
                         <div data-slot="basic-tool-tool-info-structured">
                           <div data-slot="basic-tool-tool-info-main">
@@ -1168,6 +1172,7 @@ PART_MAPPING["tool"] = function ToolPartDisplay(props) {
               return (
                 <Card variant="error">
                   <div data-component="tool-error">
+                    <ToolBadge icon={getToolInfo(part().tool, input()).icon} tool={part().tool} />
                     <Icon name="circle-ban-sign" size="small" />
                     <Switch>
                       <Match when={title && title.length < 30}>
@@ -1583,7 +1588,7 @@ ToolRegistry.register({
       </div>
     )
 
-    return <BasicTool icon="task" status={props.status} trigger={trigger()} hideDetails />
+    return <BasicTool icon="task" tool="task" status={props.status} trigger={trigger()} hideDetails />
   },
 })
 
@@ -2119,6 +2124,6 @@ ToolRegistry.register({
       </div>
     )
 
-    return <BasicTool icon="brain" status={props.status} trigger={trigger()} hideDetails />
+    return <BasicTool icon="brain" tool="skill" status={props.status} trigger={trigger()} hideDetails />
   },
 })

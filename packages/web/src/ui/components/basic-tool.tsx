@@ -1,7 +1,7 @@
 import { createEffect, createSignal, For, Match, on, onCleanup, Show, Switch, type JSX } from "solid-js"
 import { animate, type AnimationPlaybackControls } from "motion"
 import { Collapsible } from "./collapsible"
-import type { IconProps } from "./icon"
+import { Icon, type IconProps } from "./icon"
 import { TextShimmer } from "./text-shimmer"
 import { buildInlineDurationDetail } from "./session-turn-duration"
 
@@ -23,6 +23,8 @@ const isTriggerTitle = (val: any): val is TriggerTitle => {
 
 export interface BasicToolProps {
   icon: IconProps["name"]
+  tool?: string
+  badge?: string
   trigger: TriggerTitle | JSX.Element
   children?: JSX.Element
   status?: string
@@ -38,10 +40,47 @@ export interface BasicToolProps {
 
 const SPRING = { type: "spring" as const, visualDuration: 0.35, bounce: 0 }
 
+const TOOL_BADGES: Record<string, string> = {
+  read: "READ",
+  list: "LIST",
+  glob: "GLOB",
+  grep: "GREP",
+  webfetch: "FETCH",
+  websearch: "WEB",
+  codesearch: "CODE",
+  task: "AGENT",
+  bash: "SHELL",
+  edit: "EDIT",
+  write: "WRITE",
+  apply_patch: "PATCH",
+  todowrite: "TODO",
+  question: "ASK",
+  skill: "SKILL",
+}
+
+export function toolBadge(tool?: string) {
+  if (!tool) return "TOOL"
+  return TOOL_BADGES[tool] ?? "MCP"
+}
+
+export function ToolBadge(props: { icon: IconProps["name"]; tool?: string; badge?: string }) {
+  const badge = () => props.badge ?? toolBadge(props.tool)
+  return (
+    <span data-slot="basic-tool-tool-badge" data-type={badge().toLowerCase()}>
+      <Icon name={props.icon} size="small" />
+      <span>{badge()}</span>
+    </span>
+  )
+}
+
 export function BasicTool(props: BasicToolProps) {
   const [open, setOpen] = createSignal(props.defaultOpen ?? false)
   const [ready, setReady] = createSignal(open())
   const pending = () => props.status === "pending" || props.status === "running"
+  const compactTitle = () => {
+    const badge = props.badge ?? toolBadge(props.tool)
+    return badge !== "MCP" && badge !== "SKILL" && badge !== "AGENT"
+  }
   const inlineSubtitle = () => {
     if (!isTriggerTitle(props.trigger)) return ""
     return buildInlineDurationDetail(props.trigger.subtitle ?? "", pending() ? undefined : props.turnDurationLabel)
@@ -125,7 +164,11 @@ export function BasicTool(props: BasicToolProps) {
     <Collapsible open={open()} onOpenChange={handleOpenChange} class="tool-collapsible">
       <Collapsible.Trigger>
         <div data-component="tool-trigger">
-          <div data-slot="basic-tool-tool-trigger-content">
+          <div
+            data-slot="basic-tool-tool-trigger-content"
+            data-hide-title={compactTitle() ? "true" : undefined}
+          >
+            <ToolBadge icon={props.icon} tool={props.tool} badge={props.badge} />
             <div data-slot="basic-tool-tool-info">
               <Switch>
                 <Match when={isTriggerTitle(props.trigger) && props.trigger}>
@@ -210,5 +253,14 @@ export function BasicTool(props: BasicToolProps) {
 }
 
 export function GenericTool(props: { tool: string; status?: string; hideDetails?: boolean }) {
-  return <BasicTool icon="mcp" status={props.status} trigger={{ title: props.tool }} hideDetails={props.hideDetails} />
+  return (
+    <BasicTool
+      icon="mcp"
+      tool={props.tool}
+      badge="MCP"
+      status={props.status}
+      trigger={{ title: props.tool, titleClass: "external-tool-title" }}
+      hideDetails={props.hideDetails}
+    />
+  )
 }
