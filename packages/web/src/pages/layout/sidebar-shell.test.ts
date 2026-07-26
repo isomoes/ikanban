@@ -39,6 +39,10 @@ describe("sidebar navigation surfaces", () => {
     expect(itemsSource).toContain('aria-current={props.active() ? "page" : undefined}')
   })
 
+  test("derives session-row changes from loaded message history", () => {
+    expect(itemsSource).toContain("sessionHistoryChanges(props.session.summary, sessionStore.message[props.session.id])")
+  })
+
   test("keeps workspace overflow controls reachable on mobile and touch devices", () => {
     expect(workspaceSource).toContain("props.mobile || props.touch()")
   })

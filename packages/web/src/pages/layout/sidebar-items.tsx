@@ -19,6 +19,7 @@ import { For, Match, Show, Switch, createMemo, onCleanup, type Accessor, type JS
 import { agentColor } from "@/utils/agent"
 import { hasProjectPermissions } from "./helpers"
 import { sessionPermissionRequest } from "../session/composer/session-request-tree"
+import { sessionHistoryChanges } from "./sidebar-session-changes"
 
 const OPENCODE_PROJECT_ID = "4b0ea68d7af9a6031a7ffda7ad66e0cb83315750"
 
@@ -93,6 +94,7 @@ const SessionRow = (props: {
   hasPermissions: Accessor<boolean>
   hasError: Accessor<boolean>
   unseenCount: Accessor<number>
+  changes: Accessor<{ additions: number; deletions: number } | undefined>
   active: Accessor<boolean>
   setHoverSession: (id: string | undefined) => void
   clearHoverProjectSoon: () => void
@@ -140,7 +142,7 @@ const SessionRow = (props: {
       <span class="text-14-regular text-text-strong grow-1 min-w-0 overflow-hidden text-ellipsis truncate">
         {props.session.title}
       </span>
-      <Show when={props.session.summary}>
+      <Show when={props.changes()}>
         {(summary) => (
           <div class="group-hover/session:hidden group-active/session:hidden group-focus-within/session:hidden">
             <DiffChanges changes={summary()} />
@@ -237,6 +239,9 @@ export const SessionItem = (props: SessionItemProps): JSX.Element => {
   const hoverMessages = createMemo(() =>
     sessionStore.message[props.session.id]?.filter((message): message is UserMessage => message.role === "user"),
   )
+  const changes = createMemo(() =>
+    sessionHistoryChanges(props.session.summary, sessionStore.message[props.session.id]),
+  )
   const hoverReady = createMemo(() => sessionStore.message[props.session.id] !== undefined)
   const hoverAllowed = createMemo(() => !props.mobile && props.sidebarExpanded())
   const hoverEnabled = createMemo(() => (props.popover ?? true) && hoverAllowed())
@@ -274,6 +279,7 @@ export const SessionItem = (props: SessionItemProps): JSX.Element => {
       hasPermissions={hasPermissions}
       hasError={hasError}
       unseenCount={unseenCount}
+      changes={changes}
       active={isActive}
       setHoverSession={props.setHoverSession}
       clearHoverProjectSoon={props.clearHoverProjectSoon}
