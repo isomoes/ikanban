@@ -20,6 +20,7 @@ describe("tool type badges", () => {
   test("uses the same compact footprint for context and expanded tool rows", () => {
     expect(partSource).toContain('badge="CTX"')
     expect(partSource).toContain('class="flex items-center gap-1.5 min-w-0"')
+    expect(partSource).toContain('class="min-w-0 flex items-center gap-2 text-14-medium text-text-strong"')
     expect(partStyles).toMatch(/\[data-component="context-tool-group-list"\]\s*{[^}]*padding: 0;[^}]*gap: 0;/s)
     expect(partStyles).toMatch(/\[data-slot="context-tool-group-item"\]\s*{[^}]*padding: 0;/s)
   })

@@ -50,7 +50,7 @@
   [data-slot="session-turn-thinking"] {
     display: flex;
     align-items: center;
-    gap: 0;
+    gap: 8px;
     width: 100%;
     min-width: 0;
     color: var(--text-weak);
@@ -92,6 +92,10 @@
 
     [data-component="markdown"] {
       max-width: min(100%, 720px);
+    }
+
+    > [data-component="text-part"]:first-child {
+      margin-top: 0;
     }
 
     > :first-child > [data-component="markdown"]:first-child {

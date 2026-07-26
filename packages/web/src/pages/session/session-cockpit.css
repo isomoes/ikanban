@@ -83,7 +83,7 @@
 }
 
 .session-cockpit__turns {
-  gap: 0;
+  gap: 8px;
 }
 
 .session-cockpit__worktree-select {

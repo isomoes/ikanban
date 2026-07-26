@@ -738,7 +738,7 @@ function ContextToolGroup(props: { parts: ToolPart[]; busy?: boolean; durationLa
           <ToolBadge icon="glasses" badge="CTX" />
           <span
             data-slot="context-tool-group-title"
-            class="min-w-0 flex items-center text-14-medium text-text-strong"
+            class="min-w-0 flex items-center gap-2 text-14-medium text-text-strong"
           >
             <span data-slot="context-tool-group-label" class="shrink-0">
               <ToolStatusTitle

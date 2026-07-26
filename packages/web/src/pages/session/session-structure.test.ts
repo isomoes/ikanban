@@ -22,9 +22,13 @@ describe("session workspace structure", () => {
   })
 
   test("uses a compact conversation rhythm", () => {
-    expect(cockpitStyles).toMatch(/\.session-cockpit__turns\s*{\s*gap: 0;/)
+    expect(cockpitStyles).toMatch(/\.session-cockpit__turns\s*{\s*gap: 8px;/)
     expect(turnStyles).toMatch(/\[data-slot="session-turn-message-container"\][^{]*{[^}]*gap: 0;/s)
+    expect(turnStyles).toMatch(/\[data-slot="session-turn-thinking"\]\s*{[^}]*gap: 8px;/s)
     expect(turnStyles).toMatch(/\[data-slot="session-turn-assistant-content"\][^{]*{[^}]*gap: 0;/s)
+    expect(turnStyles).toMatch(
+      /> \[data-component="text-part"\]:first-child\s*{[^}]*margin-top: 0;/s,
+    )
     expect(messageStyles).toMatch(/\[data-component="assistant-message"\]\s*{[^}]*gap: 0;/s)
   })
 })
