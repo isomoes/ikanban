@@ -2,8 +2,10 @@ import { createEffect, createSignal, For, Match, on, onCleanup, Show, Switch, ty
 import { animate, type AnimationPlaybackControls } from "motion"
 import { Collapsible } from "./collapsible"
 import { Icon, type IconProps } from "./icon"
+import { Markdown } from "./markdown"
 import { TextShimmer } from "./text-shimmer"
 import { buildInlineDurationDetail } from "./session-turn-duration"
+import { useI18n } from "../context/i18n"
 
 export type TriggerTitle = {
   title: string
@@ -252,7 +254,29 @@ export function BasicTool(props: BasicToolProps) {
   )
 }
 
-export function GenericTool(props: { tool: string; status?: string; hideDetails?: boolean }) {
+export function formatToolResult(value: unknown) {
+  if (typeof value !== "string") return `\`\`\`json\n${JSON.stringify(value, null, 2)}\n\`\`\``
+
+  try {
+    return `\`\`\`json\n${JSON.stringify(JSON.parse(value), null, 2)}\n\`\`\``
+  } catch {
+    return value
+  }
+}
+
+export function GenericTool(props: {
+  tool: string
+  input?: Record<string, unknown>
+  output?: string
+  status?: string
+  hideDetails?: boolean
+  defaultOpen?: boolean
+  turnDurationLabel?: string
+}) {
+  const i18n = useI18n()
+  const hasInput = () => !!props.input && Object.keys(props.input).length > 0
+  const hasOutput = () => props.output !== undefined && props.output !== ""
+
   return (
     <BasicTool
       icon="mcp"
@@ -261,6 +285,50 @@ export function GenericTool(props: { tool: string; status?: string; hideDetails?
       status={props.status}
       trigger={{ title: props.tool, titleClass: "external-tool-title" }}
       hideDetails={props.hideDetails}
-    />
+      defaultOpen={props.defaultOpen}
+      turnDurationLabel={props.turnDurationLabel}
+    >
+      <div
+        data-component="generic-tool-console"
+        role="region"
+        aria-label={`${props.tool} ${i18n.t("ui.tool.mcpCall")}`}
+      >
+        <div data-slot="generic-tool-console-header">
+          <div data-slot="generic-tool-console-identity">
+            <span data-slot="generic-tool-console-prompt" aria-hidden="true">
+              &gt;_
+            </span>
+            <span>{i18n.t("ui.tool.mcpCall")}</span>
+          </div>
+          <Show when={props.status}>
+            <span data-slot="generic-tool-console-status" data-status={props.status}>
+              {props.status}
+            </span>
+          </Show>
+        </div>
+        <Show when={hasInput()}>
+          <section data-slot="generic-tool-console-request">
+            <div data-slot="generic-tool-console-label">
+              <span aria-hidden="true">›</span>
+              {i18n.t("ui.tool.input")}
+            </div>
+            <div data-component="tool-output" data-slot="generic-tool-console-content">
+              <Markdown text={formatToolResult(props.input)} />
+            </div>
+          </section>
+        </Show>
+        <Show when={hasOutput()}>
+          <section data-slot="generic-tool-console-response">
+            <div data-slot="generic-tool-console-label">
+              <span aria-hidden="true">›</span>
+              {i18n.t("ui.tool.output")}
+            </div>
+            <div data-component="tool-output" data-slot="generic-tool-console-content">
+              <Markdown text={formatToolResult(props.output)} />
+            </div>
+          </section>
+        </Show>
+      </div>
+    </BasicTool>
   )
 }

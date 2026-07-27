@@ -44,3 +44,32 @@ describe("tool type badges", () => {
     expect(toolSource).toContain('return badge !== "MCP" && badge !== "SKILL" && badge !== "AGENT"')
   })
 })
+
+describe("generic MCP tool results", () => {
+  test("formats structured results as JSON markdown", async () => {
+    const module = (await import("./basic-tool")) as Record<string, unknown>
+    const formatToolResult = module.formatToolResult as ((value: unknown) => string) | undefined
+
+    expect(typeof formatToolResult).toBe("function")
+    expect(formatToolResult?.({ query: "kanban" })).toBe('```json\n{\n  "query": "kanban"\n}\n```')
+    expect(formatToolResult?.('{"items":[1,2]}')).toBe('```json\n{\n  "items": [\n    1,\n    2\n  ]\n}\n```')
+  })
+
+  test("preserves plain text and markdown results", async () => {
+    const module = (await import("./basic-tool")) as Record<string, unknown>
+    const formatToolResult = module.formatToolResult as ((value: unknown) => string) | undefined
+
+    expect(formatToolResult?.("## Result\nSuccess")).toBe("## Result\nSuccess")
+  })
+
+  test("renders generic MCP input and output in a compact console", () => {
+    expect(toolSource).toContain("props.input")
+    expect(toolSource).toContain("props.output")
+    expect(toolSource).toContain("<Markdown")
+    expect(toolSource).toContain('data-component="generic-tool-console"')
+    expect(toolSource).toContain('data-slot="generic-tool-console-header"')
+    expect(toolSource).toContain('data-slot="generic-tool-console-request"')
+    expect(toolSource).toContain('data-slot="generic-tool-console-response"')
+    expect(toolStyles).toMatch(/\[data-component="generic-tool-console"\]\s*{[^}]*background: var\(--surface-inset-base\);/s)
+  })
+})
