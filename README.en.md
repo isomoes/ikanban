@@ -14,6 +14,18 @@ iKanban is a multi-agent coding workspace powered by [OpenCode](https://opencode
   <img width="3688" height="1988" alt="Image" src="https://github.com/user-attachments/assets/c94c5114-b55c-4cd6-959b-f16a4ba4ff8b" />
 </details>
 
+## Current Features
+
+| Feature | Description |
+| --- | --- |
+| 📋 Session board | View and switch between active sessions across projects from the home board. |
+| 💬 Agent conversations | See tool types, call durations, total run time, and MCP results, with keyboard scrolling. |
+| ✍️ Prompt composer | Expandable, responsive editor for longer task descriptions with English and Chinese UI support. |
+| 🔍 Code review | PR-style project diffs with change statistics, file filtering, viewed progress, historical sessions, and patch diffs. |
+| 🌐 Remote control | Connect to OpenCode locally, remotely, through WSL, or over SSH tunnels, with HTTP, Basic auth, and multiple servers. |
+| 🔄 State synchronization | Keep server selection independent per browser tab and synchronize archived sessions through OpenCode. |
+| 📱 Responsive interface | Desktop, mobile, and fullscreen layouts with accessible interactions and keyboard navigation. |
+
 ## Quick Start
 
 ### Option 1: Use the hosted app (recommended)
@@ -38,7 +50,7 @@ OPENCODE_URL=http://myserver:4096 npx ikanban-web@latest  # External OpenCode se
 
 ## Remote Control Agent
 
-iKanban is a web front-end that connects to an OpenCode server running on any machine (local, a remote host, an SSH tunnel, or WSL). This lets you drive agents remotely from the browser: create/manage sessions, send prompts, approve permission requests, review diffs, and inspect the multi-agent task graph.
+iKanban is a web front-end that connects to an OpenCode server running on any machine (local, a remote host, an SSH tunnel, or WSL). This lets you drive agents remotely from the browser: create/manage sessions, send prompts, approve permission requests, inspect tool results, and review current and historical diffs.
 
 Start OpenCode on the remote host with CORS enabled, then connect from the hosted app:
 
