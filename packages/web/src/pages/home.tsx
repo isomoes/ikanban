@@ -168,12 +168,16 @@ export default function Home() {
       <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div class="min-w-0">
           <div class="flex items-center gap-3">
-            <div
-              class="flex size-10 items-center justify-center rounded-2xl border shadow-xs-border-base"
+            <a
+              href="https://github.com/isomoes/ikanban"
+              aria-label="iKanban on GitHub"
+              target="_blank"
+              rel="noreferrer"
+              class="flex size-10 items-center justify-center rounded-2xl border shadow-xs-border-base transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-interactive-base"
               style={homeStyles.heroIcon}
             >
               <KanbanMark class="w-6 opacity-90" />
-            </div>
+            </a>
             <div>
               <div class="text-18-medium text-text-strong">
                 {language.t("home.sessionBoard")}
