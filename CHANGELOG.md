@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.14]
+
+- Web: Linked the home icon to the iKanban GitHub repository for quicker access to the project source. (@isomoes)
+- Web: Preserved the normal desktop conversation width in fullscreen so messages and the composer remain comfortably readable. (@isomoes)
+
 ## [0.3.13]
 
 - Web: Enabled keyboard scrolling throughout session conversations so timeline navigation remains available across the full message view. (@isomoes)
