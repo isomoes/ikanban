@@ -44,6 +44,7 @@ import { SessionComposerRegion, createSessionComposerState } from "@/pages/sessi
 import { SessionMobileTabs } from "@/pages/session/session-mobile-tabs"
 import { SessionSidePanel } from "@/pages/session/session-side-panel"
 import { useSessionHashScroll } from "@/pages/session/use-session-hash-scroll"
+import { scrollElementByKey } from "@/pages/session/message-gesture"
 import "@/pages/session/session-cockpit.css"
 
 const emptyUserMessages: UserMessage[] = []
@@ -739,9 +740,9 @@ export default function Page() {
       return
     }
 
-    // Only treat explicit scroll keys as potential "user scroll" gestures.
-    if (event.key === "PageUp" || event.key === "PageDown" || event.key === "Home" || event.key === "End") {
-      markScrollGesture()
+    if (!event.defaultPrevented && scroller && scrollElementByKey(scroller, event.key)) {
+      event.preventDefault()
+      markScrollGesture(scroller)
       return
     }
 

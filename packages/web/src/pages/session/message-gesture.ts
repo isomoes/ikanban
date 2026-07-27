@@ -4,6 +4,27 @@ export const normalizeWheelDelta = (input: { deltaY: number; deltaMode: number; 
   return input.deltaY
 }
 
+export const scrollElementByKey = (root: HTMLElement, key: string) => {
+  const page = root.clientHeight * 0.8
+
+  if (key === "ArrowUp" || key === "ArrowDown") {
+    root.scrollBy({ top: key === "ArrowUp" ? -40 : 40, behavior: "smooth" })
+    return true
+  }
+
+  if (key === "PageUp" || key === "PageDown") {
+    root.scrollBy({ top: key === "PageUp" ? -page : page, behavior: "smooth" })
+    return true
+  }
+
+  if (key === "Home" || key === "End") {
+    root.scrollTo({ top: key === "Home" ? 0 : root.scrollHeight, behavior: "smooth" })
+    return true
+  }
+
+  return false
+}
+
 export const shouldMarkBoundaryGesture = (input: {
   delta: number
   scrollTop: number

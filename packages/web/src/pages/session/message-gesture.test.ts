@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { normalizeWheelDelta, shouldMarkBoundaryGesture } from "./message-gesture"
+import { normalizeWheelDelta, scrollElementByKey, shouldMarkBoundaryGesture } from "./message-gesture"
 
 describe("normalizeWheelDelta", () => {
   test("converts line mode to px", () => {
@@ -58,5 +58,23 @@ describe("shouldMarkBoundaryGesture", () => {
         clientHeight: 400,
       }),
     ).toBe(false)
+  })
+})
+
+describe("scrollElementByKey", () => {
+  test("scrolls by a line or page for keyboard navigation", () => {
+    const calls: number[] = []
+    const root = document.createElement("div")
+    Object.defineProperty(root, "clientHeight", { value: 500 })
+    root.scrollBy = (({ top }: ScrollToOptions) => {
+      calls.push(top ?? 0)
+    }) as typeof root.scrollBy
+
+    expect(scrollElementByKey(root, "ArrowUp")).toBe(true)
+    expect(scrollElementByKey(root, "ArrowDown")).toBe(true)
+    expect(scrollElementByKey(root, "PageUp")).toBe(true)
+    expect(scrollElementByKey(root, "PageDown")).toBe(true)
+    expect(scrollElementByKey(root, "Enter")).toBe(false)
+    expect(calls).toEqual([-40, 40, -400, 400])
   })
 })

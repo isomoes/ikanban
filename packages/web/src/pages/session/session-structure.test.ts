@@ -15,6 +15,10 @@ describe("session workspace structure", () => {
     expect(sessionSource).toContain('data-state="ready"')
   })
 
+  test("scrolls the message viewport from session-level navigation keys", () => {
+    expect(sessionSource).toContain("scrollElementByKey(scroller, event.key)")
+  })
+
   test("uses the existing worktree change callback", () => {
     expect(newViewSource).toContain("props.onWorktreeChange")
     expect(newViewSource).toContain("options={options()}")
