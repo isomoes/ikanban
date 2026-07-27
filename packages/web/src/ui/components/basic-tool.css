@@ -223,7 +223,7 @@
   [data-slot="basic-tool-tool-info-main"] {
     display: flex;
     align-items: baseline;
-    gap: 0;
+    gap: 6px;
     min-width: 0;
     overflow: hidden;
   }

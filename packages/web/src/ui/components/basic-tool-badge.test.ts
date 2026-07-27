@@ -14,7 +14,7 @@ describe("tool type badges", () => {
     expect(toolStyles).not.toContain('[data-slot="basic-tool-tool-badge"] {\n  width:')
     expect(toolStyles).toMatch(/\[data-slot="basic-tool-tool-trigger-content"\]\s*{[^}]*gap: 6px;/s)
     expect(toolStyles).toMatch(/\[data-slot="basic-tool-tool-info-structured"\]\s*{[^}]*gap: 0;/s)
-    expect(toolStyles).toMatch(/\[data-slot="basic-tool-tool-info-main"\]\s*{[^}]*gap: 0;/s)
+    expect(toolStyles).toMatch(/\[data-slot="basic-tool-tool-info-main"\]\s*{[^}]*gap: 6px;/s)
   })
 
   test("uses the same compact footprint for context and expanded tool rows", () => {
