@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.13]
+
+- Web: Enabled keyboard scrolling throughout session conversations so timeline navigation remains available across the full message view. (@isomoes)
+- Web: Displayed MCP tool results with clearer result details and improved spacing for easier scanning. (@isomoes)
+
 ## [0.3.12]
 
 - Web: Refined chat history spacing across conversation turns, thinking rows, context tools, and assistant text for clearer visual separation. (@isomoes)

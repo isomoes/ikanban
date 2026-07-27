@@ -1,6 +1,6 @@
 {
   "name": "ikanban-web",
-  "version": "0.3.12",
+  "version": "0.3.13",
   "description": "iKanban web app",
   "private": false,
   "type": "module",
