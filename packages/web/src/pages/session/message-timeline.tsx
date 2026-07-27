@@ -516,7 +516,7 @@ export function MessageTimeline(props: {
           data-slot="session-status-rail"
           classList={{
             "session-cockpit__rail": true,
-            "md:max-w-200 md:mx-auto 2xl:max-w-[1000px]": props.centered,
+            "md:max-w-200 md:mx-auto": props.centered,
           }}
         >
           <div class="session-cockpit__rail-title">
@@ -677,7 +677,7 @@ export function MessageTimeline(props: {
             class="session-cockpit__turns flex flex-col items-start justify-start pb-16 transition-[margin]"
             classList={{
               "w-full": true,
-              "md:max-w-200 md:mx-auto 2xl:max-w-[1000px]": props.centered,
+              "md:max-w-200 md:mx-auto": props.centered,
               "mt-0.5": props.centered,
               "mt-0": !props.centered,
             }}
@@ -720,7 +720,7 @@ export function MessageTimeline(props: {
                     }}
                     classList={{
                       "min-w-0 w-full max-w-full": true,
-                      "md:max-w-200 2xl:max-w-[1000px]": props.centered,
+                      "md:max-w-200": props.centered,
                     }}
                   >
                     <Show when={commentCount() > 0}>
