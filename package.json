@@ -1,6 +1,6 @@
 {
   "name": "ikanban",
-  "version": "0.3.15",
+  "version": "0.3.16",
   "description": "iKanban - Kanban board powered by OpenCode",
   "private": true,
   "license": "MIT",

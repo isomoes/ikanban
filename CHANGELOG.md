@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.16]
+
+- CI: Integrated Docker image publishing into the release workflow, reusing the web build artifact and supporting Docker-only release backfills. (@isomoes)
+
 ## [0.3.15]
 
 - Web: Prevented deleting the final configured server so the workspace always retains a usable connection. (@isomoes)
