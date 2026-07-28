@@ -4,7 +4,7 @@ English | [简体中文](./README.md)
 
 iKanban is a multi-agent coding workspace powered by [OpenCode](https://opencode.ai). It is built for driving, reviewing, and coordinating parallel agent work across projects, with session management, diff review and project-aware navigation in one place.
 
-**Bilibili Video** [why do it](https://www.bilibili.com/video/BV1t9AhztEjX/) [v0.1](https://www.bilibili.com/video/BV1W3Pgz8ExJ/) [v0.2](https://www.bilibili.com/video/BV1ZNP1znEn5/) [v0.2.11 how to use](https://www.bilibili.com/video/BV1Y9wMzKE2b/) [v0.3](https://www.bilibili.com/video/BV1n9QEBSEch/)
+**Bilibili Video** [why do it](https://www.bilibili.com/video/BV1t9AhztEjX/) [v0.1](https://www.bilibili.com/video/BV1W3Pgz8ExJ/) [v0.2](https://www.bilibili.com/video/BV1ZNP1znEn5/) [v0.2.11 how to use](https://www.bilibili.com/video/BV1Y9wMzKE2b/) [v0.3](https://www.bilibili.com/video/BV1n9QEBSEch/) [v0.3.14](https://www.bilibili.com/video/BV1zy3F6aEb2/)
 
 <details>
   <summary>UI Screenshots</summary>
