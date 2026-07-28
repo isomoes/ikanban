@@ -25,7 +25,10 @@ import { showToast } from "@/ui/components/toast";
 import { findLast } from "@/utils/array";
 import { extractPromptFromParts } from "@/utils/prompt";
 import { UserMessage } from "@opencode-ai/sdk/v2";
-import { canAddSelectionContext } from "@/pages/session/session-command-helpers";
+import {
+  canAddSelectionContext,
+  restartOpenCode,
+} from "@/pages/session/session-command-helpers";
 
 export type SessionCommandContext = {
   navigateMessageByOffset: (offset: number) => void;
@@ -170,6 +173,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
   const focusInput = actions.focusInput;
 
   const sessionCommand = withCategory(language.t("command.category.session"));
+  const projectCommand = withCategory(language.t("command.category.project"));
   const fileCommand = withCategory(language.t("command.category.file"));
   const contextCommand = withCategory(language.t("command.category.context"));
   const viewCommand = withCategory(language.t("command.category.view"));
@@ -187,6 +191,48 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       keybind: "mod+shift+s",
       slash: "new",
       onSelect: () => navigate(`/${params.dir}`),
+    }),
+  ]);
+
+  const projectCommands = createMemo(() => [
+    projectCommand({
+      id: "project.restartOpenCode",
+      title: language.t("command.project.restartOpenCode"),
+      description: language.t("command.project.restartOpenCode.description"),
+      slash: "restart",
+      onSelect: async () => {
+        const directory = sdk.directory;
+        await restartOpenCode({
+          directory,
+          dispose: async (input) => {
+            await sdk.client.instance.dispose(input);
+          },
+          loadConfig: async () => {
+            await sdk.client.config.get({ directory });
+          },
+          loadSkills: async () => {
+            await sdk.client.app.skills({ directory });
+          },
+          loadMcp: async () => {
+            await sdk.client.mcp.status({ directory });
+          },
+        })
+          .then(() => {
+            showToast({
+              variant: "success",
+              icon: "circle-check",
+              title: language.t("toast.project.restartOpenCode.success.title"),
+              description: language.t("toast.project.restartOpenCode.success.description"),
+            });
+          })
+          .catch((err: unknown) => {
+            const message = err instanceof Error ? err.message : String(err);
+            showToast({
+              title: language.t("toast.project.restartOpenCode.failed.title"),
+              description: message,
+            });
+          });
+      },
     }),
   ]);
 
@@ -433,6 +479,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
   command.register("session", () =>
     [
       sessionCommands(),
+      projectCommands(),
       fileCommands(),
       contextCommands(),
       viewCommands(),

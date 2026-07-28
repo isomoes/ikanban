@@ -28,6 +28,8 @@ export const dict = {
 
   "command.project.open": "打开项目",
   "command.project.close": "关闭项目",
+  "command.project.restartOpenCode": "重启 OpenCode",
+  "command.project.restartOpenCode.description": "重新加载技能、MCP 和项目配置",
 
   "command.provider.connect": "连接提供商",
 
@@ -876,6 +878,9 @@ export const dict = {
   "dialog.releaseNotes.action.hideFuture": "不再显示",
   "dialog.releaseNotes.media.alt": "发布预览",
   "toast.project.reloadFailed.title": "无法重新加载 {{project}}",
+  "toast.project.restartOpenCode.success.title": "OpenCode 已重启",
+  "toast.project.restartOpenCode.success.description": "已重新加载技能、MCP 和项目配置。",
+  "toast.project.restartOpenCode.failed.title": "无法重启 OpenCode",
   "error.server.invalidConfiguration": "配置无效",
   "common.moreCountSuffix": " (还有 {{count}} 个)",
   "common.time.justNow": "刚刚",

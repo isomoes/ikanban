@@ -8,3 +8,14 @@ export const canAddSelectionContext = (input: {
   if (!path) return false
   return input.selectedLines(path) != null
 }
+
+export const restartOpenCode = async (input: {
+  directory: string
+  dispose: (input: { directory: string }) => Promise<unknown>
+  loadConfig: () => Promise<unknown>
+  loadSkills: () => Promise<unknown>
+  loadMcp: () => Promise<unknown>
+}) => {
+  await input.dispose({ directory: input.directory })
+  await Promise.all([input.loadConfig(), input.loadSkills(), input.loadMcp()])
+}

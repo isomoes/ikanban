@@ -23,6 +23,8 @@ export const dict = {
   "command.sidebar.toggle": "Toggle sidebar",
   "command.project.open": "Open project",
   "command.project.close": "Close project",
+  "command.project.restartOpenCode": "Restart OpenCode",
+  "command.project.restartOpenCode.description": "Reload skills, MCPs, and project configuration",
   "command.provider.connect": "Connect provider",
   "command.server.switch": "Switch server",
   "command.settings.open": "Open settings",
@@ -476,6 +478,9 @@ export const dict = {
 
   "toast.session.listFailed.title": "Failed to load sessions for {{project}}",
   "toast.project.reloadFailed.title": "Failed to reload {{project}}",
+  "toast.project.restartOpenCode.success.title": "OpenCode restarted",
+  "toast.project.restartOpenCode.success.description": "Skills, MCPs, and project configuration were reloaded.",
+  "toast.project.restartOpenCode.failed.title": "Failed to restart OpenCode",
 
   "toast.update.title": "Update available",
   "toast.update.description":
