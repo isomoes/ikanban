@@ -290,6 +290,9 @@ export function MessageTimeline(props: {
     return sync.session.get(id)
   })
   const titleValue = createMemo(() => info()?.title)
+  const projectName = createMemo(
+    () => sync.project?.name || getFilename(sync.project?.worktree) || getFilename(sdk.directory),
+  )
   const parentID = createMemo(() => info()?.parentID)
   const stageCfg = { init: 1, batch: 3 }
   const staging = createTimelineStaging({
@@ -563,6 +566,15 @@ export function MessageTimeline(props: {
             </Show>
           </div>
           <div class="session-cockpit__rail-meta">
+            <Show when={sdk.directory}>
+              <div
+                data-slot="session-project-context"
+                class="session-cockpit__project-context"
+                title={sdk.directory}
+              >
+                <span class="session-cockpit__project-name">{projectName()}</span>
+              </div>
+            </Show>
             <span data-slot="session-runtime-status" data-status={sessionStatus().type} role="status">
               {sessionStatus().type}
             </span>

@@ -16,6 +16,13 @@ describe("session workspace structure", () => {
     expect(sessionSource).toContain('data-state="ready"')
   })
 
+  test("shows restrained project context in the session status rail", () => {
+    expect(timelineSource).toContain('data-slot="session-project-context"')
+    expect(timelineSource).toContain('title={sdk.directory}')
+    expect(cockpitStyles).toMatch(/\.session-cockpit__project-context\s*{[^}]*max-width:/s)
+    expect(timelineSource).not.toContain('class="session-cockpit__project-path"')
+  })
+
   test("scrolls the message viewport from session-level navigation keys", () => {
     expect(sessionSource).toContain("scrollElementByKey(scroller, event.key)")
   })
