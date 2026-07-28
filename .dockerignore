@@ -1,0 +1,15 @@
+.git
+.github
+.agents
+.opencode
+.ikanban
+node_modules
+**/node_modules
+**/dist
+.cache
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+.env
+.env.*

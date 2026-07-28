@@ -48,6 +48,27 @@ npx ikanban-web@latest --port 8080            # Custom port
 OPENCODE_URL=http://myserver:4096 npx ikanban-web@latest  # External OpenCode server
 ```
 
+### Option 3: Run with Docker
+
+Start OpenCode on an interface reachable from Docker:
+
+```bash
+opencode serve --hostname 0.0.0.0 --port 4097
+```
+
+Then run iKanban with the OpenCode server URL:
+
+```bash
+docker run --rm -p 3000:3000 \
+  --add-host=host.docker.internal:host-gateway \
+  -e OPENCODE_URL=http://host.docker.internal:4097 \
+  ghcr.io/isomoes/ikanban:latest
+```
+
+Open: http://localhost:3000/ikanban/
+
+Images are published for AMD64 and ARM64. When OpenCode runs on another machine, set `OPENCODE_URL` to an address reachable from the container instead.
+
 ## Remote Control Agent
 
 iKanban is a web front-end that connects to an OpenCode server running on any machine (local, a remote host, an SSH tunnel, or WSL). This lets you drive agents remotely from the browser: create/manage sessions, send prompts, approve permission requests, inspect tool results, and review current and historical diffs.

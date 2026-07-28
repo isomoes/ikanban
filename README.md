@@ -48,6 +48,27 @@ npx ikanban-web@latest --port 8080            # 自定义端口
 OPENCODE_URL=http://myserver:4096 npx ikanban-web@latest  # 外部 OpenCode 服务器
 ```
 
+### 方式三：使用 Docker 运行
+
+启动 OpenCode，并监听 Docker 容器可访问的网络接口：
+
+```bash
+opencode serve --hostname 0.0.0.0 --port 4097
+```
+
+然后运行 iKanban，并通过环境变量传入 OpenCode 服务器地址：
+
+```bash
+docker run --rm -p 3000:3000 \
+  --add-host=host.docker.internal:host-gateway \
+  -e OPENCODE_URL=http://host.docker.internal:4097 \
+  ghcr.io/isomoes/ikanban:latest
+```
+
+打开：http://localhost:3000/ikanban/
+
+镜像同时支持 AMD64 和 ARM64。如果 OpenCode 运行在其他机器上，请将 `OPENCODE_URL` 设置为容器可访问的地址。
+
 ## 远程控制智能体
 
 iKanban 是一个 Web 前端，可连接到任意机器上运行的 OpenCode 服务器（本地、远程主机、SSH 隧道或 WSL）。这让你可以从浏览器远程驱动智能体：创建/管理会话、发送提示词、审批权限请求、查看工具结果，以及审查当前和历史差异。
