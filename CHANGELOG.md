@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.17]
+
+- Web: Added a project command to restart OpenCode and reload skills, MCPs, and project configuration without leaving the session. (@isomoes)
+- Web: Displayed the active project name in the session status rail for clearer workspace context. (@isomoes)
+
 ## [0.3.16]
 
 - CI: Integrated Docker image publishing into the release workflow, reusing the web build artifact and supporting Docker-only release backfills. (@isomoes)
