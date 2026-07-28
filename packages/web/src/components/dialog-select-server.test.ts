@@ -13,4 +13,9 @@ describe("DialogSelectServer structure", () => {
     expect(dialogSource).toContain("actions={")
     expect(frameSource).toContain('data-slot="server-list-item-actions"')
   })
+
+  test("prevents removing the final server", () => {
+    expect(dialogSource).toContain("if (server.list.length <= 1) return")
+    expect(dialogSource).toContain("disabled={server.list.length <= 1}")
+  })
 })

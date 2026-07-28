@@ -494,6 +494,7 @@ export function DialogSelectServer() {
   })
 
   async function handleRemove(url: ServerConnection.Key) {
+    if (server.list.length <= 1) return
     server.remove(url)
     if ((await platform.getDefaultServerUrl?.()) === url) {
       platform.setDefaultServerUrl?.(null)
@@ -577,6 +578,7 @@ export function DialogSelectServer() {
                           <DropdownMenu.Separator />
                           <DropdownMenu.Item
                             onSelect={() => handleRemove(ServerConnection.key(item))}
+                            disabled={server.list.length <= 1}
                             class="text-text-on-critical-base hover:bg-surface-critical-weak"
                           >
                             <DropdownMenu.ItemLabel>{language.t("dialog.server.menu.delete")}</DropdownMenu.ItemLabel>
