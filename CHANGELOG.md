@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.15]
+
+- Web: Prevented deleting the final configured server so the workspace always retains a usable connection. (@isomoes)
+- Docker: Added a multi-stage web image and GitHub Actions workflow for publishing multi-platform releases to GitHub Container Registry. (@isomoes)
+- Docs: Documented current features, Docker usage, the v0.3.1-to-v0.3.14 product evolution, and the v0.3.14 Bilibili introduction. (@isomoes)
+
 ## [0.3.14]
 
 - Web: Linked the home icon to the iKanban GitHub repository for quicker access to the project source. (@isomoes)
