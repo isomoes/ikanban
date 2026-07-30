@@ -28,6 +28,7 @@ type PromptAttachmentsInput = {
   setDraggingType: (type: "image" | "@mention" | null) => void
   focusEditor: () => void
   addPart: (part: ContentPart) => boolean
+  capturePasteUndo: () => VoidFunction
   readClipboardImage?: () => Promise<File | null>
 }
 
@@ -102,17 +103,27 @@ export function createPromptAttachments(input: PromptAttachmentsInput) {
     }
 
     if (!plainText) return
+    const commitPasteUndo = input.capturePasteUndo()
 
     if (largePaste(plainText)) {
-      if (input.addPart({ type: "text", content: plainText, start: 0, end: 0 })) return
+      if (input.addPart({ type: "text", content: plainText, start: 0, end: 0 })) {
+        commitPasteUndo()
+        return
+      }
       input.focusEditor()
-      if (input.addPart({ type: "text", content: plainText, start: 0, end: 0 })) return
+      if (input.addPart({ type: "text", content: plainText, start: 0, end: 0 })) {
+        commitPasteUndo()
+        return
+      }
     }
 
     const inserted = typeof document.execCommand === "function" && document.execCommand("insertText", false, plainText)
-    if (inserted) return
+    if (inserted) {
+      commitPasteUndo()
+      return
+    }
 
-    input.addPart({ type: "text", content: plainText, start: 0, end: 0 })
+    if (input.addPart({ type: "text", content: plainText, start: 0, end: 0 })) commitPasteUndo()
   }
 
   const handleGlobalDragOver = (event: DragEvent) => {

@@ -37,6 +37,7 @@ import { useLanguage } from "@/context/language"
 import { usePlatform } from "@/context/platform"
 import { createTextFragment, getCursorPosition, setCursorPosition, setRangeEdge } from "./prompt-input/editor-dom"
 import { createPromptAttachments, ACCEPTED_FILE_TYPES } from "./prompt-input/attachments"
+import { createPasteUndoHistory } from "./prompt-input/paste-undo"
 import {
   canNavigateHistoryAtCursor,
   navigatePromptHistory,
@@ -118,6 +119,8 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
   let fileInputRef: HTMLInputElement | undefined
   let scrollRef!: HTMLDivElement
   let slashPopoverRef!: HTMLDivElement
+  const pasteUndo = createPasteUndoHistory<{ scope: string; prompt: Prompt; cursor: number }>()
+  let pendingPasteUndo: { prompt: Prompt } | undefined
 
   const mirror = { input: false }
   const inset = 44
@@ -751,7 +754,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
     return parts
   }
 
-  const handleInput = () => {
+  const handleInput = (event?: InputEvent) => {
     const rawParts = parseFromDOM()
     const images = imageAttachments()
     const cursorPosition = getCursorPosition(editorRef)
@@ -761,6 +764,14 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
         : rawParts.map((p) => ("content" in p ? p.content : "")).join("")
     const hasNonText = rawParts.some((part) => part.type !== "text")
     const shouldReset = !NON_EMPTY_TEXT.test(rawText) && !hasNonText && images.length === 0
+    const nextPrompt = shouldReset ? DEFAULT_PROMPT : [...rawParts, ...images]
+
+    if (event?.inputType === "historyUndo") {
+      if (pendingPasteUndo && !isPromptEqual(pendingPasteUndo.prompt, nextPrompt)) pendingPasteUndo = undefined
+      const entry = pasteUndo.peek()
+      const scope = `${params.dir}:${params.id ?? ""}`
+      if (entry?.scope === scope && isPromptEqual(entry.prompt, nextPrompt)) pasteUndo.pop()
+    }
 
     if (shouldReset) {
       closePopover()
@@ -896,6 +907,34 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
     return true
   }
 
+  const capturePasteUndo = () =>
+    pasteUndo.capture({
+      scope: `${params.dir}:${params.id ?? ""}`,
+      prompt: prompt.current().map((part) =>
+        part.type === "file" ? { ...part, selection: part.selection ? { ...part.selection } : undefined } : { ...part },
+      ),
+      cursor: getCursorPosition(editorRef),
+    })
+
+  const undoPaste = () => {
+    const entry = pasteUndo.pop()
+    if (!entry) return false
+    if (entry.scope !== `${params.dir}:${params.id ?? ""}`) {
+      pasteUndo.clear()
+      return false
+    }
+
+    mirror.input = false
+    renderEditor(entry.prompt)
+    prompt.set(entry.prompt, entry.cursor)
+    requestAnimationFrame(() => {
+      editorRef.focus()
+      setCursorPosition(editorRef, entry.cursor)
+      queueScroll()
+    })
+    return true
+  }
+
   const { addImageAttachment, removeImageAttachment, handlePaste } = createPromptAttachments({
     editor: () => editorRef,
     isFocused,
@@ -906,6 +945,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
       setCursorPosition(editorRef, promptLength(prompt.current()))
     },
     addPart,
+    capturePasteUndo,
     readClipboardImage: platform.readClipboardImage,
   })
 
@@ -936,6 +976,24 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
   })
 
   const handleKeyDown = (event: KeyboardEvent) => {
+    if ((event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === "z") {
+      const entry = pasteUndo.peek()
+      if (!entry) return
+      if (entry.scope !== `${params.dir}:${params.id ?? ""}`) {
+        pasteUndo.clear()
+        return
+      }
+
+      const attempt = { prompt: [...parseFromDOM(), ...imageAttachments()] }
+      pendingPasteUndo = attempt
+      setTimeout(() => {
+        if (pendingPasteUndo !== attempt) return
+        pendingPasteUndo = undefined
+        undoPaste()
+      })
+      return
+    }
+
     if ((event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === "u") {
       event.preventDefault()
       pick()
