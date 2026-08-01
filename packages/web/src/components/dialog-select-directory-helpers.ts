@@ -8,6 +8,10 @@ type DirectoryClient = {
   }
 }
 
+export function configuredProjectDirectories(projects: Array<{ worktree: string }>) {
+  return [...new Set(projects.map((project) => project.worktree).filter(Boolean))]
+}
+
 export async function listInitialDirectories(sdk: DirectoryClient, directory: string) {
   const result = await sdk.client.file.list({ directory, path: "" })
   return (result.data ?? [])

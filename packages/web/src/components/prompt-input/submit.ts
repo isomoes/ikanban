@@ -5,6 +5,7 @@ import { useNavigate, useParams } from "@solidjs/router"
 import type { Accessor } from "solid-js"
 import type { FileSelection } from "@/context/file"
 import { useGlobalSync } from "@/context/global-sync"
+import { supportsRuntimeCapability } from "@/context/global-sync/runtime-capabilities"
 import { useLanguage } from "@/context/language"
 import { useLayout } from "@/context/layout"
 import { useLocal } from "@/context/local"
@@ -141,7 +142,9 @@ export function createPromptSubmit(input: PromptSubmitInput) {
     const projectDirectory = sdk.directory
     const isNewSession = !params.id
     const shouldAutoAccept = isNewSession && input.autoAccept()
-    const worktreeSelection = input.newSessionWorktree?.() || "main"
+    const worktreeSelection = supportsRuntimeCapability(sync.data.config, "worktree")
+      ? input.newSessionWorktree?.() || "main"
+      : "main"
 
     let sessionDirectory = projectDirectory
     let client = sdk.client

@@ -61,14 +61,15 @@ jobs:
       - name: Prepare artifact directory
         run: mkdir -p dist
 
-      - name: Pack npm artifact
-        working-directory: packages/web
-        run: npm pack --pack-destination ../../dist
+      - name: Pack npm artifacts
+        run: |
+          npm pack ./packages/web --pack-destination dist
+          npm pack ./packages/server --pack-destination dist
 
       - name: Upload npm artifact
         uses: actions/upload-artifact@v4
         with:
-          name: npm-package
+          name: npm-packages
           path: dist/*.tgz
 
       - name: Add 404.html for SPA routing
@@ -91,7 +92,7 @@ jobs:
       - name: Download npm artifact
         uses: actions/download-artifact@v4
         with:
-          name: npm-package
+          name: npm-packages
           path: dist/
 
       - name: Setup Node.js
@@ -100,25 +101,17 @@ jobs:
           node-version: 24
           registry-url: "https://registry.npmjs.org"
 
-      - name: Publish package to npm
+      - name: Publish packages to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          unset NODE_AUTH_TOKEN
-          unset NPM_TOKEN
+          WEB_PACKAGE="dist/ikanban-web-${RELEASE_TAG#v}.tgz"
+          CLI_PACKAGE="dist/ikanban-${RELEASE_TAG#v}.tgz"
+          test -f "$WEB_PACKAGE"
+          test -f "$CLI_PACKAGE"
 
-          set -- dist/*.tgz
-
-          if [ "$1" = "dist/*.tgz" ]; then
-            echo "No npm tarball found in dist/"
-            exit 1
-          fi
-
-          if [ -n "$2" ]; then
-            echo "Expected exactly one npm tarball in dist/, found multiple"
-            printf '%s\n' "$@"
-            exit 1
-          fi
-
-          npm publish "./$1" --provenance
+          npm publish "$WEB_PACKAGE" --provenance
+          npm publish "$CLI_PACKAGE" --provenance
 
   docker:
     needs: build
@@ -189,7 +182,7 @@ jobs:
       - name: Download npm artifact
         uses: actions/download-artifact@v4
         with:
-          name: npm-package
+          name: npm-packages
           path: dist/
 
       - name: Extract tag name

@@ -1,6 +1,6 @@
 # ikanban
 
-iKanban is a Web interface for the [OpenCode](https://opencode.ai) AI coding agent. It unifies chat, terminal, and board workflows in a single interface so teams can plan, execute, and track coding tasks.
+iKanban is a browser workspace for the [Pi coding agent](https://github.com/earendil-works/pi). The published `ikanban` package runs Pi, the compatibility API, and this web UI as one Bun service.
 
 ## UI Previews
 
@@ -13,25 +13,15 @@ iKanban is a Web interface for the [OpenCode](https://opencode.ai) AI coding age
 
 ## Quick Start
 
-### Option 1: Use the hosted app (recommended)
-
-Open: https://isomoes.github.io/ikanban
-
-Start OpenCode with CORS enabled for GitHub Pages:
+Install [Bun 1.3.10 or newer](https://bun.sh/), configure Pi credentials in `~/.pi/agent/auth.json`, then run:
 
 ```bash
-opencode serve --port <PORT> --cors https://isomoes.github.io
+bunx ikanban@latest --port 3000 --project /path/to/repo
 ```
 
-Then add your server URL in settings: `http://localhost:<PORT>`.
+Open http://localhost:3000/ikanban/. Repeat `--project` to admit multiple roots. Pi stores resumable JSONL sessions under `~/.pi/agent/sessions/`.
 
-### Option 2: Run locally with npx
-
-```bash
-npx ikanban-web@latest                        # Start on port 3000
-npx ikanban-web@latest --port 8080            # Custom port
-OPENCODE_URL=http://myserver:4096 npx ikanban-web@latest  # External OpenCode server
-```
+Only text prompt parts are supported in this milestone. Worktrees, revert/undo/redo, summarize, restart, MCP, LSP, permissions, and questions are not supported. See the [main documentation](../../README.en.md) for credential, model, Docker, and persistence details.
 
 ## Acknowledgments
 

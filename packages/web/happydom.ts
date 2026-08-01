@@ -1,9 +1,21 @@
 import { GlobalRegistrator } from "@happy-dom/global-registrator"
 
+const nativeFetchGlobals = {
+  fetch: globalThis.fetch,
+  Request: globalThis.Request,
+  Response: globalThis.Response,
+  Headers: globalThis.Headers,
+  FormData: globalThis.FormData,
+  Blob: globalThis.Blob,
+  File: globalThis.File,
+  AbortController: globalThis.AbortController,
+  AbortSignal: globalThis.AbortSignal,
+  DOMException: globalThis.DOMException,
+}
 GlobalRegistrator.register()
+Object.assign(globalThis, nativeFetchGlobals)
 
 const originalGetContext = HTMLCanvasElement.prototype.getContext
-// @ts-expect-error - we're overriding with a simplified mock
 HTMLCanvasElement.prototype.getContext = function (contextType: string, _options?: unknown) {
   if (contextType === "2d") {
     return {

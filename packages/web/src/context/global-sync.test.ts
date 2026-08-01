@@ -167,9 +167,9 @@ describe("bootstrapGlobal", () => {
 })
 
 describe("shouldLoadProjectsOnBootstrap", () => {
-  test("skips project loading on the home route", () => {
-    expect(shouldLoadProjectsOnBootstrap("/", "/")).toBe(false)
-    expect(shouldLoadProjectsOnBootstrap("/ikanban", "/ikanban/")).toBe(false)
+  test("loads configured Pi projects on the home route", () => {
+    expect(shouldLoadProjectsOnBootstrap("/", "/")).toBe(true)
+    expect(shouldLoadProjectsOnBootstrap("/ikanban", "/ikanban/")).toBe(true)
   })
 
   test("loads projects away from the home route", () => {

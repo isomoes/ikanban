@@ -331,7 +331,7 @@ export const dict = {
 
   "dialog.server.title": "Servers",
   "dialog.server.description":
-    "Switch which OpenCode server this app connects to.",
+    "Switch which Pi server iKanban connects to.",
   "dialog.server.search.placeholder": "Search servers",
   "dialog.server.empty": "No servers yet",
   "dialog.server.add.title": "Add server",

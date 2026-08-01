@@ -10,7 +10,7 @@ import { useGlobalSDK } from "@/context/global-sdk"
 import { useGlobalSync } from "@/context/global-sync"
 import { useLayout } from "@/context/layout"
 import { useLanguage } from "@/context/language"
-import { listInitialDirectories } from "./dialog-select-directory-helpers"
+import { configuredProjectDirectories, listInitialDirectories } from "./dialog-select-directory-helpers"
 
 interface DialogSelectDirectoryProps {
   title?: string
@@ -314,8 +314,11 @@ export function DialogSelectDirectory(props: DialogSelectDirectoryProps) {
 
   const items = async (value: string) => {
     const results = await directories(value)
+    const configuredRows = configuredProjectDirectories(sync.data.project).map((absolute) =>
+      toRow(absolute, home(), "folders"),
+    )
     const directoryRows = results.map((absolute) => toRow(absolute, home(), "folders"))
-    return uniqueRows([...recentProjects(), ...directoryRows])
+    return uniqueRows([...recentProjects(), ...configuredRows, ...directoryRows])
   }
 
   function resolve(absolute: string) {

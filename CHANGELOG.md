@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+- Runtime: Replaced the external OpenCode proxy deployment with a combined Bun service powered by `@earendil-works/pi-coding-agent@0.83.0`, including compatibility APIs, repeatable project roots, and persistent Pi sessions. (@isomoes)
+- Release: Moved the `ikanban` executable into the publishable `ikanban` package, published it alongside `ikanban-web`, and updated the Docker image to run the combined service. (@isomoes)
+- Docs: Added Pi credential, model, startup, persistence, migration, and current capability-limit documentation. (@isomoes)
+
 ## [0.3.17]
 
 - Web: Added a project command to restart OpenCode and reload skills, MCPs, and project configuration without leaving the session. (@isomoes)

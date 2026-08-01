@@ -334,7 +334,7 @@ export const dict = {
   "dialog.directory.empty": "未找到文件夹",
 
   "dialog.server.title": "服务器",
-  "dialog.server.description": "切换此应用连接的 OpenCode 服务器。",
+  "dialog.server.description": "切换 iKanban 连接的 Pi 服务器。",
   "dialog.server.search.placeholder": "搜索服务器",
   "dialog.server.empty": "暂无服务器",
   "dialog.server.add.title": "添加服务器",

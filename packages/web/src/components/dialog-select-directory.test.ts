@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
-import { listInitialDirectories } from "./dialog-select-directory-helpers"
+import { configuredProjectDirectories, listInitialDirectories } from "./dialog-select-directory-helpers"
 
 const dialogSource = readFileSync(join(import.meta.dir, "dialog-select-directory.tsx"), "utf8")
 const homeSource = readFileSync(join(import.meta.dir, "../pages/home.tsx"), "utf8")
@@ -34,5 +34,13 @@ describe("directory selection", () => {
     expect(layoutSource).toContain("multiple: false")
     expect(homeSource).not.toContain("<DialogSelectDirectory multiple=")
     expect(layoutSource).not.toContain("<DialogSelectDirectory multiple=")
+  })
+
+  test("offers project roots advertised by the Pi backend", () => {
+    expect(configuredProjectDirectories([
+      { worktree: "/workspace/one" },
+      { worktree: "/workspace/two" },
+      { worktree: "/workspace/one" },
+    ])).toEqual(["/workspace/one", "/workspace/two"])
   })
 })

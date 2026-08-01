@@ -8,6 +8,7 @@ const ROOT = path.resolve(__dirname, '..');
 
 const PACKAGE_FILES = [
   'package.json',
+  'packages/server/package.json',
   'packages/web/package.json',
 ];
 
@@ -30,6 +31,9 @@ for (const packageFile of PACKAGE_FILES) {
 
   const oldVersion = pkg.version;
   pkg.version = newVersion;
+  if (packageFile === 'packages/server/package.json') {
+    pkg.dependencies['ikanban-web'] = newVersion;
+  }
 
   fs.writeFileSync(fullPath, `${JSON.stringify(pkg, null, 2)}\n`);
   console.log(`  ${packageFile}: ${oldVersion} -> ${newVersion}`);
@@ -40,6 +44,7 @@ if (fs.existsSync(lockPath)) {
   let lockContent = fs.readFileSync(lockPath, 'utf8');
 
   const workspaceEntries = [
+    { workspace: 'packages/server', name: 'ikanban' },
     { workspace: 'packages/web', name: 'ikanban-web' },
   ];
 
@@ -58,6 +63,14 @@ if (fs.existsSync(lockPath)) {
     const oldLockVersion = match[2];
     lockContent = lockContent.replace(sectionPattern, `$1${newVersion}$3`);
     console.log(`  ${BUN_LOCK} (${entry.workspace}): ${oldLockVersion} -> ${newVersion}`);
+  }
+
+  const webDependencyPattern = /("packages\/server"\s*:\s*\{[\s\S]*?"ikanban-web"\s*:\s*")([^"]+)(")/m;
+  const dependencyMatch = lockContent.match(webDependencyPattern);
+  if (dependencyMatch) {
+    lockContent = lockContent.replace(webDependencyPattern, `$1${newVersion}$3`);
+  } else {
+    console.warn(`Warning: could not find packages/server ikanban-web dependency in ${BUN_LOCK}`);
   }
 
   fs.writeFileSync(lockPath, lockContent);

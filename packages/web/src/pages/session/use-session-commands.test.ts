@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test"
-import { canAddSelectionContext, restartOpenCode } from "./session-command-helpers"
+import { canAddSelectionContext, filterRuntimeCommands, restartOpenCode } from "./session-command-helpers"
+
+const commandsSource = await Bun.file(new URL("./use-session-commands.tsx", import.meta.url)).text()
 
 describe("canAddSelectionContext", () => {
   test("returns false without active tab", () => {
@@ -68,5 +70,23 @@ describe("restartOpenCode", () => {
     releaseDispose?.()
     await restarting
     expect(calls.slice(1).sort()).toEqual(["config", "mcp", "skills"])
+  })
+})
+
+describe("Pi runtime command guardrails", () => {
+  test("filters restart, revert, unrevert, and summarize commands by runtime capability", () => {
+    expect(commandsSource).toContain("filterRuntimeCommands")
+    expect(commandsSource).toContain("sync.data.config")
+    const commands = [
+      { id: "project.restartOpenCode" },
+      { id: "session.undo" },
+      { id: "session.timeline" },
+      { id: "session.redo" },
+      { id: "session.compact" },
+      { id: "model.choose" },
+    ]
+
+    expect(filterRuntimeCommands(commands, { ikanban: { runtime: "pi" } })).toEqual([{ id: "model.choose" }])
+    expect(filterRuntimeCommands(commands, {})).toEqual(commands)
   })
 })

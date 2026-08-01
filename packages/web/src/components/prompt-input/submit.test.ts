@@ -6,10 +6,14 @@ let createPromptSubmit: typeof import("./submit").createPromptSubmit
 const createdClients: string[] = []
 const createdSessions: string[] = []
 const enabledAutoAccept: Array<{ sessionID: string; directory: string }> = []
-const sentPrompts: string[] = []
+const sentPrompts: Array<{ directory: string; input: unknown }> = []
 const syncedDirectories: string[] = []
+const abortedSessions: string[] = []
+const createdWorktrees: string[] = []
 
 let selected = "/repo/worktree-a"
+let config: Record<string, unknown> = {}
+const params: { id?: string } = {}
 
 const promptValue: Prompt = [{ type: "text", content: "ls", start: 0, end: 2 }]
 
@@ -21,15 +25,21 @@ const clientFor = (directory: string) => {
         createdSessions.push(directory)
         return { data: { id: `session-${createdSessions.length}` } }
       },
-      promptAsync: async () => {
-        sentPrompts.push(directory)
+      promptAsync: async (input: unknown) => {
+        sentPrompts.push({ directory, input })
         return { data: undefined }
       },
       command: async () => ({ data: undefined }),
-      abort: async () => ({ data: undefined }),
+      abort: async ({ sessionID }: { sessionID: string }) => {
+        abortedSessions.push(sessionID)
+        return { data: undefined }
+      },
     },
     worktree: {
-      create: async () => ({ data: { directory: `${directory}/new` } }),
+      create: async () => {
+        createdWorktrees.push(directory)
+        return { data: { directory: `${directory}/new` } }
+      },
     },
   }
 }
@@ -39,7 +49,7 @@ beforeAll(async () => {
 
   mock.module("@solidjs/router", () => ({
     useNavigate: () => () => undefined,
-    useParams: () => ({}),
+    useParams: () => params,
   }))
 
   mock.module("@opencode-ai/sdk/v2/client", () => ({
@@ -114,7 +124,7 @@ beforeAll(async () => {
 
   mock.module("@/context/sync", () => ({
     useSync: () => ({
-      data: { command: [] },
+      data: { command: [], config },
       session: {
         optimistic: {
           add: () => undefined,
@@ -127,6 +137,7 @@ beforeAll(async () => {
 
   mock.module("@/context/global-sync", () => ({
     useGlobalSync: () => ({
+      todo: { set: () => undefined },
       child: (directory: string) => {
         syncedDirectories.push(directory)
         return [{}, () => undefined]
@@ -156,7 +167,11 @@ beforeEach(() => {
   enabledAutoAccept.length = 0
   sentPrompts.length = 0
   syncedDirectories.length = 0
+  abortedSessions.length = 0
+  createdWorktrees.length = 0
   selected = "/repo/worktree-a"
+  config = {}
+  delete params.id
 })
 
 describe("prompt submit worktree selection", () => {
@@ -186,7 +201,7 @@ describe("prompt submit worktree selection", () => {
 
     expect(createdClients).toEqual(["/repo/worktree-a", "/repo/worktree-b"])
     expect(createdSessions).toEqual(["/repo/worktree-a", "/repo/worktree-b"])
-    expect(sentPrompts).toEqual(["/repo/worktree-a", "/repo/worktree-b"])
+    expect(sentPrompts.map((item) => item.directory)).toEqual(["/repo/worktree-a", "/repo/worktree-b"])
     expect(syncedDirectories).toEqual(["/repo/worktree-a", "/repo/worktree-b"])
   })
 
@@ -213,5 +228,56 @@ describe("prompt submit worktree selection", () => {
     await submit.handleSubmit(event)
 
     expect(enabledAutoAccept).toEqual([{ sessionID: "session-1", directory: "/repo/worktree-a" }])
+  })
+
+  test("uses the main project directory for Pi sessions and submits the selected model", async () => {
+    config = { ikanban: { runtime: "pi" } }
+    selected = "create"
+    const submit = createPromptSubmit({
+      info: () => undefined,
+      imageAttachments: () => [],
+      commentCount: () => 0,
+      autoAccept: () => false,
+      working: () => false,
+      editor: () => undefined,
+      queueScroll: () => undefined,
+      promptLength: () => 2,
+      addToHistory: () => undefined,
+      resetHistoryNavigation: () => undefined,
+      setPopover: () => undefined,
+      newSessionWorktree: () => selected,
+    })
+
+    await submit.handleSubmit({ preventDefault: () => undefined } as unknown as Event)
+
+    expect(createdWorktrees).toEqual([])
+    expect(createdSessions).toEqual(["/repo/main"])
+    expect(sentPrompts).toHaveLength(1)
+    expect(sentPrompts[0]).toMatchObject({
+      directory: "/repo/main",
+      input: { model: { modelID: "model", providerID: "provider" } },
+    })
+  })
+
+  test("aborts Pi sessions through the compatibility session endpoint", async () => {
+    config = { ikanban: { runtime: "pi" } }
+    params.id = "session-existing"
+    const submit = createPromptSubmit({
+      info: () => ({ id: "session-existing" }),
+      imageAttachments: () => [],
+      commentCount: () => 0,
+      autoAccept: () => false,
+      working: () => true,
+      editor: () => undefined,
+      queueScroll: () => undefined,
+      promptLength: () => 0,
+      addToHistory: () => undefined,
+      resetHistoryNavigation: () => undefined,
+      setPopover: () => undefined,
+    })
+
+    await submit.abort()
+
+    expect(abortedSessions).toEqual(["session-existing"])
   })
 })

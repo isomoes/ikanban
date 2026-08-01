@@ -17,6 +17,7 @@ import { reconcile, type SetStoreFunction, type Store } from "solid-js/store"
 import type { State, VcsCache } from "./types"
 import { cmp, normalizeProviderList } from "./utils"
 import { formatServerError } from "@/utils/server-errors"
+export { supportsRuntimeCapability, type RuntimeCapability } from "./runtime-capabilities"
 
 type GlobalStore = {
   ready: boolean

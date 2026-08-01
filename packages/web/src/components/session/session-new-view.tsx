@@ -6,6 +6,7 @@ import { useLanguage } from "@/context/language"
 import { Icon } from "@/ui/components/icon"
 import { Select } from "@/ui/components/select"
 import { getDirectory, getFilename } from "@/utils/path"
+import { supportsRuntimeCapability } from "@/context/global-sync/runtime-capabilities"
 
 const MAIN_WORKTREE = "main"
 const CREATE_WORKTREE = "create"
@@ -59,19 +60,21 @@ export function NewSessionView(props: NewSessionViewProps) {
           <span class="text-text-strong">{getFilename(projectRoot())}</span>
         </div>
       </div>
-      <div class="flex justify-center items-center gap-1">
-        <Icon name="branch" size="small" />
-        <Select
-          data-slot="session-worktree-select"
-          class="session-cockpit__worktree-select"
-          options={options()}
-          current={current()}
-          label={label}
-          onSelect={(value) => value && props.onWorktreeChange(value)}
-          variant="ghost"
-          size="small"
-        />
-      </div>
+      <Show when={supportsRuntimeCapability(sync.data.config, "worktree")}>
+        <div class="flex justify-center items-center gap-1">
+          <Icon name="branch" size="small" />
+          <Select
+            data-slot="session-worktree-select"
+            class="session-cockpit__worktree-select"
+            options={options()}
+            current={current()}
+            label={label}
+            onSelect={(value) => value && props.onWorktreeChange(value)}
+            variant="ghost"
+            size="small"
+          />
+        </div>
+      </Show>
       <Show when={sync.project}>
         {(project) => (
           <div class="flex justify-center items-center gap-3">

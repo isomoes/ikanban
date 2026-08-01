@@ -28,6 +28,7 @@ describe("session workspace structure", () => {
   })
 
   test("uses the existing worktree change callback", () => {
+    expect(newViewSource).toContain('supportsRuntimeCapability(sync.data.config, "worktree")')
     expect(newViewSource).toContain("props.onWorktreeChange")
     expect(newViewSource).toContain("options={options()}")
     expect(newViewSource).toContain("current={current()}")

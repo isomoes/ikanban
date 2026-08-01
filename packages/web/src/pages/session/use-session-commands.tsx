@@ -27,6 +27,7 @@ import { extractPromptFromParts } from "@/utils/prompt";
 import { UserMessage } from "@opencode-ai/sdk/v2";
 import {
   canAddSelectionContext,
+  filterRuntimeCommands,
   restartOpenCode,
 } from "@/pages/session/session-command-helpers";
 
@@ -477,16 +478,19 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
   ]);
 
   command.register("session", () =>
-    [
-      sessionCommands(),
-      projectCommands(),
-      fileCommands(),
-      contextCommands(),
-      viewCommands(),
-      messageCommands(),
-      agentCommands(),
-      permissionCommands(),
-      sessionActionCommands(),
-    ].flatMap((x) => x),
+    filterRuntimeCommands(
+      [
+        sessionCommands(),
+        projectCommands(),
+        fileCommands(),
+        contextCommands(),
+        viewCommands(),
+        messageCommands(),
+        agentCommands(),
+        permissionCommands(),
+        sessionActionCommands(),
+      ].flatMap((x) => x),
+      sync.data.config,
+    ),
   );
 };

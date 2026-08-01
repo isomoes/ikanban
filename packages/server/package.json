@@ -1,0 +1,37 @@
+{
+  "name": "ikanban",
+  "version": "0.3.17",
+  "description": "Browser workspace for the Pi coding agent",
+  "private": false,
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/isomoes/ikanban",
+    "directory": "packages/server"
+  },
+  "homepage": "https://github.com/isomoes/ikanban#readme",
+  "engines": {
+    "bun": ">=1.3.10"
+  },
+  "scripts": {
+    "test": "bun test src",
+    "type-check": "tsc --noEmit"
+  },
+  "bin": {
+    "ikanban": "src/index.ts"
+  },
+  "files": [
+    "README.md",
+    "src",
+    "package.json"
+  ],
+  "dependencies": {
+    "@earendil-works/pi-coding-agent": "0.83.0",
+    "ikanban-web": "0.3.17"
+  },
+  "devDependencies": {
+    "@types/bun": "1.3.10",
+    "typescript": "~5.9.3"
+  }
+}

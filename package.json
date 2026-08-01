@@ -1,7 +1,7 @@
 {
-  "name": "ikanban",
+  "name": "ikanban-workspace",
   "version": "0.3.17",
-  "description": "iKanban - Kanban board powered by OpenCode",
+  "description": "iKanban workspace",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -14,15 +14,16 @@
     "url": "https://github.com/isomoes/ikanban"
   },
   "scripts": {
-    "dev": "bun run --cwd packages/web dev",
-    "build": "bun run --filter '*' build",
-    "build:web": "bun run --cwd packages/web build",
+    "dev": "bun run build:web && bun --watch packages/server/src/index.ts",
+    "test:server": "bun test packages/server/src",
+    "build": "bun run build:web && bun run --cwd packages/server type-check",
+    "build:web": "VITE_BASE_PATH=/ikanban/ bun run --cwd packages/web build",
+    "start": "bun packages/server/src/index.ts",
     "type-check": "bun run --filter '*' type-check",
     "type-check:web": "bun run --cwd packages/web type-check",
     "postinstall": "patch-package",
     "dev:web": "bun run --cwd packages/web dev",
     "dev:web:watch": "bun run --cwd packages/web build:watch",
-    "start:web": "bun run --cwd packages/web start",
     "bump-version": "node scripts/bump-version.mjs"
   },
   "devDependencies": {

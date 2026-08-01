@@ -1,3 +1,5 @@
+import { supportsRuntimeCapability, type RuntimeCapability } from "@/context/global-sync/runtime-capabilities"
+
 export const canAddSelectionContext = (input: {
   active?: string
   pathFromTab: (tab: string) => string | undefined
@@ -18,4 +20,19 @@ export const restartOpenCode = async (input: {
 }) => {
   await input.dispose({ directory: input.directory })
   await Promise.all([input.loadConfig(), input.loadSkills(), input.loadMcp()])
+}
+
+const commandCapabilities: Record<string, RuntimeCapability> = {
+  "project.restartOpenCode": "restart",
+  "session.undo": "revert",
+  "session.timeline": "revert",
+  "session.redo": "revert",
+  "session.compact": "summarize",
+}
+
+export function filterRuntimeCommands<T extends { id: string }>(commands: T[], config: unknown) {
+  return commands.filter((command) => {
+    const capability = commandCapabilities[command.id]
+    return !capability || supportsRuntimeCapability(config, capability)
+  })
 }

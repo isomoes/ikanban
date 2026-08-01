@@ -9,8 +9,8 @@ import { dict as zh } from "@/i18n/zh"
 import { handleNotificationClick } from "@/utils/notification-click"
 import pkg from "../package.json"
 import { ServerConnection } from "./context/server"
-
-const DEFAULT_SERVER_URL_KEY = "opencode.settings.dat:defaultServerUrl"
+import { ServerSession } from "./utils/server-session"
+import { resolveBackendUrl } from "./utils/backend-url"
 
 const getLocale = () => {
   if (typeof navigator !== "object") return "en" as const
@@ -27,31 +27,6 @@ const getRootNotFoundError = () => {
   const locale = getLocale()
   return locale === "zh" ? (zh[key] ?? en[key]) : en[key]
 }
-
-const getStorage = (key: string) => {
-  if (typeof localStorage === "undefined") return null
-  try {
-    return localStorage.getItem(key)
-  } catch {
-    return null
-  }
-}
-
-const setStorage = (key: string, value: string | null) => {
-  if (typeof localStorage === "undefined") return
-  try {
-    if (value !== null) {
-      localStorage.setItem(key, value)
-      return
-    }
-    localStorage.removeItem(key)
-  } catch {
-    return
-  }
-}
-
-const readDefaultServerUrl = () => getStorage(DEFAULT_SERVER_URL_KEY)
-const writeDefaultServerUrl = (url: string | null) => setStorage(DEFAULT_SERVER_URL_KEY, url)
 
 const notify: Platform["notify"] = async (title, description, href) => {
   if (!("Notification" in window)) return
@@ -106,22 +81,10 @@ const platform: Platform = {
   forward,
   restart,
   notify,
-  getDefaultServerUrl: async () => readDefaultServerUrl(),
-  setDefaultServerUrl: writeDefaultServerUrl,
 }
 
-const defaultUrl = iife(() => {
-  const lsDefault = readDefaultServerUrl()
-  if (lsDefault) return lsDefault
-  if (location.hostname.includes("opencode.ai")) return "http://localhost:4097"
-  if (import.meta.env.DEV)
-    return `http://${import.meta.env.VITE_OPENCODE_SERVER_HOST ?? "localhost"}:${import.meta.env.VITE_OPENCODE_SERVER_PORT ?? "4097"}`
-  // Strip trailing slash from BASE_URL so origin + base never has a double slash.
-  // When VITE_BASE_PATH is set (e.g. /ikanban/) Vite bakes it into BASE_URL,
-  // so API calls are routed through the same-origin proxy under that prefix.
-  const base = (import.meta.env.BASE_URL ?? "/").replace(/\/+$/, "")
-  return location.origin + base
-})
+const defaultUrl = iife(() => resolveBackendUrl(location.origin, import.meta.env.BASE_URL ?? "/"))
+ServerSession.write(defaultUrl)
 
 if (root instanceof HTMLElement) {
   const server: ServerConnection.Http = { type: "http", http: { url: defaultUrl } }
