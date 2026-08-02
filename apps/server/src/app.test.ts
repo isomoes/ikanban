@@ -1,4 +1,7 @@
 import { once } from "node:events";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { buildApp, type ControllerPort } from "./app.js";
 import { isLoopback, originIsLocal, tokenMatches } from "./auth.js";
@@ -120,5 +123,59 @@ describe("local gateway", () => {
     await vi.waitFor(() => expect(controller.handle).toHaveBeenCalledWith(expect.objectContaining({ commandId: "immediate" })));
     socket.close();
     await app.close();
+  });
+
+  it("does not send controller messages to a closing WebSocket", async () => {
+    let listener: Parameters<ControllerPort["subscribe"]>[0] | undefined;
+    const unsubscribe = vi.fn();
+    controller.subscribe = vi.fn((next) => {
+      listener = next;
+      return unsubscribe;
+    });
+    const app = await buildApp({ controller, startupToken: "secret", webRoot: undefined });
+    await app.ready();
+    const auth = await app.inject({ method: "POST", url: "/api/auth/exchange", payload: { token: "secret" } });
+    const cookie = `${auth.cookies[0]?.name}=${auth.cookies[0]?.value}`;
+    const socket = await app.injectWS("/api/events", { headers: { cookie, origin: "http://localhost" } });
+    const serverSocket = [...app.websocketServer.clients][0];
+    expect(serverSocket).toBeDefined();
+    const send = vi.spyOn(serverSocket!, "send");
+
+    serverSocket!.close();
+    listener?.({
+      protocolVersion: 1,
+      sequence: 1,
+      type: "command.accepted",
+      commandId: "late",
+    });
+
+    expect(send).not.toHaveBeenCalled();
+    expect(unsubscribe).toHaveBeenCalledOnce();
+    socket.close();
+    await app.close();
+  });
+
+  it("reserves API paths from static files, including dotfiles", async () => {
+    const webRoot = await mkdtemp(join(tmpdir(), "pi-web-static-"));
+    await mkdir(join(webRoot, "api"));
+    await writeFile(join(webRoot, "index.html"), "app shell");
+    await writeFile(join(webRoot, "api", "leak.txt"), "not an API response");
+    await writeFile(join(webRoot, "api", ".secret"), "hidden secret");
+    const app = await buildApp({ controller, startupToken: "secret", webRoot });
+
+    try {
+      const asset = await app.inject({ method: "GET", url: "/api/leak.txt" });
+      const dotfile = await app.inject({ method: "GET", url: "/api/.secret" });
+      const spa = await app.inject({ method: "GET", url: "/board/one" });
+
+      expect(asset.statusCode).toBe(404);
+      expect(asset.body).not.toContain("not an API response");
+      expect(dotfile.statusCode).toBe(404);
+      expect(dotfile.body).not.toContain("hidden secret");
+      expect(spa.body).toBe("app shell");
+    } finally {
+      await app.close();
+      await rm(webRoot, { recursive: true, force: true });
+    }
   });
 });
