@@ -1,0 +1,486 @@
+:root {
+  color-scheme: dark;
+  font-family: "IBM Plex Sans", "Aptos", "Segoe UI", sans-serif;
+  color: #e8e1d3;
+  background: #151719;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  --surface: #151719;
+  --surface-raised: #1d2023;
+  --surface-deep: #101214;
+  --paper: #e8e1d3;
+  --muted: #9b988f;
+  --line: #373a3d;
+  --cobalt: #6688e8;
+  --danger: #e17a6f;
+  --success: #84aa87;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  min-height: 100dvh;
+  background: var(--surface);
+}
+
+button,
+textarea,
+select {
+  font: inherit;
+}
+
+button,
+select {
+  min-height: 44px;
+}
+
+button:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+summary:focus-visible {
+  outline: 3px solid var(--cobalt);
+  outline-offset: 3px;
+}
+
+.app-frame {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  min-height: 100dvh;
+  background-color: var(--surface);
+}
+
+.status-rail {
+  position: sticky;
+  top: 0;
+  display: flex;
+  height: 100dvh;
+  align-items: center;
+  gap: 12px;
+  border-right: 1px solid var(--line);
+  background: var(--surface-deep);
+  writing-mode: vertical-rl;
+  padding: 20px 0;
+}
+
+.connection-light {
+  width: 9px;
+  height: 9px;
+  border: 1px solid #6f7376;
+  background: #4d5052;
+}
+
+.connection-light.is-connected {
+  border-color: var(--success);
+  background: var(--success);
+}
+
+.rail-label {
+  color: var(--muted);
+  font-family: "IBM Plex Mono", "Cascadia Mono", monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.app-body {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-width: 0;
+  min-height: 100dvh;
+}
+
+.app-header {
+  display: flex;
+  min-height: 82px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  border-bottom: 1px solid var(--line);
+  padding: 16px clamp(20px, 4vw, 64px);
+  background: rgb(21 23 25 / 94%);
+}
+
+.brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.brand-mark {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid var(--cobalt);
+  color: var(--cobalt);
+  font-family: Georgia, serif;
+  font-size: 1.55rem;
+}
+
+.brand-lockup strong,
+.brand-lockup span {
+  display: block;
+}
+
+.brand-lockup strong {
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+}
+
+.brand-lockup div > span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.runtime-meta {
+  display: flex;
+  gap: clamp(24px, 4vw, 56px);
+  margin: 0;
+}
+
+.runtime-meta div {
+  min-width: 120px;
+}
+
+.runtime-meta dt,
+.item-label {
+  color: var(--muted);
+  font-family: "IBM Plex Mono", "Cascadia Mono", monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.runtime-meta dd {
+  margin: 5px 0 0;
+  color: var(--paper);
+  font-family: "IBM Plex Mono", "Cascadia Mono", monospace;
+  font-size: 0.78rem;
+}
+
+.transcript {
+  width: min(100%, 880px);
+  margin: 0 auto;
+  padding: clamp(52px, 8vh, 96px) clamp(20px, 5vw, 64px) 72px;
+}
+
+.empty-state {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  max-width: 720px;
+}
+
+.empty-index {
+  padding-top: 9px;
+  color: var(--cobalt);
+  font-family: "IBM Plex Mono", "Cascadia Mono", monospace;
+  font-size: 0.76rem;
+}
+
+.empty-state h1 {
+  max-width: 620px;
+  margin: 0;
+  font-size: clamp(2.25rem, 6vw, 4.4rem);
+  font-weight: 520;
+  letter-spacing: -0.045em;
+  line-height: 0.98;
+}
+
+.empty-state p {
+  grid-column: 2;
+  max-width: 52ch;
+  margin: 28px 0 0;
+  color: #bbb5aa;
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+.transcript-list {
+  display: grid;
+  gap: 34px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.transcript-item {
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+}
+
+.transcript-item article {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 0;
+}
+
+.transcript-item p {
+  margin: 0;
+}
+
+.assistant-text,
+.user-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.7;
+}
+
+.user-text {
+  color: #c5c0b6;
+}
+
+details {
+  border-left: 3px solid var(--cobalt);
+  background: var(--surface-raised);
+}
+
+summary {
+  display: flex;
+  min-height: 48px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  font-family: "IBM Plex Mono", "Cascadia Mono", monospace;
+  font-size: 0.8rem;
+}
+
+.tool-state {
+  color: var(--muted);
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.state-succeeded {
+  color: var(--success);
+}
+
+.state-failed {
+  color: var(--danger);
+}
+
+details pre {
+  margin: 0;
+  overflow-x: auto;
+  border-top: 1px solid var(--line);
+  padding: 16px;
+  color: #c9c4ba;
+  font: 0.78rem/1.6 "IBM Plex Mono", "Cascadia Mono", monospace;
+  white-space: pre-wrap;
+}
+
+.item-error p,
+.connection-error {
+  border-left: 3px solid var(--danger);
+  color: #f0aaa2;
+  background: #2a1d1d;
+  padding: 14px 16px;
+  line-height: 1.5;
+}
+
+.composer-wrap {
+  position: sticky;
+  bottom: 0;
+  border-top: 1px solid var(--line);
+  background: rgb(16 18 20 / 96%);
+  padding: 14px clamp(20px, 4vw, 64px) 18px;
+}
+
+.connection-error {
+  width: min(100%, 820px);
+  margin: 0 auto 10px;
+  font-size: 0.82rem;
+}
+
+.composer {
+  display: grid;
+  width: min(100%, 820px);
+  margin: 0 auto;
+}
+
+.composer > label {
+  margin-bottom: 8px;
+  color: var(--paper);
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.composer textarea {
+  width: 100%;
+  min-height: 70px;
+  resize: vertical;
+  border: 1px solid #4a4e51;
+  border-bottom: 0;
+  border-radius: 0;
+  color: var(--paper);
+  background: var(--surface-raised);
+  padding: 14px 16px;
+  line-height: 1.5;
+}
+
+.composer textarea::placeholder {
+  color: #8d8b84;
+}
+
+.composer-actions {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid #4a4e51;
+  border-top: 1px solid var(--line);
+  background: var(--surface-raised);
+  padding-left: 16px;
+}
+
+.key-hint,
+.queue-control span {
+  color: var(--muted);
+  font-family: "IBM Plex Mono", "Cascadia Mono", monospace;
+  font-size: 0.68rem;
+}
+
+.queue-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.queue-control select {
+  border: 0;
+  color: var(--paper);
+  background: #292c30;
+  padding: 0 34px 0 12px;
+}
+
+.composer button {
+  align-self: stretch;
+  min-width: 112px;
+  border: 0;
+  border-left: 1px solid #7796ed;
+  border-radius: 0;
+  color: #f2eee5;
+  background: #315bbd;
+  padding: 0 24px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.composer button:hover:not(:disabled) {
+  background: #3c67cc;
+}
+
+.composer button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.composer button:disabled {
+  color: #84827d;
+  background: #292c2f;
+  cursor: not-allowed;
+}
+
+@media (max-width: 699px) {
+  .app-frame {
+    display: block;
+    width: 100%;
+  }
+
+  .status-rail {
+    position: static;
+    width: 100%;
+    height: 28px;
+    flex-direction: row;
+    justify-content: flex-end;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    padding: 0 14px;
+    writing-mode: horizontal-tb;
+  }
+
+  .app-header {
+    min-height: 68px;
+    padding: 12px 16px;
+  }
+
+  .runtime-meta {
+    display: none;
+  }
+
+  .brand-mark {
+    width: 38px;
+    height: 38px;
+  }
+
+  .transcript {
+    width: 100%;
+    padding: 48px 16px 56px;
+  }
+
+  .empty-state,
+  .transcript-item article {
+    grid-template-columns: 1fr;
+  }
+
+  .empty-index,
+  .item-label {
+    margin-bottom: 14px;
+  }
+
+  .empty-state p {
+    grid-column: 1;
+  }
+
+  .composer-wrap {
+    padding: 10px 10px max(10px, env(safe-area-inset-bottom));
+  }
+
+  .composer-actions {
+    align-items: stretch;
+    padding-left: 10px;
+  }
+
+  .key-hint {
+    display: none;
+  }
+
+  .queue-control {
+    min-width: 0;
+  }
+
+  .queue-control span {
+    display: none;
+  }
+
+  .queue-control select {
+    max-width: 150px;
+  }
+
+  .composer button {
+    min-width: 92px;
+    padding: 0 18px;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  button,
+  textarea,
+  select,
+  summary {
+    transition: background-color 140ms ease, border-color 140ms ease, transform 140ms ease;
+  }
+}
