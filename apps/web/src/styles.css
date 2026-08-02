@@ -171,7 +171,9 @@ summary:focus-visible {
 
 .transcript {
   width: min(100%, 880px);
+  min-height: 0;
   margin: 0 auto;
+  overflow-y: auto;
   padding: clamp(52px, 8vh, 96px) clamp(20px, 5vw, 64px) 72px;
 }
 
@@ -396,8 +398,17 @@ details pre {
 
 @media (max-width: 699px) {
   .app-frame {
-    display: block;
+    display: grid;
+    grid-template-rows: 28px minmax(0, 1fr);
     width: 100%;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .app-body {
+    min-height: 0;
+    height: 100%;
   }
 
   .status-rail {

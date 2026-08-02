@@ -97,6 +97,9 @@ export function reduceServerMessage(state: AgentState, message: ServerMessage): 
   if (message.sequence <= state.lastSequence) return state;
 
   if (message.type === "agent.event") {
+    if (message.sessionId !== state.sessionId) {
+      return { ...state, lastSequence: message.sequence };
+    }
     return reduceEvent(state, message.event, message.sequence);
   }
 

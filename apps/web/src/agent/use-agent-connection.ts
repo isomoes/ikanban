@@ -16,6 +16,38 @@ export interface AgentConnection {
   send(command: ClientCommandInput): string;
 }
 
+interface TokenExchange {
+  location: string;
+  promise: Promise<void>;
+}
+
+let tokenExchange: TokenExchange | undefined;
+
+function exchangeQueryToken(): Promise<void> {
+  const url = new URL(window.location.href);
+  const token = url.searchParams.get("token");
+  url.searchParams.delete("token");
+  const location = `${url.pathname}${url.search}${url.hash}`;
+
+  if (token) {
+    window.history.replaceState({}, "", location);
+    if (tokenExchange?.location !== location) {
+      tokenExchange = {
+        location,
+        promise: fetch("/api/auth/exchange", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ token }),
+        }).then((response) => {
+          if (!response.ok) throw new Error("Authentication failed");
+        }),
+      };
+    }
+  }
+
+  return tokenExchange?.location === location ? tokenExchange.promise : Promise.resolve();
+}
+
 export function useAgentConnection(): AgentConnection {
   const [state, setState] = useState(initialAgentState);
   const socketRef = useRef<WebSocket | null>(null);
@@ -61,23 +93,11 @@ export function useAgentConnection(): AgentConnection {
     };
 
     const authenticateAndConnect = async () => {
-      const url = new URL(window.location.href);
-      const token = url.searchParams.get("token");
-      if (token) {
-        url.searchParams.delete("token");
-        window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
-
-        try {
-          const response = await fetch("/api/auth/exchange", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ token }),
-          });
-          if (!response.ok) throw new Error("Authentication failed");
-        } catch {
-          if (mounted) setState((current) => ({ ...current, lastError: "Authentication failed." }));
-          return;
-        }
+      try {
+        await exchangeQueryToken();
+      } catch {
+        if (mounted) setState((current) => ({ ...current, lastError: "Authentication failed." }));
+        return;
       }
       connect();
     };

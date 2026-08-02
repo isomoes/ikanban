@@ -25,6 +25,47 @@ describe("reduceServerMessage", () => {
     expect(result).toBe(state);
   });
 
+  it("ignores events from another session while advancing sequence", () => {
+    const state = { ...initialAgentState, sessionId: "s1", status: "idle" as const, lastSequence: 4 };
+    const result = reduceServerMessage(state, {
+      protocolVersion: 1,
+      sequence: 5,
+      type: "agent.event",
+      sessionId: "s2",
+      event: { type: "run.started" },
+    });
+
+    expect(result).toEqual({ ...state, lastSequence: 5 });
+  });
+
+  it("accepts a reconnect snapshot at sequence zero", () => {
+    const state = {
+      ...initialAgentState,
+      connected: true,
+      workspace: "/old",
+      sessionId: "s1",
+      status: "running" as const,
+      model: "old-model",
+      items: [{ id: "old", type: "message" as const, role: "assistant" as const, text: "Old" }],
+      lastSequence: 12,
+    };
+    const result = reduceServerMessage(state, {
+      protocolVersion: 1,
+      sequence: 0,
+      type: "state.snapshot",
+      snapshot: { workspace: "/new", sessionId: "s2", status: "idle", items: [] },
+    });
+
+    expect(result).toEqual({
+      connected: true,
+      workspace: "/new",
+      sessionId: "s2",
+      status: "idle",
+      items: [],
+      lastSequence: 0,
+    });
+  });
+
   it("upserts tool lifecycle events and records errors", () => {
     const base = { ...initialAgentState, sessionId: "s1" };
     const started = reduceServerMessage(base, { protocolVersion: 1, sequence: 1, type: "agent.event", sessionId: "s1", event: { type: "tool.started", itemId: "t1", toolName: "read" } });
