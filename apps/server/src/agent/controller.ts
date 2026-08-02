@@ -5,6 +5,21 @@ import type { PiEvent, PiRuntimeFactory, PiRuntimePort } from "./types.js";
 type WithoutEnvelope<T> = T extends unknown ? Omit<T, "protocolVersion" | "sequence"> : never;
 type UnsequencedServerMessage = WithoutEnvelope<ServerMessage>;
 
+function messageRecord(message: unknown): Record<string, unknown> | undefined {
+  return typeof message === "object" && message !== null
+    ? message as Record<string, unknown>
+    : undefined;
+}
+
+function userMessageSource(message: unknown): string | undefined {
+  const value = messageRecord(message);
+  if (value?.role !== "user") return undefined;
+  if (typeof value.sourceId === "string" || typeof value.sourceId === "number") return `source:${value.sourceId}`;
+  if (typeof value.id === "string") return `id:${value.id}`;
+  if (typeof value.timestamp === "number") return `timestamp:${value.timestamp}`;
+  return undefined;
+}
+
 export interface AgentControllerOptions {
   workspace: string;
   runtimeFactory: PiRuntimeFactory;
@@ -15,6 +30,7 @@ export class AgentController {
   readonly #runtime: PiRuntimePort;
   readonly #listeners = new Set<(message: ServerMessage) => void>();
   #transcript: TranscriptItem[];
+  #userMessageSources: Set<string>;
   #tail: Promise<void> = Promise.resolve();
   #unsubscribe: (() => void) | undefined;
   #sequence = 0;
@@ -30,6 +46,10 @@ export class AgentController {
     this.#workspace = workspace;
     this.#runtime = runtime;
     this.#transcript = transcriptFromMessages(runtime.session.messages);
+    this.#userMessageSources = new Set(runtime.session.messages.flatMap((message) => {
+      const source = userMessageSource(message);
+      return source ? [source] : [];
+    }));
     this.#subscribeToSession();
   }
 
@@ -121,14 +141,6 @@ export class AgentController {
       }
 
       this.#status = undefined;
-      if (command.type === "prompt.send" || command.type === "prompt.steer" || command.type === "prompt.followUp") {
-        this.#transcript = [...this.#transcript, {
-          id: `live-user-${++this.#itemSequence}`,
-          type: "message",
-          role: "user",
-          text: command.text,
-        }];
-      }
       this.#emit({ type: "command.accepted", commandId: command.commandId });
       switch (command.type) {
         case "prompt.send": {
@@ -176,6 +188,10 @@ export class AgentController {
     this.#unsubscribe = undefined;
     this.#resetTransientIds();
     this.#transcript = transcriptFromMessages(this.#runtime.session.messages);
+    this.#userMessageSources = new Set(this.#runtime.session.messages.flatMap((message) => {
+      const source = userMessageSource(message);
+      return source ? [source] : [];
+    }));
     if (this.#disposing) return;
 
     this.#subscribeToSession();
@@ -202,7 +218,10 @@ export class AgentController {
           : `live-${++this.#itemSequence}`;
       }
     }
-    if (event.type === "message_end") this.#reconcileAssistantMessage(event.message);
+    if (event.type === "message_end") {
+      this.#projectUserMessage(event.message);
+      this.#reconcileAssistantMessage(event.message);
+    }
     const normalized = normalizePiEvent(event, () => {
       this.#textItemId ??= `live-${++this.#itemSequence}`;
       return this.#textItemId;
@@ -214,10 +233,32 @@ export class AgentController {
     if (event.type === "agent_end" || event.type === "message_end") this.#textItemId = undefined;
   }
 
+  #projectUserMessage(message: unknown): void {
+    const value = messageRecord(message);
+    const source = userMessageSource(value);
+    if (!source || this.#userMessageSources.has(source)) return;
+
+    const text = textFromMessage(value);
+    if (text === undefined) return;
+    this.#userMessageSources.add(source);
+
+    const piId = typeof value?.id === "string" ? value.id : undefined;
+    const sourceId = typeof value?.sourceId === "string" ? value.sourceId : undefined;
+    const timestampId = typeof value?.timestamp === "number" ? `user-${value.timestamp}` : undefined;
+    const preferredId = piId ?? sourceId ?? timestampId;
+    const itemId = preferredId && !this.#transcript.some((item) => item.id === preferredId)
+      ? preferredId
+      : `live-user-${++this.#itemSequence}`;
+    this.#transcript = [...this.#transcript, {
+      id: itemId,
+      type: "message",
+      role: "user",
+      text,
+    }];
+  }
+
   #reconcileAssistantMessage(message: unknown): void {
-    const value = typeof message === "object" && message !== null
-      ? message as Record<string, unknown>
-      : undefined;
+    const value = messageRecord(message);
     if (value?.role !== "assistant") return;
 
     const text = textFromMessage(value);
