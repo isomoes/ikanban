@@ -25,10 +25,10 @@ function connection(overrides: Partial<AgentConnection["state"]> = {}, send = vi
 describe("App", () => {
   it("reports whether the gateway is connected", () => {
     const { rerender } = render(<App connection={connection()} />);
-    expect(screen.getByText("Connected")).toBeVisible();
+    expect(screen.getByRole("banner")).toHaveTextContent("Connected");
 
     rerender(<App connection={connection({ connected: false })} />);
-    expect(screen.getByText("Disconnected")).toBeVisible();
+    expect(screen.getByRole("banner")).toHaveTextContent("Disconnected");
   });
 
   it("abbreviates POSIX and Windows workspace paths", () => {
@@ -135,5 +135,37 @@ describe("App", () => {
     expect(screen.getByText(/read/i).closest("details")).toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent("Something failed");
     expect(screen.getByText("pi-local")).toBeInTheDocument();
+  });
+
+  it("gives user and assistant messages distinct conversation treatments", () => {
+    render(<App connection={connection({
+      items: [
+        { id: "u1", type: "message", role: "user", text: "Inspect the workspace" },
+        { id: "a1", type: "message", role: "assistant", text: "I will inspect it." },
+      ],
+    })} />);
+
+    expect(screen.getByText("Inspect the workspace").closest("article")).toHaveClass("user-turn");
+    expect(screen.getByText("I will inspect it.").closest("article")).toHaveClass("assistant-turn");
+  });
+
+  it("uses the v0.3.1 shell and attached tray composer", () => {
+    render(<App connection={connection({ model: "pi-local" })} />);
+
+    const composer = screen.getByLabelText("Message Pi").closest("form");
+    expect(composer?.querySelector(".composer-shell")).toBeInTheDocument();
+    expect(composer?.querySelector(".composer-tray")).toHaveTextContent("pi-local");
+    expect(screen.getByRole("button", { name: "Send" })).toHaveTextContent("");
+  });
+
+  it("renders assistant Markdown while keeping conversation structure", () => {
+    render(<App connection={connection({
+      items: [
+        { id: "a1", type: "message", role: "assistant", text: "**System Summary**\n\n- Arch Linux" },
+      ],
+    })} />);
+
+    expect(screen.getByText("System Summary").tagName).toBe("STRONG");
+    expect(screen.getByText("Arch Linux").closest("li")).toHaveTextContent("Arch Linux");
   });
 });
