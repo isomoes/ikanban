@@ -67,7 +67,7 @@ describe("resolveStartServerOptions", () => {
       port: 4177,
       startupToken: "fixed",
     });
-    expect(missing).toMatchObject({ workspace: "/fallback", webRoot: undefined, port: 4097 });
+    expect(missing).toMatchObject({ workspace: "/fallback", webRoot: undefined, port: 4098 });
     expect(missing.startupToken).toBeUndefined();
   });
 });

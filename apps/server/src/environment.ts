@@ -16,7 +16,7 @@ export function resolveStartServerOptions(
   return {
     workspace: environment.PI_WEB_WORKSPACE ?? environment.INIT_CWD ?? cwd,
     webRoot: pathExists(webRootCandidate) ? webRootCandidate : undefined,
-    port: Number(environment.PORT ?? 4097),
+    port: Number(environment.PORT ?? 4098),
     runtimeFactory: environment.PI_WEB_FAKE_RUNTIME === "1" ? createFakeRuntime : createPiRuntime,
     ...(environment.PI_WEB_STARTUP_TOKEN === undefined
       ? {}

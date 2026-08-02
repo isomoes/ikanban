@@ -26,7 +26,7 @@ The server prints a browser URL containing a startup token. Open that exact URL.
 ## Configuration
 
 - `PI_WEB_WORKSPACE` explicitly selects the workspace and takes priority over `INIT_CWD` and the server process working directory.
-- `PORT` changes the HTTP port from `4097`.
+- `PORT` changes the HTTP and development proxy port from `4098`.
 - `PI_WEB_STARTUP_TOKEN` explicitly overrides the generated startup token. It is intended primarily for deterministic integration tests and should not be used routinely.
 - `PI_WEB_FAKE_RUNTIME=1` selects the deterministic echo runtime used by browser tests. Every other value uses the real Pi runtime.
 

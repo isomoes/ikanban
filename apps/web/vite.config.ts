@@ -1,5 +1,6 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
+import { apiProxyTarget } from "./src/dev-proxy.js";
 
 const config = {
   plugins: [react()],
@@ -9,7 +10,7 @@ const config = {
   server: {
     proxy: {
       "/api": {
-        target: "http://127.0.0.1:4097",
+        target: apiProxyTarget(process.env),
         ws: true,
       },
     },
