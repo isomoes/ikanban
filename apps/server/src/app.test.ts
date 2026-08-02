@@ -60,6 +60,34 @@ describe("local gateway", () => {
     await app.close();
   });
 
+  it("rejects token exchange from a non-loopback address", async () => {
+    const app = await buildApp({ controller, startupToken: "secret", webRoot: undefined });
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/auth/exchange",
+      remoteAddress: "192.168.1.8",
+      payload: { token: "secret" },
+    });
+
+    expect(response.statusCode).toBe(403);
+    expect(response.headers["set-cookie"]).toBeUndefined();
+    await app.close();
+  });
+
+  it("rejects token exchange from a non-local origin", async () => {
+    const app = await buildApp({ controller, startupToken: "secret", webRoot: undefined });
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/auth/exchange",
+      headers: { origin: "https://example.com" },
+      payload: { token: "secret" },
+    });
+
+    expect(response.statusCode).toBe(403);
+    expect(response.headers["set-cookie"]).toBeUndefined();
+    await app.close();
+  });
+
   it("guards bootstrap with the session cookie and local origin", async () => {
     const app = await buildApp({ controller, startupToken: "secret", webRoot: undefined });
     const unauthenticated = await app.inject({ method: "GET", url: "/api/bootstrap" });

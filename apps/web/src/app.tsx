@@ -13,8 +13,10 @@ type QueueMode = "prompt.steer" | "prompt.followUp";
 
 function abbreviateWorkspace(workspace: string): string {
   if (!workspace) return "No workspace";
-  const parts = workspace.split("/").filter(Boolean);
-  return parts.length > 2 ? `…/${parts.slice(-2).join("/")}` : workspace;
+  const parts = workspace.split(/[\\/]/).filter(Boolean);
+  if (parts.length <= 2) return workspace;
+  const separator = workspace.lastIndexOf("\\") > workspace.lastIndexOf("/") ? "\\" : "/";
+  return `…${separator}${parts.slice(-2).join(separator)}`;
 }
 
 function AppShell({ connection }: { connection: AgentConnection }) {

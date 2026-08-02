@@ -32,7 +32,7 @@ function originHeader(request: FastifyRequest): string | undefined {
   return Array.isArray(origin) ? origin[0] : origin;
 }
 
-function guardLocalSession(request: FastifyRequest, reply: FastifyReply, sessionValue: string): boolean {
+function guardLocalRequest(request: FastifyRequest, reply: FastifyReply): boolean {
   const injectedWebSocket = request.ws && request.ip === undefined;
   if (!injectedWebSocket && !isLoopback(request.ip)) {
     void reply.code(403).send();
@@ -42,6 +42,11 @@ function guardLocalSession(request: FastifyRequest, reply: FastifyReply, session
     void reply.code(403).send();
     return false;
   }
+  return true;
+}
+
+function guardLocalSession(request: FastifyRequest, reply: FastifyReply, sessionValue: string): boolean {
+  if (!guardLocalRequest(request, reply)) return false;
   const session = request.cookies[SESSION_COOKIE];
   if (session === undefined || !tokenMatches(session, sessionValue)) {
     void reply.code(401).send();
@@ -64,6 +69,7 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     });
 
     app.post("/api/auth/exchange", async (request, reply) => {
+      if (!guardLocalRequest(request, reply)) return;
       const body = request.body;
       if (typeof body !== "object" || body === null || !("token" in body) || typeof body.token !== "string") {
         return reply.code(400).send();

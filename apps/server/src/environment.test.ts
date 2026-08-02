@@ -4,6 +4,31 @@ import { createPiRuntime } from "./agent/pi-runtime.js";
 import { resolveStartServerOptions } from "./environment.js";
 
 describe("resolveStartServerOptions", () => {
+  it("prefers the explicit workspace, then pnpm's invocation directory, then process cwd", () => {
+    const explicit = resolveStartServerOptions(
+      { PI_WEB_WORKSPACE: "/explicit", INIT_CWD: "/invoked" },
+      "/process",
+      "file:///project/apps/server/dist/index.js",
+      () => false,
+    );
+    const invoked = resolveStartServerOptions(
+      { INIT_CWD: "/invoked" },
+      "/process",
+      "file:///project/apps/server/dist/index.js",
+      () => false,
+    );
+    const process = resolveStartServerOptions(
+      {},
+      "/process",
+      "file:///project/apps/server/dist/index.js",
+      () => false,
+    );
+
+    expect(explicit.workspace).toBe("/explicit");
+    expect(invoked.workspace).toBe("/invoked");
+    expect(process.workspace).toBe("/process");
+  });
+
   it("selects the fake runtime only for the explicit environment flag", () => {
     const fake = resolveStartServerOptions(
       { PI_WEB_FAKE_RUNTIME: "1" },

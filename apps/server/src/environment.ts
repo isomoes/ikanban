@@ -14,7 +14,7 @@ export function resolveStartServerOptions(
 ): StartServerOptions {
   const webRootCandidate = fileURLToPath(new URL("../../web/dist", moduleUrl));
   return {
-    workspace: environment.PI_WEB_WORKSPACE ?? cwd,
+    workspace: environment.PI_WEB_WORKSPACE ?? environment.INIT_CWD ?? cwd,
     webRoot: pathExists(webRootCandidate) ? webRootCandidate : undefined,
     port: Number(environment.PORT ?? 4097),
     runtimeFactory: environment.PI_WEB_FAKE_RUNTIME === "1" ? createFakeRuntime : createPiRuntime,

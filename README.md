@@ -10,7 +10,7 @@ Pi Agent Web runs a local Pi coding-agent session behind a loopback-only browser
 
 ## Install And Run
 
-Run commands from the repository root. Unless `PI_WEB_WORKSPACE` is set, the server process startup working directory is the workspace exposed to Pi. The root pnpm command runs the server package with `apps/server` as that working directory, so set `PI_WEB_WORKSPACE` to the project you want Pi to operate on.
+Run commands from the repository root. For normal pnpm use, Pi uses pnpm's original invocation directory (`INIT_CWD`) as its workspace even though the server package runs from `apps/server`. If pnpm does not provide `INIT_CWD`, Pi falls back to the server process working directory.
 
 ```bash
 corepack pnpm install
@@ -25,7 +25,7 @@ The server prints a browser URL containing a startup token. Open that exact URL.
 
 ## Configuration
 
-- `PI_WEB_WORKSPACE` changes the workspace from the startup working directory.
+- `PI_WEB_WORKSPACE` explicitly selects the workspace and takes priority over `INIT_CWD` and the server process working directory.
 - `PORT` changes the HTTP port from `4097`.
 - `PI_WEB_STARTUP_TOKEN` explicitly overrides the generated startup token. It is intended primarily for deterministic integration tests and should not be used routinely.
 - `PI_WEB_FAKE_RUNTIME=1` selects the deterministic echo runtime used by browser tests. Every other value uses the real Pi runtime.
@@ -34,7 +34,7 @@ Pi loads project resources from `.pi/` and skills from `.agents/skills/` within 
 
 ## Security
 
-The gateway binds only to `127.0.0.1`. It is not designed or hardened for remote access, reverse proxies, shared machines, or untrusted local users. API and WebSocket access require the exchanged session cookie and local-origin checks; the startup token is not returned by bootstrap responses.
+The gateway binds only to `127.0.0.1`. It is not designed or hardened for remote access, reverse proxies, shared machines, or untrusted local users. Token exchange, authenticated API requests, and WebSocket connections enforce a loopback client address and a local Origin when one is supplied. API and WebSocket access also require the exchanged session cookie; the startup token is not returned by bootstrap responses.
 
 The agent has host-level power. Pi tools such as `bash`, installed extensions, and project-provided skills can read, modify, and execute files with the permissions of the user running the server. Review workspace resources and extensions before starting the application. Loopback binding prevents network exposure but does not sandbox the agent.
 

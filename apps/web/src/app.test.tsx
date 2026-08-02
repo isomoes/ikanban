@@ -31,6 +31,14 @@ describe("App", () => {
     expect(screen.getByText("Disconnected")).toBeVisible();
   });
 
+  it("abbreviates POSIX and Windows workspace paths", () => {
+    const { rerender } = render(<App connection={connection({ workspace: "/home/dev/project/src" })} />);
+    expect(screen.getByText("…/project/src")).toHaveAttribute("title", "/home/dev/project/src");
+
+    rerender(<App connection={connection({ workspace: "C:\\Users\\dev\\project\\src" })} />);
+    expect(screen.getByText("…\\project\\src")).toHaveAttribute("title", "C:\\Users\\dev\\project\\src");
+  });
+
   it("submits a prompt and exposes stop while running", async () => {
     const send = vi.fn(() => "command-1");
     const user = userEvent.setup();
