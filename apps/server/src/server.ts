@@ -1,8 +1,13 @@
 import type { FastifyInstance } from "fastify";
-import { AgentController } from "./agent/controller.js";
+import { AgentHub } from "./agent/hub.js";
+import { openDefaultSessionArchiveStore } from "./agent/archive.js";
 import { createPiRuntime } from "./agent/pi-runtime.js";
 import type { PiRuntimeFactory } from "./agent/types.js";
-import { buildApp, type ControllerPort } from "./app.js";
+import { buildApp, type HubPort } from "./app.js";
+
+export interface HubLifecycle extends HubPort {
+  dispose(): Promise<void>;
+}
 
 export interface StartServerOptions {
   workspace: string;
@@ -12,7 +17,7 @@ export interface StartServerOptions {
 }
 
 export interface StartServerDependencies {
-  createController(workspace: string, runtimeFactory: PiRuntimeFactory): Promise<ControllerPort>;
+  createController(workspace: string, runtimeFactory: PiRuntimeFactory): Promise<HubLifecycle>;
   buildApp: typeof buildApp;
   log(message: string): void;
 }
@@ -23,12 +28,16 @@ export interface StartedServer {
 }
 
 const defaultDependencies: StartServerDependencies = {
-  createController: (workspace, runtimeFactory) => AgentController.create({ workspace, runtimeFactory }),
+  createController: async (workspace, runtimeFactory) => AgentHub.create({
+    workspace,
+    runtimeFactory,
+    archiveStore: await openDefaultSessionArchiveStore(),
+  }),
   buildApp,
   log: console.log,
 };
 
-async function closeResources(app: Pick<FastifyInstance, "close">, controller: Pick<ControllerPort, "dispose">): Promise<void> {
+async function closeResources(app: Pick<FastifyInstance, "close">, controller: Pick<HubLifecycle, "dispose">): Promise<void> {
   try {
     await app.close();
   } finally {
@@ -38,7 +47,7 @@ async function closeResources(app: Pick<FastifyInstance, "close">, controller: P
 
 export function createShutdown(
   app: Pick<FastifyInstance, "close">,
-  controller: Pick<ControllerPort, "dispose">,
+  controller: Pick<HubLifecycle, "dispose">,
 ): () => Promise<void> {
   let shutdown: Promise<void> | undefined;
   return () => {
@@ -57,7 +66,7 @@ export async function startServer(
 
   try {
     app = await dependencies.buildApp({
-      controller,
+      hub: controller,
       webRoot: options.webRoot,
     });
     const address = await app.listen({ host: "127.0.0.1", port: options.port });

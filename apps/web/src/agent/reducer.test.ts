@@ -7,7 +7,7 @@ describe("reduceServerMessage", () => {
       protocolVersion: 1,
       sequence: 0,
       type: "state.snapshot",
-      snapshot: { workspace: "/work", sessionId: "s1", status: "idle", items: [] },
+      snapshot: { workspace: "/work", sessionId: "s1", status: "idle", models: [], thinkingLevels: [], sessions: [], workspaces: [], commands: [], items: [] },
     });
     expect(state).toMatchObject({ workspace: "/work", sessionId: "s1", status: "idle", lastSequence: 0 });
   });
@@ -74,7 +74,7 @@ describe("reduceServerMessage", () => {
       protocolVersion: 1,
       sequence: 0,
       type: "state.snapshot",
-      snapshot: { workspace: "/new", sessionId: "s2", status: "idle", items: [] },
+      snapshot: { workspace: "/new", sessionId: "s2", status: "idle", models: [], thinkingLevels: [], sessions: [], workspaces: [], commands: [], items: [] },
     });
 
     expect(result).toEqual({
@@ -82,6 +82,11 @@ describe("reduceServerMessage", () => {
       workspace: "/new",
       sessionId: "s2",
       status: "idle",
+      models: [],
+      thinkingLevels: [],
+      sessions: [],
+      workspaces: [],
+      commands: [],
       items: [],
       lastSequence: 0,
     });

@@ -1,13 +1,28 @@
 import type { FastifyInstance } from "fastify";
 import { describe, expect, it, vi } from "vitest";
-import type { ControllerPort } from "./app.js";
+import type { ControllerPort, HubPort } from "./app.js";
 import { createShutdown, startServer } from "./server.js";
 
-function createController(): ControllerPort {
-  return {
-    snapshot: () => ({ workspace: "/work", sessionId: "s1", status: "idle", items: [] }),
+function createController(): HubPort & Pick<ControllerPort, "dispose"> {
+  const connection: ControllerPort = {
+    snapshot: () => ({
+      workspace: "/work",
+      sessionId: "s1",
+      status: "idle",
+      models: [],
+      thinkingLevels: [],
+      sessions: [],
+      workspaces: [],
+      commands: [],
+      items: [],
+    }),
     subscribe: () => () => undefined,
     handle: async () => undefined,
+    dispose: vi.fn(async () => undefined),
+  };
+  return {
+    snapshot: connection.snapshot,
+    connect: () => connection,
     dispose: vi.fn(async () => undefined),
   };
 }
@@ -103,7 +118,7 @@ describe("server lifecycle", () => {
 
     try {
       expect(createControllerForRuntime).toHaveBeenCalledWith("/work", runtimeFactory);
-      expect(buildApp).toHaveBeenCalledWith({ controller, webRoot: undefined });
+      expect(buildApp).toHaveBeenCalledWith({ hub: controller, webRoot: undefined });
       expect(started.launchUrl).toBe("http://127.0.0.1:4177/");
     } finally {
       await started.shutdown();

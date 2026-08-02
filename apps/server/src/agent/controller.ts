@@ -23,6 +23,7 @@ function userMessageSource(message: unknown): string | undefined {
 export interface AgentControllerOptions {
   workspace: string;
   runtimeFactory: PiRuntimeFactory;
+  sessionId?: string | null;
 }
 
 export class AgentController {
@@ -54,7 +55,7 @@ export class AgentController {
   }
 
   static async create(options: AgentControllerOptions): Promise<AgentController> {
-    return new AgentController(options.workspace, await options.runtimeFactory(options.workspace));
+    return new AgentController(options.workspace, await options.runtimeFactory(options.workspace, options.sessionId));
   }
 
   subscribe(listener: (message: ServerMessage) => void): () => void {
@@ -68,9 +69,15 @@ export class AgentController {
       workspace: this.#workspace,
       sessionId: session.sessionId,
       status: this.#status ?? (this.#activePrompt || session.isStreaming ? "running" : "idle"),
+      models: [...this.#runtime.models],
+      thinkingLevels: [...session.thinkingLevels],
+      sessions: [...this.#runtime.sessions],
+      workspaces: [],
+      commands: [...this.#runtime.commands],
       items: [...this.#transcript],
     };
     if (session.model) snapshot.model = `${session.model.provider}/${session.model.id}`;
+    if (session.thinkingLevel) snapshot.thinkingLevel = session.thinkingLevel;
     return snapshot;
   }
 
@@ -127,12 +134,16 @@ export class AgentController {
 
   async #handle(command: ClientCommand): Promise<void> {
     try {
+      if (command.type === "workspace.open") {
+        this.#reject(command.commandId, "Workspace commands must be handled by the session hub.");
+        return;
+      }
       if (command.type === "prompt.send" && (this.#activePrompt || this.#runtime.session.isStreaming)) {
         this.#reject(command.commandId, "A run is already active; steer, follow up, or abort it.");
         return;
       }
-      if (command.type === "session.new" && (this.#activePrompt || this.#runtime.session.isStreaming)) {
-        this.#reject(command.commandId, "A run is already active; abort it before starting a new session.");
+      if (["session.new", "session.switch", "model.set", "thinking.set"].includes(command.type) && (this.#activePrompt || this.#runtime.session.isStreaming)) {
+        this.#reject(command.commandId, "A run is already active; abort it before changing runtime settings.");
         return;
       }
       if ((command.type === "prompt.steer" || command.type === "prompt.followUp" || command.type === "run.abort") && !this.#activePrompt && !this.#runtime.session.isStreaming) {
@@ -164,7 +175,7 @@ export class AgentController {
           break;
         case "session.new": {
           this.#status = "replacing";
-          const replacement = this.#replaceSession();
+          const replacement = this.#replaceSession(() => this.#runtime.newSession());
           this.#replacement = replacement;
           try {
             await replacement;
@@ -174,6 +185,27 @@ export class AgentController {
           }
           break;
         }
+        case "session.switch": {
+          if (command.sessionId === this.#runtime.session.sessionId) break;
+          this.#status = "replacing";
+          const replacement = this.#replaceSession(() => this.#runtime.switchSession(command.sessionId));
+          this.#replacement = replacement;
+          try {
+            await replacement;
+          } finally {
+            if (this.#replacement === replacement) this.#replacement = undefined;
+            if (this.#status === "replacing") this.#status = undefined;
+          }
+          break;
+        }
+        case "model.set":
+          await this.#runtime.session.setModel(command.provider, command.modelId);
+          this.#emit({ type: "state.snapshot", snapshot: this.snapshot() });
+          break;
+        case "thinking.set":
+          this.#runtime.session.setThinkingLevel(command.level);
+          this.#emit({ type: "state.snapshot", snapshot: this.snapshot() });
+          break;
       }
     } catch (error) {
       this.#status = "error";
@@ -181,8 +213,8 @@ export class AgentController {
     }
   }
 
-  async #replaceSession(): Promise<void> {
-    if ((await this.#runtime.newSession()).cancelled) return;
+  async #replaceSession(replace: () => Promise<{ cancelled: boolean }>): Promise<void> {
+    if ((await replace()).cancelled) return;
 
     this.#unsubscribe?.();
     this.#unsubscribe = undefined;

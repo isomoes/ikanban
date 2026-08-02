@@ -1,6 +1,6 @@
 import type { PiEvent, PiRuntimeFactory, PiSessionPort } from "./types.js";
 
-function createFakeSession(): PiSessionPort {
+function createFakeSession(sessionId = "fake-session"): PiSessionPort {
   const listeners = new Set<(event: PiEvent) => void>();
   let messageSequence = 0;
   const emit = (event: PiEvent) => {
@@ -21,13 +21,17 @@ function createFakeSession(): PiSessionPort {
   };
 
   return {
-    sessionId: "fake-session",
+    sessionId,
     isStreaming: false,
     messages: [],
+    thinkingLevel: "off",
+    thinkingLevels: [],
     prompt,
     steer: prompt,
     followUp: prompt,
     abort: async () => emit({ type: "agent_end" }),
+    setModel: async () => undefined,
+    setThinkingLevel: () => undefined,
     subscribe: (listener) => {
       listeners.add(listener);
       return () => listeners.delete(listener);
@@ -35,14 +39,21 @@ function createFakeSession(): PiSessionPort {
   };
 }
 
-export const createFakeRuntime: PiRuntimeFactory = async () => {
-  let session = createFakeSession();
+let fakeSessionSequence = 0;
+
+export const createFakeRuntime: PiRuntimeFactory = async (_workspace, requestedSession) => {
+  const initialId = requestedSession ?? (requestedSession === null ? `fake-session-${++fakeSessionSequence}` : "fake-session");
+  let session = createFakeSession(initialId);
   return {
     get session() { return session; },
+    models: [],
+    sessions: [],
+    commands: [],
     newSession: async () => {
-      session = createFakeSession();
+      session = createFakeSession(initialId);
       return { cancelled: false };
     },
+    switchSession: async () => ({ cancelled: false }),
     dispose: () => undefined,
   };
 };

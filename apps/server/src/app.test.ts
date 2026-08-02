@@ -8,7 +8,17 @@ import { isLoopback, originIsLocal } from "./auth.js";
 
 function createController(): ControllerPort {
   return {
-    snapshot: vi.fn(() => ({ workspace: "/work", sessionId: "s1", status: "idle" as const, items: [] })),
+    snapshot: vi.fn(() => ({
+      workspace: "/work",
+      sessionId: "s1",
+      status: "idle" as const,
+      models: [],
+      thinkingLevels: [],
+      sessions: [],
+      workspaces: [],
+      commands: [],
+      items: [],
+    })),
     subscribe: vi.fn(() => () => undefined),
     handle: vi.fn(async () => undefined),
     dispose: vi.fn(async () => undefined),
@@ -36,13 +46,18 @@ describe("local access", () => {
 
 describe("local gateway", () => {
   let controller: ControllerPort;
+  let hub: {
+    snapshot: ControllerPort["snapshot"];
+    connect: () => ControllerPort;
+  };
 
   beforeEach(() => {
     controller = createController();
+    hub = { snapshot: controller.snapshot, connect: vi.fn(() => controller) };
   });
 
   it("allows local bootstrap without credentials and rejects remote access", async () => {
-    const app = await buildApp({ controller, webRoot: undefined });
+    const app = await buildApp({ hub, webRoot: undefined });
     const remoteAddress = await app.inject({ method: "GET", url: "/api/bootstrap", remoteAddress: "192.168.1.8" });
     const remoteOrigin = await app.inject({ method: "GET", url: "/api/bootstrap", headers: { origin: "https://example.com" } });
     const accepted = await app.inject({ method: "GET", url: "/api/bootstrap" });
@@ -55,7 +70,7 @@ describe("local gateway", () => {
   });
 
   it("sends a snapshot then validates WebSocket commands", async () => {
-    const app = await buildApp({ controller, webRoot: undefined });
+    const app = await buildApp({ hub, webRoot: undefined });
     await app.ready();
     let resolveFirst!: (message: unknown) => void;
     const firstMessage = new Promise<unknown>((resolve) => { resolveFirst = resolve; });
@@ -82,7 +97,7 @@ describe("local gateway", () => {
   });
 
   it("attaches WebSocket listeners before a client can send a command", async () => {
-    const app = await buildApp({ controller, webRoot: undefined });
+    const app = await buildApp({ hub, webRoot: undefined });
     await app.ready();
     const socket = await app.injectWS(
       "/api/events",
@@ -107,7 +122,7 @@ describe("local gateway", () => {
       listener = next;
       return unsubscribe;
     });
-    const app = await buildApp({ controller, webRoot: undefined });
+    const app = await buildApp({ hub, webRoot: undefined });
     await app.ready();
     const socket = await app.injectWS("/api/events", { headers: { origin: "http://localhost" } });
     const serverSocket = [...app.websocketServer.clients][0];
@@ -134,7 +149,7 @@ describe("local gateway", () => {
     await writeFile(join(webRoot, "index.html"), "app shell");
     await writeFile(join(webRoot, "api", "leak.txt"), "not an API response");
     await writeFile(join(webRoot, "api", ".secret"), "hidden secret");
-    const app = await buildApp({ controller, webRoot });
+    const app = await buildApp({ hub, webRoot });
 
     try {
       const asset = await app.inject({ method: "GET", url: "/api/leak.txt" });
@@ -149,6 +164,31 @@ describe("local gateway", () => {
     } finally {
       await app.close();
       await rm(webRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("guards and serves host directory listings", async () => {
+    const root = await mkdtemp(join(tmpdir(), "pi-web-picker-"));
+    await mkdir(join(root, "project"));
+    const app = await buildApp({ hub, webRoot: undefined });
+
+    try {
+      const remote = await app.inject({
+        method: "GET",
+        url: `/api/directories?path=${encodeURIComponent(root)}`,
+        remoteAddress: "192.168.1.8",
+      });
+      const accepted = await app.inject({ method: "GET", url: `/api/directories?path=${encodeURIComponent(root)}` });
+
+      expect(remote.statusCode).toBe(403);
+      expect(accepted.statusCode).toBe(200);
+      expect(accepted.json()).toMatchObject({
+        path: root,
+        directories: [{ name: "project", path: join(root, "project") }],
+      });
+    } finally {
+      await app.close();
+      await rm(root, { recursive: true, force: true });
     }
   });
 });

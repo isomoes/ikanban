@@ -9,6 +9,8 @@ class FakeSession implements PiSessionPort {
   isStreaming = false;
   messages: readonly unknown[] = [];
   model = { provider: "test", id: "small" };
+  thinkingLevel = "medium";
+  thinkingLevels = ["off", "low", "medium", "high"];
   listener: ((event: PiEvent) => void) | undefined;
   prompt = vi.fn(async (text: string) => {
     this.isStreaming = true;
@@ -20,6 +22,12 @@ class FakeSession implements PiSessionPort {
   steer = vi.fn<(text: string) => Promise<void>>(async () => undefined);
   followUp = vi.fn<(text: string) => Promise<void>>(async () => undefined);
   abort = vi.fn<() => Promise<void>>(async () => undefined);
+  setModel = vi.fn<(provider: string, modelId: string) => Promise<void>>(async (provider, id) => {
+    this.model = { provider, id };
+  });
+  setThinkingLevel = vi.fn<(level: string) => void>((level) => {
+    this.thinkingLevel = level;
+  });
   subscribe(listener: (event: PiEvent) => void) {
     this.listener = listener;
     return () => {
@@ -29,10 +37,55 @@ class FakeSession implements PiSessionPort {
 }
 
 function fakeRuntime(session = new FakeSession()): PiRuntimePort {
-  return { session, newSession: vi.fn(async () => ({ cancelled: false })), dispose: vi.fn() };
+  return {
+    session,
+    models: [{ provider: "test", id: "small", name: "Small" }, { provider: "test", id: "large", name: "Large" }],
+    sessions: [{ id: "session-1", title: "First prompt", modified: "2026-08-02T10:00:00.000Z", messageCount: 2 }],
+    commands: [{ name: "skill:review", description: "Review changes", source: "skill" }],
+    newSession: vi.fn(async () => ({ cancelled: false })),
+    switchSession: vi.fn(async () => ({ cancelled: false })),
+    dispose: vi.fn(),
+  };
 }
 
 describe("AgentController", () => {
+  it("publishes selectable runtime capabilities", async () => {
+    const controller = await AgentController.create({ workspace: "/work", runtimeFactory: async () => fakeRuntime() });
+
+    expect(controller.snapshot()).toMatchObject({
+      model: "test/small",
+      thinkingLevel: "medium",
+      thinkingLevels: ["off", "low", "medium", "high"],
+      models: [
+        { provider: "test", id: "small", name: "Small" },
+        { provider: "test", id: "large", name: "Large" },
+      ],
+      sessions: [{ id: "session-1", title: "First prompt" }],
+      commands: [{ name: "skill:review", source: "skill" }],
+    });
+  });
+
+  it("changes the model and thinking level while idle", async () => {
+    const session = new FakeSession();
+    const controller = await AgentController.create({ workspace: "/work", runtimeFactory: async () => fakeRuntime(session) });
+
+    await controller.handle({ protocolVersion: 1, commandId: "model", type: "model.set", provider: "test", modelId: "large" });
+    await controller.handle({ protocolVersion: 1, commandId: "thinking", type: "thinking.set", level: "high" });
+
+    expect(session.setModel).toHaveBeenCalledWith("test", "large");
+    expect(session.setThinkingLevel).toHaveBeenCalledWith("high");
+    expect(controller.snapshot()).toMatchObject({ model: "test/large", thinkingLevel: "high" });
+  });
+
+  it("switches to a selected persisted session", async () => {
+    const runtime = fakeRuntime();
+    const controller = await AgentController.create({ workspace: "/work", runtimeFactory: async () => runtime });
+
+    await controller.handle({ protocolVersion: 1, commandId: "switch", type: "session.switch", sessionId: "session-2" });
+
+    expect(runtime.switchSession).toHaveBeenCalledWith("session-2");
+  });
+
   it("accepts one prompt and emits ordered normalized events", async () => {
     const session = new FakeSession();
     const runtime = fakeRuntime(session);
@@ -542,14 +595,15 @@ describe("AgentController", () => {
 });
 
 describe("transcript normalization", () => {
-  it("keeps only textual user and assistant messages with stable IDs", () => {
+  it("restores textual messages and completed tools with stable IDs", () => {
     expect(transcriptFromMessages([
       { id: "user-1", role: "user", content: "hello" },
       { role: "assistant", content: [{ type: "thinking", thinking: "hmm" }, { type: "text", text: "hi" }] },
-      { role: "toolResult", content: [{ type: "text", text: "ignored" }] },
+      { role: "toolResult", toolCallId: "call-1", toolName: "read", content: "package.json", isError: false },
     ])).toEqual([
       { id: "user-1", type: "message", role: "user", text: "hello" },
       { id: "history-1", type: "message", role: "assistant", text: "hi" },
+      { id: "call-1", type: "tool", toolName: "read", status: "succeeded", output: "package.json" },
     ]);
   });
 

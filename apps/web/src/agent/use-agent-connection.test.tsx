@@ -108,4 +108,42 @@ describe("useAgentConnection", () => {
     expect(disconnectedId).toBeUndefined();
     expect(socket.send).toHaveBeenCalledTimes(1);
   });
+
+  it("addresses workspace and session navigation commands", async () => {
+    const { result } = renderHook(() => useAgentConnection());
+    await waitFor(() => expect(FakeWebSocket.instances).toHaveLength(1));
+    const socket = FakeWebSocket.instances[0]!;
+    act(() => socket.open());
+
+    act(() => {
+      result.current.openWorkspace("/work/two");
+      result.current.selectSession("/work/two", "session-2");
+      result.current.newSession("/work/two");
+      result.current.archiveSession("/work/two", "session-2");
+    });
+
+    expect(socket.send.mock.calls.map(([payload]) => JSON.parse(String(payload)))).toEqual([
+      expect.objectContaining({ type: "workspace.open", path: "/work/two" }),
+      expect.objectContaining({ type: "session.switch", workspace: "/work/two", sessionId: "session-2" }),
+      expect.objectContaining({ type: "session.new", workspace: "/work/two" }),
+      expect.objectContaining({ type: "session.archive", workspace: "/work/two", sessionId: "session-2" }),
+    ]);
+  });
+
+  it("loads directory choices from the guarded local API", async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({
+      path: "/work",
+      parent: "/",
+      directories: [{ name: "project", path: "/work/project" }],
+    }), { status: 200, headers: { "content-type": "application/json" } }));
+    vi.stubGlobal("fetch", fetchMock);
+    const { result } = renderHook(() => useAgentConnection());
+
+    await expect(result.current.browseDirectories("/work")).resolves.toEqual({
+      path: "/work",
+      parent: "/",
+      directories: [{ name: "project", path: "/work/project" }],
+    });
+    expect(fetchMock).toHaveBeenCalledWith("/api/directories?path=%2Fwork");
+  });
 });

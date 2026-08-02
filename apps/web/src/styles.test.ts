@@ -47,3 +47,14 @@ describe("document scrolling and theme", () => {
     expect(styles).toMatch(/:root\s*{[^}]*color-scheme:\s*dark;[^}]*--background-base:\s*#0d1117;[^}]*--text-strong:\s*#f0f6fc;[^}]*--focus:\s*#58a6ff;/s);
   });
 });
+
+describe("session board", () => {
+  it("uses the v0.3.14 progress and idle board without a workspace rail", () => {
+    expect(styles).toMatch(/\.session-board\s*{[^}]*width:\s*min\(100%,\s*1280px\);/s);
+    expect(styles).toMatch(/\.board-header\s*{[^}]*width:\s*100%;/s);
+    expect(styles).toMatch(/\.board-columns\s*{[^}]*width:\s*100%;/s);
+    expect(styles).toMatch(/\.board-columns\s*{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\);/s);
+    expect(styles).toMatch(/@media\s*\(max-width:\s*699px\)\s*{[\s\S]*?\.board-columns\s*{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\);/s);
+    expect(styles).not.toMatch(/\.workspace-sidebar\s*{/);
+  });
+});

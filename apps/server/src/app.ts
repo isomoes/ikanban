@@ -12,6 +12,7 @@ import Fastify, {
   type FastifyRequest,
 } from "fastify";
 import { isLoopback, originIsLocal } from "./auth.js";
+import { browseDirectories, type DirectoryListing } from "./directories.js";
 
 export interface ControllerPort {
   snapshot(): RuntimeSnapshot;
@@ -20,9 +21,15 @@ export interface ControllerPort {
   dispose(): Promise<void>;
 }
 
+export interface HubPort {
+  snapshot(): RuntimeSnapshot;
+  connect(): ControllerPort;
+}
+
 export interface BuildAppOptions {
-  controller: ControllerPort;
+  hub: HubPort;
   webRoot: string | undefined;
+  browseDirectories?: (path: string) => Promise<DirectoryListing>;
 }
 
 function originHeader(request: FastifyRequest): string | undefined {
@@ -45,6 +52,7 @@ function guardLocalRequest(request: FastifyRequest, reply: FastifyReply): boolea
 
 export async function buildApp(options: BuildAppOptions): Promise<FastifyInstance> {
   const app = Fastify();
+  const browse = options.browseDirectories ?? browseDirectories;
 
   try {
     await app.register(websocket, {
@@ -56,7 +64,17 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
 
     app.get("/api/bootstrap", async (request, reply) => {
       if (!guardLocalRequest(request, reply)) return;
-      return options.controller.snapshot();
+      return options.hub.snapshot();
+    });
+
+    app.get<{ Querystring: { path?: string } }>("/api/directories", async (request, reply) => {
+      if (!guardLocalRequest(request, reply)) return;
+      if (!request.query.path) return reply.code(400).send({ error: "Directory path is required." });
+      try {
+        return await browse(request.query.path);
+      } catch (error) {
+        return reply.code(400).send({ error: error instanceof Error ? error.message : "Unable to browse directory." });
+      }
     });
 
     app.get("/api/events", {
@@ -65,12 +83,14 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
         if (guardLocalRequest(request, reply)) done();
       },
     }, (socket) => {
+      const controller = options.hub.connect();
       let unsubscribe: (() => void) | undefined;
       let closed = false;
       const cleanup = () => {
         if (closed) return;
         closed = true;
         unsubscribe?.();
+        void controller.dispose();
       };
       const send = (message: ServerMessage) => {
         if (socket.readyState !== socket.OPEN) {
@@ -98,17 +118,17 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
           });
           return;
         }
-        void options.controller.handle(command.data).catch(() => undefined);
+        void controller.handle(command.data).catch(() => undefined);
       });
       socket.on("close", cleanup);
       socket.on("error", cleanup);
 
-      unsubscribe = options.controller.subscribe(send);
+      unsubscribe = controller.subscribe(send);
       send({
         protocolVersion: 1,
         sequence: 0,
         type: "state.snapshot",
-        snapshot: options.controller.snapshot(),
+        snapshot: controller.snapshot(),
       });
     });
 

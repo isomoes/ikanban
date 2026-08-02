@@ -8,12 +8,43 @@ const commandBase = {
 };
 
 export const ClientCommandSchema = z.discriminatedUnion("type", [
-  z.object({ ...commandBase, type: z.literal("session.new") }),
+  z.object({ ...commandBase, type: z.literal("workspace.open"), path: z.string().min(1) }),
+  z.object({ ...commandBase, type: z.literal("session.new"), workspace: z.string().min(1).optional() }),
+  z.object({ ...commandBase, type: z.literal("session.switch"), workspace: z.string().min(1).optional(), sessionId: z.string().min(1) }),
+  z.object({ ...commandBase, type: z.literal("session.archive"), workspace: z.string().min(1), sessionId: z.string().min(1) }),
+  z.object({ ...commandBase, type: z.literal("model.set"), provider: z.string().min(1), modelId: z.string().min(1) }),
+  z.object({ ...commandBase, type: z.literal("thinking.set"), level: z.enum(["off", "minimal", "low", "medium", "high", "xhigh", "max"]) }),
   z.object({ ...commandBase, type: z.literal("prompt.send"), text: z.string().trim().min(1) }),
   z.object({ ...commandBase, type: z.literal("prompt.steer"), text: z.string().trim().min(1) }),
   z.object({ ...commandBase, type: z.literal("prompt.followUp"), text: z.string().trim().min(1) }),
   z.object({ ...commandBase, type: z.literal("run.abort") }),
 ]);
+
+export const ModelOptionSchema = z.object({
+  provider: z.string(),
+  id: z.string(),
+  name: z.string(),
+});
+
+export const SessionOptionSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  modified: z.string(),
+  messageCount: z.number().int().nonnegative(),
+  status: z.enum(["idle", "running", "replacing", "error"]).optional(),
+});
+
+export const WorkspaceOptionSchema = z.object({
+  path: z.string(),
+  name: z.string(),
+  sessions: z.array(SessionOptionSchema),
+});
+
+export const SlashCommandOptionSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+  source: z.enum(["extension", "prompt", "skill"]),
+});
 
 export const TranscriptItemSchema = z.discriminatedUnion("type", [
   z.object({ id: z.string(), type: z.literal("message"), role: z.enum(["user", "assistant"]), text: z.string() }),
@@ -37,6 +68,12 @@ export const RuntimeSnapshotSchema = z.object({
   sessionId: z.string(),
   status: z.enum(["idle", "running", "replacing", "error"]),
   model: z.string().optional(),
+  models: z.array(ModelOptionSchema).default([]),
+  thinkingLevel: z.string().optional(),
+  thinkingLevels: z.array(z.string()).default([]),
+  sessions: z.array(SessionOptionSchema).default([]),
+  workspaces: z.array(WorkspaceOptionSchema).default([]),
+  commands: z.array(SlashCommandOptionSchema).default([]),
   items: z.array(TranscriptItemSchema),
 });
 
@@ -57,3 +94,7 @@ export type ServerMessage = z.infer<typeof ServerMessageSchema>;
 export type RuntimeSnapshot = z.infer<typeof RuntimeSnapshotSchema>;
 export type TranscriptItem = z.infer<typeof TranscriptItemSchema>;
 export type AgentEvent = z.infer<typeof AgentEventSchema>;
+export type ModelOption = z.infer<typeof ModelOptionSchema>;
+export type SessionOption = z.infer<typeof SessionOptionSchema>;
+export type WorkspaceOption = z.infer<typeof WorkspaceOptionSchema>;
+export type SlashCommandOption = z.infer<typeof SlashCommandOptionSchema>;

@@ -11,9 +11,20 @@ type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K 
 
 export type ClientCommandInput = DistributiveOmit<ClientCommand, "protocolVersion" | "commandId">;
 
+export interface DirectoryListing {
+  path: string;
+  parent: string | null;
+  directories: { name: string; path: string }[];
+}
+
 export interface AgentConnection {
   state: AgentState;
   send(command: ClientCommandInput): string | undefined;
+  openWorkspace(path: string): string | undefined;
+  selectSession(workspace: string, sessionId: string): string | undefined;
+  newSession(workspace: string): string | undefined;
+  archiveSession(workspace: string, sessionId: string): string | undefined;
+  browseDirectories(path: string): Promise<DirectoryListing>;
 }
 
 export function useAgentConnection(): AgentConnection {
@@ -94,5 +105,45 @@ export function useAgentConnection(): AgentConnection {
     return commandId;
   };
 
-  return { state, send };
+  const browseDirectories = async (path: string): Promise<DirectoryListing> => {
+    const response = await fetch(`/api/directories?path=${encodeURIComponent(path)}`);
+    const payload: unknown = await response.json();
+    if (!response.ok) {
+      const reason = typeof payload === "object" && payload !== null && "error" in payload && typeof payload.error === "string"
+        ? payload.error
+        : "Unable to browse directory.";
+      throw new Error(reason);
+    }
+    if (
+      typeof payload !== "object"
+      || payload === null
+      || !("path" in payload)
+      || typeof payload.path !== "string"
+      || !("parent" in payload)
+      || (payload.parent !== null && typeof payload.parent !== "string")
+      || !("directories" in payload)
+      || !Array.isArray(payload.directories)
+      || !payload.directories.every((entry) =>
+        typeof entry === "object"
+        && entry !== null
+        && "name" in entry
+        && typeof entry.name === "string"
+        && "path" in entry
+        && typeof entry.path === "string"
+      )
+    ) {
+      throw new Error("Server sent an invalid directory listing.");
+    }
+    return payload as DirectoryListing;
+  };
+
+  return {
+    state,
+    send,
+    openWorkspace: (path) => send({ type: "workspace.open", path }),
+    selectSession: (workspace, sessionId) => send({ type: "session.switch", workspace, sessionId }),
+    newSession: (workspace) => send({ type: "session.new", workspace }),
+    archiveSession: (workspace, sessionId) => send({ type: "session.archive", workspace, sessionId }),
+    browseDirectories,
+  };
 }

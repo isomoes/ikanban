@@ -11,6 +11,11 @@ export const initialAgentState: AgentState = {
   workspace: "",
   sessionId: "",
   status: "idle",
+  models: [],
+  thinkingLevels: [],
+  sessions: [],
+  workspaces: [],
+  commands: [],
   items: [],
   lastSequence: -1,
 };

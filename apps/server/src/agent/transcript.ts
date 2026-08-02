@@ -37,9 +37,21 @@ export function textFromMessage(message: unknown): string | undefined {
 }
 
 export function transcriptFromMessages(messages: readonly unknown[]): TranscriptItem[] {
-  return messages.flatMap((message, index) => {
+  return messages.flatMap<TranscriptItem>((message, index) => {
     const value = record(message);
-    if (!value || (value.role !== "user" && value.role !== "assistant")) return [];
+    if (!value) return [];
+
+    if (value.role === "toolResult") {
+      return [{
+        id: typeof value.toolCallId === "string" ? value.toolCallId : `history-${index}`,
+        type: "tool" as const,
+        toolName: typeof value.toolName === "string" ? value.toolName : "unknown",
+        status: value.isError === true ? "failed" as const : "succeeded" as const,
+        output: stringify(toolResultContent(value)),
+      }];
+    }
+
+    if (value.role !== "user" && value.role !== "assistant") return [];
 
     const text = textFromMessage(value);
     if (text === undefined) return [];
