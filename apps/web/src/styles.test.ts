@@ -18,6 +18,22 @@ describe("mobile viewport layout", () => {
     expect(styles).toMatch(/\.composer-shell\s*{[^}]*border-radius:\s*12px;/s);
     expect(styles).toMatch(/\.composer-tray\s*{[^}]*margin-top:\s*-14px;/s);
   });
+
+  it("keeps the normal conversation measure in fullscreen", () => {
+    expect(styles).toMatch(/\.transcript\s*{[^}]*width:\s*min\(100%,\s*800px\);/s);
+    expect(styles).toMatch(/\.composer\s*{[^}]*width:\s*min\(100%,\s*800px\);/s);
+    expect(styles).not.toMatch(/@media\s*\(min-width:\s*1536px\)[\s\S]*?1000px/);
+  });
+
+  it("keeps the v0.3.14 conversation density", () => {
+    expect(styles).toMatch(/\.transcript-list\s*{[^}]*gap:\s*8px;/s);
+    expect(styles).not.toMatch(/@media\s*\(max-width:\s*699px\)\s*{[\s\S]*?\.transcript-list\s*{/);
+  });
+
+  it("collapses source whitespace in rendered Markdown", () => {
+    expect(styles).toMatch(/\.user-text\s*{[^}]*white-space:\s*pre-wrap;/s);
+    expect(styles).not.toMatch(/\.assistant-text\s*,\s*\.user-text\s*{[^}]*white-space:\s*pre-wrap;/s);
+  });
 });
 
 describe("document scrolling and theme", () => {

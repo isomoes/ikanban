@@ -234,7 +234,7 @@ summary:focus-visible {
 .transcript-list {
   display: flex;
   flex-direction: column;
-  gap: 48px;
+  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -256,7 +256,6 @@ summary:focus-visible {
 
 .assistant-text,
 .user-text {
-  white-space: pre-wrap;
   overflow-wrap: anywhere;
   font-size: 14px;
   line-height: 1.8;
@@ -394,6 +393,7 @@ summary:focus-visible {
   background: var(--surface-base);
   padding: 8px 12px;
   line-height: 1.5;
+  white-space: pre-wrap;
 }
 
 details {
@@ -628,14 +628,6 @@ details pre {
   background: var(--surface-base-hover);
 }
 
-@media (min-width: 1536px) {
-  .transcript,
-  .composer,
-  .connection-error {
-    width: min(100%, 1000px);
-  }
-}
-
 @media (max-width: 699px) {
   .app-frame {
     width: 100%;
@@ -674,10 +666,6 @@ details pre {
 
   .empty-state {
     padding-bottom: 8px;
-  }
-
-  .transcript-list {
-    gap: 40px;
   }
 
   .user-text {
