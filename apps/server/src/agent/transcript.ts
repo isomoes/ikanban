@@ -16,6 +16,11 @@ function stringify(value: unknown): string {
   }
 }
 
+function toolResultContent(value: unknown): unknown {
+  const result = record(value);
+  return result && "content" in result ? result.content : value;
+}
+
 function textContent(content: unknown): string | undefined {
   if (typeof content === "string") return content;
   if (!Array.isArray(content)) return undefined;
@@ -65,13 +70,13 @@ export function normalizePiEvent(event: PiEvent, nextId: () => string): AgentEve
       return {
         type: "tool.updated",
         itemId: typeof event.toolCallId === "string" ? event.toolCallId : nextId(),
-        output: stringify(event.partialResult),
+        output: stringify(toolResultContent(event.partialResult)),
       };
     case "tool_execution_end":
       return {
         type: "tool.finished",
         itemId: typeof event.toolCallId === "string" ? event.toolCallId : nextId(),
-        output: stringify(event.result),
+        output: stringify(toolResultContent(event.result)),
         isError: event.isError === true,
       };
     case "message_end": {

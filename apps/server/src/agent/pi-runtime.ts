@@ -52,9 +52,7 @@ export const createPiRuntime: PiRuntimeFactory = async (workspace) => {
         ? { ...port, model: { provider: session.model.provider, id: session.model.id } }
         : port;
     },
-    async newSession() {
-      await runtime.newSession();
-    },
+    newSession: () => runtime.newSession(),
     dispose: () => runtime.dispose(),
   };
 };

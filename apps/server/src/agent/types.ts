@@ -14,8 +14,8 @@ export interface PiSessionPort {
 
 export interface PiRuntimePort {
   readonly session: PiSessionPort;
-  newSession(): Promise<void>;
-  dispose(): void;
+  newSession(): Promise<{ cancelled: boolean }>;
+  dispose(): void | Promise<void>;
 }
 
 export type PiRuntimeFactory = (workspace: string) => Promise<PiRuntimePort>;

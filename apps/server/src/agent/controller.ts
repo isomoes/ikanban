@@ -19,7 +19,9 @@ export class AgentController {
   #sequence = 0;
   #itemSequence = 0;
   #textItemId: string | undefined;
+  #activePrompt: Promise<void> | undefined;
   #status: RuntimeSnapshot["status"] | undefined;
+  #disposing = false;
   #disposePromise: Promise<void> | undefined;
 
   private constructor(workspace: string, runtime: PiRuntimePort) {
@@ -42,7 +44,7 @@ export class AgentController {
     const snapshot: RuntimeSnapshot = {
       workspace: this.#workspace,
       sessionId: session.sessionId,
-      status: this.#status ?? (session.isStreaming ? "running" : "idle"),
+      status: this.#status ?? (this.#activePrompt || session.isStreaming ? "running" : "idle"),
       items: transcriptFromMessages(session.messages),
     };
     if (session.model) snapshot.model = `${session.model.provider}/${session.model.id}`;
@@ -50,18 +52,37 @@ export class AgentController {
   }
 
   handle(command: ClientCommand): Promise<void> {
-    const operation = this.#tail.then(() => this.#handle(command));
-    this.#tail = operation.catch(() => undefined);
-    return operation;
+    if (this.#disposing) {
+      this.#reject(command.commandId, "Controller is disposing.");
+      return Promise.resolve();
+    }
+
+    let completion = Promise.resolve();
+    const admission = this.#tail.then(() => {
+      completion = this.#handle(command);
+    });
+    this.#tail = admission.catch(() => undefined);
+    return admission.then(() => completion);
   }
 
   dispose(): Promise<void> {
     if (!this.#disposePromise) {
+      this.#disposing = true;
       this.#disposePromise = this.#tail.then(async () => {
         this.#unsubscribe?.();
         this.#unsubscribe = undefined;
-        if (this.#runtime.session.isStreaming) await this.#runtime.session.abort();
-        await this.#runtime.dispose();
+        let failure: unknown;
+        try {
+          if (this.#activePrompt || this.#runtime.session.isStreaming) await this.#runtime.session.abort();
+        } catch (error) {
+          failure = error;
+        }
+        try {
+          await this.#runtime.dispose();
+        } catch (error) {
+          failure ??= error;
+        }
+        if (failure) throw failure;
       });
       this.#tail = this.#disposePromise.catch(() => undefined);
     }
@@ -70,24 +91,32 @@ export class AgentController {
 
   async #handle(command: ClientCommand): Promise<void> {
     try {
-      if (command.type === "prompt.send" && this.#runtime.session.isStreaming) {
+      if (command.type === "prompt.send" && (this.#activePrompt || this.#runtime.session.isStreaming)) {
         this.#reject(command.commandId, "A run is already active; steer, follow up, or abort it.");
         return;
       }
-      if (command.type === "session.new" && this.#runtime.session.isStreaming) {
+      if (command.type === "session.new" && (this.#activePrompt || this.#runtime.session.isStreaming)) {
         this.#reject(command.commandId, "A run is already active; abort it before starting a new session.");
         return;
       }
-      if ((command.type === "prompt.steer" || command.type === "prompt.followUp" || command.type === "run.abort") && !this.#runtime.session.isStreaming) {
+      if ((command.type === "prompt.steer" || command.type === "prompt.followUp" || command.type === "run.abort") && !this.#activePrompt && !this.#runtime.session.isStreaming) {
         this.#reject(command.commandId, "No run is active.");
         return;
       }
 
+      this.#status = undefined;
       this.#emit({ type: "command.accepted", commandId: command.commandId });
       switch (command.type) {
-        case "prompt.send":
-          await this.#runtime.session.prompt(command.text);
+        case "prompt.send": {
+          const prompt = this.#runtime.session.prompt(command.text);
+          this.#activePrompt = prompt;
+          try {
+            await prompt;
+          } finally {
+            if (this.#activePrompt === prompt) this.#activePrompt = undefined;
+          }
           break;
+        }
         case "prompt.steer":
           await this.#runtime.session.steer(command.text);
           break;
@@ -99,7 +128,10 @@ export class AgentController {
           break;
         case "session.new":
           this.#status = "replacing";
-          await this.#runtime.newSession();
+          if ((await this.#runtime.newSession()).cancelled) {
+            this.#status = undefined;
+            break;
+          }
           this.#unsubscribe?.();
           this.#resetTransientIds();
           this.#subscribeToSession();
@@ -118,7 +150,17 @@ export class AgentController {
   }
 
   #onEvent(event: PiEvent): void {
-    if (event.type === "agent_start") this.#textItemId = undefined;
+    if (event.type === "agent_start") {
+      this.#status = undefined;
+      this.#textItemId = undefined;
+    } else if (event.type === "message_start") {
+      const message = typeof event.message === "object" && event.message !== null
+        ? event.message as Record<string, unknown>
+        : undefined;
+      if (message?.role === "assistant") {
+        this.#textItemId = typeof message.id === "string" ? message.id : `live-${++this.#itemSequence}`;
+      }
+    }
     const normalized = normalizePiEvent(event, () => {
       this.#textItemId ??= `live-${++this.#itemSequence}`;
       return this.#textItemId;
@@ -126,7 +168,7 @@ export class AgentController {
     if (normalized) {
       this.#emit({ type: "agent.event", sessionId: this.#runtime.session.sessionId, event: normalized });
     }
-    if (event.type === "agent_end") this.#textItemId = undefined;
+    if (event.type === "agent_end" || event.type === "message_end") this.#textItemId = undefined;
   }
 
   #resetTransientIds(): void {
@@ -140,6 +182,12 @@ export class AgentController {
 
   #emit(message: UnsequencedServerMessage): void {
     const sequenced = { ...message, protocolVersion: 1 as const, sequence: ++this.#sequence } as ServerMessage;
-    for (const listener of this.#listeners) listener(sequenced);
+    for (const listener of this.#listeners) {
+      try {
+        listener(sequenced);
+      } catch {
+        // A subscriber cannot interrupt runtime control or other subscribers.
+      }
+    }
   }
 }
