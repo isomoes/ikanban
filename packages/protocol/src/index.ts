@@ -24,6 +24,7 @@ export const TranscriptItemSchema = z.discriminatedUnion("type", [
 export const AgentEventSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("run.started") }),
   z.object({ type: z.literal("run.finished") }),
+  z.object({ type: z.literal("user.message"), itemId: z.string(), text: z.string() }),
   z.object({ type: z.literal("text.delta"), itemId: z.string(), delta: z.string() }),
   z.object({ type: z.literal("tool.started"), itemId: z.string(), toolName: z.string() }),
   z.object({ type: z.literal("tool.updated"), itemId: z.string(), output: z.string() }),

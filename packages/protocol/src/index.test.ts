@@ -40,4 +40,16 @@ describe("ServerMessageSchema", () => {
       },
     }).type).toBe("state.snapshot");
   });
+
+  it("accepts a delivered user message event", () => {
+    expect(ServerMessageSchema.parse({
+      protocolVersion: 1,
+      sequence: 1,
+      type: "agent.event",
+      sessionId: "session-1",
+      event: { type: "user.message", itemId: "user-1", text: "Second prompt" },
+    })).toMatchObject({
+      event: { type: "user.message", itemId: "user-1", text: "Second prompt" },
+    });
+  });
 });

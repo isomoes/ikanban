@@ -12,7 +12,10 @@ describe("createFakeRuntime", () => {
     expect(runtime.session.sessionId).toBe("fake-session");
     expect(listener.mock.calls.map(([event]) => event)).toEqual([
       { type: "agent_start" },
+      { type: "message_end", message: { id: "fake-user-1", role: "user", content: "hello" } },
+      { type: "message_start", message: { id: "fake-assistant-2", role: "assistant" } },
       { type: "message_update", assistantMessageEvent: { type: "text_delta", delta: "Echo: hello" } },
+      { type: "message_end", message: { id: "fake-assistant-2", role: "assistant", content: "Echo: hello", stopReason: "stop" } },
       { type: "agent_end" },
     ]);
   });
@@ -28,10 +31,16 @@ describe("createFakeRuntime", () => {
 
     expect(listener.mock.calls.map(([event]) => event)).toEqual([
       { type: "agent_start" },
+      { type: "message_end", message: { id: "fake-user-1", role: "user", content: "left" } },
+      { type: "message_start", message: { id: "fake-assistant-2", role: "assistant" } },
       { type: "message_update", assistantMessageEvent: { type: "text_delta", delta: "Echo: left" } },
+      { type: "message_end", message: { id: "fake-assistant-2", role: "assistant", content: "Echo: left", stopReason: "stop" } },
       { type: "agent_end" },
       { type: "agent_start" },
+      { type: "message_end", message: { id: "fake-user-3", role: "user", content: "next" } },
+      { type: "message_start", message: { id: "fake-assistant-4", role: "assistant" } },
       { type: "message_update", assistantMessageEvent: { type: "text_delta", delta: "Echo: next" } },
+      { type: "message_end", message: { id: "fake-assistant-4", role: "assistant", content: "Echo: next", stopReason: "stop" } },
       { type: "agent_end" },
       { type: "agent_end" },
     ]);

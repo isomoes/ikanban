@@ -32,6 +32,16 @@ function reduceEvent(state: AgentState, event: AgentEvent, sequence: number): Ag
       return { ...next, status: "running" };
     case "run.finished":
       return { ...next, status: "idle" };
+    case "user.message":
+      return {
+        ...next,
+        items: replaceItem(state.items, event.itemId, () => ({
+          id: event.itemId,
+          type: "message",
+          role: "user",
+          text: event.text,
+        })),
+      };
     case "text.delta":
       return {
         ...next,

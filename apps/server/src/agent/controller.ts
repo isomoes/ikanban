@@ -219,7 +219,10 @@ export class AgentController {
       }
     }
     if (event.type === "message_end") {
-      this.#projectUserMessage(event.message);
+      const userMessage = this.#projectUserMessage(event.message);
+      if (userMessage) {
+        this.#emit({ type: "agent.event", sessionId: this.#runtime.session.sessionId, event: userMessage });
+      }
       this.#reconcileAssistantMessage(event.message);
     }
     const normalized = normalizePiEvent(event, () => {
@@ -233,7 +236,7 @@ export class AgentController {
     if (event.type === "agent_end" || event.type === "message_end") this.#textItemId = undefined;
   }
 
-  #projectUserMessage(message: unknown): void {
+  #projectUserMessage(message: unknown): Extract<AgentEvent, { type: "user.message" }> | undefined {
     const value = messageRecord(message);
     const source = userMessageSource(value);
     if (!source || this.#userMessageSources.has(source)) return;
@@ -249,12 +252,14 @@ export class AgentController {
     const itemId = preferredId && !this.#transcript.some((item) => item.id === preferredId)
       ? preferredId
       : `live-user-${++this.#itemSequence}`;
-    this.#transcript = [...this.#transcript, {
+    const item: TranscriptItem = {
       id: itemId,
       type: "message",
       role: "user",
       text,
-    }];
+    };
+    this.#transcript = [...this.#transcript, item];
+    return { type: "user.message", itemId, text };
   }
 
   #reconcileAssistantMessage(message: unknown): void {

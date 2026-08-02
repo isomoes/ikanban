@@ -19,6 +19,27 @@ describe("reduceServerMessage", () => {
     expect(second.items).toContainEqual({ id: "a1", type: "message", role: "assistant", text: "Hello" });
   });
 
+  it("appends each delivered user message immediately", () => {
+    const base = {
+      ...initialAgentState,
+      sessionId: "s1",
+      items: [{ id: "u1", type: "message" as const, role: "user" as const, text: "First prompt" }],
+      lastSequence: 1,
+    };
+    const result = reduceServerMessage(base, {
+      protocolVersion: 1,
+      sequence: 2,
+      type: "agent.event",
+      sessionId: "s1",
+      event: { type: "user.message", itemId: "u2", text: "Second prompt" },
+    });
+
+    expect(result.items).toEqual([
+      { id: "u1", type: "message", role: "user", text: "First prompt" },
+      { id: "u2", type: "message", role: "user", text: "Second prompt" },
+    ]);
+  });
+
   it("ignores duplicate or stale events", () => {
     const state = { ...initialAgentState, lastSequence: 8 };
     const result = reduceServerMessage(state, { protocolVersion: 1, sequence: 8, type: "agent.event", sessionId: "s1", event: { type: "run.started" } });

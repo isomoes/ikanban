@@ -103,6 +103,10 @@ describe("AgentController", () => {
       return new Promise<void>((resolve) => { releasePrompt = resolve; });
     });
     const controller = await AgentController.create({ workspace: "/work", runtimeFactory: async () => fakeRuntime(session) });
+    const events: unknown[] = [];
+    controller.subscribe((message) => {
+      if (message.type === "agent.event") events.push(message.event);
+    });
 
     const prompting = controller.handle({ protocolVersion: 1, commandId: "prompt", type: "prompt.send", text: "inspect" });
     await vi.waitFor(() => expect(session.prompt).toHaveBeenCalledWith("inspect"));
@@ -119,6 +123,9 @@ describe("AgentController", () => {
       item.type === "message" && item.role === "user" ? [item.text] : []
     );
     expect(userTexts).toEqual(["persisted", "inspect"]);
+    expect(events).toEqual([
+      { type: "user.message", itemId: "user-101", text: "inspect" },
+    ]);
 
     releasePrompt();
     await prompting;
