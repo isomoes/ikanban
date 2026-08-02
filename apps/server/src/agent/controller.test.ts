@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import type { ClientCommand } from "@pi-web/protocol";
 import { AgentController } from "./controller.js";
 import { normalizePiEvent, transcriptFromMessages } from "./transcript.js";
 import type { PiEvent, PiRuntimePort, PiSessionPort } from "./types.js";
@@ -121,6 +122,48 @@ describe("AgentController", () => {
     expect(events[1]?.itemId).not.toBe(events[4]?.itemId);
   });
 
+  it("preserves streamed text and tool state in reconnect snapshots", async () => {
+    const session = new FakeSession();
+    session.messages = [{ id: "user-1", role: "user", content: "inspect it" }];
+    session.isStreaming = true;
+    const controller = await AgentController.create({ workspace: "/work", runtimeFactory: async () => fakeRuntime(session) });
+
+    session.listener?.({ type: "message_start", message: { id: "assistant-live", role: "assistant" } });
+    session.listener?.({ type: "message_update", assistantMessageEvent: { type: "text_delta", delta: "Looking " } });
+    session.listener?.({ type: "message_update", assistantMessageEvent: { type: "text_delta", delta: "now" } });
+    session.listener?.({ type: "tool_execution_start", toolCallId: "call-1", toolName: "read" });
+    session.listener?.({ type: "tool_execution_update", toolCallId: "call-1", partialResult: { content: "partial output" } });
+
+    expect(controller.snapshot().items).toEqual([
+      { id: "user-1", type: "message", role: "user", text: "inspect it" },
+      { id: "assistant-live", type: "message", role: "assistant", text: "Looking now" },
+      { id: "call-1", type: "tool", toolName: "read", status: "running", output: "partial output" },
+    ]);
+
+    session.listener?.({ type: "tool_execution_end", toolCallId: "call-1", result: { content: "done" }, isError: false });
+    expect(controller.snapshot().items.at(-1)).toEqual({
+      id: "call-1",
+      type: "tool",
+      toolName: "read",
+      status: "succeeded",
+      output: "done",
+    });
+  });
+
+  it("preserves normalized errors in reconnect snapshots", async () => {
+    const session = new FakeSession();
+    const controller = await AgentController.create({ workspace: "/work", runtimeFactory: async () => fakeRuntime(session) });
+
+    session.listener?.({
+      type: "message_end",
+      message: { role: "assistant", stopReason: "error", errorMessage: "model failed" },
+    });
+
+    expect(controller.snapshot().items).toEqual([
+      { id: "live-error-1", type: "error", message: "model failed" },
+    ]);
+  });
+
   it("replaces an idle session and publishes its fresh snapshot", async () => {
     const oldSession = new FakeSession();
     const newSession = new FakeSession();
@@ -157,6 +200,91 @@ describe("AgentController", () => {
     expect(session.listener).toBeTypeOf("function");
     expect(controller.snapshot()).toMatchObject({ sessionId: "session-1", status: "idle" });
     expect(messages).toEqual([expect.objectContaining({ type: "command.accepted" })]);
+  });
+
+  it("resets the transcript projection after actual session replacement", async () => {
+    const oldSession = new FakeSession();
+    oldSession.messages = [{ id: "old-user", role: "user", content: "old" }];
+    const newSession = new FakeSession();
+    newSession.sessionId = "session-2";
+    newSession.messages = [{ id: "new-user", role: "user", content: "new" }];
+    const runtime = fakeRuntime(oldSession);
+    runtime.newSession = vi.fn(async () => {
+      Object.defineProperty(runtime, "session", { value: newSession });
+      return { cancelled: false };
+    });
+    const controller = await AgentController.create({ workspace: "/work", runtimeFactory: async () => runtime });
+    oldSession.listener?.({ type: "message_update", assistantMessageEvent: { type: "text_delta", delta: "old live text" } });
+
+    await controller.handle({ protocolVersion: 1, commandId: "new", type: "session.new" });
+
+    expect(controller.snapshot().items).toEqual([
+      { id: "new-user", type: "message", role: "user", text: "new" },
+    ]);
+  });
+
+  it.each([
+    { protocolVersion: 1, commandId: "another-new", type: "session.new" },
+    { protocolVersion: 1, commandId: "prompt", type: "prompt.send", text: "hello" },
+    { protocolVersion: 1, commandId: "steer", type: "prompt.steer", text: "left" },
+    { protocolVersion: 1, commandId: "follow", type: "prompt.followUp", text: "next" },
+    { protocolVersion: 1, commandId: "abort", type: "run.abort" },
+  ] satisfies ClientCommand[])("rejects $type while session replacement is in flight", async (command) => {
+    const session = new FakeSession();
+    let releaseReplacement!: () => void;
+    const runtime = fakeRuntime(session);
+    runtime.newSession = vi.fn(() => new Promise<{ cancelled: boolean }>((resolve) => {
+      releaseReplacement = () => resolve({ cancelled: false });
+    }));
+    const controller = await AgentController.create({ workspace: "/work", runtimeFactory: async () => runtime });
+    const messages: Array<{ type: string; commandId?: string; reason?: string }> = [];
+    controller.subscribe((message) => messages.push(message));
+
+    const replacing = controller.handle({ protocolVersion: 1, commandId: "new", type: "session.new" });
+    await vi.waitFor(() => expect(runtime.newSession).toHaveBeenCalledOnce());
+    await controller.handle(command);
+
+    expect(runtime.newSession).toHaveBeenCalledOnce();
+    expect(session.prompt).not.toHaveBeenCalled();
+    expect(session.steer).not.toHaveBeenCalled();
+    expect(session.followUp).not.toHaveBeenCalled();
+    expect(session.abort).not.toHaveBeenCalled();
+    expect(messages.at(-1)).toMatchObject({
+      type: "command.rejected",
+      commandId: command.commandId,
+      reason: "Session replacement is in progress.",
+    });
+    releaseReplacement();
+    await replacing;
+  });
+
+  it("waits for replacement before disposal and never subscribes the replacement session", async () => {
+    const oldSession = new FakeSession();
+    const newSession = new FakeSession();
+    newSession.sessionId = "session-2";
+    let releaseReplacement!: () => void;
+    const runtime = fakeRuntime(oldSession);
+    runtime.newSession = vi.fn(() => new Promise<{ cancelled: boolean }>((resolve) => {
+      releaseReplacement = () => {
+        Object.defineProperty(runtime, "session", { value: newSession });
+        resolve({ cancelled: false });
+      };
+    }));
+    const controller = await AgentController.create({ workspace: "/work", runtimeFactory: async () => runtime });
+
+    const replacing = controller.handle({ protocolVersion: 1, commandId: "new", type: "session.new" });
+    await vi.waitFor(() => expect(runtime.newSession).toHaveBeenCalledOnce());
+    const disposing = controller.dispose();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(runtime.dispose).not.toHaveBeenCalled();
+    releaseReplacement();
+    await Promise.all([replacing, disposing]);
+
+    expect(oldSession.listener).toBeUndefined();
+    expect(newSession.listener).toBeUndefined();
+    expect(runtime.dispose).toHaveBeenCalledOnce();
   });
 
   it("rejects failures and disposes an active runtime once", async () => {

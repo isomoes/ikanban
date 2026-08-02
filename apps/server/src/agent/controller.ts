@@ -1,4 +1,4 @@
-import type { ClientCommand, RuntimeSnapshot, ServerMessage } from "@pi-web/protocol";
+import type { AgentEvent, ClientCommand, RuntimeSnapshot, ServerMessage, TranscriptItem } from "@pi-web/protocol";
 import { normalizePiEvent, transcriptFromMessages } from "./transcript.js";
 import type { PiEvent, PiRuntimeFactory, PiRuntimePort } from "./types.js";
 
@@ -14,12 +14,14 @@ export class AgentController {
   readonly #workspace: string;
   readonly #runtime: PiRuntimePort;
   readonly #listeners = new Set<(message: ServerMessage) => void>();
+  #transcript: TranscriptItem[];
   #tail: Promise<void> = Promise.resolve();
   #unsubscribe: (() => void) | undefined;
   #sequence = 0;
   #itemSequence = 0;
   #textItemId: string | undefined;
   #activePrompt: Promise<void> | undefined;
+  #replacement: Promise<void> | undefined;
   #status: RuntimeSnapshot["status"] | undefined;
   #disposing = false;
   #disposePromise: Promise<void> | undefined;
@@ -27,6 +29,7 @@ export class AgentController {
   private constructor(workspace: string, runtime: PiRuntimePort) {
     this.#workspace = workspace;
     this.#runtime = runtime;
+    this.#transcript = transcriptFromMessages(runtime.session.messages);
     this.#subscribeToSession();
   }
 
@@ -45,7 +48,7 @@ export class AgentController {
       workspace: this.#workspace,
       sessionId: session.sessionId,
       status: this.#status ?? (this.#activePrompt || session.isStreaming ? "running" : "idle"),
-      items: transcriptFromMessages(session.messages),
+      items: [...this.#transcript],
     };
     if (session.model) snapshot.model = `${session.model.provider}/${session.model.id}`;
     return snapshot;
@@ -59,6 +62,14 @@ export class AgentController {
 
     let completion = Promise.resolve();
     const admission = this.#tail.then(() => {
+      if (this.#disposing) {
+        this.#reject(command.commandId, "Controller is disposing.");
+        return;
+      }
+      if (this.#replacement) {
+        this.#reject(command.commandId, "Session replacement is in progress.");
+        return;
+      }
       completion = this.#handle(command);
     });
     this.#tail = admission.catch(() => undefined);
@@ -69,9 +80,14 @@ export class AgentController {
     if (!this.#disposePromise) {
       this.#disposing = true;
       this.#disposePromise = this.#tail.then(async () => {
+        let failure: unknown;
+        try {
+          if (this.#replacement) await this.#replacement;
+        } catch (error) {
+          failure = error;
+        }
         this.#unsubscribe?.();
         this.#unsubscribe = undefined;
-        let failure: unknown;
         try {
           if (this.#activePrompt || this.#runtime.session.isStreaming) await this.#runtime.session.abort();
         } catch (error) {
@@ -126,23 +142,37 @@ export class AgentController {
         case "run.abort":
           await this.#runtime.session.abort();
           break;
-        case "session.new":
+        case "session.new": {
           this.#status = "replacing";
-          if ((await this.#runtime.newSession()).cancelled) {
-            this.#status = undefined;
-            break;
+          const replacement = this.#replaceSession();
+          this.#replacement = replacement;
+          try {
+            await replacement;
+          } finally {
+            if (this.#replacement === replacement) this.#replacement = undefined;
+            if (this.#status === "replacing") this.#status = undefined;
           }
-          this.#unsubscribe?.();
-          this.#resetTransientIds();
-          this.#subscribeToSession();
-          this.#status = undefined;
-          this.#emit({ type: "state.snapshot", snapshot: this.snapshot() });
           break;
+        }
       }
     } catch (error) {
       this.#status = "error";
       this.#reject(command.commandId, error instanceof Error ? error.message : "Unknown command failure");
     }
+  }
+
+  async #replaceSession(): Promise<void> {
+    if ((await this.#runtime.newSession()).cancelled) return;
+
+    this.#unsubscribe?.();
+    this.#unsubscribe = undefined;
+    this.#resetTransientIds();
+    this.#transcript = transcriptFromMessages(this.#runtime.session.messages);
+    if (this.#disposing) return;
+
+    this.#subscribeToSession();
+    this.#status = undefined;
+    this.#emit({ type: "state.snapshot", snapshot: this.snapshot() });
   }
 
   #subscribeToSession(): void {
@@ -166,9 +196,73 @@ export class AgentController {
       return this.#textItemId;
     });
     if (normalized) {
+      this.#projectEvent(normalized);
       this.#emit({ type: "agent.event", sessionId: this.#runtime.session.sessionId, event: normalized });
     }
     if (event.type === "agent_end" || event.type === "message_end") this.#textItemId = undefined;
+  }
+
+  #projectEvent(event: AgentEvent): void {
+    const index = "itemId" in event
+      ? this.#transcript.findIndex((item) => item.id === event.itemId)
+      : -1;
+
+    switch (event.type) {
+      case "text.delta": {
+        const current = this.#transcript[index];
+        const item: TranscriptItem = current?.type === "message" && current.role === "assistant"
+          ? { ...current, text: current.text + event.delta }
+          : { id: event.itemId, type: "message", role: "assistant", text: event.delta };
+        this.#replaceOrAppendTranscriptItem(index, item);
+        break;
+      }
+      case "tool.started":
+        this.#replaceOrAppendTranscriptItem(index, {
+          id: event.itemId,
+          type: "tool",
+          toolName: event.toolName,
+          status: "running",
+          output: "",
+        });
+        break;
+      case "tool.updated": {
+        const current = this.#transcript[index];
+        this.#replaceOrAppendTranscriptItem(index, {
+          id: event.itemId,
+          type: "tool",
+          toolName: current?.type === "tool" ? current.toolName : "unknown",
+          status: "running",
+          output: event.output,
+        });
+        break;
+      }
+      case "tool.finished": {
+        const current = this.#transcript[index];
+        this.#replaceOrAppendTranscriptItem(index, {
+          id: event.itemId,
+          type: "tool",
+          toolName: current?.type === "tool" ? current.toolName : "unknown",
+          status: event.isError ? "failed" : "succeeded",
+          output: event.output,
+        });
+        break;
+      }
+      case "agent.error":
+        this.#transcript = [...this.#transcript, {
+          id: `live-error-${++this.#itemSequence}`,
+          type: "error",
+          message: event.message,
+        }];
+        break;
+    }
+  }
+
+  #replaceOrAppendTranscriptItem(index: number, item: TranscriptItem): void {
+    if (index === -1) {
+      this.#transcript = [...this.#transcript, item];
+      return;
+    }
+    this.#transcript = this.#transcript.map((current, currentIndex) => currentIndex === index ? item : current);
   }
 
   #resetTransientIds(): void {
