@@ -65,7 +65,6 @@ describe("server lifecycle", () => {
       { workspace: "/work", webRoot: undefined, port: 0 },
       {
         createController: vi.fn(async () => controller),
-        createToken: () => "startup token",
         log,
       },
     );
@@ -74,13 +73,13 @@ describe("server lifecycle", () => {
       const launchUrl = new URL(log.mock.calls[0]?.[0] as string);
       expect(launchUrl.hostname).toBe("127.0.0.1");
       expect(Number(launchUrl.port)).toBeGreaterThan(0);
-      expect(launchUrl.searchParams.get("token")).toBe("startup token");
+      expect(launchUrl.search).toBe("");
     } finally {
       await started.shutdown();
     }
   });
 
-  it("uses explicit runtime and startup-token options", async () => {
+  it("uses an explicit runtime without adding credentials to the launch URL", async () => {
     const controller = createController();
     const runtimeFactory = vi.fn();
     const createControllerForRuntime = vi.fn(async () => controller);
@@ -94,11 +93,9 @@ describe("server lifecycle", () => {
         webRoot: undefined,
         port: 4177,
         runtimeFactory,
-        startupToken: "fixed-token",
       },
       {
         createController: createControllerForRuntime,
-        createToken: vi.fn(() => "random-token"),
         buildApp,
         log: vi.fn(),
       },
@@ -106,8 +103,8 @@ describe("server lifecycle", () => {
 
     try {
       expect(createControllerForRuntime).toHaveBeenCalledWith("/work", runtimeFactory);
-      expect(buildApp).toHaveBeenCalledWith(expect.objectContaining({ startupToken: "fixed-token" }));
-      expect(started.launchUrl).toContain("token=fixed-token");
+      expect(buildApp).toHaveBeenCalledWith({ controller, webRoot: undefined });
+      expect(started.launchUrl).toBe("http://127.0.0.1:4177/");
     } finally {
       await started.shutdown();
     }

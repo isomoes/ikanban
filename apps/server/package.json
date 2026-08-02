@@ -12,7 +12,6 @@
   },
   "dependencies": {
     "@earendil-works/pi-coding-agent": "0.83.0",
-    "@fastify/cookie": "^11.0.2",
     "@fastify/static": "^8.2.0",
     "@fastify/websocket": "11.3.0",
     "@pi-web/protocol": "workspace:*",

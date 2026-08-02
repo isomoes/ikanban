@@ -49,7 +49,7 @@ describe("resolveStartServerOptions", () => {
 
   it("passes deterministic startup settings and only an existing web root", () => {
     const existing = resolveStartServerOptions(
-      { PI_WEB_WORKSPACE: "/workspace", PI_WEB_STARTUP_TOKEN: "fixed", PORT: "4177" },
+      { PI_WEB_WORKSPACE: "/workspace", PORT: "4177" },
       "/fallback",
       "file:///project/apps/server/dist/index.js",
       (path) => path === "/project/apps/web/dist",
@@ -65,9 +65,7 @@ describe("resolveStartServerOptions", () => {
       workspace: "/workspace",
       webRoot: "/project/apps/web/dist",
       port: 4177,
-      startupToken: "fixed",
     });
     expect(missing).toMatchObject({ workspace: "/fallback", webRoot: undefined, port: 4098 });
-    expect(missing.startupToken).toBeUndefined();
   });
 });

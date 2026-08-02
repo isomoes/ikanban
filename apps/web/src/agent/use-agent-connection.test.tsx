@@ -47,41 +47,15 @@ afterEach(() => {
 });
 
 describe("useAgentConnection", () => {
-  it("exchanges a query token once before opening a socket in Strict Mode", async () => {
-    window.history.replaceState({}, "", "/strict-success?token=secret&view=agent");
-    let finishExchange!: (response: Response) => void;
-    const exchange = new Promise<Response>((resolve) => {
-      finishExchange = resolve;
-    });
-    const fetchMock = vi.fn<typeof fetch>(() => exchange);
+  it("opens a socket directly without an authentication request", async () => {
+    window.history.replaceState({}, "", "/local-agent?token=legacy");
+    const fetchMock = vi.fn<typeof fetch>();
     vi.stubGlobal("fetch", fetchMock);
 
-    renderHook(() => useAgentConnection(), { reactStrictMode: true });
+    renderHook(() => useAgentConnection());
 
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(FakeWebSocket.instances).toHaveLength(0);
-    expect(window.location.search).toBe("?view=agent");
-
-    finishExchange({ ok: true } as Response);
     await waitFor(() => expect(FakeWebSocket.instances).toHaveLength(1));
-  });
-
-  it("surfaces a failed exchange without creating or retrying a socket", async () => {
-    vi.useFakeTimers();
-    window.history.replaceState({}, "", "/strict-failure?token=bad");
-    vi.stubGlobal("fetch", vi.fn<typeof fetch>(async () => ({ ok: false } as Response)));
-
-    const { result } = renderHook(() => useAgentConnection(), { reactStrictMode: true });
-
-    await act(async () => {
-      await Promise.resolve();
-      await Promise.resolve();
-    });
-    expect(result.current.state.lastError).toBe("Authentication failed.");
-    expect(FakeWebSocket.instances).toHaveLength(0);
-
-    act(() => vi.advanceTimersByTime(5_000));
-    expect(FakeWebSocket.instances).toHaveLength(0);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("rejects invalid server frames", async () => {

@@ -8,6 +8,10 @@
 
 **Tech Stack:** Node.js 24 LTS, TypeScript 5.9, pnpm 11, Fastify 5, `@fastify/websocket` 11, `@earendil-works/pi-coding-agent` 0.83, React 19, Vite 8, Zod 4, Vitest, Testing Library, Playwright, and Pino.
 
+## Architecture Amendment
+
+Local mode no longer uses a startup token, cookie, or authentication endpoint. The server remains bound to `127.0.0.1` and enforces loopback clients plus local browser origins; remote access and its authentication model will be designed separately. This amendment supersedes the token-exchange requirements in Tasks 3-5 below, which remain as the original implementation record.
+
 ## Global Constraints
 
 - Require Node.js `>=24.12.0` and pnpm `>=11.18.0`.

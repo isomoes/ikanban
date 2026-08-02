@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Security: Simplified host-only mode by removing startup-token and cookie authentication while retaining loopback binding and local-origin checks; remote access remains out of scope pending a dedicated design. (@isomoes)
 - Runtime: Replaced the external OpenCode proxy deployment with a combined Bun service powered by `@earendil-works/pi-coding-agent@0.83.0`, including compatibility APIs, repeatable project roots, and persistent Pi sessions. (@isomoes)
 - Release: Moved the `ikanban` executable into the publishable `ikanban` package, published it alongside `ikanban-web`, and updated the Docker image to run the combined service. (@isomoes)
 - Docs: Added Pi credential, model, startup, persistence, migration, and current capability-limit documentation. (@isomoes)

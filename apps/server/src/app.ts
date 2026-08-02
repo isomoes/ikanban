@@ -1,4 +1,3 @@
-import cookie from "@fastify/cookie";
 import fastifyStatic from "@fastify/static";
 import websocket from "@fastify/websocket";
 import {
@@ -12,7 +11,7 @@ import Fastify, {
   type FastifyReply,
   type FastifyRequest,
 } from "fastify";
-import { SESSION_COOKIE, createSessionValue, isLoopback, originIsLocal, tokenMatches } from "./auth.js";
+import { isLoopback, originIsLocal } from "./auth.js";
 
 export interface ControllerPort {
   snapshot(): RuntimeSnapshot;
@@ -23,7 +22,6 @@ export interface ControllerPort {
 
 export interface BuildAppOptions {
   controller: ControllerPort;
-  startupToken: string;
   webRoot: string | undefined;
 }
 
@@ -45,22 +43,10 @@ function guardLocalRequest(request: FastifyRequest, reply: FastifyReply): boolea
   return true;
 }
 
-function guardLocalSession(request: FastifyRequest, reply: FastifyReply, sessionValue: string): boolean {
-  if (!guardLocalRequest(request, reply)) return false;
-  const session = request.cookies[SESSION_COOKIE];
-  if (session === undefined || !tokenMatches(session, sessionValue)) {
-    void reply.code(401).send();
-    return false;
-  }
-  return true;
-}
-
 export async function buildApp(options: BuildAppOptions): Promise<FastifyInstance> {
   const app = Fastify();
-  const sessionValue = createSessionValue();
 
   try {
-    await app.register(cookie);
     await app.register(websocket, {
       options: {
         maxPayload: 1_048_576,
@@ -68,32 +54,15 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
       },
     });
 
-    app.post("/api/auth/exchange", async (request, reply) => {
-      if (!guardLocalRequest(request, reply)) return;
-      const body = request.body;
-      if (typeof body !== "object" || body === null || !("token" in body) || typeof body.token !== "string") {
-        return reply.code(400).send();
-      }
-      if (!tokenMatches(body.token, options.startupToken)) return reply.code(401).send();
-      return reply
-        .setCookie(SESSION_COOKIE, sessionValue, {
-          httpOnly: true,
-          sameSite: "strict",
-          path: "/",
-        })
-        .code(204)
-        .send();
-    });
-
     app.get("/api/bootstrap", async (request, reply) => {
-      if (!guardLocalSession(request, reply, sessionValue)) return;
+      if (!guardLocalRequest(request, reply)) return;
       return options.controller.snapshot();
     });
 
     app.get("/api/events", {
       websocket: true,
       preValidation: (request, reply, done) => {
-        if (guardLocalSession(request, reply, sessionValue)) done();
+        if (guardLocalRequest(request, reply)) done();
       },
     }, (socket) => {
       let unsubscribe: (() => void) | undefined;

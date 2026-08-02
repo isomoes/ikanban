@@ -9,7 +9,6 @@ export default defineConfig({
     env: {
       PORT: "4177",
       PI_WEB_FAKE_RUNTIME: "1",
-      PI_WEB_STARTUP_TOKEN: "e2e-token",
     },
     reuseExistingServer: false,
   },
