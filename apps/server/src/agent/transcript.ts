@@ -32,12 +32,16 @@ function textContent(content: unknown): string | undefined {
   return text || undefined;
 }
 
+export function textFromMessage(message: unknown): string | undefined {
+  return textContent(record(message)?.content);
+}
+
 export function transcriptFromMessages(messages: readonly unknown[]): TranscriptItem[] {
   return messages.flatMap((message, index) => {
     const value = record(message);
     if (!value || (value.role !== "user" && value.role !== "assistant")) return [];
 
-    const text = textContent(value.content);
+    const text = textFromMessage(value);
     if (text === undefined) return [];
 
     return [{

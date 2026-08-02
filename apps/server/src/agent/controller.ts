@@ -1,5 +1,5 @@
 import type { AgentEvent, ClientCommand, RuntimeSnapshot, ServerMessage, TranscriptItem } from "@pi-web/protocol";
-import { normalizePiEvent, transcriptFromMessages } from "./transcript.js";
+import { normalizePiEvent, textFromMessage, transcriptFromMessages } from "./transcript.js";
 import type { PiEvent, PiRuntimeFactory, PiRuntimePort } from "./types.js";
 
 type WithoutEnvelope<T> = T extends unknown ? Omit<T, "protocolVersion" | "sequence"> : never;
@@ -121,6 +121,14 @@ export class AgentController {
       }
 
       this.#status = undefined;
+      if (command.type === "prompt.send" || command.type === "prompt.steer" || command.type === "prompt.followUp") {
+        this.#transcript = [...this.#transcript, {
+          id: `live-user-${++this.#itemSequence}`,
+          type: "message",
+          role: "user",
+          text: command.text,
+        }];
+      }
       this.#emit({ type: "command.accepted", commandId: command.commandId });
       switch (command.type) {
         case "prompt.send": {
@@ -188,9 +196,13 @@ export class AgentController {
         ? event.message as Record<string, unknown>
         : undefined;
       if (message?.role === "assistant") {
-        this.#textItemId = typeof message.id === "string" ? message.id : `live-${++this.#itemSequence}`;
+        const piId = typeof message.id === "string" ? message.id : undefined;
+        this.#textItemId = piId && !this.#transcript.some((item) => item.id === piId)
+          ? piId
+          : `live-${++this.#itemSequence}`;
       }
     }
+    if (event.type === "message_end") this.#reconcileAssistantMessage(event.message);
     const normalized = normalizePiEvent(event, () => {
       this.#textItemId ??= `live-${++this.#itemSequence}`;
       return this.#textItemId;
@@ -200,6 +212,45 @@ export class AgentController {
       this.#emit({ type: "agent.event", sessionId: this.#runtime.session.sessionId, event: normalized });
     }
     if (event.type === "agent_end" || event.type === "message_end") this.#textItemId = undefined;
+  }
+
+  #reconcileAssistantMessage(message: unknown): void {
+    const value = typeof message === "object" && message !== null
+      ? message as Record<string, unknown>
+      : undefined;
+    if (value?.role !== "assistant") return;
+
+    const text = textFromMessage(value);
+    if (text === undefined) return;
+
+    const streamedId = this.#textItemId;
+    if (streamedId) {
+      const streamedIndex = this.#transcript.findIndex((item) =>
+        item.id === streamedId && item.type === "message" && item.role === "assistant"
+      );
+      if (streamedIndex !== -1) {
+        this.#replaceOrAppendTranscriptItem(streamedIndex, {
+          id: streamedId,
+          type: "message",
+          role: "assistant",
+          text,
+        });
+        return;
+      }
+    }
+
+    const piId = typeof value.id === "string" ? value.id : undefined;
+    const existing = piId ? this.#transcript.find((item) => item.id === piId) : undefined;
+    if (existing?.type === "message" && existing.role === "assistant" && existing.text === text) return;
+
+    const itemId = this.#textItemId
+      ?? (piId && !existing ? piId : `live-${++this.#itemSequence}`);
+    this.#transcript = [...this.#transcript, {
+      id: itemId,
+      type: "message",
+      role: "assistant",
+      text,
+    }];
   }
 
   #projectEvent(event: AgentEvent): void {

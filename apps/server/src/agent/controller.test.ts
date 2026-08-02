@@ -92,6 +92,30 @@ describe("AgentController", () => {
     await Promise.all([prompting, steering, following, aborting]);
   });
 
+  it("projects each accepted prompt command into reconnect snapshots exactly once", async () => {
+    const session = new FakeSession();
+    session.messages = [{ id: "history-user", role: "user", content: "persisted" }];
+    let releasePrompt!: () => void;
+    session.prompt.mockImplementation(() => {
+      session.isStreaming = true;
+      return new Promise<void>((resolve) => { releasePrompt = resolve; });
+    });
+    const controller = await AgentController.create({ workspace: "/work", runtimeFactory: async () => fakeRuntime(session) });
+
+    const prompting = controller.handle({ protocolVersion: 1, commandId: "prompt", type: "prompt.send", text: "inspect" });
+    await vi.waitFor(() => expect(session.prompt).toHaveBeenCalledWith("inspect"));
+    await controller.handle({ protocolVersion: 1, commandId: "steer", type: "prompt.steer", text: "focus left" });
+    await controller.handle({ protocolVersion: 1, commandId: "follow", type: "prompt.followUp", text: "then summarize" });
+
+    const userTexts = controller.snapshot().items.flatMap((item) =>
+      item.type === "message" && item.role === "user" ? [item.text] : []
+    );
+    expect(userTexts).toEqual(["persisted", "inspect", "focus left", "then summarize"]);
+
+    releasePrompt();
+    await prompting;
+  });
+
   it("uses a distinct text item for each assistant message lifecycle", async () => {
     const session = new FakeSession();
     const controller = await AgentController.create({ workspace: "/work", runtimeFactory: async () => fakeRuntime(session) });
@@ -148,6 +172,64 @@ describe("AgentController", () => {
       status: "succeeded",
       output: "done",
     });
+  });
+
+  it("reconciles final assistant text in place without disturbing tool order", async () => {
+    const session = new FakeSession();
+    session.messages = [
+      { id: "history-user", role: "user", content: "earlier question" },
+      { id: "history-assistant", role: "assistant", content: "earlier answer" },
+    ];
+    let releasePrompt!: () => void;
+    session.prompt.mockImplementation(() => {
+      session.isStreaming = true;
+      return new Promise<void>((resolve) => { releasePrompt = resolve; });
+    });
+    const controller = await AgentController.create({ workspace: "/work", runtimeFactory: async () => fakeRuntime(session) });
+
+    const prompting = controller.handle({ protocolVersion: 1, commandId: "prompt", type: "prompt.send", text: "new question" });
+    await vi.waitFor(() => expect(session.prompt).toHaveBeenCalledOnce());
+    session.listener?.({ type: "message_start", message: { id: "streamed-assistant", role: "assistant" } });
+    session.listener?.({ type: "message_update", assistantMessageEvent: { type: "text_delta", delta: "partial" } });
+    session.listener?.({ type: "tool_execution_start", toolCallId: "call-1", toolName: "read" });
+    session.listener?.({ type: "tool_execution_end", toolCallId: "call-1", result: { content: "tool output" }, isError: false });
+    session.listener?.({
+      type: "message_end",
+      message: {
+        id: "finalized-assistant",
+        role: "assistant",
+        content: [
+          { type: "thinking", thinking: "hidden" },
+          { type: "text", text: "complete answer" },
+        ],
+        stopReason: "stop",
+      },
+    });
+
+    expect(controller.snapshot().items).toEqual([
+      { id: "history-user", type: "message", role: "user", text: "earlier question" },
+      { id: "history-assistant", type: "message", role: "assistant", text: "earlier answer" },
+      { id: "live-user-1", type: "message", role: "user", text: "new question" },
+      { id: "streamed-assistant", type: "message", role: "assistant", text: "complete answer" },
+      { id: "call-1", type: "tool", toolName: "read", status: "succeeded", output: "tool output" },
+    ]);
+
+    releasePrompt();
+    await prompting;
+  });
+
+  it("uses a safe Pi ID for finalized assistant text without prior deltas", async () => {
+    const session = new FakeSession();
+    const controller = await AgentController.create({ workspace: "/work", runtimeFactory: async () => fakeRuntime(session) });
+
+    session.listener?.({
+      type: "message_end",
+      message: { id: "pi-assistant", role: "assistant", content: "final only", stopReason: "stop" },
+    });
+
+    expect(controller.snapshot().items).toEqual([
+      { id: "pi-assistant", type: "message", role: "assistant", text: "final only" },
+    ]);
   });
 
   it("preserves normalized errors in reconnect snapshots", async () => {
