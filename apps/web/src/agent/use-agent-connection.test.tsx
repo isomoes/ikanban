@@ -24,6 +24,11 @@ class FakeWebSocket extends EventTarget {
     this.dispatchEvent(new Event("close"));
   }
 
+  open() {
+    this.readyState = FakeWebSocket.OPEN;
+    this.dispatchEvent(new Event("open"));
+  }
+
   emitMessage(data: string) {
     this.dispatchEvent(new MessageEvent("message", { data }));
   }
@@ -94,11 +99,39 @@ describe("useAgentConnection", () => {
     const { result } = renderHook(() => useAgentConnection());
     await waitFor(() => expect(FakeWebSocket.instances).toHaveLength(1));
 
+    let commandId: string | undefined;
     act(() => {
-      result.current.send({ type: "run.abort" });
+      commandId = result.current.send({ type: "run.abort" });
     });
 
+    expect(commandId).toBeUndefined();
     expect(result.current.state.lastError).toBe("Agent connection is not open.");
     expect(FakeWebSocket.instances[0]?.send).not.toHaveBeenCalled();
+  });
+
+  it("only returns a command ID while the socket is open", async () => {
+    window.history.replaceState({}, "", "/transient-disconnect");
+    const { result } = renderHook(() => useAgentConnection());
+    await waitFor(() => expect(FakeWebSocket.instances).toHaveLength(1));
+    const socket = FakeWebSocket.instances[0]!;
+
+    act(() => socket.open());
+    let deliveredId: string | undefined;
+    act(() => {
+      deliveredId = result.current.send({ type: "prompt.send", text: "Keep this" });
+    });
+
+    expect(deliveredId).toEqual(expect.any(String));
+    expect(socket.send).toHaveBeenCalledTimes(1);
+
+    act(() => socket.close());
+    let disconnectedId: string | undefined;
+    act(() => {
+      disconnectedId = result.current.send({ type: "prompt.send", text: "Still here" });
+    });
+
+    expect(result.current.state.connected).toBe(false);
+    expect(disconnectedId).toBeUndefined();
+    expect(socket.send).toHaveBeenCalledTimes(1);
   });
 });

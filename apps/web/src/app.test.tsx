@@ -54,6 +54,45 @@ describe("App", () => {
     expect(send).toHaveBeenCalledWith({ type: "run.abort" });
   });
 
+  it("preserves a failed draft and sends it after a transient disconnect", async () => {
+    const send = vi.fn<AgentConnection["send"]>(() => undefined);
+    const user = userEvent.setup();
+    const { rerender } = render(<App connection={connection({}, send)} />);
+    const message = screen.getByLabelText("Message Pi");
+
+    await user.type(message, "Keep this draft");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(message).toHaveValue("Keep this draft");
+
+    rerender(<App connection={connection({ connected: false }, send)} />);
+    expect(screen.getByRole("button", { name: "Send" })).toBeDisabled();
+    await user.keyboard("{Enter}");
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(message).toHaveValue("Keep this draft");
+
+    send.mockReturnValueOnce("command-2");
+    rerender(<App connection={connection({}, send)} />);
+    await user.click(screen.getByRole("button", { name: "Send" }));
+    expect(send).toHaveBeenLastCalledWith({ type: "prompt.send", text: "Keep this draft" });
+    expect(message).toHaveValue("");
+  });
+
+  it("disables stop and retains queued text while disconnected", async () => {
+    const send = vi.fn<AgentConnection["send"]>(() => undefined);
+    const user = userEvent.setup();
+    render(<App connection={connection({ connected: false, status: "running" }, send)} />);
+
+    expect(screen.getByRole("button", { name: "Stop" })).toBeDisabled();
+    await user.selectOptions(screen.getByLabelText("Queue mode"), "prompt.followUp");
+    const message = screen.getByLabelText("Message Pi");
+    await user.type(message, "Queue after reconnect{Enter}");
+
+    expect(send).not.toHaveBeenCalled();
+    expect(message).toHaveValue("Queue after reconnect");
+    expect(screen.getByLabelText("Queue mode")).toHaveValue("prompt.followUp");
+  });
+
   it("queues steering and follow-up prompts while running", async () => {
     const send = vi.fn(() => "command-1");
     const user = userEvent.setup();

@@ -13,7 +13,7 @@ export type ClientCommandInput = DistributiveOmit<ClientCommand, "protocolVersio
 
 export interface AgentConnection {
   state: AgentState;
-  send(command: ClientCommandInput): string;
+  send(command: ClientCommandInput): string | undefined;
 }
 
 interface TokenExchange {
@@ -113,7 +113,7 @@ export function useAgentConnection(): AgentConnection {
     };
   }, []);
 
-  const send = (input: ClientCommandInput): string => {
+  const send = (input: ClientCommandInput): string | undefined => {
     const commandId = crypto.randomUUID();
     const parsed = ClientCommandSchema.safeParse({
       ...input,
@@ -123,13 +123,13 @@ export function useAgentConnection(): AgentConnection {
 
     if (!parsed.success) {
       setState((current) => ({ ...current, lastError: "Command is invalid." }));
-      return commandId;
+      return undefined;
     }
 
     const socket = socketRef.current;
     if (!socket || socket.readyState !== WebSocket.OPEN) {
       setState((current) => ({ ...current, lastError: "Agent connection is not open." }));
-      return commandId;
+      return undefined;
     }
 
     socket.send(JSON.stringify(parsed.data));

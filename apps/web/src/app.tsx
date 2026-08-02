@@ -27,18 +27,17 @@ function AppShell({ connection }: { connection: AgentConnection }) {
   const canSubmit = text.trim().length > 0;
 
   const submitPrompt = () => {
-    if (!canSubmit) return;
+    if (!state.connected || !canSubmit) return;
     const command: ClientCommandInput = running
       ? { type: queueMode, text }
       : { type: "prompt.send", text };
-    send(command);
-    setText("");
+    if (send(command)) setText("");
   };
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     if (running) {
-      send({ type: "run.abort" });
+      if (state.connected) send({ type: "run.abort" });
       return;
     }
     submitPrompt();
@@ -133,7 +132,7 @@ function AppShell({ connection }: { connection: AgentConnection }) {
                   </select>
                 </label>
               ) : <span className="key-hint">Enter to send · Shift+Enter for newline</span>}
-              <button type="submit" disabled={!running && !canSubmit}>{running ? "Stop" : "Send"}</button>
+              <button type="submit" disabled={!state.connected || (!running && !canSubmit)}>{running ? "Stop" : "Send"}</button>
             </div>
           </form>
         </footer>
