@@ -1,12 +1,7 @@
-import { fileURLToPath } from "node:url";
+import { resolveStartServerOptions } from "./environment.js";
 import { startServer } from "./server.js";
 
-const workspace = process.env.PI_WEB_WORKSPACE ?? process.cwd();
-const server = await startServer({
-  workspace,
-  webRoot: fileURLToPath(new URL("../../web/dist", import.meta.url)),
-  port: Number(process.env.PORT ?? 4097),
-});
+const server = await startServer(resolveStartServerOptions(process.env, process.cwd(), import.meta.url));
 
 const shutdown = async () => {
   await server.shutdown();

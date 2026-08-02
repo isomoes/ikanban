@@ -79,4 +79,37 @@ describe("server lifecycle", () => {
       await started.shutdown();
     }
   });
+
+  it("uses explicit runtime and startup-token options", async () => {
+    const controller = createController();
+    const runtimeFactory = vi.fn();
+    const createControllerForRuntime = vi.fn(async () => controller);
+    const buildApp = vi.fn(async () => ({
+      listen: vi.fn(async () => "http://127.0.0.1:4177"),
+      close: vi.fn(async () => undefined),
+    } as unknown as FastifyInstance));
+    const started = await startServer(
+      {
+        workspace: "/work",
+        webRoot: undefined,
+        port: 4177,
+        runtimeFactory,
+        startupToken: "fixed-token",
+      },
+      {
+        createController: createControllerForRuntime,
+        createToken: vi.fn(() => "random-token"),
+        buildApp,
+        log: vi.fn(),
+      },
+    );
+
+    try {
+      expect(createControllerForRuntime).toHaveBeenCalledWith("/work", runtimeFactory);
+      expect(buildApp).toHaveBeenCalledWith(expect.objectContaining({ startupToken: "fixed-token" }));
+      expect(started.launchUrl).toContain("token=fixed-token");
+    } finally {
+      await started.shutdown();
+    }
+  });
 });

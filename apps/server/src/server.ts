@@ -2,16 +2,19 @@ import { randomBytes } from "node:crypto";
 import type { FastifyInstance } from "fastify";
 import { AgentController } from "./agent/controller.js";
 import { createPiRuntime } from "./agent/pi-runtime.js";
+import type { PiRuntimeFactory } from "./agent/types.js";
 import { buildApp, type ControllerPort } from "./app.js";
 
 export interface StartServerOptions {
   workspace: string;
   webRoot: string | undefined;
   port: number;
+  runtimeFactory?: PiRuntimeFactory;
+  startupToken?: string;
 }
 
 export interface StartServerDependencies {
-  createController(workspace: string): Promise<ControllerPort>;
+  createController(workspace: string, runtimeFactory: PiRuntimeFactory): Promise<ControllerPort>;
   buildApp: typeof buildApp;
   createToken(): string;
   log(message: string): void;
@@ -23,7 +26,7 @@ export interface StartedServer {
 }
 
 const defaultDependencies: StartServerDependencies = {
-  createController: (workspace) => AgentController.create({ workspace, runtimeFactory: createPiRuntime }),
+  createController: (workspace, runtimeFactory) => AgentController.create({ workspace, runtimeFactory }),
   buildApp,
   createToken: () => randomBytes(32).toString("base64url"),
   log: console.log,
@@ -53,8 +56,8 @@ export async function startServer(
   overrides: Partial<StartServerDependencies> = {},
 ): Promise<StartedServer> {
   const dependencies = { ...defaultDependencies, ...overrides };
-  const startupToken = dependencies.createToken();
-  const controller = await dependencies.createController(options.workspace);
+  const startupToken = options.startupToken ?? dependencies.createToken();
+  const controller = await dependencies.createController(options.workspace, options.runtimeFactory ?? createPiRuntime);
   let app: FastifyInstance | undefined;
 
   try {

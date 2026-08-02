@@ -23,6 +23,14 @@ function connection(overrides: Partial<AgentConnection["state"]> = {}, send = vi
 }
 
 describe("App", () => {
+  it("reports whether the gateway is connected", () => {
+    const { rerender } = render(<App connection={connection()} />);
+    expect(screen.getByText("Connected")).toBeVisible();
+
+    rerender(<App connection={connection({ connected: false })} />);
+    expect(screen.getByText("Disconnected")).toBeVisible();
+  });
+
   it("submits a prompt and exposes stop while running", async () => {
     const send = vi.fn(() => "command-1");
     const user = userEvent.setup();

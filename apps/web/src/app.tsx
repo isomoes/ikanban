@@ -52,7 +52,7 @@ function AppShell({ connection }: { connection: AgentConnection }) {
     <div className="app-frame">
       <aside className="status-rail" aria-label="Agent status">
         <span className={`connection-light ${state.connected ? "is-connected" : ""}`} aria-hidden="true" />
-        <span className="rail-label">{state.connected ? "Online" : "Offline"}</span>
+        <span className="rail-label">{state.connected ? "Connected" : "Disconnected"}</span>
       </aside>
 
       <div className="app-body">
