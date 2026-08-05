@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.18]
+
+- Web: Restored undo for pasted prompt content, including programmatic paste paths, so pasted text can be reverted reliably. (@isomoes)
+
 ## [0.3.17]
 
 - Web: Added a project command to restart OpenCode and reload skills, MCPs, and project configuration without leaving the session. (@isomoes)
