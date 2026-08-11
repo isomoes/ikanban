@@ -23,7 +23,7 @@ iKanban is a multi-agent coding workspace powered by [OpenCode](https://opencode
 | ✍️ Prompt composer | Expandable, responsive editor for longer task descriptions with English and Chinese UI support. |
 | 🔍 Code review | PR-style project diffs with change statistics, file filtering, viewed progress, historical sessions, and patch diffs. |
 | 🌐 Remote control | Connect to OpenCode locally, remotely, through WSL, or over SSH tunnels, with HTTP, Basic auth, and multiple servers. |
-| 🔄 State synchronization | Keep server selection independent per browser tab and synchronize archived sessions through OpenCode. |
+| 🔄 State synchronization | Keep server selection independent per browser tab and persist archived sessions in browser storage. |
 | 📱 Responsive interface | Desktop, mobile, and fullscreen layouts with accessible interactions and keyboard navigation. |
 
 ## Quick Start

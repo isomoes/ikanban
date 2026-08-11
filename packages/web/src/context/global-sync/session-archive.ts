@@ -1,9 +1,11 @@
 import type { Session } from "@/types/opencode"
 
-export async function archiveSessionOnServer(
-  _clientOrInput: unknown,
-  _legacyInput?: { directory: string; sessionID: string; archivedAt?: number },
-): Promise<Session | undefined> {
-  // V2 does not expose session archive mutation.
-  return undefined
+export function sessionArchiveKey(directory: string, sessionID: string) {
+  return `${directory}\n${sessionID}`
+}
+
+export function applySessionArchive(session: Session, archived: Record<string, number>) {
+  const value = archived[sessionArchiveKey(session.directory, session.id)]
+  if (value === undefined || session.time.archived === value) return session
+  return { ...session, time: { ...session.time, archived: value } }
 }

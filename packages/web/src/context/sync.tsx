@@ -678,6 +678,7 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
             const sessions = x.data
               .filter((s) => !!s?.id)
               .map(toSession)
+              .map(globalSync.project.applySessionArchive)
               .sort((a, b) => cmp(a.id, b.id))
               .slice(0, store.limit)
             setStore("session", reconcile(sessions, { key: "id" }))

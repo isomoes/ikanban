@@ -5,6 +5,7 @@ import type {
   Project,
   ProviderAuthResponse,
   ProviderListResponse,
+  Session,
   Todo,
 } from "@/types/opencode"
 import type { SessionInfo } from "@opencode-ai/client"
@@ -12,6 +13,7 @@ import { showToast } from "@/ui/components/toast"
 import { getFilename } from "@/utils/path"
 import {
   createContext,
+  createEffect,
   getOwner,
   Match,
   onCleanup,
@@ -32,7 +34,7 @@ import { createChildStoreManager } from "./global-sync/child-store"
 import { applyDirectoryEvent, applyGlobalEvent } from "./global-sync/event-reducer"
 import { createRefreshQueue } from "./global-sync/queue"
 import { estimateRootSessionTotal, loadRootSessionsWithFallback } from "./global-sync/session-load"
-import { archiveSessionOnServer } from "./global-sync/session-archive"
+import { applySessionArchive, sessionArchiveKey } from "./global-sync/session-archive"
 import { trimSessions } from "./global-sync/session-trim"
 import type { ProjectMeta } from "./global-sync/types"
 import { SESSION_RECENT_LIMIT } from "./global-sync/types"
@@ -90,6 +92,10 @@ function createGlobalSync() {
   const [projectCache, setProjectCache, projectInit] = persisted(
     Persist.global("globalSync.project", ["globalSync.project.v1"]),
     createStore({ value: [] as Project[] }),
+  )
+  const [sessionArchive, setSessionArchive] = persisted(
+    Persist.global("globalSync.archive", ["browserArchive", "browserArchive.v1"]),
+    createStore({ sessions: {} as Record<string, number> }),
   )
 
   const [globalStore, setGlobalStore] = createStore<GlobalStore>({
@@ -201,6 +207,21 @@ function createGlobalSync() {
     return sdk
   }
 
+  const withSessionArchive = (session: Session) => applySessionArchive(session, sessionArchive.sessions)
+
+  createEffect(() => {
+    const archived = sessionArchive.sessions
+    for (const [directory, child] of Object.entries(children.children)) {
+      const [store, setStore] = child
+      for (let index = 0; index < store.session.length; index++) {
+        const session = store.session[index]
+        const value = archived[sessionArchiveKey(directory, session.id)]
+        if (value === undefined || session.time.archived === value) continue
+        setStore("session", index, "time", "archived", value)
+      }
+    }
+  })
+
   async function loadSessions(directory: string) {
     const pending = sessionLoads.get(directory)
     if (pending) return pending
@@ -226,7 +247,7 @@ function createGlobalSync() {
       limit,
       list: (query) =>
         globalSDK.client.session.list({ directory, parentID: null, limit: query.limit }).then((result) => ({
-          data: result.data.map(toSession),
+          data: result.data.map(toSession).map(withSessionArchive),
         })),
     })
       .then((x) => {
@@ -374,16 +395,18 @@ function createGlobalSync() {
   const projectApi = {
     loadSessions,
     async archiveSession(directory: string, sessionID: string) {
-      const info = await archiveSessionOnServer({ directory, sessionID })
-      if (!info) return
+      const archived = Date.now()
+      setSessionArchive("sessions", sessionArchiveKey(directory, sessionID), archived)
 
       const existing = children.children[directory]
-      if (!existing) return info
+      if (!existing) return
       const [store, setStore] = existing
       const index = store.session.findIndex((session) => session.id === sessionID)
-      if (index !== -1) setStore("session", index, reconcile(info))
-      return info
+      if (index === -1) return
+      setStore("session", index, "time", "archived", archived)
+      return store.session[index]
     },
+    applySessionArchive: withSessionArchive,
     meta(directory: string, patch: ProjectMeta) {
       children.projectMeta(directory, patch)
     },
