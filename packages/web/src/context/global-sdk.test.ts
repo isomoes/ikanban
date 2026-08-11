@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import type { V2Event } from "@/types/opencode"
+import type { V2Event } from "@opencode-ai/client"
 import {
   coalesceV2Events,
   createStreamLifecycle,

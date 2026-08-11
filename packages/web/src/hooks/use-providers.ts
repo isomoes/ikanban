@@ -26,15 +26,31 @@ export function useProviders() {
     }
     return globalSync.data.provider
   })
-  const connectedIDs = createMemo(() => new Set(providers().connected))
-  const connected = createMemo(() => providers().all.filter((p) => connectedIDs().has(p.id)))
-  const paid = createMemo(() =>
-    connected().filter((p) => p.id !== "opencode" || Object.values(p.models).find((m) => m.cost?.input)),
+  const all = createMemo(() =>
+    providers().providers.map((provider) => ({
+      ...provider,
+      models: Object.fromEntries(providers().models.filter((model) => model.providerID === provider.id).map((model) => [model.id, model])),
+    })),
   )
-  const popular = createMemo(() => providers().all.filter((p) => popularProviderSet.has(p.id)))
+  const connectedIDs = createMemo(() => {
+    const integrations = new Map(providers().integrations.map((integration) => [integration.id, integration]))
+    return new Set(
+      providers().providers
+        .filter((provider) => provider.integrationID && integrations.get(provider.integrationID)?.connections.length)
+        .map((provider) => provider.id),
+    )
+  })
+  const connected = createMemo(() => all().filter((p) => connectedIDs().has(p.id)))
+  const paid = createMemo(() =>
+    connected().filter((p) => p.id !== "opencode" || Object.values(p.models).find((m) => m.cost.some((cost) => cost.input))),
+  )
+  const popular = createMemo(() => all().filter((p) => popularProviderSet.has(p.id)))
   return {
-    all: createMemo(() => providers().all),
-    default: createMemo(() => providers().default),
+    all,
+    default: createMemo(() => {
+      const model = providers().defaultModel
+      return model ? { [model.providerID]: model.id } : {}
+    }),
     popular,
     connected,
     paid,

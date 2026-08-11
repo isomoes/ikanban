@@ -1,4 +1,5 @@
-import type { FileContent, SnapshotFileDiff } from "@/types/opencode"
+import type { DecodedFileContent as FileContent } from "@/types/app"
+import type { FileDiffInfo } from "@opencode-ai/client"
 import { parsePatch, type StructuredPatch } from "diff"
 
 const BINARY_FILE_RE = /\.(?:png|jpe?g|gif|webp|bmp|ico|avif|mp3|wav|ogg|flac|mp4|mov|avi|mkv|webm|pdf|zip|gz|tar|7z|woff2?|ttf|eot|otf|exe|bin|so|dylib|dll|class|jar|wasm)$/i
@@ -109,26 +110,24 @@ export function patchToTexts(patch: StructuredPatch): { before: string; after: s
  * canonical `FileDiff`. These diffs are patch-only, so `before`/`after` are
  * reconstructed from the patch when available.
  */
-export function snapshotToFileDiff(snapshot: SnapshotFileDiff): FileDiff {
-  const file = snapshot.file ?? ""
-  const status = snapshot.status ?? "modified"
-  const patch = snapshot.patch ? parsePatch(snapshot.patch)[0] : undefined
+export function snapshotToFileDiff(snapshot: FileDiffInfo): FileDiff {
+  const patch = parsePatch(snapshot.patch)[0]
 
   let before = ""
   let after = ""
   if (patch) {
     const texts = patchToTexts(patch)
-    before = status === "added" ? "" : texts.before
-    after = status === "deleted" ? "" : texts.after
+    before = snapshot.status === "added" ? "" : texts.before
+    after = snapshot.status === "deleted" ? "" : texts.after
   }
 
   return {
-    file,
+    file: snapshot.file,
     before,
     after,
     additions: snapshot.additions,
     deletions: snapshot.deletions,
-    status,
+    status: snapshot.status,
   }
 }
 

@@ -41,11 +41,21 @@ type ToolTimeState = {
   }
 }
 
-export function getToolDurationMs(state: ToolTimeState | undefined) {
+type NativeToolTime = { created?: number; ran?: number; completed?: number }
+
+export function getToolDurationMs(state: ToolTimeState | NativeToolTime | undefined) {
   if (!state) return undefined
-  if (state.status !== "completed" && state.status !== "error") return undefined
-  const start = state.time?.start
-  const end = state.time?.end
+  if ("created" in state) {
+    const start = state.ran ?? state.created
+    const end = state.completed
+    if (typeof start !== "number" || typeof end !== "number") return undefined
+    if (end < start) return undefined
+    return end - start
+  }
+  const legacy = state as ToolTimeState
+  if (legacy.status !== "completed" && legacy.status !== "error") return undefined
+  const start = legacy.time?.start
+  const end = legacy.time?.end
   if (typeof start !== "number" || typeof end !== "number") return undefined
   if (end < start) return undefined
   return end - start

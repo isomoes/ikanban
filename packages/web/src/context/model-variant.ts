@@ -1,16 +1,4 @@
-type AgentModel = {
-  providerID: string
-  modelID: string
-}
-
-type Agent = {
-  model?: AgentModel
-  variant?: string
-}
-
-type Model = AgentModel & {
-  variants?: Record<string, unknown>
-}
+import type { AgentInfo, ModelInfo } from "@opencode-ai/client"
 
 type VariantInput = {
   variants: string[]
@@ -18,14 +6,18 @@ type VariantInput = {
   configured: string | undefined
 }
 
-export function getConfiguredAgentVariant(input: { agent: Agent | undefined; model: Model | undefined }) {
-  if (!input.agent?.variant) return undefined
+export function getConfiguredAgentVariant(input: {
+  agent: Pick<AgentInfo, "model"> | undefined
+  model: Pick<ModelInfo, "id" | "providerID" | "variants"> | undefined
+}) {
+  if (!input.agent?.model?.variant) return undefined
   if (!input.agent.model) return undefined
-  if (!input.model?.variants) return undefined
+  if (!input.model) return undefined
   if (input.agent.model.providerID !== input.model.providerID) return undefined
-  if (input.agent.model.modelID !== input.model.modelID) return undefined
-  if (!(input.agent.variant in input.model.variants)) return undefined
-  return input.agent.variant
+  if (input.agent.model.id !== input.model.id) return undefined
+  const variant = input.agent.model.variant
+  if (!input.model.variants.some((item) => item.id === variant)) return undefined
+  return variant
 }
 
 export function resolveModelVariant(input: VariantInput) {

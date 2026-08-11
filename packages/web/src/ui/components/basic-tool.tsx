@@ -52,12 +52,18 @@ const TOOL_BADGES: Record<string, string> = {
   codesearch: "CODE",
   task: "AGENT",
   bash: "SHELL",
+  shell: "SHELL",
   edit: "EDIT",
   write: "WRITE",
   apply_patch: "PATCH",
+  patch: "PATCH",
   todowrite: "TODO",
   question: "ASK",
   skill: "SKILL",
+  execute: "CODE",
+  lsp: "LSP",
+  plan_exit: "PLAN",
+  invalid: "ERROR",
 }
 
 export function toolBadge(tool?: string) {
@@ -78,7 +84,7 @@ export function ToolBadge(props: { icon: IconProps["name"]; tool?: string; badge
 export function BasicTool(props: BasicToolProps) {
   const [open, setOpen] = createSignal(props.defaultOpen ?? false)
   const [ready, setReady] = createSignal(open())
-  const pending = () => props.status === "pending" || props.status === "running"
+  const pending = () => props.status === "streaming" || props.status === "running"
   const compactTitle = () => {
     const badge = props.badge ?? toolBadge(props.tool)
     return badge !== "MCP" && badge !== "SKILL" && badge !== "AGENT"
@@ -274,14 +280,14 @@ export function GenericTool(props: {
   turnDurationLabel?: string
 }) {
   const i18n = useI18n()
+  const external = () => toolBadge(props.tool) === "MCP"
   const hasInput = () => !!props.input && Object.keys(props.input).length > 0
   const hasOutput = () => props.output !== undefined && props.output !== ""
 
   return (
     <BasicTool
-      icon="mcp"
+      icon={external() ? "mcp" : "code"}
       tool={props.tool}
-      badge="MCP"
       status={props.status}
       trigger={{ title: props.tool, titleClass: "external-tool-title" }}
       hideDetails={props.hideDetails}
@@ -291,14 +297,14 @@ export function GenericTool(props: {
       <div
         data-component="generic-tool-console"
         role="region"
-        aria-label={`${props.tool} ${i18n.t("ui.tool.mcpCall")}`}
+        aria-label={`${props.tool} ${external() ? i18n.t("ui.tool.mcpCall") : i18n.t("ui.tool.call")}`}
       >
         <div data-slot="generic-tool-console-header">
           <div data-slot="generic-tool-console-identity">
             <span data-slot="generic-tool-console-prompt" aria-hidden="true">
               &gt;_
             </span>
-            <span>{i18n.t("ui.tool.mcpCall")}</span>
+            <span>{external() ? i18n.t("ui.tool.mcpCall") : i18n.t("ui.tool.call")}</span>
           </div>
           <Show when={props.status}>
             <span data-slot="generic-tool-console-status" data-status={props.status}>

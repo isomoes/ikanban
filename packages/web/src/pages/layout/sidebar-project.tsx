@@ -41,7 +41,7 @@ export const ProjectDragOverlay = (props: {
   projects: Accessor<LocalProject[]>
   activeProject: Accessor<string | undefined>
 }): JSX.Element => {
-  const project = createMemo(() => props.projects().find((p) => p.worktree === props.activeProject()))
+  const project = createMemo(() => props.projects().find((p) => p.canonical === props.activeProject()))
   return (
     <Show when={project()}>
       {(p) => (
@@ -102,7 +102,7 @@ const ProjectTile = (props: {
         data-current={props.selected() ? true : undefined}
         aria-current={props.selected() ? "page" : undefined}
         data-action="project-switch"
-        data-project={base64Encode(props.project.worktree)}
+        data-project={base64Encode(props.project.canonical)}
         classList={{
           "flex items-center justify-center size-10 p-1 rounded-lg overflow-hidden transition-colors cursor-default": true,
           "bg-transparent border-2 border-icon-strong-base hover:bg-surface-base-hover": props.selected(),
@@ -113,17 +113,17 @@ const ProjectTile = (props: {
         onMouseEnter={(event: MouseEvent) => {
           if (!props.overlay()) return
           if (props.suppressHover()) return
-          props.onProjectMouseEnter(props.project.worktree, event)
+          props.onProjectMouseEnter(props.project.canonical, event)
         }}
         onMouseLeave={() => {
           if (props.suppressHover()) props.setSuppressHover(false)
           if (!props.overlay()) return
-          props.onProjectMouseLeave(props.project.worktree)
+          props.onProjectMouseLeave(props.project.canonical)
         }}
         onFocus={() => {
           if (!props.overlay()) return
           if (props.suppressHover()) return
-          props.onProjectFocus(props.project.worktree)
+          props.onProjectFocus(props.project.canonical)
         }}
         onClick={() => {
           if (props.selected()) {
@@ -131,7 +131,7 @@ const ProjectTile = (props: {
             return
           }
           props.setSuppressHover(false)
-          props.navigateToProject(props.project.worktree)
+          props.navigateToProject(props.project.canonical)
         }}
         onBlur={() => props.setOpen(false)}
       >
@@ -144,7 +144,7 @@ const ProjectTile = (props: {
           </ContextMenu.Item>
           <ContextMenu.Item
             data-action="project-workspaces-toggle"
-            data-project={base64Encode(props.project.worktree)}
+            data-project={base64Encode(props.project.canonical)}
             disabled={props.project.vcs !== "git" && !props.workspacesEnabled(props.project)}
             onSelect={() => props.toggleProjectWorkspaces(props.project)}
           >
@@ -156,7 +156,7 @@ const ProjectTile = (props: {
           </ContextMenu.Item>
           <ContextMenu.Item
             data-action="project-clear-notifications"
-            data-project={base64Encode(props.project.worktree)}
+            data-project={base64Encode(props.project.canonical)}
             disabled={unseenCount() === 0}
             onSelect={clear}
           >
@@ -165,8 +165,8 @@ const ProjectTile = (props: {
           <ContextMenu.Separator />
           <ContextMenu.Item
             data-action="project-close-menu"
-            data-project={base64Encode(props.project.worktree)}
-            onSelect={() => props.closeProject(props.project.worktree)}
+            data-project={base64Encode(props.project.canonical)}
+            onSelect={() => props.closeProject(props.project.canonical)}
           >
             <ContextMenu.ItemLabel>{props.language.t("common.close")}</ContextMenu.ItemLabel>
           </ContextMenu.Item>
@@ -200,12 +200,12 @@ const ProjectPreviewPanel = (props: {
           variant="ghost"
           class="shrink-0"
           data-action="project-close-hover"
-          data-project={base64Encode(props.project.worktree)}
+          data-project={base64Encode(props.project.canonical)}
           aria-label={props.language.t("common.close")}
           onClick={(event) => {
             event.stopPropagation()
             props.setOpen(false)
-            props.ctx.closeProject(props.project.worktree)
+            props.ctx.closeProject(props.project.canonical)
           }}
         />
       </Tooltip>
@@ -220,7 +220,7 @@ const ProjectPreviewPanel = (props: {
               <SessionItem
                 {...props.ctx.sessionProps}
                 session={session}
-                slug={base64Encode(props.project.worktree)}
+                slug={base64Encode(props.project.canonical)}
                 dense
                 mobile={props.mobile}
                 popover={false}
@@ -269,7 +269,7 @@ const ProjectPreviewPanel = (props: {
           props.ctx.openSidebar()
           props.setOpen(false)
           if (props.selected()) return
-          props.ctx.navigateToProject(props.project.worktree)
+          props.ctx.navigateToProject(props.project.canonical)
         }}
       >
         {props.language.t("sidebar.project.viewAllSessions")}
@@ -286,9 +286,9 @@ export const SortableProject = (props: {
 }): JSX.Element => {
   const globalSync = useGlobalSync()
   const language = useLanguage()
-  const sortable = createSortable(props.project.worktree)
+  const sortable = createSortable(props.project.canonical)
   const selected = createMemo(() =>
-    projectSelected(props.ctx.currentDir(), props.project.worktree, props.project.sandboxes),
+    projectSelected(props.ctx.currentDir(), props.project.canonical, props.project.sandboxes),
   )
   const workspaces = createMemo(() => props.ctx.workspaceIds(props.project).slice(0, 2))
   const workspaceEnabled = createMemo(() => props.ctx.workspacesEnabled(props.project))
@@ -308,7 +308,7 @@ export const SortableProject = (props: {
       open: state.open,
       overlay: overlay(),
       hoverProject: props.ctx.hoverProject(),
-      worktree: props.project.worktree,
+      worktree: props.project.canonical,
     }),
   )
 
@@ -327,12 +327,12 @@ export const SortableProject = (props: {
   const label = (directory: string) => {
     const [data] = globalSync.child(directory, { bootstrap: false })
     const kind =
-      directory === props.project.worktree ? language.t("workspace.type.local") : language.t("workspace.type.sandbox")
-    const name = props.ctx.workspaceLabel(directory, data.vcs?.branch, props.project.id)
+      directory === props.project.canonical ? language.t("workspace.type.local") : language.t("workspace.type.sandbox")
+    const name = props.ctx.workspaceLabel(directory, data.vcs?.branch.current, props.project.id)
     return `${kind} : ${name}`
   }
 
-  const projectStore = createMemo(() => globalSync.child(props.project.worktree, { bootstrap: false })[0])
+  const projectStore = createMemo(() => globalSync.child(props.project.canonical, { bootstrap: false })[0])
   const projectSessions = createMemo(() =>
     sortedRootSessions(projectStore(), props.sortNow()).slice(0, 2),
   )

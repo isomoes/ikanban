@@ -1,4 +1,4 @@
-import type { V2Event } from "@/types/opencode"
+import type { V2Event } from "@opencode-ai/client"
 import { createSimpleContext } from "@/ui/context/index"
 import { createGlobalEmitter, type GlobalEmitter } from "@solid-primitives/event-bus"
 import { batch, onCleanup, onMount } from "solid-js"

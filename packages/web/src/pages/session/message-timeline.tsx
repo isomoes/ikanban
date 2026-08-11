@@ -11,7 +11,11 @@ import { InlineInput } from "@/ui/components/inline-input"
 import { SessionTurn } from "@/ui/components/session-turn"
 import { formatTurnDurationLabel } from "@/ui/components/session-turn-duration"
 import { ScrollView } from "@/ui/components/scroll-view"
-import type { AssistantMessage, Message as MessageType, Part, TextPart, UserMessage } from "@/types/opencode"
+import type {
+  SessionMessageAssistant as AssistantMessage,
+  SessionMessageInfo as MessageType,
+  SessionMessageUser as UserMessage,
+} from "@opencode-ai/client"
 import { showToast } from "@/ui/components/toast"
 import { Binary } from "@/utils/binary"
 import { getFilename } from "@/utils/path"
@@ -36,10 +40,9 @@ type MessageComment = {
 const emptyMessages: MessageType[] = []
 const idle = { type: "idle" as const }
 
-const messageComments = (parts: Part[]): MessageComment[] =>
-  parts.flatMap((part) => {
-    if (part.type !== "text" || !(part as TextPart).synthetic) return []
-    const next = readCommentMetadata(part.metadata) ?? parseCommentNote(part.text)
+const messageComments = (message: UserMessage | undefined): MessageComment[] => {
+    if (!message) return []
+    const next = readCommentMetadata(message.metadata) ?? parseCommentNote(message.text)
     if (!next) return []
     return [
       {
@@ -53,7 +56,7 @@ const messageComments = (parts: Part[]): MessageComment[] =>
           : undefined,
       },
     ]
-  })
+}
 
 const boundaryTarget = (root: HTMLElement, target: EventTarget | null) => {
   const current = target instanceof Element ? target : undefined
@@ -229,7 +232,7 @@ export function MessageTimeline(props: {
   })
   const pending = createMemo(() =>
     sessionMessages().findLast(
-      (item): item is AssistantMessage => item.role === "assistant" && typeof item.time.completed !== "number",
+      (item): item is AssistantMessage => item.type === "assistant" && typeof item.time.completed !== "number",
     ),
   )
   const sessionStatus = createMemo(() => {
@@ -249,12 +252,12 @@ export function MessageTimeline(props: {
     }
 
     for (const message of sessionMessages()) {
-      if (message.role === "user") {
+      if (message.type === "user") {
         flush()
         start = message.time?.created
         continue
       }
-      if (message.role === "assistant") {
+      if (message.type === "assistant") {
         const completed = message.time.completed
         if (typeof completed !== "number") continue
         end = end === undefined ? completed : Math.max(end, completed)
@@ -266,19 +269,21 @@ export function MessageTimeline(props: {
   })
   const totalRunLabel = createMemo(() => formatTurnDurationLabel(totalRunMs()))
   const activeMessageID = createMemo(() => {
-    const parentID = pending()?.parentID
-    if (parentID) {
+    const active = pending()
+    if (active) {
       const messages = sessionMessages()
-      const result = Binary.search(messages, parentID, (message) => message.id)
-      const message = result.found ? messages[result.index] : messages.find((item) => item.id === parentID)
-      if (message && message.role === "user") return message.id
+      const index = messages.findIndex((message) => message.id === active.id)
+      for (let i = index - 1; i >= 0; i--) {
+        const message = messages[i]
+        if (message?.type === "user") return message.id
+      }
     }
 
     const status = sessionStatus()
     if (status.type !== "idle") {
       const messages = sessionMessages()
       for (let i = messages.length - 1; i >= 0; i--) {
-        if (messages[i].role === "user") return messages[i].id
+        if (messages[i].type === "user") return messages[i].id
       }
     }
 
@@ -291,7 +296,7 @@ export function MessageTimeline(props: {
   })
   const titleValue = createMemo(() => info()?.title)
   const projectName = createMemo(
-    () => sync.project?.name || getFilename(sync.project?.worktree) || getFilename(sdk.directory),
+    () => sync.project?.name || getFilename(sync.project?.canonical) || getFilename(sdk.directory),
   )
   const parentID = createMemo(() => info()?.parentID)
   const stageCfg = { init: 1, batch: 3 }
@@ -718,7 +723,7 @@ export function MessageTimeline(props: {
                   if (activeID) return messageID > activeID
                   return false
                 })
-                const comments = createMemo(() => messageComments(sync.data.part[messageID] ?? []), [], {
+                const comments = createMemo(() => messageComments(props.renderedUserMessages.find((item) => item.id === messageID)), [], {
                   equals: (a, b) => JSON.stringify(a) === JSON.stringify(b),
                 })
                 const commentCount = createMemo(() => comments().length)

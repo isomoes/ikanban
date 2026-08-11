@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import type { Message } from "@/types/opencode"
+import type { ModelInfo, ProviderInfo, SessionMessageInfo as Message } from "@opencode-ai/client"
 import { getSessionContextMetrics } from "./session-context-metrics"
 
 const assistant = (
@@ -11,9 +11,10 @@ const assistant = (
 ) => {
   return {
     id,
-    role: "assistant",
-    providerID,
-    modelID,
+    type: "assistant",
+    agent: "build",
+    model: { providerID, id: modelID },
+    content: [],
     cost,
     tokens: {
       input: tokens.input,
@@ -31,8 +32,8 @@ const assistant = (
 const user = (id: string) => {
   return {
     id,
-    role: "user",
-    cost: 0,
+    type: "user",
+    text: "",
     time: { created: 1 },
   } as unknown as Message
 }
@@ -48,16 +49,12 @@ describe("getSessionContextMetrics", () => {
       {
         id: "openai",
         name: "OpenAI",
-        models: {
-          "gpt-4.1": {
-            name: "GPT-4.1",
-            limit: { context: 1000 },
-          },
-        },
+        package: "@ai-sdk/openai",
       },
     ]
 
-    const metrics = getSessionContextMetrics(messages, providers)
+    const models = [{ id: "gpt-4.1", providerID: "openai", name: "GPT-4.1", limit: { context: 1000 } }] as ModelInfo[]
+    const metrics = getSessionContextMetrics(messages, providers, models)
 
     expect(metrics.totalCost).toBe(1.75)
     expect(metrics.context?.message.id).toBe("a2")
@@ -69,7 +66,7 @@ describe("getSessionContextMetrics", () => {
 
   test("preserves fallback labels and null usage when model metadata is missing", () => {
     const messages = [assistant("a1", { input: 40, output: 10, reasoning: 0, read: 0, write: 0 }, 0.1, "p-1", "m-1")]
-    const providers = [{ id: "p-1", models: {} }]
+    const providers = [{ id: "p-1", name: "p-1", package: "test" }] as ProviderInfo[]
 
     const metrics = getSessionContextMetrics(messages, providers)
 
@@ -81,7 +78,7 @@ describe("getSessionContextMetrics", () => {
 
   test("recomputes when message array is mutated in place", () => {
     const messages = [assistant("a1", { input: 10, output: 10, reasoning: 10, read: 10, write: 10 }, 0.25)]
-    const providers = [{ id: "openai", models: {} }]
+    const providers = [{ id: "openai", name: "OpenAI", package: "test" }] as ProviderInfo[]
 
     const one = getSessionContextMetrics(messages, providers)
     messages.push(assistant("a2", { input: 100, output: 20, reasoning: 0, read: 0, write: 0 }, 0.75))

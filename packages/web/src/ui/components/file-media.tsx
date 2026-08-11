@@ -1,4 +1,4 @@
-import type { FileContent } from "@/types/opencode"
+import type { DecodedFileContent as FileContent } from "@/types/app"
 import { createEffect, createMemo, createResource, Match, on, Show, Switch, type JSX } from "solid-js"
 import { useI18n } from "../context/i18n"
 import {

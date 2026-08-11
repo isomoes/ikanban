@@ -1,16 +1,5 @@
-import type { Message, Session } from "@/types/opencode"
+import type { SessionMessageInfo as Message } from "@opencode-ai/client"
 
-export function sessionHistoryChanges(summary: Session["summary"], messages: Message[] | undefined) {
-  if (!messages) return summary
-
-  let additions = 0
-  let deletions = 0
-  for (const message of messages) {
-    if (message.role !== "user") continue
-    for (const diff of message.summary?.diffs ?? []) {
-      additions += diff.additions
-      deletions += diff.deletions
-    }
-  }
-  return { additions, deletions }
+export function sessionHistoryChanges(_summary: undefined, _messages: Message[] | undefined) {
+  return undefined
 }

@@ -215,7 +215,7 @@ export function DialogCustomProvider(props: Props) {
     const output = validateCustomProvider({
       form,
       t: language.t,
-      existingProviderIDs: new Set(globalSync.data.provider.all.map((p) => p.id)),
+      existingProviderIDs: new Set(globalSync.data.provider.providers.map((p) => p.id)),
     })
     setErrors(output.errors)
     return output.result

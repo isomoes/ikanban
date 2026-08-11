@@ -104,6 +104,7 @@ export const dict: Record<string, string> = {
   "ui.tool.read": "Read",
   "ui.tool.loaded": "Loaded",
   "ui.tool.mcpCall": "mcp call",
+  "ui.tool.call": "tool call",
   "ui.tool.input": "Input",
   "ui.tool.output": "Output",
   "ui.tool.list": "List",

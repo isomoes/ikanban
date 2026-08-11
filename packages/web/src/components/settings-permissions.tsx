@@ -2,6 +2,7 @@ import { Select } from "@/ui/components/select"
 import { showToast } from "@/ui/components/toast"
 import { Component, For, createMemo, type JSX } from "solid-js"
 import { useGlobalSync } from "@/context/global-sync"
+import { configInfo } from "@/context/config"
 import { useLanguage } from "@/context/language"
 
 type PermissionAction = "allow" | "ask" | "deny"
@@ -143,7 +144,11 @@ export const SettingsPermissions: Component = () => {
   )
 
   const permission = createMemo(() => {
-    return toMap(globalSync.data.config.permission)
+    const rules = configInfo(globalSync.data.config).permissions ?? []
+    return rules.reduce<Record<string, Record<string, PermissionAction>>>((result, rule) => {
+      result[rule.action] = { ...result[rule.action], [rule.resource]: rule.effect }
+      return result
+    }, {})
   })
 
   const actionFor = (id: string): PermissionAction => {
@@ -158,15 +163,15 @@ export const SettingsPermissions: Component = () => {
   }
 
   const setPermission = async (id: string, action: PermissionAction) => {
-    const before = globalSync.data.config.permission
-    const map = toMap(before)
+    const before = globalSync.data.config
+    const map = permission()
     const existing = map[id]
 
     const nextValue =
       existing && typeof existing === "object" && !Array.isArray(existing) ? { ...existing, "*": action } : action
 
     const rollback = (err: unknown) => {
-      globalSync.set("config", "permission", before)
+      globalSync.set("config", before)
       const message = err instanceof Error ? err.message : String(err)
       showToast({ title: language.t("settings.permissions.toast.updateFailed.title"), description: message })
     }
@@ -174,9 +179,8 @@ export const SettingsPermissions: Component = () => {
     // The SDK's `PermissionConfig` is a structured object type, but this
     // component intentionally treats the permission config as a flat map
     // (including legacy array values), so cast at the store boundary.
-    globalSync.set("config", "permission", { ...map, [id]: nextValue } as typeof before)
     globalSync
-      .updateConfig({ permission: { [id]: nextValue } as NonNullable<typeof before> })
+      .updateConfig(before)
       .catch(rollback)
   }
 

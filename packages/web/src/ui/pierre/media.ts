@@ -1,4 +1,4 @@
-import type { FileContent } from "@/types/opencode"
+import type { DecodedFileContent as FileContent } from "@/types/app"
 
 export type MediaKind = "image" | "audio" | "svg"
 

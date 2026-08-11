@@ -12,7 +12,7 @@ import { Icon } from "@/ui/components/icon"
 import { IconButton } from "@/ui/components/icon-button"
 import { Spinner } from "@/ui/components/spinner"
 import { Tooltip } from "@/ui/components/tooltip"
-import { type Session } from "@/types/opencode"
+import type { SessionInfo } from "@opencode-ai/client"
 import { type LocalProject } from "@/context/layout"
 import { useGlobalSync } from "@/context/global-sync"
 import { useLanguage } from "@/context/language"
@@ -38,8 +38,8 @@ export type WorkspaceSidebarContext = {
   hoverSession: Accessor<string | undefined>
   setHoverSession: (id: string | undefined) => void
   clearHoverProjectSoon: () => void
-  prefetchSession: (session: Session, priority?: "high" | "low") => void
-  archiveSession: (session: Session) => Promise<void>
+  prefetchSession: (session: SessionInfo, priority?: "high" | "low") => void
+  archiveSession: (session: SessionInfo) => Promise<void>
   workspaceName: (directory: string, projectId?: string, branch?: string) => string | undefined
   renameWorkspace: (directory: string, next: string, projectId?: string, branch?: string) => void
   editorOpen: (id: string) => boolean
@@ -70,8 +70,8 @@ export const WorkspaceDragOverlay = (props: {
 
     const [workspaceStore] = globalSync.child(directory, { bootstrap: false })
     const kind =
-      directory === project.worktree ? language.t("workspace.type.local") : language.t("workspace.type.sandbox")
-    const name = props.workspaceLabel(directory, workspaceStore.vcs?.branch, project.id)
+      directory === project.canonical ? language.t("workspace.type.local") : language.t("workspace.type.sandbox")
+    const name = props.workspaceLabel(directory, workspaceStore.vcs?.branch.current, project.id)
     return `${kind} : ${name}`
   })
 
@@ -243,7 +243,7 @@ const WorkspaceSessionList = (props: {
   ctx: WorkspaceSidebarContext
   showNew: Accessor<boolean>
   loading: Accessor<boolean>
-  sessions: Accessor<Session[]>
+  sessions: Accessor<SessionInfo[]>
   children: Accessor<Map<string, string[]>>
   hasMore: Accessor<boolean>
   loadMore: () => Promise<void>
@@ -318,10 +318,10 @@ export const SortableWorkspace = (props: {
   const slug = createMemo(() => base64Encode(props.directory))
   const sessions = createMemo(() => sortedRootSessions(workspaceStore, props.sortNow()))
   const children = createMemo(() => childMapByParent(workspaceStore.session))
-  const local = createMemo(() => props.directory === props.project.worktree)
+  const local = createMemo(() => props.directory === props.project.canonical)
   const active = createMemo(() => props.ctx.currentDir() === props.directory)
   const workspaceValue = createMemo(() => {
-    const branch = workspaceStore.vcs?.branch
+    const branch = workspaceStore.vcs?.branch.current
     const name = branch ?? getFilename(props.directory)
     return props.ctx.workspaceName(props.directory, props.project.id, branch) ?? name
   })
@@ -387,7 +387,7 @@ export const SortableWorkspace = (props: {
                       open={open}
                       directory={props.directory}
                       language={language}
-                      branch={() => workspaceStore.vcs?.branch}
+                      branch={() => workspaceStore.vcs?.branch.current}
                       workspaceValue={workspaceValue}
                       workspaceEditActive={workspaceEditActive}
                       InlineEditor={props.ctx.InlineEditor}
@@ -409,7 +409,7 @@ export const SortableWorkspace = (props: {
                     open={open}
                     directory={props.directory}
                     language={language}
-                    branch={() => workspaceStore.vcs?.branch}
+                    branch={() => workspaceStore.vcs?.branch.current}
                     workspaceValue={workspaceValue}
                     workspaceEditActive={workspaceEditActive}
                     InlineEditor={props.ctx.InlineEditor}
@@ -436,7 +436,7 @@ export const SortableWorkspace = (props: {
                 openEditor={props.ctx.openEditor}
                 showResetWorkspaceDialog={props.ctx.showResetWorkspaceDialog}
                 showDeleteWorkspaceDialog={props.ctx.showDeleteWorkspaceDialog}
-                root={props.project.worktree}
+                root={props.project.canonical}
                 setHoverSession={props.ctx.setHoverSession}
                 clearHoverProjectSoon={props.ctx.clearHoverProjectSoon}
                 navigateToNewSession={() => navigate(`/${slug()}`)}
@@ -473,10 +473,10 @@ export const LocalWorkspace = (props: {
   const globalSync = useGlobalSync()
   const language = useLanguage()
   const workspace = createMemo(() => {
-    const [store, setStore] = globalSync.child(props.project.worktree)
+    const [store, setStore] = globalSync.child(props.project.canonical)
     return { store, setStore }
   })
-  const slug = createMemo(() => base64Encode(props.project.worktree))
+  const slug = createMemo(() => base64Encode(props.project.canonical))
   const sessions = createMemo(() => sortedRootSessions(workspace().store, props.sortNow()))
   const children = createMemo(() => childMapByParent(workspace().store.session))
   const booted = createMemo((prev) => prev || workspace().store.status === "complete", false)
@@ -484,7 +484,7 @@ export const LocalWorkspace = (props: {
   const hasMore = createMemo(() => workspace().store.sessionTotal > workspace().store.session.filter((session) => !session.parentID).length)
   const loadMore = async () => {
     workspace().setStore("limit", (limit) => (limit ?? 0) + 5)
-    await globalSync.project.loadSessions(props.project.worktree)
+    await globalSync.project.loadSessions(props.project.canonical)
   }
 
   return (

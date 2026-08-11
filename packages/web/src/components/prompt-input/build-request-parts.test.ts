@@ -1,286 +1,241 @@
 import { describe, expect, test } from "bun:test"
-import type { Prompt } from "@/context/prompt"
+import type { SessionPromptInput } from "@opencode-ai/client"
 import { buildRequestParts } from "./build-request-parts"
 
-describe("buildRequestParts", () => {
-  test("builds typed request and optimistic parts without cast path", () => {
-    const prompt: Prompt = [
-      { type: "text", content: "hello", start: 0, end: 5 },
-      {
-        type: "file",
-        path: "src/foo.ts",
-        content: "@src/foo.ts",
-        start: 5,
-        end: 16,
-        selection: { startLine: 4, startChar: 1, endLine: 6, endChar: 1 },
-      },
-      { type: "agent", name: "planner", content: "@planner", start: 16, end: 24 },
-    ]
+const build = (overrides: Partial<Parameters<typeof buildRequestParts>[0]> = {}) =>
+  buildRequestParts({
+    prompt: [{ type: "text", content: "hello", start: 0, end: 5 }],
+    context: [],
+    images: [],
+    text: "hello",
+    messageID: "msg_1",
+    sessionID: "ses_1",
+    sessionDirectory: "/repo",
+    ...overrides,
+  })
 
-    const result = buildRequestParts({
-      prompt,
+describe("buildRequestParts", () => {
+  test("builds a typed native request and matching optimistic message", () => {
+    const result = build({
+      prompt: [
+        { type: "text", content: "hello", start: 0, end: 5 },
+        {
+          type: "file",
+          path: "src/foo.ts",
+          content: "@src/foo.ts",
+          start: 6,
+          end: 17,
+          selection: { startLine: 4, startChar: 1, endLine: 6, endChar: 1 },
+        },
+        { type: "agent", name: "planner", content: "@planner", start: 18, end: 26 },
+      ],
       context: [{ key: "ctx:1", type: "file", path: "src/bar.ts", comment: "check this" }],
       images: [
         { type: "image", id: "img_1", filename: "a.png", mime: "image/png", dataUrl: "data:image/png;base64,AAA" },
       ],
       text: "hello @src/foo.ts @planner",
-      messageID: "msg_1",
-      sessionID: "ses_1",
-      sessionDirectory: "/repo",
     })
+    const request: Omit<SessionPromptInput, "sessionID"> = result.request
 
-    expect(result.requestParts[0]?.type).toBe("text")
-    expect(result.requestParts.some((part) => part.type === "agent")).toBe(true)
-    expect(
-      result.requestParts.some((part) => part.type === "file" && part.url.startsWith("file:///repo/src/foo.ts")),
-    ).toBe(true)
-    expect(result.requestParts.some((part) => part.type === "text" && part.synthetic)).toBe(true)
-    expect(
-      result.requestParts.some(
-        (part) =>
-          part.type === "text" &&
-          part.synthetic &&
-          part.metadata?.opencodeComment &&
-          (part.metadata.opencodeComment as { comment?: string }).comment === "check this",
-      ),
-    ).toBe(true)
-
-    expect(result.optimisticParts).toHaveLength(result.requestParts.length)
-    expect(result.optimisticParts.every((part) => part.sessionID === "ses_1" && part.messageID === "msg_1")).toBe(true)
+    expect(request).toEqual({
+      id: "msg_1",
+      text: [
+        "hello @src/foo.ts @planner",
+        "The user made the following comment regarding this file of src/bar.ts: check this",
+      ].join("\n"),
+      files: [
+        {
+          uri: "file:///repo/src/foo.ts?start=4&end=6",
+          name: "foo.ts",
+          mention: { start: 6, end: 17, text: "@src/foo.ts" },
+        },
+        { uri: "file:///repo/src/bar.ts", name: "bar.ts", mention: undefined },
+        { uri: "data:image/png;base64,AAA", name: "a.png", mention: undefined },
+      ],
+      agents: [{ name: "planner", mention: { start: 18, end: 26, text: "@planner" } }],
+    })
+    expect(result.optimistic).toMatchObject({
+      text: request.text,
+      agents: request.agents,
+      files: [
+        {
+          mime: "text/plain",
+          name: "foo.ts",
+          mention: { start: 6, end: 17, text: "@src/foo.ts" },
+          source: { type: "uri", uri: "file:///repo/src/foo.ts?start=4&end=6" },
+        },
+        { mime: "text/plain", name: "bar.ts", source: { type: "uri", uri: "file:///repo/src/bar.ts" } },
+        { data: "AAA", mime: "image/png", name: "a.png", source: { type: "inline" } },
+      ],
+    })
   })
 
-  test("deduplicates context files when prompt already includes same path", () => {
-    const prompt: Prompt = [{ type: "file", path: "src/foo.ts", content: "@src/foo.ts", start: 0, end: 11 }]
-
-    const result = buildRequestParts({
-      prompt,
+  test("deduplicates uncommented context files but retains commented references", () => {
+    const result = build({
+      prompt: [{ type: "file", path: "src/foo.ts", content: "@src/foo.ts", start: 0, end: 11 }],
       context: [
         { key: "ctx:dup", type: "file", path: "src/foo.ts" },
         { key: "ctx:comment", type: "file", path: "src/foo.ts", comment: "focus here" },
       ],
-      images: [],
       text: "@src/foo.ts",
-      messageID: "msg_2",
-      sessionID: "ses_2",
-      sessionDirectory: "/repo",
     })
 
-    const fooFiles = result.requestParts.filter(
-      (part) => part.type === "file" && part.url.startsWith("file:///repo/src/foo.ts"),
+    expect(result.request.files?.map((file) => file.uri)).toEqual([
+      "file:///repo/src/foo.ts",
+      "file:///repo/src/foo.ts",
+    ])
+    expect(result.request.text).toBe(
+      "@src/foo.ts\nThe user made the following comment regarding this file of src/foo.ts: focus here",
     )
-    const synthetic = result.requestParts.filter((part) => part.type === "text" && part.synthetic)
-
-    expect(fooFiles).toHaveLength(2)
-    expect(synthetic).toHaveLength(1)
+    expect(result.optimistic.files).toHaveLength(2)
   })
 
-  test("handles Windows paths correctly (simulated on macOS)", () => {
-    const prompt: Prompt = [{ type: "file", path: "src\\foo.ts", content: "@src\\foo.ts", start: 0, end: 11 }]
-
-    const result = buildRequestParts({
-      prompt,
-      context: [],
-      images: [],
+  test("normalizes relative Windows paths into valid file URIs", () => {
+    const result = build({
+      prompt: [{ type: "file", path: "src\\foo.ts", content: "@src\\foo.ts", start: 0, end: 11 }],
       text: "@src\\foo.ts",
-      messageID: "msg_win_1",
-      sessionID: "ses_win_1",
-      sessionDirectory: "D:\\projects\\myapp", // Windows path
+      sessionDirectory: "D:\\projects\\myapp",
     })
+    const uri = result.request.files?.[0]?.uri
 
-    // Should create valid file URLs
-    const filePart = result.requestParts.find((part) => part.type === "file")
-    expect(filePart).toBeDefined()
-    if (filePart?.type === "file") {
-      // URL should be parseable
-      expect(() => new URL(filePart.url)).not.toThrow()
-      // Should not have encoded backslashes in wrong place
-      expect(filePart.url).not.toContain("%5C")
-      // Should have normalized to forward slashes
-      expect(filePart.url).toContain("/src/foo.ts")
-    }
+    expect(uri).toBe("file:///D:/projects/myapp/src/foo.ts")
+    expect(() => new URL(uri!)).not.toThrow()
+    expect(uri).not.toContain("%5C")
+    expect(result.optimistic.files?.[0]?.source).toEqual({ type: "uri", uri })
   })
 
-  test("handles Windows absolute path with special characters", () => {
-    const prompt: Prompt = [{ type: "file", path: "file#name.txt", content: "@file#name.txt", start: 0, end: 14 }]
-
-    const result = buildRequestParts({
-      prompt,
-      context: [],
-      images: [],
+  test("encodes special characters in Windows file paths", () => {
+    const result = build({
+      prompt: [{ type: "file", path: "file#name.txt", content: "@file#name.txt", start: 0, end: 14 }],
       text: "@file#name.txt",
-      messageID: "msg_win_2",
-      sessionID: "ses_win_2",
-      sessionDirectory: "C:\\Users\\test\\Documents", // Windows path
+      sessionDirectory: "C:\\Users\\test\\Documents",
     })
+    const uri = result.request.files?.[0]?.uri
 
-    const filePart = result.requestParts.find((part) => part.type === "file")
-    expect(filePart).toBeDefined()
-    if (filePart?.type === "file") {
-      // URL should be parseable
-      expect(() => new URL(filePart.url)).not.toThrow()
-      // Special chars should be encoded
-      expect(filePart.url).toContain("file%23name.txt")
-      // Should have Windows drive letter properly encoded
-      expect(filePart.url).toMatch(/file:\/\/\/[A-Z]:/)
-    }
+    expect(uri).toBe("file:///C:/Users/test/Documents/file%23name.txt")
+    expect(() => new URL(uri!)).not.toThrow()
   })
 
-  test("handles Linux absolute paths correctly", () => {
-    const prompt: Prompt = [{ type: "file", path: "src/app.ts", content: "@src/app.ts", start: 0, end: 10 }]
-
-    const result = buildRequestParts({
-      prompt,
-      context: [],
-      images: [],
+  test("builds Linux paths", () => {
+    const result = build({
+      prompt: [{ type: "file", path: "src/app.ts", content: "@src/app.ts", start: 0, end: 10 }],
       text: "@src/app.ts",
-      messageID: "msg_linux_1",
-      sessionID: "ses_linux_1",
       sessionDirectory: "/home/user/project",
     })
 
-    const filePart = result.requestParts.find((part) => part.type === "file")
-    expect(filePart).toBeDefined()
-    if (filePart?.type === "file") {
-      // URL should be parseable
-      expect(() => new URL(filePart.url)).not.toThrow()
-      // Should be a normal Unix path
-      expect(filePart.url).toBe("file:///home/user/project/src/app.ts")
-    }
+    expect(result.request.files?.[0]?.uri).toBe("file:///home/user/project/src/app.ts")
   })
 
-  test("handles macOS paths correctly", () => {
-    const prompt: Prompt = [{ type: "file", path: "README.md", content: "@README.md", start: 0, end: 9 }]
-
-    const result = buildRequestParts({
-      prompt,
-      context: [],
-      images: [],
+  test("builds macOS paths", () => {
+    const result = build({
+      prompt: [{ type: "file", path: "README.md", content: "@README.md", start: 0, end: 9 }],
       text: "@README.md",
-      messageID: "msg_mac_1",
-      sessionID: "ses_mac_1",
       sessionDirectory: "/Users/kelvin/Projects/opencode",
     })
 
-    const filePart = result.requestParts.find((part) => part.type === "file")
-    expect(filePart).toBeDefined()
-    if (filePart?.type === "file") {
-      // URL should be parseable
-      expect(() => new URL(filePart.url)).not.toThrow()
-      // Should be a normal Unix path
-      expect(filePart.url).toBe("file:///Users/kelvin/Projects/opencode/README.md")
-    }
+    expect(result.request.files?.[0]?.uri).toBe("file:///Users/kelvin/Projects/opencode/README.md")
   })
 
-  test("handles context files with Windows paths", () => {
-    const prompt: Prompt = []
-
-    const result = buildRequestParts({
-      prompt,
+  test("normalizes context files with Windows paths", () => {
+    const result = build({
+      prompt: [],
       context: [
         { key: "ctx:1", type: "file", path: "src\\utils\\helper.ts" },
         { key: "ctx:2", type: "file", path: "test\\unit.test.ts", comment: "check tests" },
       ],
-      images: [],
       text: "test",
-      messageID: "msg_win_ctx",
-      sessionID: "ses_win_ctx",
       sessionDirectory: "D:\\workspace\\app",
     })
+    const uris = result.request.files?.map((file) => file.uri)
 
-    const fileParts = result.requestParts.filter((part) => part.type === "file")
-    expect(fileParts).toHaveLength(2)
-
-    // All file URLs should be valid
-    fileParts.forEach((part) => {
-      if (part.type === "file") {
-        expect(() => new URL(part.url)).not.toThrow()
-        expect(part.url).not.toContain("%5C") // No encoded backslashes
-      }
-    })
+    expect(uris).toEqual([
+      "file:///D:/workspace/app/src/utils/helper.ts",
+      "file:///D:/workspace/app/test/unit.test.ts",
+    ])
+    expect(uris?.every((uri) => !uri.includes("%5C") && URL.canParse(uri))).toBe(true)
+    expect(result.request.text).toContain(
+      "The user made the following comment regarding this file of test\\unit.test.ts: check tests",
+    )
   })
 
-  test("handles absolute Windows paths (user manually specifies full path)", () => {
-    const prompt: Prompt = [
-      { type: "file", path: "D:\\other\\project\\file.ts", content: "@D:\\other\\project\\file.ts", start: 0, end: 25 },
-    ]
-
-    const result = buildRequestParts({
-      prompt,
-      context: [],
-      images: [],
+  test("keeps manually specified absolute Windows paths absolute", () => {
+    const result = build({
+      prompt: [
+        {
+          type: "file",
+          path: "D:\\other\\project\\file.ts",
+          content: "@D:\\other\\project\\file.ts",
+          start: 0,
+          end: 25,
+        },
+      ],
       text: "@D:\\other\\project\\file.ts",
-      messageID: "msg_abs",
-      sessionID: "ses_abs",
       sessionDirectory: "C:\\current\\project",
     })
 
-    const filePart = result.requestParts.find((part) => part.type === "file")
-    expect(filePart).toBeDefined()
-    if (filePart?.type === "file") {
-      // Should handle absolute path that differs from sessionDirectory
-      expect(() => new URL(filePart.url)).not.toThrow()
-      expect(filePart.url).toContain("/D:/other/project/file.ts")
-    }
+    expect(result.request.files?.[0]?.uri).toBe("file:///D:/other/project/file.ts")
   })
 
-  test("handles selection with query parameters on Windows", () => {
-    const prompt: Prompt = [
-      {
-        type: "file",
-        path: "src\\App.tsx",
-        content: "@src\\App.tsx",
-        start: 0,
-        end: 11,
-        selection: { startLine: 10, startChar: 0, endLine: 20, endChar: 5 },
-      },
-    ]
-
-    const result = buildRequestParts({
-      prompt,
-      context: [],
-      images: [],
+  test("adds selection query parameters to Windows paths", () => {
+    const result = build({
+      prompt: [
+        {
+          type: "file",
+          path: "src\\App.tsx",
+          content: "@src\\App.tsx",
+          start: 0,
+          end: 12,
+          selection: { startLine: 10, startChar: 0, endLine: 20, endChar: 5 },
+        },
+      ],
       text: "@src\\App.tsx",
-      messageID: "msg_sel",
-      sessionID: "ses_sel",
       sessionDirectory: "C:\\project",
     })
+    const uri = result.request.files?.[0]?.uri
+    const url = new URL(uri!)
 
-    const filePart = result.requestParts.find((part) => part.type === "file")
-    expect(filePart).toBeDefined()
-    if (filePart?.type === "file") {
-      // Should have query parameters
-      expect(filePart.url).toContain("?start=10&end=20")
-      // Should be valid URL
-      expect(() => new URL(filePart.url)).not.toThrow()
-      // Query params should parse correctly
-      const url = new URL(filePart.url)
-      expect(url.searchParams.get("start")).toBe("10")
-      expect(url.searchParams.get("end")).toBe("20")
-    }
+    expect(uri).toBe("file:///C:/project/src/App.tsx?start=10&end=20")
+    expect(url.searchParams.get("start")).toBe("10")
+    expect(url.searchParams.get("end")).toBe("20")
   })
 
-  test("handles file paths with dots and special segments on Windows", () => {
-    const prompt: Prompt = [
-      { type: "file", path: "..\\..\\shared\\util.ts", content: "@..\\..\\shared\\util.ts", start: 0, end: 21 },
-    ]
-
-    const result = buildRequestParts({
-      prompt,
-      context: [],
-      images: [],
+  test("preserves dot segments in Windows paths for backend normalization", () => {
+    const result = build({
+      prompt: [
+        {
+          type: "file",
+          path: "..\\..\\shared\\util.ts",
+          content: "@..\\..\\shared\\util.ts",
+          start: 0,
+          end: 21,
+        },
+      ],
       text: "@..\\..\\shared\\util.ts",
-      messageID: "msg_dots",
-      sessionID: "ses_dots",
       sessionDirectory: "C:\\projects\\myapp\\src",
     })
+    const uri = result.request.files?.[0]?.uri
 
-    const filePart = result.requestParts.find((part) => part.type === "file")
-    expect(filePart).toBeDefined()
-    if (filePart?.type === "file") {
-      // Should be valid URL
-      expect(() => new URL(filePart.url)).not.toThrow()
-      // Should preserve .. segments (backend normalizes)
-      expect(filePart.url).toContain("/..")
-    }
+    expect(uri).toBe("file:///C:/projects/myapp/src/../../shared/util.ts")
+    expect(() => new URL(uri!)).not.toThrow()
+  })
+
+  test("stores image data in native and optimistic attachments", () => {
+    const result = build({
+      images: [
+        { type: "image", id: "img_1", filename: "a.png", mime: "image/png", dataUrl: "data:image/png;base64,YQ==" },
+      ],
+    })
+
+    expect(result.request.files?.[0]).toEqual({
+      uri: "data:image/png;base64,YQ==",
+      name: "a.png",
+      mention: undefined,
+    })
+    expect(result.optimistic.files?.[0]).toMatchObject({
+      data: "YQ==",
+      mime: "image/png",
+      name: "a.png",
+      source: { type: "inline" },
+    })
   })
 })

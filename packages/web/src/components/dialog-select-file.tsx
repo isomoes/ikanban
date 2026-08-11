@@ -277,14 +277,14 @@ export function DialogSelectFile(props: { mode?: DialogSelectFileMode }) {
   const project = createMemo(() => {
     const directory = projectDirectory()
     if (!directory) return
-    return layout.projects.list().find((p) => p.worktree === directory || p.sandboxes?.includes(directory))
+    return layout.projects.list().find((p) => p.canonical === directory || p.sandboxes?.includes(directory))
   })
   const workspaces = createMemo(() => {
     const directory = projectDirectory()
     const current = project()
     if (!current) return directory ? [directory] : []
 
-    const dirs = [current.worktree, ...(current.sandboxes ?? [])]
+    const dirs = [current.canonical, ...(current.sandboxes ?? [])]
     if (directory && !dirs.includes(directory)) return [...dirs, directory]
     return dirs
   })
@@ -292,13 +292,13 @@ export function DialogSelectFile(props: { mode?: DialogSelectFileMode }) {
   const label = (directory: string) => {
     const current = project()
     const kind =
-      current && directory === current.worktree
+      current && directory === current.canonical
         ? language.t("workspace.type.local")
         : language.t("workspace.type.sandbox")
     const [store] = globalSync.child(directory, { bootstrap: false })
     const home = homedir()
     const path = home ? directory.replace(home, "~") : directory
-    const name = store.vcs?.branch ?? getFilename(directory)
+    const name = store.vcs?.branch.current ?? getFilename(directory)
     return `${kind} : ${name || path}`
   }
 

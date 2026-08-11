@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test"
-import type { Message, Part, Project, Session, V2Event } from "@/types/opencode"
+import type {
+  Project,
+  SessionInfo as Session,
+  SessionMessageInfo as Message,
+  V2Event,
+} from "@opencode-ai/client"
 import { createStore } from "solid-js/store"
 import type { State } from "./types"
 import { applyDirectoryEvent, applyGlobalEvent } from "./event-reducer"
@@ -11,18 +16,13 @@ const rootSession = (input: { id: string; parentID?: string }) =>
     time: { created: 1, updated: 1 },
   }) as Session
 
-const userMessage = (id: string, sessionID: string) =>
+const userMessage = (id: string, _sessionID: string) =>
   ({
     id,
-    sessionID,
-    role: "user",
+    type: "user",
     time: { created: 1 },
-    agent: "assistant",
-    model: { providerID: "openai", modelID: "gpt" },
+    text: "",
   }) as Message
-
-const textPart = (id: string, sessionID: string, messageID: string) =>
-  ({ id, sessionID, messageID, type: "text", text: id }) as Part
 
 const event = (value: Record<string, unknown>) =>
   ({ id: "evt_1", created: 10, location: { directory: "/tmp" }, ...value }) as V2Event
@@ -51,7 +51,6 @@ const baseState = (input: Partial<State> = {}) =>
     vcs: undefined,
     limit: 10,
     message: {},
-    part: {},
     ...input,
   }) as State
 
@@ -147,7 +146,7 @@ describe("applyDirectoryEvent", () => {
     expect(pushes).toEqual(["/tmp"])
   })
 
-  test("builds assistant messages and text parts from native step and text events", () => {
+  test("builds assistant content from native step and text events", () => {
     const [store, setStore] = createStore(
       baseState({ message: { ses_1: [userMessage("msg_1", "ses_1")] } }),
     )
@@ -188,21 +187,30 @@ describe("applyDirectoryEvent", () => {
     )
 
     expect(store.message.ses_1?.map((item) => item.id)).toEqual(["msg_1", "msg_2"])
-    expect(store.message.ses_1?.[1]).toMatchObject({ role: "assistant", parentID: "msg_1", agent: "build" })
-    expect(store.part.msg_2).toEqual([
-      expect.objectContaining({
-        id: "msg_2:text:0",
-        type: "text",
-        text: "hello world",
-      }),
-    ])
+    expect(store.message.ses_1?.[1]).toMatchObject({
+      type: "assistant",
+      agent: "build",
+      content: [{ type: "text", text: "hello world" }],
+    })
   })
 
-  test("updates tool parts through the native input, call, and completion lifecycle", () => {
+  test("updates native tool content through the input, call, and completion lifecycle", () => {
     const [store, setStore] = createStore(baseState())
     const run = (current: V2Event) =>
       applyDirectoryEvent({ event: current, store, setStore, push() {}, directory: "/tmp" })
 
+    run(
+      event({
+        type: "session.step.started",
+        durable: { aggregateID: "ses_1", seq: 0, version: 1 },
+        data: {
+          sessionID: "ses_1",
+          assistantMessageID: "msg_1",
+          agent: "build",
+          model: { id: "gpt", providerID: "openai" },
+        },
+      }),
+    )
     run(
       event({
         type: "session.tool.input.started",
@@ -216,7 +224,9 @@ describe("applyDirectoryEvent", () => {
         data: { sessionID: "ses_1", assistantMessageID: "msg_1", id: "call_1", delta: '{"command":"pwd"}' },
       }),
     )
-    expect(store.part.msg_1?.[0]).toMatchObject({ state: { status: "pending", raw: '{"command":"pwd"}' } })
+    expect(store.message.ses_1?.[0]).toMatchObject({
+      content: [{ type: "tool", id: "call_1", state: { status: "streaming", input: '{"command":"pwd"}' } }],
+    })
 
     run(
       event({
@@ -245,10 +255,9 @@ describe("applyDirectoryEvent", () => {
       }),
     )
 
-    expect(store.part.msg_1?.[0]).toMatchObject({
-      id: "msg_1:tool:call_1",
-      tool: "shell",
-      state: { status: "completed", input: { command: "pwd" }, output: "/tmp" },
+    expect(store.message.ses_1?.find((message) => message.id === "msg_1")).toMatchObject({
+      type: "assistant",
+      content: [{ type: "tool", id: "call_1", state: { status: "completed", content: [{ type: "text", text: "/tmp" }] } }],
     })
   })
 
@@ -265,8 +274,8 @@ describe("applyDirectoryEvent", () => {
     )
     expect(store.permission.ses_1?.[0]).toMatchObject({
       id: "perm_1",
-      permission: "shell",
-      patterns: ["git status"],
+      action: "shell",
+      resources: ["git status"],
     })
 
     run(event({ type: "permission.replied", data: { sessionID: "ses_1", requestID: "perm_1", reply: "once" } }))
@@ -290,17 +299,16 @@ describe("applyDirectoryEvent", () => {
 
   test("updates the VCS branch from native data", () => {
     const store = apply({}, event({ type: "vcs.branch.updated", data: { branch: "feature/test" } }))
-    expect(store.vcs).toEqual({ branch: "feature/test" })
+    expect(store.vcs).toEqual({ branch: { current: "feature/test" } })
   })
 
-  test("cleans message and part caches when a native session is deleted", () => {
+  test("cleans native messages when a session is deleted", () => {
     const message = userMessage("msg_1", "ses_1")
     const store = apply(
       {
         session: [rootSession({ id: "ses_1" })],
         sessionTotal: 1,
         message: { ses_1: [message] },
-        part: { msg_1: [textPart("msg_1:text:0", "ses_1", "msg_1")] },
       },
       event({
         type: "session.deleted",
@@ -310,6 +318,5 @@ describe("applyDirectoryEvent", () => {
     )
 
     expect(store.message.ses_1).toBeUndefined()
-    expect(store.part.msg_1).toBeUndefined()
   })
 })

@@ -4,7 +4,7 @@ import { createSimpleContext } from "@/ui/context/index"
 import { useGlobalSync } from "./global-sync"
 import { useServer } from "./server"
 import { usePlatform } from "./platform"
-import { Project } from "@/types/opencode"
+import type { Project } from "@opencode-ai/client"
 import { Persist, persisted, removePersisted } from "@/utils/persist"
 import { decode64 } from "@/utils/base64"
 import { same } from "@/utils/same"
@@ -49,7 +49,7 @@ type TabHandoff = {
   at: number
 }
 
-export type LocalProject = Partial<Project> & { worktree: string; expanded: boolean }
+export type LocalProject = Partial<Project> & { canonical: string; expanded: boolean }
 
 export type ReviewDiffStyle = "unified" | "split"
 
@@ -388,7 +388,7 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
       const projectID = childStore.project
       const metadata = projectID
         ? globalSync.data.project.find((x) => x.id === projectID)
-        : globalSync.data.project.find((x) => x.worktree === project.worktree)
+        : globalSync.data.project.find((x) => x.canonical === project.worktree)
 
       const local = childStore.projectMeta
       const has = (value: object | undefined, key: string) => !!value && Object.hasOwn(value, key)
@@ -398,6 +398,7 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
       const base = {
         ...(metadata ?? {}),
         ...project,
+        canonical: project.worktree,
         icon: {
           url: metadata?.icon?.url,
           override: metadata?.icon?.override ?? childStore.icon,
@@ -428,7 +429,7 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
       for (const project of globalSync.data.project) {
         const sandboxes = project.sandboxes ?? []
         for (const sandbox of sandboxes) {
-          map.set(sandbox, project.worktree)
+          map.set(sandbox, project.canonical)
         }
       }
       return map
@@ -481,7 +482,7 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
     const list = createMemo(() => {
       const projects = enriched()
       return projects.map((project) => {
-        const color = project.icon?.color ?? colors[project.worktree]
+        const color = project.icon?.color ?? colors[project.canonical]
         if (!color) return project
         const icon = project.icon ? { ...project.icon, color } : { color }
         return { ...project, icon }
@@ -496,7 +497,7 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
       for (const project of projects) {
         if (!project.id) continue
         if (project.id === "global") continue
-        globalSync.project.icon(project.worktree, project.icon?.override)
+        globalSync.project.icon(project.canonical, project.icon?.override)
       }
     })
 
@@ -506,13 +507,13 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
 
       const used = new Set<string>()
       for (const project of projects) {
-        const color = project.icon?.color ?? colors[project.worktree]
+        const color = project.icon?.color ?? colors[project.canonical]
         if (color) used.add(color)
       }
 
       for (const project of projects) {
         if (project.icon?.color) continue
-        const worktree = project.worktree
+        const worktree = project.canonical
         const existing = colors[worktree]
         const color = existing ?? pickAvailableColor(used)
         if (!existing) {

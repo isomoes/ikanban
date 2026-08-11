@@ -1,22 +1,14 @@
-import type { AssistantMessage, Message } from "@/types/opencode"
-
-type Provider = {
-  id: string
-  name?: string
-  models: Record<string, Model | undefined>
-}
-
-type Model = {
-  name?: string
-  limit: {
-    context: number
-  }
-}
+import type {
+  SessionMessageAssistant as AssistantMessage,
+  SessionMessageInfo as Message,
+  ModelInfo,
+  ProviderInfo,
+} from "@opencode-ai/client"
 
 type Context = {
   message: AssistantMessage
-  provider?: Provider
-  model?: Model
+  provider?: ProviderInfo
+  model?: ModelInfo
   providerLabel: string
   modelLabel: string
   limit: number | undefined
@@ -35,25 +27,27 @@ type Metrics = {
 }
 
 const tokenTotal = (msg: AssistantMessage) => {
-  return msg.tokens.input + msg.tokens.output + msg.tokens.reasoning + msg.tokens.cache.read + msg.tokens.cache.write
+  const tokens = msg.tokens
+  if (!tokens) return 0
+  return tokens.input + tokens.output + tokens.reasoning + tokens.cache.read + tokens.cache.write
 }
 
 const lastAssistantWithTokens = (messages: Message[]) => {
   for (let i = messages.length - 1; i >= 0; i--) {
     const msg = messages[i]
-    if (msg.role !== "assistant") continue
+    if (msg.type !== "assistant") continue
     if (tokenTotal(msg) <= 0) continue
     return msg
   }
 }
 
-const build = (messages: Message[] = [], providers: Provider[] = []): Metrics => {
-  const totalCost = messages.reduce((sum, msg) => sum + (msg.role === "assistant" ? msg.cost : 0), 0)
+const build = (messages: Message[] = [], providers: ProviderInfo[] = [], models: ModelInfo[] = []): Metrics => {
+  const totalCost = messages.reduce((sum, msg) => sum + (msg.type === "assistant" ? (msg.cost ?? 0) : 0), 0)
   const message = lastAssistantWithTokens(messages)
   if (!message) return { totalCost, context: undefined }
 
-  const provider = providers.find((item) => item.id === message.providerID)
-  const model = provider?.models[message.modelID]
+  const provider = providers.find((item) => item.id === message.model.providerID)
+  const model = models.find((item) => item.providerID === message.model.providerID && item.id === message.model.id)
   const limit = model?.limit.context
   const total = tokenTotal(message)
 
@@ -63,20 +57,20 @@ const build = (messages: Message[] = [], providers: Provider[] = []): Metrics =>
       message,
       provider,
       model,
-      providerLabel: provider?.name ?? message.providerID,
-      modelLabel: model?.name ?? message.modelID,
+      providerLabel: provider?.name ?? message.model.providerID,
+      modelLabel: model?.name ?? message.model.id,
       limit,
-      input: message.tokens.input,
-      output: message.tokens.output,
-      reasoning: message.tokens.reasoning,
-      cacheRead: message.tokens.cache.read,
-      cacheWrite: message.tokens.cache.write,
+      input: message.tokens?.input ?? 0,
+      output: message.tokens?.output ?? 0,
+      reasoning: message.tokens?.reasoning ?? 0,
+      cacheRead: message.tokens?.cache.read ?? 0,
+      cacheWrite: message.tokens?.cache.write ?? 0,
       total,
       usage: limit ? Math.round((total / limit) * 100) : null,
     },
   }
 }
 
-export function getSessionContextMetrics(messages: Message[] = [], providers: Provider[] = []) {
-  return build(messages, providers)
+export function getSessionContextMetrics(messages: Message[] = [], providers: ProviderInfo[] = [], models: ModelInfo[] = []) {
+  return build(messages, providers, models)
 }

@@ -4,7 +4,7 @@ import { useSync } from "@/context/sync"
 import { useLanguage } from "@/context/language"
 import { Dialog } from "@/ui/components/dialog"
 import { List } from "@/ui/components/list"
-import type { TextPart as SDKTextPart, UserMessage } from "@/types/opencode"
+import type { SessionMessageUser as UserMessage } from "@opencode-ai/client"
 
 interface TimelineMessage {
   id: string
@@ -34,16 +34,12 @@ export const DialogSessionTimeline: Component<{
     let latestUserMessage: UserMessage | undefined
 
     for (const message of sessionMessages) {
-      if (message.role !== "user") continue
+      if (message.type !== "user") continue
       latestUserMessage = message
-
-      const parts = sync.data.part[message.id] ?? []
-      const textPart = parts.find((x): x is SDKTextPart => x.type === "text" && !x.synthetic && !x.ignored)
-      if (!textPart) continue
 
       result.push({
         id: message.id,
-        text: textPart.text.replace(/\n/g, " ").slice(0, 200),
+        text: message.text.replace(/\n/g, " ").slice(0, 200),
         time: formatTime(new Date(message.time.created)),
         message,
       })

@@ -11,8 +11,9 @@ type ModelInfo = {
     name: string
   }
   capabilities?: {
-    reasoning: boolean
-    input: InputMap
+    reasoning?: boolean
+    input: InputMap | InputKey[]
+    output?: string[]
   }
   modalities?: {
     input: Array<string>
@@ -55,7 +56,7 @@ export const ModelTooltip: Component<{ model: ModelInfo; latest?: boolean; free?
     if (props.model.capabilities) {
       const input = props.model.capabilities.input
       const order: Array<InputKey> = ["text", "image", "audio", "video", "pdf"]
-      const entries = order.filter((key) => input[key]).map((key) => inputLabel(key))
+      const entries = order.filter((key) => Array.isArray(input) ? input.includes(key) : input[key]).map((key) => inputLabel(key))
       return entries.length ? entries.join(", ") : undefined
     }
     const raw = props.model.modalities?.input
@@ -65,7 +66,7 @@ export const ModelTooltip: Component<{ model: ModelInfo; latest?: boolean; free?
   }
   const reasoning = () => {
     if (props.model.capabilities)
-      return props.model.capabilities.reasoning
+      return (props.model.capabilities.reasoning ?? props.model.capabilities.output?.includes("reasoning"))
         ? language.t("model.tooltip.reasoning.allowed")
         : language.t("model.tooltip.reasoning.none")
     return props.model.reasoning

@@ -1,5 +1,5 @@
 import { getFilename } from "@/utils/path"
-import { type Session } from "@/types/opencode"
+import type { SessionInfo } from "@opencode-ai/client"
 
 export const workspaceKey = (directory: string) => {
   const drive = directory.match(/^([A-Za-z]:)[\\/]+$/)
@@ -10,7 +10,7 @@ export const workspaceKey = (directory: string) => {
 
 export function sortSessions(now: number) {
   const oneMinuteAgo = now - 60 * 1000
-  return (a: Session, b: Session) => {
+  return (a: SessionInfo, b: SessionInfo) => {
     const aUpdated = a.time.updated ?? a.time.created
     const bUpdated = b.time.updated ?? b.time.created
     const aRecent = aUpdated > oneMinuteAgo
@@ -23,21 +23,21 @@ export function sortSessions(now: number) {
 }
 
 export const isRootVisibleSession = (
-  session: Session,
+  session: SessionInfo,
   directory: string,
-  isVisible: (session: Session) => boolean = (item) => !item.time?.archived,
-) => workspaceKey(session.directory) === workspaceKey(directory) && !session.parentID && isVisible(session)
+  isVisible: (session: SessionInfo) => boolean = (item) => !item.time?.archived,
+) => workspaceKey(session.location.directory) === workspaceKey(directory) && !session.parentID && isVisible(session)
 
 export const sortedRootSessions = (
-  store: { session: Session[]; path: { directory: string } },
+  store: { session: SessionInfo[]; path: { directory: string } },
   now: number,
-  isVisible?: (session: Session) => boolean,
+  isVisible?: (session: SessionInfo) => boolean,
 ) => store.session.filter((session) => isRootVisibleSession(session, store.path.directory, isVisible)).sort(sortSessions(now))
 
 export const latestRootSession = (
-  stores: { session: Session[]; path: { directory: string } }[],
+  stores: { session: SessionInfo[]; path: { directory: string } }[],
   now: number,
-  isVisible?: (session: Session) => boolean,
+  isVisible?: (session: SessionInfo) => boolean,
 ) =>
   stores
     .flatMap((store) => store.session.filter((session) => isRootVisibleSession(session, store.path.directory, isVisible)))
@@ -50,7 +50,7 @@ export function hasProjectPermissions<T>(
   return Object.values(request).some((list) => list?.some(include))
 }
 
-export const childMapByParent = (sessions: Session[]) => {
+export const childMapByParent = (sessions: SessionInfo[]) => {
   const map = new Map<string, string[]>()
   for (const session of sessions) {
     if (!session.parentID) continue
@@ -72,8 +72,8 @@ export function getDraggableId(event: unknown): string | undefined {
   return typeof draggable.id === "string" ? draggable.id : undefined
 }
 
-export const displayName = (project: { name?: string; worktree: string }) =>
-  project.name || getFilename(project.worktree)
+export const displayName = (project: { name?: string; canonical: string }) =>
+  project.name || getFilename(project.canonical)
 
 export const errorMessage = (err: unknown, fallback: string) => {
   if (err && typeof err === "object" && "data" in err) {

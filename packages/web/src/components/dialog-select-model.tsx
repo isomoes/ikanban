@@ -15,8 +15,8 @@ import { DialogManageModels } from "./dialog-manage-models"
 import { ModelTooltip } from "./model-tooltip"
 import { useLanguage } from "@/context/language"
 
-const isFree = (provider: string, cost: { input: number } | undefined) =>
-  provider === "opencode" && (!cost || cost.input === 0)
+const isFree = (provider: string, cost: Array<{ input: number; tier?: unknown }>) =>
+  provider === "opencode" && (cost.find((item) => !item.tier)?.input ?? 0) === 0
 
 type ModelItem = ReturnType<ReturnType<typeof useLocal>["model"]["list"]>[number] & {
   _recentKey?: string

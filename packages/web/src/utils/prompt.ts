@@ -1,4 +1,4 @@
-import type { AgentPart as MessageAgentPart, FilePart, Part, TextPart } from "@/types/opencode"
+import type { SessionMessageUser } from "@opencode-ai/client"
 import type { AgentPart, FileAttachmentPart, ImageAttachmentPart, Prompt } from "@/context/prompt"
 
 type Inline =
@@ -38,24 +38,12 @@ function selectionFromFileUrl(url: string): Extract<Inline, { type: "file" }>["s
   }
 }
 
-function textPartValue(parts: Part[]) {
-  const candidates = parts
-    .filter((part): part is TextPart => part.type === "text")
-    .filter((part) => !part.synthetic && !part.ignored)
-  return candidates.reduce((best: TextPart | undefined, part) => {
-    if (!best) return part
-    if (part.text.length > best.text.length) return part
-    return best
-  }, undefined)
-}
-
 /**
- * Extract prompt content from message parts for restoring into the prompt input.
+ * Extract prompt content from a native user message for restoring into the prompt input.
  * This is used by undo to restore the original user prompt.
  */
-export function extractPromptFromParts(parts: Part[], opts?: { directory?: string; attachmentName?: string }): Prompt {
-  const textPart = textPartValue(parts)
-  const text = textPart?.text ?? ""
+export function extractPromptFromMessage(message: SessionMessageUser, opts?: { directory?: string; attachmentName?: string }): Prompt {
+  const text = message.text
   const directory = opts?.directory
   const attachmentName = opts?.attachmentName ?? "attachment"
 
@@ -77,54 +65,46 @@ export function extractPromptFromParts(parts: Part[], opts?: { directory?: strin
   const inline: Inline[] = []
   const images: ImageAttachmentPart[] = []
 
-  for (const part of parts) {
-    if (part.type === "file") {
-      const filePart = part as FilePart
-      const sourceText = filePart.source?.text
-      if (sourceText) {
-        const value = sourceText.value
-        const start = sourceText.start
-        const end = sourceText.end
+  for (const [index, file] of (message.files ?? []).entries()) {
+      const mention = file.mention
+      if (mention) {
+        const value = mention.text
+        const start = mention.start
+        const end = mention.end
         let path = value
         if (value.startsWith("@")) path = value.slice(1)
-        if (!value.startsWith("@") && filePart.source && "path" in filePart.source) {
-          const sourcePath = filePart.source.path
-          if (typeof sourcePath === "string") path = sourcePath
-        }
         inline.push({
           type: "file",
           start,
           end,
           value,
           path: toRelative(path),
-          selection: selectionFromFileUrl(filePart.url),
+          selection: file.source.type === "uri" ? selectionFromFileUrl(file.source.uri) : undefined,
         })
         continue
       }
 
-      if (filePart.url.startsWith("data:")) {
+      if (file.source.type === "inline") {
         images.push({
           type: "image",
-          id: filePart.id,
-          filename: filePart.filename ?? attachmentName,
-          mime: filePart.mime,
-          dataUrl: filePart.url,
+          id: `${message.id}:file:${index}`,
+          filename: file.name ?? attachmentName,
+          mime: file.mime,
+          dataUrl: `data:${file.mime};base64,${file.data}`,
         })
       }
-    }
+  }
 
-    if (part.type === "agent") {
-      const agentPart = part as MessageAgentPart
-      const source = agentPart.source
+  for (const agent of message.agents ?? []) {
+      const source = agent.mention
       if (!source) continue
       inline.push({
         type: "agent",
         start: source.start,
         end: source.end,
-        value: source.value,
-        name: agentPart.name,
+        value: source.text,
+        name: agent.name,
       })
-    }
   }
 
   inline.sort((a, b) => {

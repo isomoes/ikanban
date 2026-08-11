@@ -7,6 +7,7 @@ import { base64Encode } from "@/utils/encode"
 import { useProviders } from "@/hooks/use-providers"
 import { useModels } from "@/context/models"
 import { cycleModelVariant, getConfiguredAgentVariant, resolveModelVariant } from "./model-variant"
+import { configInfo } from "./config"
 
 export type ModelKey = { providerID: string; modelID: string }
 
@@ -38,14 +39,14 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
       const [store, setStore] = createStore<{
         current?: string
       }>({
-        current: list()[0]?.name,
+        current: list()[0]?.id,
       })
       return {
         list,
         current() {
           const available = list()
           if (available.length === 0) return undefined
-          return available.find((x) => x.name === store.current) ?? available[0]
+          return available.find((x) => x.id === store.current) ?? available[0]
         },
         set(name: string | undefined) {
           const available = list()
@@ -53,11 +54,11 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
             setStore("current", undefined)
             return
           }
-          if (name && available.some((x) => x.name === name)) {
+          if (name && available.some((x) => x.id === name)) {
             setStore("current", name)
             return
           }
-          setStore("current", available[0].name)
+          setStore("current", available[0].id)
         },
         move(direction: 1 | -1) {
           const available = list()
@@ -65,16 +66,16 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
             setStore("current", undefined)
             return
           }
-          let next = available.findIndex((x) => x.name === store.current) + direction
+          let next = available.findIndex((x) => x.id === store.current) + direction
           if (next < 0) next = available.length - 1
           if (next >= available.length) next = 0
           const value = available[next]
           if (!value) return
-          setStore("current", value.name)
+          setStore("current", value.id)
           if (value.model)
             setModel({
               providerID: value.model.providerID,
-              modelID: value.model.modelID,
+              modelID: value.model.id,
             })
         },
       }
@@ -90,8 +91,11 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
       })
 
       const resolveConfigured = () => {
-        if (!sync.data.config.model) return
-        const [providerID, modelID] = sync.data.config.model.split("/")
+        const configured = configInfo(sync.data.config).model
+        if (!configured) return
+        const [providerID, modelID] = typeof configured === "string"
+          ? configured.split("/")
+          : [configured.providerID, configured.model]
         const key = { providerID, modelID }
         if (isModelValid(key)) return key
       }
@@ -126,8 +130,8 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
         const a = agent.current()
         if (!a) return undefined
         const key = getFirstValidModel(
-          () => ephemeral.model[a.name],
-          () => a.model,
+          () => ephemeral.model[a.id],
+          () => a.model && ({ providerID: a.model.providerID, modelID: a.model.id }),
           fallbackModel,
         )
         if (!key) return undefined
@@ -163,7 +167,7 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
         batch(() => {
           const currentAgent = agent.current()
           const next = model ?? fallbackModel()
-          if (currentAgent) setEphemeral("model", currentAgent.name, next)
+          if (currentAgent) setEphemeral("model", currentAgent.id, next)
           if (model) models.setVisibility(model, true)
           if (options?.recent && model) models.recent.push(model)
         })
@@ -190,8 +194,8 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
             const m = current()
             if (!a || !m) return undefined
             return getConfiguredAgentVariant({
-              agent: { model: a.model, variant: a.variant },
-              model: { providerID: m.provider.id, modelID: m.id, variants: m.variants },
+              agent: a,
+              model: m,
             })
           },
           selected() {
@@ -209,8 +213,7 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
           list() {
             const m = current()
             if (!m) return []
-            if (!m.variants) return []
-            return Object.keys(m.variants)
+            return m.variants.map((variant) => variant.id)
           },
           set(value: string | undefined) {
             const m = current()

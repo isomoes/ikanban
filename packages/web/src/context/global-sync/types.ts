@@ -1,21 +1,20 @@
 import type {
-  Agent,
-  Command,
-  Config,
-  LspStatus,
-  McpStatus,
-  Message,
-  Part,
-  Path,
+  AgentInfo,
+  CommandInfo,
+  ConfigEntry,
+  McpServer,
+  ModelInfo,
   PermissionRequest,
   Project,
-  ProviderListResponse,
+  ProviderInfo,
   QuestionRequest,
-  Session,
+  SessionInfo,
+  SessionMessageInfo,
   SessionStatus,
-  Todo,
   VcsInfo,
-} from "@/types/opencode"
+  IntegrationInfo,
+} from "@opencode-ai/client"
+import type { LspStatus, RuntimeLocations, TodoItem } from "@/types/app"
 import type { FileDiff } from "@/context/file/types"
 import type { Accessor } from "solid-js"
 import type { SetStoreFunction, Store } from "solid-js/store"
@@ -33,15 +32,20 @@ export type ProjectMeta = {
 
 export type State = {
   status: "loading" | "partial" | "complete"
-  agent: Agent[]
-  command: Command[]
+  agent: AgentInfo[]
+  command: CommandInfo[]
   project: string
   projectMeta: ProjectMeta | undefined
   icon: string | undefined
-  provider: ProviderListResponse
-  config: Config
-  path: Path
-  session: Session[]
+  provider: {
+    providers: ProviderInfo[]
+    models: ModelInfo[]
+    integrations: IntegrationInfo[]
+    defaultModel: ModelInfo | null
+  }
+  config: ConfigEntry[]
+  path: RuntimeLocations
+  session: SessionInfo[]
   sessionTotal: number
   session_status: {
     [sessionID: string]: SessionStatus
@@ -53,7 +57,7 @@ export type State = {
     [directory: string]: FileDiff[]
   }
   todo: {
-    [sessionID: string]: Todo[]
+    [sessionID: string]: TodoItem[]
   }
   permission: {
     [sessionID: string]: PermissionRequest[]
@@ -62,16 +66,13 @@ export type State = {
     [sessionID: string]: QuestionRequest[]
   }
   mcp: {
-    [name: string]: McpStatus
+    [name: string]: McpServer["status"]
   }
   lsp: LspStatus[]
   vcs: VcsInfo | undefined
   limit: number
   message: {
-    [sessionID: string]: Message[]
-  }
-  part: {
-    [messageID: string]: Part[]
+    [sessionID: string]: SessionMessageInfo[]
   }
 }
 
@@ -121,11 +122,11 @@ export type DisposeCheck = {
 export type RootLoadArgs = {
   directory: string
   limit: number
-  list: (query: { directory: string; roots: true; limit?: number }) => Promise<{ data?: Session[] }>
+  list: (query: { directory: string; roots: true; limit?: number }) => Promise<{ data?: SessionInfo[] }>
 }
 
 export type RootLoadResult = {
-  data?: Session[]
+  data?: SessionInfo[]
   limit: number
   limited: boolean
 }

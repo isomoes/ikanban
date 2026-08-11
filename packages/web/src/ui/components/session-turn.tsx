@@ -1,6 +1,6 @@
 /** @jsxImportSource solid-js */
-import { AssistantMessage, Message as MessageType, Part as PartType } from "@/types/opencode"
-import type { SessionStatus } from "@/types/opencode"
+import type { SessionMessageAssistant as AssistantMessage, SessionMessageInfo as MessageType } from "@opencode-ai/client"
+import type { SessionStatus } from "@opencode-ai/client"
 import { snapshotToFileDiff, type FileDiff } from "@/context/file/types"
 import { useData } from "../context"
 import { useFileComponent } from "../context/file"
@@ -9,7 +9,7 @@ import { Binary } from "@/utils/binary"
 import { getDirectory, getFilename } from "@/utils/path"
 import { createEffect, createMemo, createSignal, For, on, ParentProps, Show } from "solid-js"
 import { Dynamic } from "solid-js/web"
-import { AssistantParts, Message, Part, PART_MAPPING } from "./message-part"
+import { AssistantParts, Message } from "./message-part"
 import { formatTurnDurationLabel, getTurnDurationMs } from "./session-turn-duration"
 import { Card } from "./card"
 import { Accordion } from "./accordion"
@@ -91,8 +91,8 @@ const hidden = new Set(["todowrite", "todoread"])
 
 function partState(part: PartType, showReasoningSummaries: boolean) {
   if (part.type === "tool") {
-    if (hidden.has(part.tool)) return
-    if (part.tool === "question" && (part.state.status === "pending" || part.state.status === "running")) return
+    if (hidden.has(part.name)) return
+    if (part.name === "question" && (part.state.status === "streaming" || part.state.status === "running")) return
     return "visible" as const
   }
   if (part.type === "text") return part.text?.trim() ? ("visible" as const) : undefined
@@ -100,9 +100,10 @@ function partState(part: PartType, showReasoningSummaries: boolean) {
     if (showReasoningSummaries && part.text?.trim()) return "visible" as const
     return
   }
-  if (PART_MAPPING[part.type]) return "visible" as const
   return
 }
+
+type PartType = AssistantMessage["content"][number]
 
 function clean(value: string) {
   return value
@@ -163,7 +164,6 @@ export function SessionTurn(
   const fileComponent = useFileComponent()
 
   const emptyMessages: MessageType[] = []
-  const emptyParts: PartType[] = []
   const emptyAssistant: AssistantMessage[] = []
   const emptyDiffs: FileDiff[] = []
   const idle = { type: "idle" as const }
@@ -178,7 +178,7 @@ export function SessionTurn(
     if (index < 0) return -1
 
     const msg = messages[index]
-    if (!msg || msg.role !== "user") return -1
+    if (!msg || msg.type !== "user") return -1
 
     return index
   })
@@ -189,7 +189,7 @@ export function SessionTurn(
 
     const messages = allMessages() ?? emptyMessages
     const msg = messages[index]
-    if (!msg || msg.role !== "user") return undefined
+    if (!msg || msg.type !== "user") return undefined
 
     return msg
   })
@@ -198,18 +198,19 @@ export function SessionTurn(
     if (typeof props.active === "boolean" && typeof props.queued === "boolean") return
     const messages = allMessages() ?? emptyMessages
     return messages.findLast(
-      (item): item is AssistantMessage => item.role === "assistant" && typeof item.time.completed !== "number",
+      (item): item is AssistantMessage => item.type === "assistant" && typeof item.time.completed !== "number",
     )
   })
 
   const pendingUser = createMemo(() => {
     const item = pending()
-    if (!item?.parentID) return
+    if (!item) return
     const messages = allMessages() ?? emptyMessages
-    const result = Binary.search(messages, item.parentID, (m) => m.id)
-    const msg = result.found ? messages[result.index] : messages.find((m) => m.id === item.parentID)
-    if (!msg || msg.role !== "user") return
-    return msg
+    const index = messages.findIndex((message) => message.id === item.id)
+    for (let i = index - 1; i >= 0; i--) {
+      const message = messages[i]
+      if (message?.type === "user") return message
+    }
   })
 
   const active = createMemo(() => {
@@ -230,28 +231,8 @@ export function SessionTurn(
     return id > item.id
   })
 
-  const parts = createMemo(() => {
-    const msg = message()
-    if (!msg) return emptyParts
-    return list(data.store.part?.[msg.id], emptyParts)
-  })
-
-  const compaction = createMemo(() => parts().find((part) => part.type === "compaction"))
-
   const diffs = createMemo(() => {
-    const files = message()?.summary?.diffs
-    if (!files?.length) return emptyDiffs
-
-    const seen = new Set<string>()
-    return files
-      .reduceRight<FileDiff[]>((result, diff) => {
-        const converted = snapshotToFileDiff(diff)
-        if (seen.has(converted.file)) return result
-        seen.add(converted.file)
-        result.push(converted)
-        return result
-      }, [])
-      .reverse()
+    return emptyDiffs
   })
   const edited = createMemo(() => diffs().length)
   const [open, setOpen] = createSignal(false)
@@ -280,8 +261,8 @@ export function SessionTurn(
       for (let i = index + 1; i < messages.length; i++) {
         const item = messages[i]
         if (!item) continue
-        if (item.role === "user") break
-        if (item.role === "assistant" && item.parentID === msg.id) result.push(item as AssistantMessage)
+        if (item.type === "user") break
+        if (item.type === "assistant") result.push(item)
       }
       return result
     },
@@ -289,9 +270,9 @@ export function SessionTurn(
     { equals: same },
   )
 
-  const interrupted = createMemo(() => assistantMessages().some((m) => m.error?.name === "MessageAbortedError"))
+  const interrupted = createMemo(() => assistantMessages().some((m) => m.error?.type === "MessageAbortedError"))
   const error = createMemo(
-    () => assistantMessages().find((m) => m.error && m.error.name !== "MessageAbortedError")?.error,
+    () => assistantMessages().find((m) => m.error && m.error.type !== "MessageAbortedError")?.error,
   )
   const showAssistantCopyPartID = createMemo(() => {
     const messages = assistantMessages()
@@ -300,18 +281,18 @@ export function SessionTurn(
       const message = messages[i]
       if (!message) continue
 
-      const parts = list(data.store.part?.[message.id], emptyParts)
+      const parts = message.content
       for (let j = parts.length - 1; j >= 0; j--) {
         const part = parts[j]
         if (!part || part.type !== "text" || !part.text?.trim()) continue
-        return part.id
+        return `${message.id}:${part.type}:${j}`
       }
     }
 
     return undefined
   })
   const errorText = createMemo(() => {
-    const msg = error()?.data?.message
+    const msg = error()?.message
     if (typeof msg === "string") return unwrap(msg)
     if (msg === undefined || msg === null) return ""
     return unwrap(String(msg))
@@ -338,13 +319,13 @@ export function SessionTurn(
   })
   const assistantVisible = createMemo(() =>
     assistantMessages().reduce((count, message) => {
-      const parts = list(data.store.part?.[message.id], emptyParts)
+      const parts = message.content
       return count + parts.filter((part) => partState(part, showReasoningSummaries()) === "visible").length
     }, 0),
   )
   const assistantTailVisible = createMemo(() =>
     assistantMessages()
-      .flatMap((message) => list(data.store.part?.[message.id], emptyParts))
+      .flatMap((message) => message.content)
       .flatMap((part) => {
         if (partState(part, showReasoningSummaries()) !== "visible") return []
         if (part.type === "text") return ["text" as const]
@@ -354,7 +335,7 @@ export function SessionTurn(
   )
   const reasoningHeading = createMemo(() =>
     assistantMessages()
-      .flatMap((message) => list(data.store.part?.[message.id], emptyParts))
+      .flatMap((message) => message.content)
       .filter((part): part is PartType & { type: "reasoning"; text: string } => part.type === "reasoning")
       .map((part) => heading(part.text))
       .filter((text): text is string => !!text)
@@ -392,15 +373,8 @@ export function SessionTurn(
                 class={props.classes?.container}
               >
                 <div data-slot="session-turn-message-content" aria-live="off">
-                  <Message message={msg()} parts={parts()} interrupted={interrupted()} queued={queued()} />
-                </div>
-                <Show when={compaction()}>
-                  {(part) => (
-                    <div data-slot="session-turn-compaction">
-                      <Part part={part()} message={msg()} hideDetails />
-                    </div>
-                  )}
-                </Show>
+                    <Message message={msg()} interrupted={interrupted()} queued={queued()} />
+                  </div>
                 <Show when={assistantMessages().length > 0}>
                   <div data-slot="session-turn-assistant-content" aria-hidden={working()}>
                     <AssistantParts

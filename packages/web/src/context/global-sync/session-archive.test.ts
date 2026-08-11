@@ -1,16 +1,16 @@
 import { describe, expect, test } from "bun:test"
-import type { Session } from "@/types/opencode"
+import type { SessionInfo as Session } from "@opencode-ai/client"
 import { applySessionArchive, sessionArchiveKey } from "./session-archive"
 
 describe("session archive", () => {
   test("applies browser-persisted archive state to a server session", () => {
     const session: Session = {
       id: "ses_1",
-      slug: "session",
       projectID: "project",
-      directory: "/project",
+      location: { directory: "/project" },
       title: "Session",
-      version: "1",
+      cost: 0,
+      tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
       time: { created: 1, updated: 123 },
     }
 

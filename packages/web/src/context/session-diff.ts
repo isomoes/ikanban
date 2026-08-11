@@ -1,17 +1,18 @@
-import type { Message, SnapshotFileDiff } from "@/types/opencode"
+import type { FileDiffInfo } from "@opencode-ai/client"
+import type { SessionMessageInfo as Message } from "@opencode-ai/client"
 import { diffLines } from "diff"
 import { snapshotToFileDiff, type FileDiff } from "./file/types"
 
 type LoadSessionDiffInput = {
   messages: () => Promise<Message[]>
-  diff: (messageID: string) => Promise<SnapshotFileDiff[]>
+  diff: (messageID: string) => Promise<FileDiffInfo[]>
 }
 
 export async function loadSessionDiff(input: LoadSessionDiffInput): Promise<FileDiff[]> {
   const messages = await input.messages()
   const turns = await Promise.all(
     messages
-      .filter((message) => message.role === "user")
+      .filter((message) => message.type === "user")
       .sort((a, b) => a.id.localeCompare(b.id))
       .map((message) => input.diff(message.id)),
   )

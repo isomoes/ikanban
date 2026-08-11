@@ -25,8 +25,8 @@ describe("tool type badges", () => {
     expect(partStyles).toMatch(/\[data-slot="context-tool-group-item"\]\s*{[^}]*padding: 0;/s)
   })
 
-  test("labels generic tools as MCP and preserves explicit skill and agent types", () => {
-    expect(toolSource).toContain('badge="MCP"')
+  test("labels external tools as MCP and preserves explicit skill and agent types", () => {
+    expect(toolSource).toContain('return TOOL_BADGES[tool] ?? "MCP"')
     expect(partSource).toContain('tool="skill"')
     expect(partSource).toContain('tool="task"')
   })
@@ -34,8 +34,32 @@ describe("tool type badges", () => {
   test("uses concise labels for built-ins and reserves MCP for external tools", () => {
     expect(toolBadge("read")).toBe("READ")
     expect(toolBadge("apply_patch")).toBe("PATCH")
+    expect(toolBadge("patch")).toBe("PATCH")
+    expect(toolBadge("shell")).toBe("SHELL")
+    expect(toolBadge("execute")).toBe("CODE")
+    expect(toolBadge("lsp")).toBe("LSP")
+    expect(toolBadge("plan_exit")).toBe("PLAN")
+    expect(toolBadge("invalid")).toBe("ERROR")
     expect(toolBadge("skill")).toBe("SKILL")
     expect(toolBadge("chrome-devtools_take_snapshot")).toBe("MCP")
+  })
+
+  test("routes V2 shell calls through the built-in shell presentation", () => {
+    expect(partSource).toContain('case "shell":')
+    expect(partSource).toContain('tool === "bash" || tool === "shell"')
+    expect(partSource).toContain('name: "shell"')
+  })
+
+  test("routes V2 patch calls through the built-in patch presentation", () => {
+    expect(partSource).toContain('case "patch":')
+    expect(partSource).toContain('tool === "apply_patch" || tool === "patch"')
+    expect(partSource).toContain('name: "patch"')
+  })
+
+  test("does not force generic V2 built-ins to render as MCP calls", () => {
+    expect(toolSource).toContain('const external = () => toolBadge(props.tool) === "MCP"')
+    expect(toolSource).toContain('external() ? i18n.t("ui.tool.mcpCall") : i18n.t("ui.tool.call")')
+    expect(toolSource).not.toContain('badge="MCP"')
   })
 
   test("hides redundant built-in names while preserving external and skill names", () => {

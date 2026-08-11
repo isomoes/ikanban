@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test"
-import type { Message, SnapshotFileDiff } from "@/types/opencode"
+import type { FileDiffInfo } from "@opencode-ai/client"
+import type { SessionMessageInfo as Message } from "@opencode-ai/client"
 import { loadSessionDiff } from "./session-diff"
 
-const patch = (before: string, after: string): SnapshotFileDiff => ({
+const patch = (before: string, after: string): FileDiffInfo => ({
   file: "src/example.ts",
   status: "modified",
   additions: 1,
@@ -21,10 +22,10 @@ describe("loadSessionDiff", () => {
   test("loads every user message diff and combines the session snapshots", async () => {
     const requested: string[] = []
     const messages = [
-      { id: "user-2", role: "user" },
-      { id: "assistant-1", role: "assistant" },
-      { id: "user-1", role: "user" },
-    ] as Message[]
+      { id: "user-2", type: "user" },
+      { id: "assistant-1", type: "assistant" },
+      { id: "user-1", type: "user" },
+    ] as unknown as Message[]
 
     const result = await loadSessionDiff({
       messages: async () => messages,

@@ -1,10 +1,10 @@
-import type { Session } from "@/types/opencode"
+import type { SessionInfo } from "@opencode-ai/client"
 import { DateTime } from "luxon"
 
 export type BoardColumn = "progress" | "idle"
 
 export type BoardCard = {
-  session: Session
+  session: SessionInfo
   projectDirectory: string
   updatedAt: number
 }
@@ -40,7 +40,7 @@ export async function performArchive(
 
 export function buildBoardColumns(input: {
   projectDirectories: string[]
-  sessionsByProject: Record<string, Session[]>
+  sessionsByProject: Record<string, SessionInfo[]>
   statusesByProject: Record<string, Record<string, SessionStatus | undefined>>
 }) {
   const cards = new Map<string, BoardCard & { column: BoardColumn }>()

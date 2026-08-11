@@ -47,7 +47,7 @@ export const DialogSelectModelUnpaid: Component = () => {
                 <ModelTooltip
                   model={item as unknown as Parameters<typeof ModelTooltip>[0]["model"]}
                   latest={item.latest}
-                  free={item.provider.id === "opencode" && (!item.cost || item.cost.input === 0)}
+                  free={item.provider.id === "opencode" && (item.cost.find((cost) => !cost.tier)?.input ?? 0) === 0}
                 />
               }
             >

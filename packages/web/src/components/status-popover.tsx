@@ -14,6 +14,7 @@ import { usePlatform } from "@/context/platform"
 import { useSDK } from "@/context/sdk"
 import { normalizeServerUrl, ServerConnection, useServer } from "@/context/server"
 import { useSync } from "@/context/sync"
+import { configInfo } from "@/context/config"
 import { checkServerHealth, type ServerHealth } from "@/utils/server-health"
 import { DialogSelectServer } from "./dialog-select-server"
 
@@ -194,7 +195,7 @@ export function StatusPopover() {
   const lspItems = createMemo(() => sync.data.lsp ?? [])
   const lspCount = createMemo(() => lspItems().length)
   const plugins = createMemo(() => {
-    const value = sync.data.config.plugin
+    const value = configInfo(sync.data.config).plugins
     return Array.isArray(value) ? value : []
   })
   const pluginCount = createMemo(() => plugins().length)
@@ -349,8 +350,7 @@ export function StatusPopover() {
                               "bg-icon-success-base": status() === "connected",
                               "bg-icon-critical-base": status() === "failed",
                               "bg-border-weak-base": status() === "disabled",
-                              "bg-icon-warning-base":
-                                status() === "needs_auth" || status() === "needs_client_registration",
+                              "bg-icon-warning-base": status() === "needs_auth" || status() === "pending",
                             }}
                           />
                           <span class="text-14-regular text-text-base truncate flex-1">{name}</span>

@@ -78,15 +78,7 @@ export const { use: useFile, provider: FileProvider } = createSimpleContext({
     const tree = createFileTreeStore({
       scope,
       normalizeDir: path.normalizeDir,
-      list: (dir) =>
-        sdk.client.file.list({ location: { directory: scope() }, path: dir }).then((result) =>
-          result.data.map((entry) => ({
-            ...entry,
-            name: getFilename(entry.path),
-            absolute: `${scope()}/${entry.path}`.replace(/\/{2,}/g, "/"),
-            ignored: false,
-          })),
-        ),
+      list: (dir) => sdk.client.file.list({ location: { directory: scope() }, path: dir }).then((result) => result.data),
       onError: (message) => {
         showToast({
           variant: "error",

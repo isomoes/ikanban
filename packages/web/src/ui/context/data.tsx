@@ -1,11 +1,16 @@
-import type { Message, Session, Part, SessionStatus, ProviderListResponse } from "@/types/opencode"
+import type { IntegrationInfo, ModelInfo, ProviderInfo, SessionInfo, SessionMessageInfo, SessionStatus } from "@opencode-ai/client"
 import type { FileDiff } from "@/context/file/types"
 import { createSimpleContext } from "./helper"
 import { PreloadMultiFileDiffResult } from "@pierre/diffs/ssr"
 
 type Data = {
-  provider?: ProviderListResponse
-  session: Session[]
+  provider?: {
+    providers: ProviderInfo[]
+    models: ModelInfo[]
+    integrations: IntegrationInfo[]
+    defaultModel: ModelInfo | null
+  }
+  session: SessionInfo[]
   session_status: {
     [sessionID: string]: SessionStatus
   }
@@ -22,10 +27,7 @@ type Data = {
     [directory: string]: PreloadMultiFileDiffResult<any>[]
   }
   message: {
-    [sessionID: string]: Message[]
-  }
-  part: {
-    [messageID: string]: Part[]
+    [sessionID: string]: SessionMessageInfo[]
   }
 }
 

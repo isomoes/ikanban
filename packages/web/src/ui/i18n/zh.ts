@@ -107,6 +107,7 @@ export const dict = {
   "ui.tool.read": "读取",
   "ui.tool.loaded": "已加载",
   "ui.tool.mcpCall": "MCP 调用",
+  "ui.tool.call": "工具调用",
   "ui.tool.input": "输入",
   "ui.tool.output": "输出",
   "ui.tool.list": "列表",

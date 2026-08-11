@@ -1,34 +1,33 @@
 import { describe, expect, test } from "bun:test"
-import type { Message, Part } from "@/types/opencode"
+import type { SessionMessageInfo as Message } from "@opencode-ai/client"
 import { estimateSessionContextBreakdown } from "./session-context-breakdown"
 
-const user = (id: string) => {
+const user = (id: string, text = "") => {
   return {
     id,
-    role: "user",
+    type: "user",
+    text,
     time: { created: 1 },
   } as unknown as Message
 }
 
-const assistant = (id: string) => {
+const assistant = (id: string, text = "") => {
   return {
     id,
-    role: "assistant",
+    type: "assistant",
+    agent: "build",
+    model: { id: "test", providerID: "test" },
+    content: [{ type: "text", text }],
     time: { created: 1 },
   } as unknown as Message
 }
 
 describe("estimateSessionContextBreakdown", () => {
   test("estimates tokens and keeps remaining tokens as other", () => {
-    const messages = [user("u1"), assistant("a1")]
-    const parts = {
-      u1: [{ type: "text", text: "hello world" }] as unknown as Part[],
-      a1: [{ type: "text", text: "assistant response" }] as unknown as Part[],
-    }
+    const messages = [user("u1", "hello world"), assistant("a1", "assistant response")]
 
     const output = estimateSessionContextBreakdown({
       messages,
-      parts,
       input: 20,
       systemPrompt: "system prompt",
     })
@@ -41,15 +40,10 @@ describe("estimateSessionContextBreakdown", () => {
   })
 
   test("scales segments when estimates exceed input", () => {
-    const messages = [user("u1"), assistant("a1")]
-    const parts = {
-      u1: [{ type: "text", text: "x".repeat(400) }] as unknown as Part[],
-      a1: [{ type: "text", text: "y".repeat(400) }] as unknown as Part[],
-    }
+    const messages = [user("u1", "x".repeat(400)), assistant("a1", "y".repeat(400))]
 
     const output = estimateSessionContextBreakdown({
       messages,
-      parts,
       input: 10,
       systemPrompt: "z".repeat(200),
     })

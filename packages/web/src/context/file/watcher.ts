@@ -1,11 +1,11 @@
-import type { FileNode, V2Event } from "@/types/opencode"
+import type { FileSystemEntry, V2Event } from "@opencode-ai/client"
 
 type WatcherOps = {
   normalize: (input: string) => string
   hasFile: (path: string) => boolean
   isOpen?: (path: string) => boolean
   loadFile: (path: string) => void
-  node: (path: string) => FileNode | undefined
+  node: (path: string) => FileSystemEntry | undefined
   isDirLoaded: (path: string) => boolean
   refreshDir: (path: string) => void
 }

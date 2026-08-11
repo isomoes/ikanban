@@ -1,14 +1,7 @@
 import { Binary } from "@/utils/binary"
 import { produce, reconcile, type SetStoreFunction, type Store } from "solid-js/store"
-import type {
-  Message,
-  Part,
-  PermissionRequest,
-  Project,
-  Session,
-  Todo,
-  V2Event,
-} from "@/types/opencode"
+import type { PermissionRequest, Project, SessionInfo, SessionMessageInfo, V2Event } from "@opencode-ai/client"
+import type { TodoItem } from "@/types/app"
 import type { State, VcsCache } from "./types"
 import { trimSessions } from "./session-trim"
 
@@ -18,7 +11,7 @@ function cleanupSessionCaches(
   store: Store<State>,
   setStore: SetStoreFunction<State>,
   sessionID: string,
-  setSessionTodo?: (sessionID: string, todos: Todo[] | undefined) => void,
+  setSessionTodo?: (sessionID: string, todos: TodoItem[] | undefined) => void,
 ) {
   if (!sessionID) return
   const hasAny =
@@ -32,7 +25,6 @@ function cleanupSessionCaches(
   if (!hasAny) return
   setStore(
     produce((draft) => {
-      for (const message of draft.message[sessionID] ?? []) delete draft.part[message.id]
       delete draft.message[sessionID]
       delete draft.session_diff[sessionID]
       delete draft.todo[sessionID]
@@ -43,96 +35,83 @@ function cleanupSessionCaches(
   )
 }
 
-function createdSession(event: Extract<V2Event, { type: "session.created" }>): Session {
+function createdSession(event: Extract<V2Event, { type: "session.created" }>): SessionInfo {
   const data = event.data
   return {
     id: data.sessionID,
-    slug: data.slug,
     projectID: data.projectID,
-    workspaceID: data.location.workspaceID,
-    directory: data.location.directory,
-    path: data.subpath,
+    location: data.location,
+    subpath: data.subpath,
     parentID: data.parentID,
-    title: data.title ?? data.slug,
+    title: data.title,
     agent: data.agent,
     model: data.model,
-    version: data.version,
+    cost: 0,
+    tokens: emptyTokens(),
     time: { created: event.created, updated: event.created },
   }
 }
 
-function nativePermission(data: Extract<V2Event, { type: "permission.asked" }>["data"]): PermissionRequest {
-  return {
-    id: data.id,
-    sessionID: data.sessionID,
-    permission: data.action,
-    patterns: data.resources,
-    metadata: data.metadata ?? {},
-    always: data.save ?? [],
-    tool: data.source && { messageID: data.source.messageID, callID: data.source.id },
-  }
-}
-
-function upsertMessage(store: Store<State>, setStore: SetStoreFunction<State>, message: Message) {
-  const messages = store.message[message.sessionID]
+function upsertMessage(store: Store<State>, setStore: SetStoreFunction<State>, sessionID: string, message: SessionMessageInfo) {
+  const messages = store.message[sessionID]
   if (!messages) {
-    setStore("message", message.sessionID, [message])
+    setStore("message", sessionID, [message])
     return
   }
   const result = Binary.search(messages, message.id, (item) => item.id)
   if (result.found) {
-    setStore("message", message.sessionID, result.index, reconcile(message))
+    setStore("message", sessionID, result.index, reconcile(message))
     return
   }
   setStore(
     "message",
-    message.sessionID,
+    sessionID,
     produce((draft) => void draft.splice(result.index, 0, message)),
   )
 }
 
-function upsertPart(store: Store<State>, setStore: SetStoreFunction<State>, part: Part) {
-  const parts = store.part[part.messageID]
-  if (!parts) {
-    setStore("part", part.messageID, [part])
-    return
-  }
-  const result = Binary.search(parts, part.id, (item) => item.id)
-  if (result.found) {
-    setStore("part", part.messageID, result.index, reconcile(part))
-    return
-  }
-  setStore(
-    "part",
-    part.messageID,
-    produce((draft) => void draft.splice(result.index, 0, part)),
-  )
-}
+type AssistantMessage = Extract<SessionMessageInfo, { type: "assistant" }>
+type AssistantContent = AssistantMessage["content"][number]
 
-function updatePart(
+function updateAssistant(
   store: Store<State>,
   setStore: SetStoreFunction<State>,
+  sessionID: string,
   messageID: string,
-  partID: string,
-  update: (part: Part) => Part,
+  update: (message: AssistantMessage) => AssistantMessage,
 ) {
-  const parts = store.part[messageID]
-  if (!parts) return
-  const result = Binary.search(parts, partID, (part) => part.id)
-  if (!result.found) return
-  setStore("part", messageID, result.index, reconcile(update(parts[result.index]!)))
+  const messages = store.message[sessionID]
+  const index = messages?.findIndex((message) => message.id === messageID) ?? -1
+  if (!messages || index < 0) return
+  const message = messages[index]
+  if (message?.type !== "assistant") return
+  setStore("message", sessionID, index, reconcile(update(message)))
 }
 
-function textPartID(messageID: string, type: "text" | "reasoning", ordinal: number) {
-  return `${messageID}:${type}:${ordinal}`
+function updateTextContent(
+  message: AssistantMessage,
+  type: "text" | "reasoning",
+  ordinal: number,
+  update: (content: Extract<AssistantContent, { type: typeof type }> | undefined) => Extract<AssistantContent, { type: typeof type }>,
+) {
+  const content = message.content.slice()
+  const matches = content.flatMap((item, index) => item.type === type ? [index] : [])
+  const index = matches[ordinal]
+  if (index === undefined) content.push(update(undefined))
+  if (index !== undefined) content[index] = update(content[index] as Extract<AssistantContent, { type: typeof type }>)
+  return { ...message, content }
 }
 
-function toolPartID(messageID: string, id: string) {
-  return `${messageID}:tool:${id}`
-}
-
-function structuredError(error: { type: string; message: string; status?: number }) {
-  return { name: error.type, data: { message: error.message, status: error.status } }
+function updateToolContent(
+  message: AssistantMessage,
+  id: string,
+  update: (content: Extract<AssistantContent, { type: "tool" }> | undefined) => Extract<AssistantContent, { type: "tool" }>,
+) {
+  const content = message.content.slice()
+  const index = content.findIndex((item) => item.type === "tool" && item.id === id)
+  if (index < 0) content.push(update(undefined))
+  if (index >= 0) content[index] = update(content[index] as Extract<AssistantContent, { type: "tool" }>)
+  return { ...message, content }
 }
 
 export function applyGlobalEvent(input: {
@@ -158,7 +137,7 @@ export function applyDirectoryEvent(input: {
   push: (directory: string) => void
   directory: string
   vcsCache?: VcsCache
-  setSessionTodo?: (sessionID: string, todos: Todo[] | undefined) => void
+  setSessionTodo?: (sessionID: string, todos: TodoItem[] | undefined) => void
 }) {
   const event = input.event
   switch (event.type) {
@@ -226,10 +205,9 @@ export function applyDirectoryEvent(input: {
       }
       input.setStore("session", result.index, (session) => ({
         ...session,
-        directory: event.data.location.directory,
-        workspaceID: event.data.location.workspaceID,
+        location: event.data.location,
         projectID: event.data.projectID ?? session.projectID,
-        path: event.data.subpath,
+        subpath: event.data.subpath,
         time: { ...session.time, updated: event.created },
       }))
       return
@@ -249,41 +227,29 @@ export function applyDirectoryEvent(input: {
     }
     case "session.input.admitted": {
       if (event.data.input.type !== "user") return
-      upsertMessage(input.store, input.setStore, {
+      upsertMessage(input.store, input.setStore, event.data.sessionID, {
         id: event.data.inputID,
-        sessionID: event.data.sessionID,
-        role: "user",
+        type: "user",
         time: { created: event.created },
-        agent: "",
-        model: { providerID: "", modelID: "" },
-      })
-      upsertPart(input.store, input.setStore, {
-        id: `${event.data.inputID}:text`,
-        sessionID: event.data.sessionID,
-        messageID: event.data.inputID,
-        type: "text",
         text: event.data.input.data.text,
+        files: event.data.input.data.files,
+        agents: event.data.input.data.agents,
+        skills: event.data.input.data.skills,
         metadata: event.data.input.data.metadata,
       })
       return
     }
     case "session.step.started": {
       const messages = input.store.message[event.data.sessionID] ?? []
-      const parent = [...messages].reverse().find((message) => message.role === "user")
-      upsertMessage(input.store, input.setStore, {
+      upsertMessage(input.store, input.setStore, event.data.sessionID, {
         id: event.data.assistantMessageID,
-        sessionID: event.data.sessionID,
-        role: "assistant",
+        type: "assistant",
         time: { created: event.created },
-        parentID: parent?.id ?? "",
-        modelID: event.data.model.id,
-        providerID: event.data.model.providerID,
-        mode: event.data.agent,
         agent: event.data.agent,
-        path: { cwd: input.directory, root: input.directory },
+        model: event.data.model,
+        content: [],
         cost: 0,
         tokens: emptyTokens(),
-        variant: event.data.model.variant,
       })
       return
     }
@@ -292,11 +258,11 @@ export function applyDirectoryEvent(input: {
       const index = messages?.findIndex((message) => message.id === event.data.assistantMessageID) ?? -1
       if (index < 0) return
       input.setStore("message", event.data.sessionID, index, (message) =>
-        message.role === "assistant"
+        message.type === "assistant"
           ? {
               ...message,
               time: { ...message.time, completed: event.created },
-              finish: event.data.finish,
+              finish: event.data.finish as Extract<SessionMessageInfo, { type: "assistant" }>["finish"],
               cost: event.data.cost,
               tokens: event.data.tokens,
             }
@@ -310,11 +276,11 @@ export function applyDirectoryEvent(input: {
       const messageID = event.type === "session.step.failed" ? event.data.assistantMessageID : undefined
       const index = messageID
         ? (messages?.findIndex((message) => message.id === messageID) ?? -1)
-        : (messages?.findLastIndex((message) => message.role === "assistant") ?? -1)
+        : (messages?.findLastIndex((message) => message.type === "assistant") ?? -1)
       if (!messages || index < 0) return
       input.setStore("message", event.data.sessionID, index, (message) =>
-        message.role === "assistant"
-          ? { ...message, time: { ...message.time, completed: event.created }, error: structuredError(event.data.error) }
+        message.type === "assistant"
+          ? { ...message, time: { ...message.time, completed: event.created }, error: event.data.error }
           : message,
       )
       return
@@ -322,173 +288,124 @@ export function applyDirectoryEvent(input: {
     case "session.text.started":
     case "session.reasoning.started": {
       const type = event.type === "session.text.started" ? "text" : "reasoning"
-      const id = textPartID(event.data.assistantMessageID, type, event.data.ordinal)
-      const base = {
-        id,
-        sessionID: event.data.sessionID,
-        messageID: event.data.assistantMessageID,
-        type,
-        text: "",
-      } as Part
-      upsertPart(
-        input.store,
-        input.setStore,
-        type === "reasoning"
-          ? {
-              ...base,
-              time: { start: event.created },
-              metadata: event.type === "session.reasoning.started" ? event.data.state : undefined,
-            } as Part
-          : base,
+      updateAssistant(input.store, input.setStore, event.data.sessionID, event.data.assistantMessageID, (message) =>
+        updateTextContent(message, type, event.data.ordinal, () =>
+          event.type === "session.reasoning.started"
+            ? { type: "reasoning", text: "", state: event.data.state, time: { created: event.created } }
+            : { type, text: "" },
+        ),
       )
       return
     }
     case "session.text.delta":
     case "session.reasoning.delta": {
       const type = event.type === "session.text.delta" ? "text" : "reasoning"
-      const id = textPartID(event.data.assistantMessageID, type, event.data.ordinal)
-      const parts = input.store.part[event.data.assistantMessageID]
-      if (!parts?.some((part) => part.id === id)) {
-        upsertPart(input.store, input.setStore, {
-          id,
-          sessionID: event.data.sessionID,
-          messageID: event.data.assistantMessageID,
-          type,
-          text: "",
-          ...(type === "reasoning" ? { time: { start: event.created } } : {}),
-        } as Part)
-      }
-      updatePart(input.store, input.setStore, event.data.assistantMessageID, id, (part) =>
-        part.type === type ? { ...part, text: part.text + event.data.delta } : part,
+      updateAssistant(input.store, input.setStore, event.data.sessionID, event.data.assistantMessageID, (message) =>
+        updateTextContent(message, type, event.data.ordinal, (content) => ({
+          ...(content ?? (type === "reasoning" ? { type, time: { created: event.created } } : { type })),
+          text: (content?.text ?? "") + event.data.delta,
+        })),
       )
       return
     }
     case "session.text.ended":
     case "session.reasoning.ended": {
       const type = event.type === "session.text.ended" ? "text" : "reasoning"
-      const id = textPartID(event.data.assistantMessageID, type, event.data.ordinal)
-      const previous = input.store.part[event.data.assistantMessageID]?.find((part) => part.id === id)
-      const base = {
-        id,
-        sessionID: event.data.sessionID,
-        messageID: event.data.assistantMessageID,
-        type,
-        text: event.data.text,
-        metadata: event.data.state,
-      } as Part
-      upsertPart(
-        input.store,
-        input.setStore,
-        type === "reasoning"
-          ? ({
-              ...base,
-              time: { start: previous?.type === "reasoning" ? previous.time.start : event.created, end: event.created },
-            } as Part)
-          : base,
+      updateAssistant(input.store, input.setStore, event.data.sessionID, event.data.assistantMessageID, (message) =>
+        updateTextContent(message, type, event.data.ordinal, (content) =>
+          type === "reasoning"
+            ? {
+                type,
+                text: event.data.text,
+                state: event.data.state,
+                time: { created: content?.type === "reasoning" ? (content.time?.created ?? event.created) : event.created, completed: event.created },
+              }
+            : { type, text: event.data.text, state: event.data.state },
+        ),
       )
       return
     }
     case "session.tool.input.started": {
-      upsertPart(input.store, input.setStore, {
-        id: toolPartID(event.data.assistantMessageID, event.data.id),
-        sessionID: event.data.sessionID,
-        messageID: event.data.assistantMessageID,
-        type: "tool",
-        callID: event.data.id,
-        tool: event.data.name,
-        state: { status: "pending", input: {}, raw: "" },
-      })
+      updateAssistant(input.store, input.setStore, event.data.sessionID, event.data.assistantMessageID, (message) =>
+        updateToolContent(message, event.data.id, () => ({
+          type: "tool",
+          id: event.data.id,
+          name: event.data.name,
+          state: { status: "streaming", input: "" },
+          time: { created: event.created },
+        })),
+      )
       return
     }
     case "session.tool.input.delta": {
-      updatePart(
-        input.store,
-        input.setStore,
-        event.data.assistantMessageID,
-        toolPartID(event.data.assistantMessageID, event.data.id),
-        (part) =>
-          part.type === "tool" && part.state.status === "pending"
-            ? { ...part, state: { ...part.state, raw: part.state.raw + event.data.delta } }
-            : part,
+      updateAssistant(input.store, input.setStore, event.data.sessionID, event.data.assistantMessageID, (message) =>
+        updateToolContent(message, event.data.id, (content) => ({
+          ...(content ?? { type: "tool", id: event.data.id, name: "tool", time: { created: event.created } }),
+          state: {
+            status: "streaming",
+            input: (content?.state.status === "streaming" ? content.state.input : "") + event.data.delta,
+          },
+        })),
       )
       return
     }
     case "session.tool.called": {
-      updatePart(
-        input.store,
-        input.setStore,
-        event.data.assistantMessageID,
-        toolPartID(event.data.assistantMessageID, event.data.id),
-        (part) =>
-          part.type === "tool"
-            ? {
-                ...part,
-                state: { status: "running", input: event.data.input, metadata: {}, time: { start: event.created } },
-              }
-            : part,
+      updateAssistant(input.store, input.setStore, event.data.sessionID, event.data.assistantMessageID, (message) =>
+        updateToolContent(message, event.data.id, (content) => ({
+          ...(content ?? { type: "tool", id: event.data.id, name: "tool", time: { created: event.created } }),
+          executed: event.data.executed,
+          state: { status: "running", input: event.data.input, metadata: {} },
+          time: { ...(content?.time ?? { created: event.created }), ran: event.created },
+        })),
       )
       return
     }
     case "session.tool.progress": {
-      updatePart(
-        input.store,
-        input.setStore,
-        event.data.assistantMessageID,
-        toolPartID(event.data.assistantMessageID, event.data.id),
-        (part) =>
-          part.type === "tool" && part.state.status === "running"
-            ? { ...part, state: { ...part.state, metadata: event.data.metadata } }
-            : part,
+      updateAssistant(input.store, input.setStore, event.data.sessionID, event.data.assistantMessageID, (message) =>
+        updateToolContent(message, event.data.id, (content) => content
+          ? { ...content, state: content.state.status === "running" ? { ...content.state, metadata: event.data.metadata } : content.state }
+          : {
+              type: "tool",
+              id: event.data.id,
+              name: "tool",
+              state: { status: "running", input: {}, metadata: event.data.metadata },
+              time: { created: event.created, ran: event.created },
+            }),
       )
       return
     }
     case "session.tool.success":
     case "session.tool.failed": {
-      updatePart(
-        input.store,
-        input.setStore,
-        event.data.assistantMessageID,
-        toolPartID(event.data.assistantMessageID, event.data.id),
-        (part) => {
-          if (part.type !== "tool") return part
-          const inputValue = part.state.input
-          const start = "time" in part.state ? part.state.time.start : event.created
-          if (event.type === "session.tool.failed") {
-            return {
-              ...part,
-              state: {
-                status: "error",
-                input: inputValue,
-                error: event.data.error.message,
-                metadata: event.data.metadata,
-                time: { start, end: event.created },
-              },
-            }
-          }
-          return {
-            ...part,
-            state: {
-              status: "completed",
-              input: inputValue,
-              output: event.data.content.flatMap((content) => (content.type === "text" ? [content.text] : [])).join("\n"),
-              title: part.tool,
-              metadata: event.data.metadata ?? {},
-              time: { start, end: event.created },
-            },
-          }
-        },
+      updateAssistant(input.store, input.setStore, event.data.sessionID, event.data.assistantMessageID, (message) =>
+        updateToolContent(message, event.data.id, (content) => {
+          const base = content ?? { type: "tool" as const, id: event.data.id, name: "tool", time: { created: event.created } }
+          const toolInput = content && content.state.status !== "streaming" ? content.state.input : {}
+          return event.type === "session.tool.failed"
+            ? {
+                ...base,
+                executed: event.data.executed,
+                state: { status: "error", input: toolInput, error: event.data.error, metadata: event.data.metadata },
+                time: { ...base.time, completed: event.created },
+              }
+            : {
+                ...base,
+                executed: event.data.executed,
+                state: { status: "completed", input: toolInput, content: event.data.content, metadata: event.data.metadata },
+                time: { ...base.time, completed: event.created },
+              }
+        }),
       )
       return
     }
     case "vcs.branch.updated": {
-      if (input.store.vcs?.branch === event.data.branch) return
-      const next = { ...input.store.vcs, branch: event.data.branch }
+      if (input.store.vcs?.branch.current === event.data.branch) return
+      const next = { branch: { ...input.store.vcs?.branch, current: event.data.branch } }
       input.setStore("vcs", next)
       input.vcsCache?.setStore("value", next)
       return
     }
     case "permission.asked": {
-      const permission = nativePermission(event.data)
+      const permission: PermissionRequest = event.data
       const permissions = input.store.permission[permission.sessionID]
       if (!permissions) {
         input.setStore("permission", permission.sessionID, [permission])

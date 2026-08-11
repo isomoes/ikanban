@@ -25,8 +25,7 @@ import { Tooltip, TooltipKeybind } from "@/ui/components/tooltip"
 import { DropdownMenu } from "@/ui/components/dropdown-menu"
 import { Dialog } from "@/ui/components/dialog"
 import { getFilename } from "@/utils/path"
-import { Session, type Message, type Part, type PermissionRequest } from "@/types/opencode"
-import type { SessionInfo, SessionMessageInfo } from "@opencode-ai/client"
+import type { PermissionRequest, SessionInfo, SessionMessageInfo } from "@opencode-ai/client"
 import { usePlatform } from "@/context/platform"
 import { useSettings } from "@/context/settings"
 import { createStore, produce, reconcile } from "solid-js/store"
@@ -76,199 +75,6 @@ import {
 import { workspaceOpenState } from "./layout/sidebar-workspace-helpers"
 import { ProjectDragOverlay, SortableProject, type ProjectSidebarContext } from "./layout/sidebar-project"
 import { SidebarContent } from "./layout/sidebar-shell"
-
-const emptyTokens = () => ({ input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } })
-
-function toSession(info: SessionInfo): Session {
-  return {
-    id: info.id,
-    slug: info.id,
-    projectID: info.projectID,
-    workspaceID: info.location.workspaceID,
-    directory: info.location.directory,
-    parentID: info.parentID,
-    title: info.title ?? "",
-    agent: info.agent,
-    model: info.model && { id: info.model.id, providerID: info.model.providerID, variant: info.model.variant },
-    version: "",
-    cost: info.cost,
-    tokens: info.tokens,
-    time: info.time,
-    revert: info.revert && {
-      messageID: info.revert.messageID,
-      partID: info.revert.partID,
-      snapshot: info.revert.snapshot,
-    },
-  }
-}
-
-function toMessages(items: SessionMessageInfo[], sessionID: string, directory: string) {
-  const messages: Message[] = []
-  const parts: Array<{ id: string; part: Part[] }> = []
-  const users = new Map<string, Extract<Message, { role: "user" }>>()
-  let parentID = ""
-
-  for (const item of [...items].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))) {
-    if (item.type === "user") {
-      parentID = item.id
-      const message: Message = {
-        id: item.id,
-        sessionID,
-        role: "user",
-        time: item.time,
-        agent: "",
-        model: { providerID: "", modelID: "" },
-      }
-      users.set(item.id, message)
-      const next: Part[] = [
-        {
-          id: `${item.id}:text`,
-          sessionID,
-          messageID: item.id,
-          type: "text",
-          text: item.text,
-          metadata: item.metadata,
-        },
-      ]
-      for (const [index, file] of (item.files ?? []).entries()) {
-        next.push({
-          id: `${item.id}:file:${index}`,
-          sessionID,
-          messageID: item.id,
-          type: "file",
-          mime: file.mime,
-          filename: file.name,
-          url: file.source.type === "uri" ? file.source.uri : `data:${file.mime};base64,${file.data}`,
-          source: file.mention
-            ? {
-                type: "file",
-                text: { value: file.mention.text, start: file.mention.start, end: file.mention.end },
-              }
-            : undefined,
-        })
-      }
-      for (const [index, agent] of (item.agents ?? []).entries()) {
-        next.push({
-          id: `${item.id}:agent:${index}`,
-          sessionID,
-          messageID: item.id,
-          type: "agent",
-          name: agent.name,
-          source: agent.mention
-            ? { value: agent.mention.text, start: agent.mention.start, end: agent.mention.end }
-            : undefined,
-        })
-      }
-      messages.push(message)
-      parts.push({ id: item.id, part: next })
-      continue
-    }
-
-    if (item.type !== "assistant") continue
-    const parent = users.get(parentID)
-    if (parent) {
-      parent.agent = item.agent
-      parent.model = {
-        providerID: item.model.providerID,
-        modelID: item.model.id,
-        variant: item.model.variant,
-      }
-    }
-    const message: Message = {
-      id: item.id,
-      sessionID,
-      role: "assistant",
-      time: item.time,
-      parentID,
-      modelID: item.model.id,
-      providerID: item.model.providerID,
-      mode: item.agent,
-      agent: item.agent,
-      path: { cwd: directory, root: directory },
-      cost: item.cost ?? 0,
-      tokens: item.tokens ?? emptyTokens(),
-      variant: item.model.variant,
-      finish: item.finish,
-      error: item.error
-        ? { name: item.error.type, data: { message: item.error.message, status: item.error.status } }
-        : undefined,
-    }
-    const next = item.content.map((content, index): Part => {
-      const id = `${item.id}:${content.type}:${"id" in content ? content.id : index}`
-      if (content.type === "text") {
-        return { id, sessionID, messageID: item.id, type: "text", text: content.text, metadata: content.state }
-      }
-      if (content.type === "reasoning") {
-        return {
-          id,
-          sessionID,
-          messageID: item.id,
-          type: "reasoning",
-          text: content.text,
-          metadata: content.state,
-          time: { start: content.time?.created ?? item.time.created, end: content.time?.completed },
-        }
-      }
-
-      const start = content.time.ran ?? content.time.created
-      const attachments =
-        content.state.status === "completed"
-          ? content.state.content.flatMap((value, attachmentIndex) =>
-              value.type === "file"
-                ? [
-                    {
-                      id: `${id}:attachment:${attachmentIndex}`,
-                      sessionID,
-                      messageID: item.id,
-                      type: "file" as const,
-                      mime: value.mime,
-                      filename: value.name ?? undefined,
-                      url: value.uri,
-                    },
-                  ]
-                : [],
-            )
-          : undefined
-      const state: Extract<Part, { type: "tool" }>["state"] =
-        content.state.status === "streaming"
-          ? { status: "pending", input: {}, raw: content.state.input }
-          : content.state.status === "running"
-            ? { status: "running", input: content.state.input, metadata: content.state.metadata, time: { start } }
-            : content.state.status === "completed"
-              ? {
-                  status: "completed",
-                  input: content.state.input,
-                  output: content.state.content
-                    .flatMap((value) => (value.type === "text" ? [value.text] : []))
-                    .join("\n"),
-                  title: content.name,
-                  metadata: content.state.metadata ?? {},
-                  time: { start, end: content.time.completed ?? start },
-                  attachments,
-                }
-              : {
-                  status: "error",
-                  input: content.state.input,
-                  error: content.state.error.message,
-                  metadata: content.state.metadata,
-                  time: { start, end: content.time.completed ?? start },
-                }
-      return {
-        id,
-        sessionID,
-        messageID: item.id,
-        type: "tool",
-        callID: content.id,
-        tool: content.name,
-        state,
-      }
-    })
-    messages.push(message)
-    parts.push({ id: item.id, part: next })
-  }
-
-  return { messages, parts }
-}
 
 export default function Layout(props: ParentProps) {
   const [store, setStore, , ready] = persisted(
@@ -382,7 +188,7 @@ export default function Layout(props: ParentProps) {
   const hoverProjectData = createMemo(() => {
     const id = state.hoverProject
     if (!id) return
-    return layout.projects.list().find((project) => project.worktree === id)
+    return layout.projects.list().find((project) => project.canonical === id)
   })
 
   createEffect(() => {
@@ -489,15 +295,7 @@ export default function Layout(props: ParentProps) {
         const directory = e.name
         const props = event.data
         if (event.type === "permission.asked") {
-          const request: PermissionRequest = {
-            id: event.data.id,
-            sessionID: event.data.sessionID,
-            permission: event.data.action,
-            patterns: event.data.resources,
-            metadata: event.data.metadata ?? {},
-            always: event.data.save ?? [],
-            tool: event.data.source && { messageID: event.data.source.messageID, callID: event.data.source.id },
-          }
+          const request: PermissionRequest = event.data
           if (permission.autoResponds(request, directory)) return
         }
 
@@ -598,7 +396,7 @@ export default function Layout(props: ParentProps) {
     const sandbox = projects.find((p) => p.sandboxes?.includes(directory))
     if (sandbox) return sandbox
 
-    const direct = projects.find((p) => p.worktree === directory)
+    const direct = projects.find((p) => p.canonical === directory)
     if (direct) return direct
 
     const [child] = globalSync.child(directory, { bootstrap: false })
@@ -606,10 +404,10 @@ export default function Layout(props: ParentProps) {
     if (!id) return
 
     const meta = globalSync.data.project.find((p) => p.id === id)
-    const root = meta?.worktree
+    const root = meta?.canonical
     if (!root) return
 
-    return projects.find((p) => p.worktree === root)
+    return projects.find((p) => p.canonical === root)
   })
 
   const workspaceName = (directory: string, projectId?: string, branch?: string) => {
@@ -639,17 +437,17 @@ export default function Layout(props: ParentProps) {
     const project = currentProject()
     if (!project) return false
     if (project.vcs !== "git") return false
-    return layout.sidebar.workspaces(project.worktree)()
+    return layout.sidebar.workspaces(project.canonical)()
   })
 
   const visibleSessionDirs = createMemo(() => {
     const project = currentProject()
     if (!project) return [] as string[]
-    if (!workspaceSetting()) return [project.worktree]
+    if (!workspaceSetting()) return [project.canonical]
 
     const activeDir = currentDir()
     return workspaceIds(project).filter((directory) => {
-      const expanded = store.workspaceExpanded[directory] ?? directory === project.worktree
+      const expanded = store.workspaceExpanded[directory] ?? directory === project.canonical
       const active = directory === activeDir
       return expanded || active
     })
@@ -661,9 +459,9 @@ export default function Layout(props: ParentProps) {
     const projects = layout.projects.list()
     for (const [directory, expanded] of Object.entries(store.workspaceExpanded)) {
       if (!expanded) continue
-      const project = projects.find((item) => item.worktree === directory || item.sandboxes?.includes(directory))
+      const project = projects.find((item) => item.canonical === directory || item.sandboxes?.includes(directory))
       if (!project) continue
-      if (project.vcs === "git" && layout.sidebar.workspaces(project.worktree)()) continue
+      if (project.vcs === "git" && layout.sidebar.workspaces(project.canonical)()) continue
       setStore("workspaceExpanded", directory, false)
     }
   })
@@ -671,9 +469,9 @@ export default function Layout(props: ParentProps) {
   const currentSessions = createMemo(() => {
     const now = Date.now()
     const dirs = visibleSessionDirs()
-    if (dirs.length === 0) return [] as Session[]
+    if (dirs.length === 0) return [] as SessionInfo[]
 
-    const result: Session[] = []
+    const result: SessionInfo[] = []
     for (const dir of dirs) {
       const [dirStore] = globalSync.child(dir, { bootstrap: true })
       const dirSessions = sortedRootSessions(dirStore, now)
@@ -764,27 +562,17 @@ export default function Layout(props: ParentProps) {
       .then((response) => {
         if (prefetchToken.value !== token) return
 
-        const converted = toMessages(response.data, sessionID, directory)
-        const sorted = mergeByID([], converted.messages)
+        const sorted = mergeByID([], response.data)
 
         const current = store.message[sessionID] ?? []
         const merged = mergeByID(
-          current.filter((item): item is Message => !!item?.id),
+          current.filter((item): item is SessionMessageInfo => !!item?.id),
           sorted,
         )
 
         batch(() => {
           setStore("message", sessionID, reconcile(merged, { key: "id" }))
 
-          for (const message of converted.parts) {
-            const currentParts = store.part[message.id] ?? []
-            const mergedParts = mergeByID(
-              currentParts.filter((item): item is (typeof currentParts)[number] & { id: string } => !!item?.id),
-              message.part.filter((item): item is (typeof message.part)[number] & { id: string } => !!item?.id),
-            )
-
-            setStore("part", message.id, reconcile(mergedParts, { key: "id" }))
-          }
         })
       })
       .catch(() => undefined)
@@ -810,8 +598,8 @@ export default function Layout(props: ParentProps) {
     })
   }
 
-  const prefetchSession = (session: Session, priority: "high" | "low" = "low") => {
-    const directory = session.directory
+  const prefetchSession = (session: SessionInfo, priority: "high" | "low" = "low") => {
+    const directory = session.location.directory
     if (!directory) return
 
     const [store] = globalSync.child(directory, { bootstrap: false })
@@ -931,14 +719,14 @@ export default function Layout(props: ParentProps) {
     }
   }
 
-  async function archiveSession(session: Session) {
-    const [store] = globalSync.child(session.directory)
+  async function archiveSession(session: SessionInfo) {
+    const [store] = globalSync.child(session.location.directory)
     const sessions = store.session ?? []
     const visibleSessions = sessions.filter((item) => !item.time.archived)
     const index = visibleSessions.findIndex((s) => s.id === session.id)
     const nextSession = index === -1 ? undefined : (visibleSessions[index + 1] ?? visibleSessions[index - 1])
 
-    await globalSync.project.archiveSession(session.directory, session.id)
+    await globalSync.project.archiveSession(session.location.directory, session.id)
     if (session.id === params.id) {
       if (nextSession) {
         navigate(`/${params.dir}/${nextSession.id}`)
@@ -974,7 +762,7 @@ export default function Layout(props: ParentProps) {
         onSelect: () => {
           const project = currentProject()
           if (!project) return
-          closeProject(project.worktree)
+          closeProject(project.canonical)
         },
       },
       {
@@ -1054,8 +842,8 @@ export default function Layout(props: ParentProps) {
           const project = currentProject()
           if (!project) return
           if (project.vcs !== "git") return
-          const wasEnabled = layout.sidebar.workspaces(project.worktree)()
-          layout.sidebar.toggleWorkspaces(project.worktree)
+          const wasEnabled = layout.sidebar.workspaces(project.canonical)()
+          layout.sidebar.toggleWorkspaces(project.canonical)
           showToast({
             title: wasEnabled
               ? language.t("toast.workspace.disabled.title")
@@ -1143,8 +931,8 @@ export default function Layout(props: ParentProps) {
   function projectRoot(directory: string) {
     const project = layout.projects
       .list()
-      .find((item) => item.worktree === directory || item.sandboxes?.includes(directory))
-    if (project) return project.worktree
+      .find((item) => item.canonical === directory || item.sandboxes?.includes(directory))
+    if (project) return project.canonical
 
     const known = Object.entries(store.workspaceOrder).find(
       ([root, dirs]) => root === directory || dirs.includes(directory),
@@ -1156,15 +944,15 @@ export default function Layout(props: ParentProps) {
     if (!id) return directory
 
     const meta = globalSync.data.project.find((item) => item.id === id)
-    return meta?.worktree ?? directory
+    return meta?.canonical ?? directory
   }
 
   function activeProjectRoot(directory: string) {
-    return currentProject()?.worktree ?? projectRoot(directory)
+    return currentProject()?.canonical ?? projectRoot(directory)
   }
 
   function touchProjectRoute() {
-    const root = currentProject()?.worktree
+    const root = currentProject()?.canonical
     if (!root) return
     if (server.projects.last() !== root) server.projects.touch(root)
     return root
@@ -1193,9 +981,9 @@ export default function Layout(props: ParentProps) {
     navigateWithSidebarReset(`/${base64Encode(root)}`)
   }
 
-  function navigateToSession(session: Session | undefined) {
+  function navigateToSession(session: SessionInfo | undefined) {
     if (!session) return
-    navigateWithSidebarReset(`/${base64Encode(session.directory)}/${session.id}`)
+    navigateWithSidebarReset(`/${base64Encode(session.location.directory)}/${session.id}`)
   }
 
   function openProject(directory: string, navigate = true) {
@@ -1226,8 +1014,8 @@ export default function Layout(props: ParentProps) {
   function renameProject(project: LocalProject, next: string) {
     const current = displayName(project)
     if (next === current) return
-    const name = next === getFilename(project.worktree) ? "" : next
-    globalSync.project.meta(project.worktree, { name })
+    const name = next === getFilename(project.canonical) ? "" : next
+    globalSync.project.meta(project.canonical, { name })
   }
 
   const renameWorkspace = (directory: string, next: string, projectId?: string, branch?: string) => {
@@ -1238,8 +1026,8 @@ export default function Layout(props: ParentProps) {
 
   function closeProject(directory: string) {
     const list = layout.projects.list()
-    const index = list.findIndex((x) => x.worktree === directory)
-    const active = currentProject()?.worktree === directory
+    const index = list.findIndex((x) => x.canonical === directory)
+    const active = currentProject()?.canonical === directory
     if (index === -1) return
     const next = list[index + 1]
 
@@ -1254,21 +1042,21 @@ export default function Layout(props: ParentProps) {
       return
     }
 
-    navigateWithSidebarReset(`/${base64Encode(next.worktree)}`)
+    navigateWithSidebarReset(`/${base64Encode(next.canonical)}`)
     layout.projects.close(directory)
     queueMicrotask(() => {
-      void navigateToProject(next.worktree)
+      void navigateToProject(next.canonical)
     })
   }
 
   function toggleProjectWorkspaces(project: LocalProject) {
-    const enabled = layout.sidebar.workspaces(project.worktree)()
+    const enabled = layout.sidebar.workspaces(project.canonical)()
     if (enabled) {
-      layout.sidebar.toggleWorkspaces(project.worktree)
+      layout.sidebar.toggleWorkspaces(project.canonical)
       return
     }
     if (project.vcs !== "git") return
-    layout.sidebar.toggleWorkspaces(project.worktree)
+    layout.sidebar.toggleWorkspaces(project.canonical)
   }
 
   const showEditProjectDialog = (project: LocalProject) => dialog.show(() => <DialogEditProject project={project} />)
@@ -1366,13 +1154,13 @@ export default function Layout(props: ParentProps) {
     const [state, setState] = createStore({
       status: "loading" as "loading" | "ready" | "error",
       dirty: false,
-      sessions: [] as Session[],
+      sessions: [] as SessionInfo[],
     })
 
     const refresh = async () => {
       const sessions = await globalSDK.client.session
         .list({ directory: props.directory })
-        .then((x) => x.data.map(toSession))
+        .then((x) => x.data)
         .catch(() => [])
       const active = sessions.filter((session) => !session.time.archived)
       setState({ sessions: active })
@@ -1439,7 +1227,7 @@ export default function Layout(props: ParentProps) {
 
   createEffect(
     on(
-      () => [pageReady(), params.dir, params.id, currentProject()?.worktree] as const,
+      () => [pageReady(), params.dir, params.id, currentProject()?.canonical] as const,
       ([ready, dir, id]) => {
         if (!ready || !dir) {
           activeRoute.session = ""
@@ -1512,8 +1300,8 @@ export default function Layout(props: ParentProps) {
     const { draggable, droppable } = event
     if (draggable && droppable) {
       const projects = layout.projects.list()
-      const fromIndex = projects.findIndex((p) => p.worktree === draggable.id.toString())
-      const toIndex = projects.findIndex((p) => p.worktree === droppable.id.toString())
+      const fromIndex = projects.findIndex((p) => p.canonical === draggable.id.toString())
+      const toIndex = projects.findIndex((p) => p.canonical === droppable.id.toString())
       if (fromIndex !== toIndex && toIndex !== -1) {
         layout.projects.move(draggable.id.toString(), toIndex)
       }
@@ -1526,14 +1314,14 @@ export default function Layout(props: ParentProps) {
 
   function workspaceIds(project: LocalProject | undefined) {
     if (!project) return []
-    const local = project.worktree
+    const local = project.canonical
     const dirs = [local, ...(project.sandboxes ?? [])]
     const active = currentProject()
-    const directory = active?.worktree === project.worktree ? currentDir() : undefined
+    const directory = active?.canonical === project.canonical ? currentDir() : undefined
     const extra = directory && directory !== local && !dirs.includes(directory) ? directory : undefined
     const pending = extra ? WorktreeState.get(extra)?.status === "pending" : false
 
-    const ordered = effectiveWorkspaceOrder(local, dirs, store.workspaceOrder[project.worktree])
+    const ordered = effectiveWorkspaceOrder(local, dirs, store.workspaceOrder[project.canonical])
     if (pending && extra) return [local, extra, ...ordered.filter((item) => item !== local)]
     if (!extra) return ordered
     if (pending) return ordered
@@ -1572,8 +1360,8 @@ export default function Layout(props: ParentProps) {
     result.splice(toIndex, 0, item)
     setStore(
       "workspaceOrder",
-      project.worktree,
-      result.filter((directory) => workspaceKey(directory) !== workspaceKey(project.worktree)),
+      project.canonical,
+      result.filter((directory) => workspaceKey(directory) !== workspaceKey(project.canonical)),
     )
   }
 
@@ -1624,7 +1412,7 @@ export default function Layout(props: ParentProps) {
     closeProject,
     showEditProjectDialog,
     toggleProjectWorkspaces,
-    workspacesEnabled: (project) => project.vcs === "git" && layout.sidebar.workspaces(project.worktree)(),
+    workspacesEnabled: (project) => project.vcs === "git" && layout.sidebar.workspaces(project.canonical)(),
     workspaceIds,
     workspaceLabel,
     sessionProps: {
@@ -1644,7 +1432,7 @@ export default function Layout(props: ParentProps) {
     const projectName = createMemo(() => {
       const project = panelProps.project
       if (!project) return ""
-      return project.name || getFilename(project.worktree)
+      return project.name || getFilename(project.canonical)
     })
     const projectId = createMemo(() => panelProps.project?.id ?? "")
     const workspaces = createMemo(() => workspaceIds(panelProps.project))
@@ -1659,7 +1447,7 @@ export default function Layout(props: ParentProps) {
       const project = panelProps.project
       if (!project) return false
       if (project.vcs !== "git") return false
-      return layout.sidebar.workspaces(project.worktree)()
+      return layout.sidebar.workspaces(project.canonical)()
     })
     const homedir = createMemo(() => globalSync.data.path.home)
 
@@ -1689,7 +1477,7 @@ export default function Layout(props: ParentProps) {
                     <Tooltip
                       placement="bottom"
                       gutter={2}
-                      value={p().worktree}
+                      value={p().canonical}
                       class="shrink-0"
                       contentStyle={{
                         "max-width": "640px",
@@ -1697,7 +1485,7 @@ export default function Layout(props: ParentProps) {
                       }}
                     >
                       <span class="text-12-regular text-text-base truncate select-text">
-                        {p().worktree.replace(homedir(), "~")}
+                        {p().canonical.replace(homedir(), "~")}
                       </span>
                     </Tooltip>
                   </div>
@@ -1708,7 +1496,7 @@ export default function Layout(props: ParentProps) {
                       icon="dot-grid"
                       variant="ghost"
                       data-action="project-menu"
-                      data-project={base64Encode(p().worktree)}
+                      data-project={base64Encode(p().canonical)}
                       class="shrink-0 size-6 rounded-md data-[expanded]:bg-surface-base-active"
                       classList={{
                         "opacity-0 group-hover/project:opacity-100 data-[expanded]:opacity-100": !panelProps.mobile,
@@ -1722,19 +1510,19 @@ export default function Layout(props: ParentProps) {
                         </DropdownMenu.Item>
                         <DropdownMenu.Item
                           data-action="project-workspaces-toggle"
-                          data-project={base64Encode(p().worktree)}
-                          disabled={p().vcs !== "git" && !layout.sidebar.workspaces(p().worktree)()}
+                          data-project={base64Encode(p().canonical)}
+                          disabled={p().vcs !== "git" && !layout.sidebar.workspaces(p().canonical)()}
                           onSelect={() => toggleProjectWorkspaces(p())}
                         >
                           <DropdownMenu.ItemLabel>
-                            {layout.sidebar.workspaces(p().worktree)()
+                            {layout.sidebar.workspaces(p().canonical)()
                               ? language.t("sidebar.workspaces.disable")
                               : language.t("sidebar.workspaces.enable")}
                           </DropdownMenu.ItemLabel>
                         </DropdownMenu.Item>
                         <DropdownMenu.Item
                           data-action="project-clear-notifications"
-                          data-project={base64Encode(p().worktree)}
+                          data-project={base64Encode(p().canonical)}
                           disabled={unseenCount() === 0}
                           onSelect={clearNotifications}
                         >
@@ -1745,8 +1533,8 @@ export default function Layout(props: ParentProps) {
                         <DropdownMenu.Separator />
                         <DropdownMenu.Item
                           data-action="project-close-menu"
-                          data-project={base64Encode(p().worktree)}
-                          onSelect={() => closeProject(p().worktree)}
+                          data-project={base64Encode(p().canonical)}
+                          onSelect={() => closeProject(p().canonical)}
                         >
                           <DropdownMenu.ItemLabel>{language.t("common.close")}</DropdownMenu.ItemLabel>
                         </DropdownMenu.Item>
@@ -1771,7 +1559,7 @@ export default function Layout(props: ParentProps) {
                             size="large"
                             icon="plus-small"
                             class="w-full"
-                            onClick={() => navigateWithSidebarReset(`/${base64Encode(p().worktree)}`)}
+                            onClick={() => navigateWithSidebarReset(`/${base64Encode(p().canonical)}`)}
                           >
                             {language.t("command.session.new")}
                           </Button>

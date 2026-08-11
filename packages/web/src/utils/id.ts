@@ -5,7 +5,6 @@ const prefixes = {
   message: "msg",
   permission: "per",
   user: "usr",
-  part: "prt",
   pty: "pty",
 } as const
 

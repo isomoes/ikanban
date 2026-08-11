@@ -12,7 +12,7 @@ import { StickyAccordionHeader } from "@/ui/components/sticky-accordion-header"
 import { File } from "@/ui/components/file"
 import { Markdown } from "@/ui/components/markdown"
 import { ScrollView } from "@/ui/components/scroll-view"
-import type { Message, Part, UserMessage } from "@/types/opencode"
+import type { SessionMessageInfo as Message, SessionMessageUser as UserMessage } from "@opencode-ai/client"
 import { useLanguage } from "@/context/language"
 import { getSessionContextMetrics } from "./session-context-metrics"
 import { estimateSessionContextBreakdown, type SessionContextBreakdownKey } from "./session-context-breakdown"
@@ -35,12 +35,11 @@ function Stat(props: { label: string; value: JSX.Element }) {
   )
 }
 
-function RawMessageContent(props: { message: Message; getParts: (id: string) => Part[]; onRendered: () => void }) {
+function RawMessageContent(props: { message: Message; onRendered: () => void }) {
   const file = createMemo(() => {
-    const parts = props.getParts(props.message.id)
-    const contents = JSON.stringify({ message: props.message, parts }, null, 2)
+    const contents = JSON.stringify(props.message, null, 2)
     return {
-      name: `${props.message.role}-${props.message.id}.json`,
+      name: `${props.message.type}-${props.message.id}.json`,
       contents,
       cacheKey: checksum(contents),
     }
@@ -59,7 +58,6 @@ function RawMessageContent(props: { message: Message; getParts: (id: string) => 
 
 function RawMessage(props: {
   message: Message
-  getParts: (id: string) => Part[]
   onRendered: () => void
   time: (value: number | undefined) => string
 }) {
@@ -69,7 +67,7 @@ function RawMessage(props: {
         <Accordion.Trigger>
           <div class="flex items-center justify-between gap-2 w-full">
             <div class="min-w-0 truncate">
-              {props.message.role} <span class="text-text-base">• {props.message.id}</span>
+              {props.message.type} <span class="text-text-base">• {props.message.id}</span>
             </div>
             <div class="flex items-center gap-3">
               <div class="shrink-0 text-12-regular text-text-weak">{props.time(props.message.time.created)}</div>
@@ -80,7 +78,7 @@ function RawMessage(props: {
       </StickyAccordionHeader>
       <Accordion.Content class="bg-background-base">
         <div class="p-3">
-          <RawMessageContent message={props.message} getParts={props.getParts} onRendered={props.onRendered} />
+          <RawMessageContent message={props.message} onRendered={props.onRendered} />
         </div>
       </Accordion.Content>
     </Accordion.Item>
@@ -111,7 +109,7 @@ export function SessionContextTab() {
   )
 
   const userMessages = createMemo(
-    () => messages().filter((m) => m.role === "user") as UserMessage[],
+    () => messages().filter((m) => m.type === "user") as UserMessage[],
     emptyUserMessages,
     { equals: same },
   )
@@ -134,7 +132,7 @@ export function SessionContextTab() {
       }),
   )
 
-  const metrics = createMemo(() => getSessionContextMetrics(messages(), sync.data.provider.all))
+    const metrics = createMemo(() => getSessionContextMetrics(messages(), sync.data.provider.providers, sync.data.provider.models))
   const ctx = createMemo(() => metrics().context)
   const formatter = createMemo(() => createSessionContextFormatter(language.locale()))
 
@@ -144,8 +142,8 @@ export function SessionContextTab() {
 
   const counts = createMemo(() => {
     const all = messages()
-    const user = all.reduce((count, x) => count + (x.role === "user" ? 1 : 0), 0)
-    const assistant = all.reduce((count, x) => count + (x.role === "assistant" ? 1 : 0), 0)
+    const user = all.reduce((count, x) => count + (x.type === "user" ? 1 : 0), 0)
+    const assistant = all.reduce((count, x) => count + (x.type === "assistant" ? 1 : 0), 0)
     return {
       all: all.length,
       user,
@@ -154,8 +152,8 @@ export function SessionContextTab() {
   })
 
   const systemPrompt = createMemo(() => {
-    const msg = findLast(visibleUserMessages(), (m) => !!m.system)
-    const system = msg?.system
+    const msg = findLast(messages(), (message) => message.type === "system")
+    const system = msg?.type === "system" ? msg.text : undefined
     if (!system) return
     const trimmed = system.trim()
     if (!trimmed) return
@@ -182,7 +180,6 @@ export function SessionContextTab() {
         if (!c?.input) return []
         return estimateSessionContextBreakdown({
           messages: messages(),
-          parts: sync.data.part as Record<string, Part[] | undefined>,
           input: c.input,
           systemPrompt: systemPrompt(),
         })
@@ -223,7 +220,6 @@ export function SessionContextTab() {
   let scroll: HTMLDivElement | undefined
   let frame: number | undefined
   let pending: { x: number; y: number } | undefined
-  const getParts = (id: string) => (sync.data.part[id] ?? []) as Part[]
 
   const restoreScroll = () => {
     const el = scroll
@@ -332,7 +328,7 @@ export function SessionContextTab() {
           <Accordion multiple>
             <For each={messages()}>
               {(message) => (
-                <RawMessage message={message} getParts={getParts} onRendered={restoreScroll} time={formatter().time} />
+                <RawMessage message={message} onRendered={restoreScroll} time={formatter().time} />
               )}
             </For>
           </Accordion>

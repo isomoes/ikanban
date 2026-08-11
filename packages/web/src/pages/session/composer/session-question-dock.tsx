@@ -4,7 +4,7 @@ import { Button } from "@/ui/components/button"
 import { DockPrompt } from "@/ui/components/dock-prompt"
 import { Icon } from "@/ui/components/icon"
 import { showToast } from "@/ui/components/toast"
-import type { QuestionAnswer, QuestionRequest } from "@/types/opencode"
+import type { QuestionAnswer, QuestionRequest } from "@opencode-ai/client"
 import { useLanguage } from "@/context/language"
 import { useSDK } from "@/context/sdk"
 

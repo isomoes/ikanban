@@ -27,7 +27,7 @@ import { checksum, base64Encode } from "@/utils/encode"
 import { useDialog } from "@/ui/context/dialog"
 import { useLanguage } from "@/context/language"
 import { useNavigate, useParams } from "@solidjs/router"
-import { UserMessage } from "@/types/opencode"
+import type { SessionMessageUser as UserMessage } from "@opencode-ai/client"
 import { snapshotToFileDiff, type FileDiff } from "@/context/file/types"
 import { applyPatchFileDiff, type ApplyPatchFile } from "@/context/file/apply-patch"
 import { useSDK } from "@/context/sdk"
@@ -382,38 +382,27 @@ export default function Page() {
   })
 
   const userMessages = createMemo(
-    () => messages().filter((m) => m.role === "user") as UserMessage[],
+    () => messages().filter((m) => m.type === "user") as UserMessage[],
     emptyUserMessages,
     { equals: same },
   )
   const messagePartDiffs = createMemo(() => {
     const out = new Map<string, FileDiff>()
     for (const message of messages()) {
-      const parts = sync.data.part[message.id] ?? []
-      for (const part of parts) {
-        const tool = part as {
-          type?: string
-          tool?: string
-          metadata?: { filediff?: FileDiff; files?: ApplyPatchFile[] }
-          state?: {
-            input?: {
-              filePath?: string
-              oldString?: string
-              newString?: string
-            }
-          }
-        }
-        if (tool.type !== "tool") continue
-        if (tool.tool === "apply_patch") {
-          for (const file of tool.metadata?.files ?? []) {
+      if (message.type !== "assistant") continue
+      for (const content of message.content) {
+        if (content.type !== "tool" || content.state.status === "streaming") continue
+        const input = content.state.input as { filePath?: string; oldString?: string; newString?: string }
+        const metadata = content.state.metadata as { filediff?: FileDiff; files?: ApplyPatchFile[] }
+        if (content.name === "apply_patch" || content.name === "patch") {
+          for (const file of metadata.files ?? []) {
             const diff = applyPatchFileDiff(file)
             out.set(diff.file, diff)
           }
           continue
         }
-        if (tool.tool !== "edit") continue
-        const input = tool.state?.input
-        const meta = tool.metadata?.filediff
+        if (content.name !== "edit") continue
+        const meta = metadata.filediff
         const file = meta?.file || input?.filePath
         if (!file) continue
         out.set(file, {
@@ -447,8 +436,12 @@ export default function Page() {
       () => {
         const msg = lastUserMessage()
         if (!msg) return
-        if (msg.agent) local.agent.set(msg.agent)
-        if (msg.model) local.model.set(msg.model)
+        const list = messages()
+        const index = list.findIndex((item) => item.id === msg.id)
+        const assistant = list.slice(index + 1).find((item) => item.type === "assistant")
+        if (!assistant) return
+        local.agent.set(assistant.agent)
+        local.model.set({ providerID: assistant.model.providerID, modelID: assistant.model.id })
       },
     ),
   )
@@ -472,7 +465,7 @@ export default function Page() {
     return key
   }, sessionKey())
 
-  const turnDiffs = createMemo(() => (lastUserMessage()?.summary?.diffs ?? []).map(snapshotToFileDiff))
+  const turnDiffs = createMemo<FileDiff[]>(() => [])
   const normalizeDiffPath = (path: string) => {
     const normalized = path.replaceAll("\\", "/")
     const root = sdk.directory.replaceAll("\\", "/").replace(/\/+$/, "")
@@ -528,7 +521,7 @@ export default function Page() {
   const newSessionWorktree = createMemo(() => {
     if (store.newSessionWorktree === "create") return "create"
     const project = sync.project
-    if (project && sdk.directory !== project.worktree) return sdk.directory
+    if (project && sdk.directory !== project.canonical) return sdk.directory
     return "main"
   })
 
@@ -1356,7 +1349,7 @@ export default function Page() {
 
                     setStore("newSessionWorktree", "main")
 
-                    const target = value === "main" ? sync.project?.worktree : value
+                    const target = value === "main" ? sync.project?.canonical : value
                     if (!target) return
                     if (target === sdk.directory) return
                     layout.projects.open(target)

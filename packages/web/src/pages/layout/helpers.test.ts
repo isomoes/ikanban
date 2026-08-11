@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { type Session } from "@/types/opencode"
+import type { SessionInfo as Session } from "@opencode-ai/client"
 import { collectOpenProjectDeepLinks, drainPendingDeepLinks, parseDeepLink } from "./deep-links"
 import {
   displayName,
@@ -11,15 +11,18 @@ import {
   workspaceKey,
 } from "./helpers"
 
-const session = (input: Partial<Session> & Pick<Session, "id" | "directory">) =>
+const session = (input: Partial<Session> & Pick<Session, "id"> & { directory: string }) =>
   ({
-    title: "",
-    version: "v2",
+    projectID: "project",
+    location: { directory: input.directory },
+    cost: 0,
+    tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
     parentID: undefined,
     messageCount: 0,
     permissions: { session: {}, share: {} },
     time: { created: 0, updated: 0, archived: undefined },
     ...input,
+    directory: undefined,
   }) as Session
 
 describe("layout deep links", () => {
@@ -178,8 +181,8 @@ describe("layout workspace helpers", () => {
   })
 
   test("formats fallback project display name", () => {
-    expect(displayName({ worktree: "/tmp/app" })).toBe("app")
-    expect(displayName({ worktree: "/tmp/app", name: "My App" })).toBe("My App")
+    expect(displayName({ canonical: "/tmp/app" })).toBe("app")
+    expect(displayName({ canonical: "/tmp/app", name: "My App" })).toBe("My App")
   })
 
   test("extracts api error message and fallback", () => {

@@ -285,7 +285,7 @@ export function DialogSelectDirectory(props: DialogSelectDirectoryProps) {
 
     for (const project of projects) {
       let at = 0
-      const dirs = [project.worktree, ...(project.sandboxes ?? [])]
+      const dirs = [project.canonical, ...(project.sandboxes ?? [])]
       for (const directory of dirs) {
         const sessions = sync.child(directory, { bootstrap: false })[0].session
         for (const session of sessions) {
@@ -294,16 +294,16 @@ export function DialogSelectDirectory(props: DialogSelectDirectoryProps) {
           if (updated > at) at = updated
         }
       }
-      byProject.set(project.worktree, at)
+      byProject.set(project.canonical, at)
     }
 
     return projects
-      .map((project, index) => ({ project, at: byProject.get(project.worktree) ?? 0, index }))
+      .map((project, index) => ({ project, at: byProject.get(project.canonical) ?? 0, index }))
       .sort((a, b) => b.at - a.at || a.index - b.index)
       .slice(0, 5)
       .map(({ project }) => {
-        const row = toRow(project.worktree, home(), "recent")
-        const name = project.name || getFilename(project.worktree)
+        const row = toRow(project.canonical, home(), "recent")
+        const name = project.name || getFilename(project.canonical)
         return {
           ...row,
           search: `${row.search}\n${name}`,

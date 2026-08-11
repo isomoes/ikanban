@@ -143,11 +143,11 @@ export function SessionHeader() {
   const project = createMemo(() => {
     const directory = projectDirectory()
     if (!directory) return
-    return layout.projects.list().find((p) => p.worktree === directory || p.sandboxes?.includes(directory))
+    return layout.projects.list().find((p) => p.canonical === directory || p.sandboxes?.includes(directory))
   })
   const name = createMemo(() => {
     const current = project()
-    if (current) return current.name || getFilename(current.worktree)
+    if (current) return current.name || getFilename(current.canonical)
     return getFilename(projectDirectory())
   })
   const hotkey = createMemo(() => command.keybind("file.open"))

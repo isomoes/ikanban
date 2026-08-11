@@ -14,7 +14,11 @@ import { MessageNav } from "@/ui/components/message-nav"
 import { Spinner } from "@/ui/components/spinner"
 import { Tooltip } from "@/ui/components/tooltip"
 import { getFilename } from "@/utils/path"
-import { type Message, type Session, type TextPart, type UserMessage } from "@/types/opencode"
+import type {
+  SessionInfo as Session,
+  SessionMessageInfo as Message,
+  SessionMessageUser as UserMessage,
+} from "@opencode-ai/client"
 import { For, Match, Show, Switch, createMemo, onCleanup, type Accessor, type JSX } from "solid-js"
 import { agentColor } from "@/utils/agent"
 import { hasProjectPermissions } from "./helpers"
@@ -27,7 +31,7 @@ export const ProjectIcon = (props: { project: LocalProject; class?: string; noti
   const globalSync = useGlobalSync()
   const notification = useNotification()
   const permission = usePermission()
-  const dirs = createMemo(() => [props.project.worktree, ...(props.project.sandboxes ?? [])])
+  const dirs = createMemo(() => [props.project.canonical, ...(props.project.sandboxes ?? [])])
   const unseenCount = createMemo(() =>
     dirs().reduce((total, directory) => total + notification.project.unseenCount(directory), 0),
   )
@@ -39,7 +43,7 @@ export const ProjectIcon = (props: { project: LocalProject; class?: string; noti
     }),
   )
   const notify = createMemo(() => props.notify && (hasPermissions() || unseenCount() > 0))
-  const name = createMemo(() => props.project.name || getFilename(props.project.worktree))
+  const name = createMemo(() => props.project.name || getFilename(props.project.canonical))
   return (
     <div class={`relative size-8 shrink-0 rounded ${props.class ?? ""}`}>
       <div class="size-full rounded overflow-clip">
@@ -208,10 +212,10 @@ export const SessionItem = (props: SessionItemProps): JSX.Element => {
   const globalSync = useGlobalSync()
   const unseenCount = createMemo(() => notification.session.unseenCount(props.session.id))
   const hasError = createMemo(() => notification.session.unseenHasError(props.session.id))
-  const [sessionStore] = globalSync.child(props.session.directory)
+  const [sessionStore] = globalSync.child(props.session.location.directory)
   const hasPermissions = createMemo(() => {
     return !!sessionPermissionRequest(sessionStore.session, sessionStore.permission, props.session.id, (item) => {
-      return !permission.autoResponds(item, props.session.directory)
+      return !permission.autoResponds(item, props.session.location.directory)
     })
   })
   const isWorking = createMemo(() => {
@@ -223,24 +227,24 @@ export const SessionItem = (props: SessionItemProps): JSX.Element => {
   const tint = createMemo(() => {
     const messages = sessionStore.message[props.session.id]
     if (!messages) return undefined
-    let user: Message | undefined
+    let assistant: Extract<Message, { type: "assistant" }> | undefined
     for (let i = messages.length - 1; i >= 0; i--) {
       const message = messages[i]
-      if (message.role !== "user") continue
-      user = message
+      if (message.type !== "assistant") continue
+      assistant = message
       break
     }
-    if (!user?.agent) return undefined
+    if (!assistant?.agent) return undefined
 
-    const agent = sessionStore.agent.find((a) => a.name === user.agent)
-    return agentColor(user.agent, agent?.color)
+    const agent = sessionStore.agent.find((a) => a.id === assistant.agent)
+    return agentColor(assistant.agent, agent?.color)
   })
 
   const hoverMessages = createMemo(() =>
-    sessionStore.message[props.session.id]?.filter((message): message is UserMessage => message.role === "user"),
+    sessionStore.message[props.session.id]?.filter((message): message is UserMessage => message.type === "user"),
   )
   const changes = createMemo(() =>
-    sessionHistoryChanges(props.session.summary, sessionStore.message[props.session.id]),
+    sessionHistoryChanges(undefined, sessionStore.message[props.session.id]),
   )
   const hoverReady = createMemo(() => sessionStore.message[props.session.id] !== undefined)
   const hoverAllowed = createMemo(() => !props.mobile && props.sidebarExpanded())
@@ -263,11 +267,7 @@ export const SessionItem = (props: SessionItemProps): JSX.Element => {
 
   onCleanup(cancelHoverPrefetch)
 
-  const messageLabel = (message: Message) => {
-    const parts = sessionStore.part[message.id] ?? []
-    const text = parts.find((part): part is TextPart => part?.type === "text" && !part.synthetic && !part.ignored)
-    return text?.text
-  }
+  const messageLabel = (message: Message) => message.type === "user" ? message.text : undefined
   const item = (
     <SessionRow
       session={props.session}
@@ -320,7 +320,7 @@ export const SessionItem = (props: SessionItemProps): JSX.Element => {
           messageLabel={messageLabel}
           onMessageSelect={(message) => {
             if (!isActive()) {
-              layout.pendingMessage.set(`${base64Encode(props.session.directory)}/${props.session.id}`, message.id)
+              layout.pendingMessage.set(`${base64Encode(props.session.location.directory)}/${props.session.id}`, message.id)
               navigate(`/${props.slug}/${props.session.id}`)
               return
             }

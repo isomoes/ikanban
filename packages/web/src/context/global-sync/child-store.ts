@@ -1,7 +1,7 @@
 import { createRoot, getOwner, onCleanup, runWithOwner, type Owner } from "solid-js"
 import { createStore, type SetStoreFunction, type Store } from "solid-js/store"
 import { Persist, persisted } from "@/utils/persist"
-import type { VcsInfo } from "@/types/opencode"
+import type { VcsInfo } from "@opencode-ai/client"
 import {
   DIR_IDLE_TTL_MS,
   MAX_DIR_STORES,
@@ -159,9 +159,9 @@ export function createChildStoreManager(input: {
             project: "",
             projectMeta: initialMeta,
             icon: initialIcon,
-            provider: { all: [], connected: [], default: {} },
-            config: {},
-            path: { state: "", config: "", worktree: "", directory: "", home: "" },
+            provider: { providers: [], models: [], integrations: [], defaultModel: null },
+            config: [],
+            path: { canonical: "", directory: "", home: "" },
             status: "loading" as const,
             agent: [],
             command: [],
@@ -178,7 +178,6 @@ export function createChildStoreManager(input: {
             vcs: vcsStore.value,
             limit: 5,
             message: {},
-            part: {},
           })
           children[directory] = child
           disposers.set(directory, dispose)
@@ -193,7 +192,7 @@ export function createChildStoreManager(input: {
 
           onPersistedInit(vcs[2], () => {
             const cached = vcsStore.value
-            if (!cached?.branch) return
+            if (!cached?.branch.current) return
             child[1]("vcs", (value) => value ?? cached)
           })
 

@@ -1,4 +1,4 @@
-import type { Message } from "@/types/opencode"
+import type { SessionMessageUser } from "@opencode-ai/client"
 import { showToast } from "@/ui/components/toast"
 import { base64Encode } from "@/utils/encode"
 import { useNavigate, useParams } from "@solidjs/router"
@@ -146,7 +146,7 @@ export function createPromptSubmit(input: PromptSubmitInput) {
       modelID: currentModel.id,
       providerID: currentModel.provider.id,
     }
-    const agent = currentAgent.name
+    const agent = currentAgent.id
     const variant = local.model.variant.current()
 
     let sessionDirectory = projectDirectory
@@ -254,7 +254,7 @@ export function createPromptSubmit(input: PromptSubmitInput) {
     const commentItems = context.filter((item) => item.type === "file" && !!item.comment?.trim())
 
     const messageID = Identifier.ascending("message")
-    const { requestParts, optimisticParts } = buildRequestParts({
+    const { request, optimistic } = buildRequestParts({
       prompt: currentPrompt,
       context,
       images,
@@ -264,13 +264,11 @@ export function createPromptSubmit(input: PromptSubmitInput) {
       sessionDirectory,
     })
 
-    const optimisticMessage: Message = {
+    const optimisticMessage: SessionMessageUser = {
       id: messageID,
-      sessionID: session.id,
-      role: "user",
+      type: "user",
       time: { created: Date.now() },
-      agent,
-      model,
+      ...optimistic,
     }
 
     const addOptimisticMessage = () =>
@@ -278,7 +276,6 @@ export function createPromptSubmit(input: PromptSubmitInput) {
         directory: sessionDirectory,
         sessionID: session.id,
         message: optimisticMessage,
-        parts: optimisticParts,
       })
 
     const removeOptimisticMessage = () =>
@@ -350,43 +347,6 @@ export function createPromptSubmit(input: PromptSubmitInput) {
     const send = async () => {
       const ok = await waitForWorktree()
       if (!ok) return
-      const files = requestParts.flatMap((part) =>
-        part.type === "file"
-          ? [
-              {
-                uri: part.url,
-                name: part.filename,
-                mention:
-                  part.source?.type === "file"
-                    ? {
-                        start: part.source.text.start,
-                        end: part.source.text.end,
-                        text: part.source.text.value,
-                      }
-                    : undefined,
-              },
-            ]
-          : [],
-      )
-      const agents = requestParts.flatMap((part) =>
-        part.type === "agent" && part.source
-          ? [
-              {
-                name: part.name,
-                mention: {
-                  start: part.source.start,
-                  end: part.source.end,
-                  text: part.source.value,
-                },
-              },
-            ]
-          : [],
-      )
-      const promptText = requestParts
-        .filter((part) => part.type === "text")
-        .map((part) => part.text)
-        .join("\n")
-
       await Promise.all([
         client.session.switchAgent({ sessionID: session.id, agent }),
         client.session.switchModel({
@@ -394,7 +354,7 @@ export function createPromptSubmit(input: PromptSubmitInput) {
           model: { id: model.modelID, providerID: model.providerID, variant },
         }),
       ])
-      await client.session.prompt({ sessionID: session.id, id: messageID, text: promptText, files, agents })
+      await client.session.prompt({ sessionID: session.id, ...request })
     }
 
     void send().catch((err) => {

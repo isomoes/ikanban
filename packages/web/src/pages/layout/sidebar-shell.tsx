@@ -55,7 +55,7 @@ export const SidebarContent = (props: {
               data-component="sidebar-project-list"
               class="h-full w-full flex flex-col items-center px-3 py-3 overflow-y-auto no-scrollbar"
             >
-              <SortableProvider ids={props.projects().map((p) => p.worktree)}>
+              <SortableProvider ids={props.projects().map((p) => p.canonical)}>
                 <For each={props.projects()}>{(project) => props.renderProject(project)}</For>
               </SortableProvider>
               <Tooltip

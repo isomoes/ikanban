@@ -1,5 +1,5 @@
 import { createStore, produce, reconcile } from "solid-js/store"
-import type { FileNode } from "@/types/opencode"
+import type { FileSystemEntry } from "@opencode-ai/client"
 
 type DirectoryState = {
   expanded: boolean
@@ -12,13 +12,13 @@ type DirectoryState = {
 type TreeStoreOptions = {
   scope: () => string
   normalizeDir: (input: string) => string
-  list: (input: string) => Promise<FileNode[]>
+  list: (input: string) => Promise<FileSystemEntry[]>
   onError: (message: string) => void
 }
 
 export function createFileTreeStore(options: TreeStoreOptions) {
   const [tree, setTree] = createStore<{
-    node: Record<string, FileNode>
+    node: Record<string, FileSystemEntry>
     dir: Record<string, DirectoryState>
   }>({
     node: {},
@@ -149,7 +149,7 @@ export function createFileTreeStore(options: TreeStoreOptions) {
     const dir = options.normalizeDir(input)
     const ids = tree.dir[dir]?.children
     if (!ids) return []
-    const out: FileNode[] = []
+    const out: FileSystemEntry[] = []
     for (const id of ids) {
       const node = tree.node[id]
       if (node) out.push(node)

@@ -1,13 +1,14 @@
 import { createMemo, onCleanup } from "solid-js"
 import { createStore, produce } from "solid-js/store"
 import { createSimpleContext } from "@/ui/context/index"
-import type { PermissionRequest } from "@/types/opencode"
+import type { PermissionRequest } from "@opencode-ai/client"
 import { Persist, persisted } from "@/utils/persist"
 import { useGlobalSDK } from "@/context/global-sdk"
 import { useGlobalSync } from "./global-sync"
 import { useParams } from "@solidjs/router"
 import { decode64 } from "@/utils/base64"
 import { acceptKey, autoRespondsPermission } from "./permission-auto-respond"
+import { configInfo, type ConfigInfo } from "./config"
 
 type PermissionRespondFn = (input: {
   sessionID: string
@@ -29,35 +30,8 @@ function isNonAllowRule(rule: unknown) {
   return false
 }
 
-function hasPermissionPromptRules(permission: unknown) {
-  if (!permission) return false
-  if (typeof permission === "string") return permission !== "allow"
-  if (typeof permission !== "object") return false
-  if (Array.isArray(permission)) return false
-
-  const config = permission as Record<string, unknown>
-  return Object.values(config).some(isNonAllowRule)
-}
-
-function normalizePermission(permission: {
-  id: string
-  sessionID: string
-  action?: string
-  resources?: string[]
-  save?: string[]
-  permission?: string
-  patterns?: string[]
-  always?: string[]
-  metadata?: Record<string, unknown>
-}): PermissionRequest {
-  return {
-    id: permission.id,
-    sessionID: permission.sessionID,
-    permission: permission.permission ?? permission.action ?? "",
-    patterns: permission.patterns ?? permission.resources ?? [],
-    metadata: permission.metadata ?? {},
-    always: permission.always ?? permission.save ?? [],
-  }
+function hasPermissionPromptRules(permission: ConfigInfo["permissions"]) {
+  return permission?.some((rule) => rule.effect !== "allow") ?? false
 }
 
 export const { use: usePermission, provider: PermissionProvider } = createSimpleContext({
@@ -71,7 +45,7 @@ export const { use: usePermission, provider: PermissionProvider } = createSimple
       const directory = decode64(params.dir)
       if (!directory) return false
       const [store] = globalSync.child(directory)
-      return hasPermissionPromptRules(store.config.permission)
+      return hasPermissionPromptRules(configInfo(store.config).permissions)
     })
 
     const [store, setStore, _, ready] = persisted(
@@ -158,7 +132,7 @@ export const { use: usePermission, provider: PermissionProvider } = createSimple
       const event = e.details
       if (event?.type !== "permission.asked") return
 
-      const perm = normalizePermission(event.data)
+      const perm = event.data
       if (!shouldAutoRespond(perm, e.name)) return
 
       respondOnce(perm, e.name)
@@ -181,7 +155,7 @@ export const { use: usePermission, provider: PermissionProvider } = createSimple
           if (enableVersion.get(key) !== version) return
           if (!isAutoAccepting(sessionID, directory)) return
           for (const item of x) {
-            const perm = normalizePermission(item)
+            const perm = item
             if (!perm?.id) continue
             if (!shouldAutoRespond(perm, directory)) continue
             respondOnce(perm, directory)

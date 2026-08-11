@@ -1,6 +1,7 @@
 import { createEffect, createMemo, on, onCleanup } from "solid-js"
 import { createStore } from "solid-js/store"
-import type { PermissionRequest, QuestionRequest, Todo } from "@/types/opencode"
+import type { PermissionRequest, QuestionRequest } from "@opencode-ai/client"
+import type { TodoItem } from "@/types/app"
 import { useParams } from "@solidjs/router"
 import { showToast } from "@/ui/components/toast"
 import { useGlobalSync } from "@/context/global-sync"
@@ -53,7 +54,7 @@ export function createSessionComposerState(options?: { closeMs?: number | (() =>
     return !!permissionRequest() || !!questionRequest()
   })
 
-  const todos = createMemo((): Todo[] => {
+  const todos = createMemo((): TodoItem[] => {
     const id = params.id
     if (!id) return []
     return globalSync.data.session_todo[id] ?? []

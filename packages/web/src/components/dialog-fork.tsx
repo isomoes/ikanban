@@ -7,8 +7,7 @@ import { useDialog } from "@/ui/context/dialog"
 import { Dialog } from "@/ui/components/dialog"
 import { List } from "@/ui/components/list"
 import { showToast } from "@/ui/components/toast"
-import { extractPromptFromParts } from "@/utils/prompt"
-import type { TextPart as SDKTextPart } from "@/types/opencode"
+import { extractPromptFromMessage } from "@/utils/prompt"
 import { base64Encode } from "@/utils/encode"
 import { useLanguage } from "@/context/language"
 
@@ -39,15 +38,11 @@ export const DialogFork: Component = () => {
     const result: ForkableMessage[] = []
 
     for (const message of msgs) {
-      if (message.role !== "user") continue
-
-      const parts = sync.data.part[message.id] ?? []
-      const textPart = parts.find((x): x is SDKTextPart => x.type === "text" && !x.synthetic && !x.ignored)
-      if (!textPart) continue
+      if (message.type !== "user") continue
 
       result.push({
         id: message.id,
-        text: textPart.text.replace(/\n/g, " ").slice(0, 200),
+        text: message.text.replace(/\n/g, " ").slice(0, 200),
         time: formatTime(new Date(message.time.created)),
       })
     }
@@ -61,8 +56,9 @@ export const DialogFork: Component = () => {
     const sessionID = params.id
     if (!sessionID) return
 
-    const parts = sync.data.part[item.id] ?? []
-    const restored = extractPromptFromParts(parts, {
+    const message = (sync.data.message[sessionID] ?? []).find((entry) => entry.id === item.id)
+    if (!message || message.type !== "user") return
+    const restored = extractPromptFromMessage(message, {
       directory: sdk.directory,
       attachmentName: language.t("common.attachment"),
     })

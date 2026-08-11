@@ -5,13 +5,12 @@ describe("model variant", () => {
   test("resolves configured agent variant when model matches", () => {
     const value = getConfiguredAgentVariant({
       agent: {
-        model: { providerID: "openai", modelID: "gpt-5.2" },
-        variant: "xhigh",
+        model: { providerID: "openai", id: "gpt-5.2", variant: "xhigh" },
       },
       model: {
         providerID: "openai",
-        modelID: "gpt-5.2",
-        variants: { low: {}, high: {}, xhigh: {} },
+        id: "gpt-5.2",
+        variants: [{ id: "low" }, { id: "high" }, { id: "xhigh" }],
       },
     })
 
@@ -21,13 +20,12 @@ describe("model variant", () => {
   test("ignores configured variant when model does not match", () => {
     const value = getConfiguredAgentVariant({
       agent: {
-        model: { providerID: "openai", modelID: "gpt-5.2" },
-        variant: "xhigh",
+        model: { providerID: "openai", id: "gpt-5.2", variant: "xhigh" },
       },
       model: {
         providerID: "anthropic",
-        modelID: "claude-sonnet-4",
-        variants: { low: {}, high: {}, xhigh: {} },
+        id: "claude-sonnet-4",
+        variants: [{ id: "low" }, { id: "high" }, { id: "xhigh" }],
       },
     })
 

@@ -271,7 +271,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
     if (!sessionID) return false
     const messages = sync.data.message[sessionID]
     if (!messages) return false
-    return messages.some((m) => m.role === "user")
+    return messages.some((m) => m.type === "user")
   })
 
   const [history, setHistory] = persisted(
@@ -463,9 +463,9 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
   const agentList = createMemo(() =>
     sync.data.agent
       .filter((agent) => !agent.hidden && agent.mode !== "primary")
-      .map((agent): AtOption => ({ type: "agent", name: agent.name, display: agent.name })),
+      .map((agent): AtOption => ({ type: "agent", name: agent.id, display: agent.name })),
   )
-  const agentNames = createMemo(() => local.agent.list().map((agent) => agent.name))
+  const agentNames = createMemo(() => local.agent.list().map((agent) => agent.id))
 
   const handleAtSelect = (option: AtOption | undefined) => {
     if (!option) return
@@ -535,7 +535,6 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
       title: cmd.name,
       description: cmd.description,
       type: "custom" as const,
-      source: cmd.source,
     }))
 
     return [...custom, ...builtin]
@@ -1387,7 +1386,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
               <Select
                 size="normal"
                 options={agentNames()}
-                current={local.agent.current()?.name ?? ""}
+                current={local.agent.current()?.id ?? ""}
                 onSelect={local.agent.set}
                 class="capitalize max-w-[160px]"
                 valueClass="truncate text-13-regular"

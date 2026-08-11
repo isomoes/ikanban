@@ -10,7 +10,7 @@ import { useSettings } from "@/context/settings"
 import { Binary } from "@/utils/binary"
 import { base64Encode } from "@/utils/encode"
 import { decode64 } from "@/utils/base64"
-import type { V2Event } from "@/types/opencode"
+import type { V2Event } from "@opencode-ai/client"
 import { Persist, persisted } from "@/utils/persist"
 import { playSound, soundSrc } from "@/utils/sound"
 

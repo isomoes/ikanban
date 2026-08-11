@@ -29,17 +29,17 @@ export function NewSessionView(props: NewSessionViewProps) {
     if (options().includes(selection)) return selection
     return MAIN_WORKTREE
   })
-  const projectRoot = createMemo(() => sync.project?.worktree ?? sdk.directory)
+  const projectRoot = createMemo(() => sync.project?.canonical ?? sdk.directory)
   const isWorktree = createMemo(() => {
     const project = sync.project
     if (!project) return false
-    return sdk.directory !== project.worktree
+    return sdk.directory !== project.canonical
   })
 
   const label = (value: string) => {
     if (value === MAIN_WORKTREE) {
       if (isWorktree()) return language.t("session.new.worktree.main")
-      const branch = sync.data.vcs?.branch
+      const branch = sync.data.vcs?.branch.current
       if (branch) return language.t("session.new.worktree.mainWithBranch", { branch })
       return language.t("session.new.worktree.main")
     }

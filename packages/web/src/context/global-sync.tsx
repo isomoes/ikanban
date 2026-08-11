@@ -1,14 +1,5 @@
-import type {
-  Config,
-  OpencodeClient,
-  Path,
-  Project,
-  ProviderAuthResponse,
-  ProviderListResponse,
-  Session,
-  Todo,
-} from "@/types/opencode"
-import type { SessionInfo } from "@opencode-ai/client"
+import type { ConfigEntry, IntegrationInfo, ModelInfo, OpenCodeClient, Project, ProviderInfo, SessionInfo } from "@opencode-ai/client"
+import type { RuntimeLocations, TodoItem } from "@/types/app"
 import { showToast } from "@/ui/components/toast"
 import { getFilename } from "@/utils/path"
 import {
@@ -41,40 +32,21 @@ import { SESSION_RECENT_LIMIT } from "./global-sync/types"
 import { sanitizeProject } from "./global-sync/utils"
 import { formatServerError } from "@/utils/server-errors"
 
-function toSession(info: SessionInfo): import("@/types/opencode").Session {
-  return {
-    id: info.id,
-    slug: info.id,
-    projectID: info.projectID,
-    workspaceID: info.location.workspaceID,
-    directory: info.location.directory,
-    parentID: info.parentID,
-    title: info.title ?? "",
-    agent: info.agent,
-    model: info.model && { id: info.model.id, providerID: info.model.providerID, variant: info.model.variant },
-    version: "",
-    cost: info.cost,
-    tokens: info.tokens,
-    time: info.time,
-    revert: info.revert && {
-      messageID: info.revert.messageID,
-      partID: info.revert.partID,
-      snapshot: info.revert.snapshot,
-    },
-  }
-}
-
 type GlobalStore = {
   ready: boolean
   error?: InitError
-  path: Path
+  path: RuntimeLocations
   project: Project[]
   session_todo: {
-    [sessionID: string]: Todo[]
+    [sessionID: string]: TodoItem[]
   }
-  provider: ProviderListResponse
-  provider_auth: ProviderAuthResponse
-  config: Config
+  provider: {
+    providers: ProviderInfo[]
+    models: ModelInfo[]
+    integrations: IntegrationInfo[]
+    defaultModel: ModelInfo | null
+  }
+  config: ConfigEntry[]
   reload: undefined | "pending" | "complete"
 }
 
@@ -84,7 +56,7 @@ function createGlobalSync() {
   const owner = getOwner()
   if (!owner) throw new Error("GlobalSync must be created within owner")
 
-  const sdkCache = new Map<string, OpencodeClient>()
+  const sdkCache = new Map<string, OpenCodeClient>()
   const booting = new Map<string, Promise<void>>()
   const sessionLoads = new Map<string, Promise<void>>()
   const sessionMeta = new Map<string, { limit: number }>()
@@ -100,12 +72,11 @@ function createGlobalSync() {
 
   const [globalStore, setGlobalStore] = createStore<GlobalStore>({
     ready: false,
-    path: { state: "", config: "", worktree: "", directory: "", home: "" },
+    path: { canonical: "", directory: "", home: "" },
     project: projectCache.value,
     session_todo: {},
-    provider: { all: [], connected: [], default: {} },
-    provider_auth: {},
-    config: {},
+    provider: { providers: [], models: [], integrations: [], defaultModel: null },
+    config: [],
     reload: undefined,
   })
 
@@ -160,7 +131,7 @@ function createGlobalSync() {
     })
   }
 
-  const setSessionTodo = (sessionID: string, todos: Todo[] | undefined) => {
+  const setSessionTodo = (sessionID: string, todos: TodoItem[] | undefined) => {
     if (!sessionID) return
     if (!todos) {
       setGlobalStore(
@@ -207,7 +178,7 @@ function createGlobalSync() {
     return sdk
   }
 
-  const withSessionArchive = (session: Session) => applySessionArchive(session, sessionArchive.sessions)
+  const withSessionArchive = (session: SessionInfo) => applySessionArchive(session, sessionArchive.sessions)
 
   createEffect(() => {
     const archived = sessionArchive.sessions
@@ -247,7 +218,7 @@ function createGlobalSync() {
       limit,
       list: (query) =>
         globalSDK.client.session.list({ directory, parentID: null, limit: query.limit }).then((result) => ({
-          data: result.data.map(toSession).map(withSessionArchive),
+          data: result.data.map(withSessionArchive),
         })),
     })
       .then((x) => {
@@ -415,7 +386,7 @@ function createGlobalSync() {
     },
   }
 
-  const updateConfig = async (_config: Config) => {
+  const updateConfig = async (_config: ConfigEntry[]) => {
     throw new Error("Configuration updates are not supported by the OpenCode V2 API")
   }
 

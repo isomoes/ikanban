@@ -1,4 +1,4 @@
-import type { ProviderAuthAuthorization } from "@/types/opencode"
+import type { IntegrationMethod, IntegrationOauthConnectOutput } from "@opencode-ai/client"
 import { Button } from "@/ui/components/button"
 import { useDialog } from "@/ui/context/dialog"
 import { Dialog } from "@/ui/components/dialog"
@@ -28,7 +28,10 @@ export function DialogConnectProvider(props: { provider: string }) {
 
   const alive = { value: true }
   const timer = { current: undefined as ReturnType<typeof setTimeout> | undefined }
-  let activeAttempt: ProviderAuthAuthorization | undefined
+  type ConnectMethod = Extract<IntegrationMethod, { type: "oauth" | "key" }>
+  type OauthAuthorization = IntegrationOauthConnectOutput["data"]
+
+  let activeAttempt: { integrationID: string; authorization: OauthAuthorization } | undefined
 
   onCleanup(() => {
     alive.value = false
@@ -36,7 +39,7 @@ export function DialogConnectProvider(props: { provider: string }) {
     activeAttempt = undefined
     if (attempt) {
       void globalSDK.client.integration.oauth
-        .cancel({ integrationID: attempt.integrationID, attemptID: attempt.attemptID })
+        .cancel({ integrationID: attempt.integrationID, attemptID: attempt.authorization.attemptID })
         .catch(() => undefined)
     }
     if (timer.current === undefined) return
@@ -44,19 +47,19 @@ export function DialogConnectProvider(props: { provider: string }) {
     timer.current = undefined
   })
 
-  const provider = createMemo(() => globalSync.data.provider.all.find((x) => x.id === props.provider)!)
-  const methods = createMemo(
-    () =>
-      globalSync.data.provider_auth[props.provider] ?? [
-        {
-          type: "api",
-          label: language.t("provider.connect.method.apiKey"),
-        },
-      ],
+  const provider = createMemo(() => globalSync.data.provider.providers.find((x) => x.id === props.provider)!)
+  const integration = createMemo(() =>
+    globalSync.data.provider.integrations.find((item) => item.id === provider().integrationID),
+  )
+  const methods = createMemo((): ConnectMethod[] =>
+    (integration()?.methods ?? []).filter(
+      (method): method is ConnectMethod => method.type === "oauth" || method.type === "key",
+    ),
   )
   const [store, setStore] = createStore({
     methodIndex: undefined as undefined | number,
-    authorization: undefined as undefined | ProviderAuthAuthorization,
+    integrationID: undefined as string | undefined,
+    authorization: undefined as OauthAuthorization | undefined,
     state: "pending" as undefined | "pending" | "complete" | "error",
     error: undefined as string | undefined,
   })
@@ -65,7 +68,7 @@ export function DialogConnectProvider(props: { provider: string }) {
     | { type: "method.select"; index: number }
     | { type: "method.reset" }
     | { type: "auth.pending" }
-    | { type: "auth.complete"; authorization: ProviderAuthAuthorization }
+    | { type: "auth.complete"; integrationID: string; authorization: OauthAuthorization }
     | { type: "auth.error"; error: string }
 
   function dispatch(action: Action) {
@@ -73,6 +76,7 @@ export function DialogConnectProvider(props: { provider: string }) {
       produce((draft) => {
         if (action.type === "method.select") {
           draft.methodIndex = action.index
+          draft.integrationID = undefined
           draft.authorization = undefined
           draft.state = undefined
           draft.error = undefined
@@ -80,6 +84,7 @@ export function DialogConnectProvider(props: { provider: string }) {
         }
         if (action.type === "method.reset") {
           draft.methodIndex = undefined
+          draft.integrationID = undefined
           draft.authorization = undefined
           draft.state = undefined
           draft.error = undefined
@@ -92,6 +97,7 @@ export function DialogConnectProvider(props: { provider: string }) {
         }
         if (action.type === "auth.complete") {
           draft.state = "complete"
+          draft.integrationID = action.integrationID
           draft.authorization = action.authorization
           draft.error = undefined
           return
@@ -106,7 +112,7 @@ export function DialogConnectProvider(props: { provider: string }) {
 
   const methodLabel = (value?: { type?: string; label?: string }) => {
     if (!value) return ""
-    if (value.type === "api") return language.t("provider.connect.method.apiKey")
+    if (value.type === "key") return value.label ?? language.t("provider.connect.method.apiKey")
     return value.label ?? ""
   }
 
@@ -128,15 +134,12 @@ export function DialogConnectProvider(props: { provider: string }) {
     return fallback
   }
 
-  async function integrationMethod(index: number) {
-    const { data: info } = await globalSDK.client.provider.get({ providerID: props.provider })
-    if (!info.integrationID) throw new Error(`Provider ${props.provider} has no credential integration`)
-    const { data: integration } = await globalSDK.client.integration.get({ integrationID: info.integrationID })
-    if (!integration) throw new Error(`Integration ${info.integrationID} was not found`)
-    const connectable = integration.methods.filter((item) => item.type === "oauth" || item.type === "key")
-    const selected = connectable[index]
+  function integrationMethod(index: number) {
+    const integrationID = provider().integrationID
+    if (!integrationID) throw new Error(`Provider ${props.provider} has no credential integration`)
+    const selected = methods()[index]
     if (!selected) throw new Error(`Authentication method ${index} was not found`)
-    return { integrationID: info.integrationID, method: selected }
+    return { integrationID, method: selected }
   }
 
   async function selectMethod(index: number) {
@@ -151,18 +154,13 @@ export function DialogConnectProvider(props: { provider: string }) {
     if (method.type === "oauth") {
       dispatch({ type: "auth.pending" })
       const start = Date.now()
-      await integrationMethod(index)
+      await Promise.resolve()
+        .then(() => integrationMethod(index))
         .then(({ integrationID, method }) => {
           if (method.type !== "oauth") throw new Error("Selected authentication method is not OAuth")
           return globalSDK.client.integration.oauth
             .connect({ integrationID, methodID: method.id })
-            .then(({ data }) => ({
-              integrationID,
-              attemptID: data.attemptID,
-              url: data.url,
-              instructions: data.instructions,
-              method: data.mode,
-            }))
+            .then(({ data }) => ({ integrationID, authorization: data }))
         })
         .then((x) => {
           if (!alive.value) return
@@ -175,11 +173,11 @@ export function DialogConnectProvider(props: { provider: string }) {
             timer.current = setTimeout(() => {
               timer.current = undefined
               if (!alive.value) return
-              dispatch({ type: "auth.complete", authorization: x })
+              dispatch({ type: "auth.complete", integrationID: x.integrationID, authorization: x.authorization })
             }, delay)
             return
           }
-          dispatch({ type: "auth.complete", authorization: x })
+          dispatch({ type: "auth.complete", integrationID: x.integrationID, authorization: x.authorization })
         })
         .catch((e) => {
           if (!alive.value) return
@@ -219,7 +217,7 @@ export function DialogConnectProvider(props: { provider: string }) {
     activeAttempt = undefined
     if (attempt) {
       void globalSDK.client.integration.oauth
-        .cancel({ integrationID: attempt.integrationID, attemptID: attempt.attemptID })
+        .cancel({ integrationID: attempt.integrationID, attemptID: attempt.authorization.attemptID })
         .catch(() => undefined)
     }
     if (methods().length === 1) {
@@ -249,7 +247,7 @@ export function DialogConnectProvider(props: { provider: string }) {
               listRef = ref
             }}
             items={methods}
-            key={(m) => m?.label}
+            key={(m) => (m ? `${m.type}:${m.label ?? ""}` : "")}
             onSelect={async (selected, index) => {
               if (!selected) return
               selectMethod(index)
@@ -288,7 +286,7 @@ export function DialogConnectProvider(props: { provider: string }) {
       }
 
       setFormStore("error", undefined)
-      const selected = await integrationMethod(store.methodIndex!)
+      const selected = integrationMethod(store.methodIndex!)
       if (selected.method.type !== "key") {
         setFormStore("error", language.t("common.requestFailed"))
         return
@@ -346,7 +344,7 @@ export function DialogConnectProvider(props: { provider: string }) {
     })
 
     onMount(() => {
-      if (store.authorization?.method === "code" && store.authorization?.url) {
+      if (store.authorization?.mode === "code" && store.authorization?.url) {
         platform.openLink(store.authorization.url)
       }
     })
@@ -367,7 +365,7 @@ export function DialogConnectProvider(props: { provider: string }) {
       const authorization = store.authorization!
       const result = await globalSDK.client.integration.oauth
         .complete({
-          integrationID: authorization.integrationID,
+          integrationID: store.integrationID!,
           attemptID: authorization.attemptID,
           code,
         })
@@ -423,12 +421,12 @@ export function DialogConnectProvider(props: { provider: string }) {
         }
 
         const authorization = store.authorization!
-        while (alive.value && activeAttempt?.attemptID === authorization.attemptID) {
+        while (alive.value && activeAttempt?.authorization.attemptID === authorization.attemptID) {
           const result = await globalSDK.client.integration.oauth
-            .status({ integrationID: authorization.integrationID, attemptID: authorization.attemptID })
+            .status({ integrationID: store.integrationID!, attemptID: authorization.attemptID })
             .then((value) => ({ ok: true as const, status: value.data }))
             .catch((error) => ({ ok: false as const, error }))
-          if (!alive.value || activeAttempt?.attemptID !== authorization.attemptID) return
+          if (!alive.value || activeAttempt?.authorization.attemptID !== authorization.attemptID) return
           if (!result.ok) {
             dispatch({ type: "auth.error", error: formatError(result.error, language.t("common.requestFailed")) })
             return
@@ -523,15 +521,15 @@ export function DialogConnectProvider(props: { provider: string }) {
                   </div>
                 </div>
               </Match>
-              <Match when={method()?.type === "api"}>
+              <Match when={method()?.type === "key"}>
                 <ApiAuthView />
               </Match>
               <Match when={method()?.type === "oauth"}>
                 <Switch>
-                  <Match when={store.authorization?.method === "code"}>
+                  <Match when={store.authorization?.mode === "code"}>
                     <OAuthCodeView />
                   </Match>
-                  <Match when={store.authorization?.method === "auto"}>
+                  <Match when={store.authorization?.mode === "auto"}>
                     <OAuthAutoView />
                   </Match>
                 </Switch>

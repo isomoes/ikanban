@@ -18,7 +18,7 @@ export function DialogEditProject(props: { project: LocalProject }) {
   const globalSync = useGlobalSync()
   const language = useLanguage()
 
-  const folderName = createMemo(() => getFilename(props.project.worktree))
+  const folderName = createMemo(() => getFilename(props.project.canonical))
   const defaultName = createMemo(() => props.project.name || folderName())
 
   const [store, setStore] = createStore({
@@ -78,7 +78,7 @@ export function DialogEditProject(props: { project: LocalProject }) {
         const name = store.name.trim() === folderName() ? "" : store.name.trim()
         const start = store.startup.trim()
 
-        globalSync.project.meta(props.project.worktree, {
+        globalSync.project.meta(props.project.canonical, {
           name,
           icon: { color: store.color, override: store.iconUrl || undefined },
           commands: { start: start || undefined },

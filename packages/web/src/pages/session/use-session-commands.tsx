@@ -23,8 +23,8 @@ import { DialogFork } from "@/components/dialog-fork";
 import { DialogSessionTimeline } from "@/components/dialog-session-timeline";
 import { showToast } from "@/ui/components/toast";
 import { findLast } from "@/utils/array";
-import { extractPromptFromParts } from "@/utils/prompt";
-import { UserMessage } from "@/types/opencode";
+import { extractPromptFromMessage } from "@/utils/prompt";
+import type { SessionMessageUser as UserMessage } from "@opencode-ai/client";
 import {
   canAddSelectionContext,
 } from "@/pages/session/session-command-helpers";
@@ -73,7 +73,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
     params.id ? (sync.data.message[params.id] ?? []) : [],
   );
   const userMessages = createMemo(
-    () => messages().filter((m) => m.role === "user") as UserMessage[],
+    () => messages().filter((m) => m.type === "user") as UserMessage[],
   );
   const visibleUserMessages = createMemo(() => {
     const revert = info()?.revert?.messageID;
@@ -102,13 +102,8 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       await sdk.client.session.interrupt({ sessionID }).catch(() => { });
     }
     await sdk.client.session.revert.stage({ sessionID, messageID: message.id });
-    const parts = sync.data.part[message.id];
-    if (parts) {
-      const restored = extractPromptFromParts(parts, {
-        directory: sdk.directory,
-      });
-      prompt.set(restored);
-    }
+    const restored = extractPromptFromMessage(message, { directory: sdk.directory });
+    prompt.set(restored);
     await refreshReviewDiffs(sessionID);
     const priorMessage = findLast(userMessages(), (x) => x.id < message.id);
     setActiveMessage(priorMessage);

@@ -6,8 +6,8 @@ import { createSimpleContext } from "@/ui/context/index"
 import { applyPatch, parsePatch, reversePatch, type StructuredPatch } from "diff"
 import { useGlobalSync } from "./global-sync"
 import { useSDK } from "./sdk"
-import type { FileContent, Message, Part, Session, VcsFileStatus } from "@/types/opencode"
-import type { SessionInfo, SessionMessageInfo } from "@opencode-ai/client"
+import type { DecodedFileContent as FileContent } from "@/types/app"
+import type { SessionInfo, SessionMessageInfo, VcsFileStatus } from "@opencode-ai/client"
 import { bytesToFileContent, snapshotToFileDiff, type FileDiff } from "@/context/file/types"
 
 type ProjectDiffEntry = FileDiff & {
@@ -174,10 +174,6 @@ async function hydrateProjectDiffBatch(input: {
   }
 }
 
-function sortParts(parts: Part[]) {
-  return parts.filter((part) => !!part?.id).sort((a, b) => cmp(a.id, b.id))
-}
-
 function runInflight(map: Map<string, Promise<void>>, key: string, task: () => Promise<void>) {
   const pending = map.get(key)
   if (pending) return pending
@@ -192,203 +188,13 @@ const keyFor = (directory: string, id: string) => `${directory}\n${id}`
 
 const cmp = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0)
 
-const emptyTokens = () => ({ input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } })
-
-function toSession(info: SessionInfo): Session {
-  return {
-    id: info.id,
-    slug: info.id,
-    projectID: info.projectID,
-    directory: info.location.directory,
-    parentID: info.parentID,
-    title: info.title ?? "",
-    agent: info.agent,
-    model: info.model,
-    version: "",
-    cost: info.cost,
-    tokens: info.tokens,
-    time: info.time,
-    revert: info.revert
-      ? {
-          messageID: info.revert.messageID,
-          partID: info.revert.partID,
-          snapshot: info.revert.snapshot,
-        }
-      : undefined,
-  }
-}
-
-function toMessages(items: SessionMessageInfo[], sessionID: string, directory: string) {
-  const messages: Message[] = []
-  const parts: Array<{ id: string; part: Part[] }> = []
-  const users = new Map<string, Extract<Message, { role: "user" }>>()
-  let parentID = ""
-
-  for (const item of [...items].sort((a, b) => cmp(a.id, b.id))) {
-    if (item.type === "user") {
-      parentID = item.id
-      const message: Message = {
-        id: item.id,
-        sessionID,
-        role: "user",
-        time: item.time,
-        agent: "",
-        model: { providerID: "", modelID: "" },
-      }
-      users.set(item.id, message)
-      const next: Part[] = [
-        {
-          id: `${item.id}:text`,
-          sessionID,
-          messageID: item.id,
-          type: "text",
-          text: item.text,
-          metadata: item.metadata,
-        },
-      ]
-      for (const [index, file] of (item.files ?? []).entries()) {
-        next.push({
-          id: `${item.id}:file:${index}`,
-          sessionID,
-          messageID: item.id,
-          type: "file",
-          mime: file.mime,
-          filename: file.name,
-          url: file.source.type === "uri" ? file.source.uri : `data:${file.mime};base64,${file.data}`,
-          source: file.mention
-            ? {
-                type: "file",
-                text: { value: file.mention.text, start: file.mention.start, end: file.mention.end },
-              }
-            : undefined,
-        })
-      }
-      for (const [index, agent] of (item.agents ?? []).entries()) {
-        next.push({
-          id: `${item.id}:agent:${index}`,
-          sessionID,
-          messageID: item.id,
-          type: "agent",
-          name: agent.name,
-          source: agent.mention
-            ? { value: agent.mention.text, start: agent.mention.start, end: agent.mention.end }
-            : undefined,
-        })
-      }
-      messages.push(message)
-      parts.push({ id: item.id, part: next })
-      continue
-    }
-
-    if (item.type !== "assistant") continue
-    const parent = users.get(parentID)
-    if (parent) {
-      parent.agent = item.agent
-      parent.model = {
-        providerID: item.model.providerID,
-        modelID: item.model.id,
-        variant: item.model.variant,
-      }
-    }
-    const message: Message = {
-      id: item.id,
-      sessionID,
-      role: "assistant",
-      time: item.time,
-      parentID,
-      modelID: item.model.id,
-      providerID: item.model.providerID,
-      mode: item.agent,
-      agent: item.agent,
-      path: { cwd: directory, root: directory },
-      cost: item.cost ?? 0,
-      tokens: item.tokens ?? emptyTokens(),
-      variant: item.model.variant,
-      finish: item.finish,
-      error: item.error
-        ? { name: item.error.type, data: { message: item.error.message, status: item.error.status } }
-        : undefined,
-    }
-    const next = item.content.map((content, index): Part => {
-      const id = `${item.id}:${content.type}:${"id" in content ? content.id : index}`
-      if (content.type === "text") {
-        return { id, sessionID, messageID: item.id, type: "text", text: content.text, metadata: content.state }
-      }
-      if (content.type === "reasoning") {
-        return {
-          id,
-          sessionID,
-          messageID: item.id,
-          type: "reasoning",
-          text: content.text,
-          metadata: content.state,
-          time: { start: content.time?.created ?? item.time.created, end: content.time?.completed },
-        }
-      }
-
-      const start = content.time.ran ?? content.time.created
-      const attachments = content.state.status === "completed"
-        ? content.state.content.flatMap((value, attachmentIndex) =>
-            value.type === "file"
-              ? [{
-                  id: `${id}:attachment:${attachmentIndex}`,
-                  sessionID,
-                  messageID: item.id,
-                  type: "file" as const,
-                  mime: value.mime,
-                  filename: value.name ?? undefined,
-                  url: value.uri,
-                }]
-              : [],
-          )
-        : undefined
-      const state: Extract<Part, { type: "tool" }>["state"] = content.state.status === "streaming"
-        ? { status: "pending", input: {}, raw: content.state.input }
-        : content.state.status === "running"
-          ? { status: "running", input: content.state.input, metadata: content.state.metadata, time: { start } }
-          : content.state.status === "completed"
-            ? {
-                status: "completed",
-                input: content.state.input,
-                output: content.state.content.flatMap((value) => value.type === "text" ? [value.text] : []).join("\n"),
-                title: content.name,
-                metadata: content.state.metadata ?? {},
-                time: { start, end: content.time.completed ?? start },
-                attachments,
-              }
-            : {
-                status: "error",
-                input: content.state.input,
-                error: content.state.error.message,
-                metadata: content.state.metadata,
-                time: { start, end: content.time.completed ?? start },
-              }
-      return {
-        id,
-        sessionID,
-        messageID: item.id,
-        type: "tool",
-        callID: content.id,
-        tool: content.name,
-        state,
-      }
-    })
-    messages.push(message)
-    parts.push({ id: item.id, part: next })
-  }
-
-  return { messages, parts }
-}
-
 type OptimisticStore = {
-  message: Record<string, Message[] | undefined>
-  part: Record<string, Part[] | undefined>
+  message: Record<string, SessionMessageInfo[] | undefined>
 }
 
 type OptimisticAddInput = {
   sessionID: string
-  message: Message
-  parts: Part[]
+  message: SessionMessageInfo
 }
 
 type OptimisticRemoveInput = {
@@ -404,7 +210,6 @@ export function applyOptimisticAdd(draft: OptimisticStore, input: OptimisticAddI
   } else {
     draft.message[input.sessionID] = [input.message]
   }
-  draft.part[input.message.id] = sortParts(input.parts)
 }
 
 export function applyOptimisticRemove(draft: OptimisticStore, input: OptimisticRemoveInput) {
@@ -413,33 +218,25 @@ export function applyOptimisticRemove(draft: OptimisticStore, input: OptimisticR
     const result = Binary.search(messages, input.messageID, (m) => m.id)
     if (result.found) messages.splice(result.index, 1)
   }
-  delete draft.part[input.messageID]
 }
 
 function setOptimisticAdd(setStore: (...args: unknown[]) => void, input: OptimisticAddInput) {
-  setStore("message", input.sessionID, (messages: Message[] | undefined) => {
+  setStore("message", input.sessionID, (messages: SessionMessageInfo[] | undefined) => {
     if (!messages) return [input.message]
     const result = Binary.search(messages, input.message.id, (m) => m.id)
     const next = [...messages]
     next.splice(result.index, 0, input.message)
     return next
   })
-  setStore("part", input.message.id, sortParts(input.parts))
 }
 
 function setOptimisticRemove(setStore: (...args: unknown[]) => void, input: OptimisticRemoveInput) {
-  setStore("message", input.sessionID, (messages: Message[] | undefined) => {
+  setStore("message", input.sessionID, (messages: SessionMessageInfo[] | undefined) => {
     if (!messages) return messages
     const result = Binary.search(messages, input.messageID, (m) => m.id)
     if (!result.found) return messages
     const next = [...messages]
     next.splice(result.index, 1)
-    return next
-  })
-  setStore("part", (part: Record<string, Part[] | undefined>) => {
-    if (!(input.messageID in part)) return part
-    const next = { ...part }
-    delete next[input.messageID]
     return next
   })
 }
@@ -485,12 +282,9 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
       const messages = await retry(() =>
         input.client.message.list({ sessionID: input.sessionID, limit: input.limit, order: "desc" }),
       )
-      const converted = toMessages(messages.data, input.sessionID, input.directory)
-      const session = converted.messages.sort((a, b) => cmp(a.id, b.id))
-      const part = converted.parts.map((message) => ({ id: message.id, part: sortParts(message.part) }))
+      const session = messages.data.slice().sort((a, b) => cmp(a.id, b.id))
       return {
         session,
-        part,
         complete: messages.data.length < input.limit,
       }
     }
@@ -510,9 +304,6 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
         .then((next) => {
           batch(() => {
             input.setStore("message", input.sessionID, reconcile(next.session, { key: "id" }))
-            for (const p of next.part) {
-              input.setStore("part", p.id, p.part)
-            }
             setMeta("limit", key, input.limit)
             setMeta("complete", key, next.complete)
           })
@@ -544,7 +335,7 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
       session: {
         get: getSession,
         optimistic: {
-          add(input: { directory?: string; sessionID: string; message: Message; parts: Part[] }) {
+          add(input: { directory?: string; sessionID: string; message: SessionMessageInfo }) {
             const [, setStore] = target(input.directory)
             setOptimisticAdd(setStore as (...args: unknown[]) => void, input)
           },
@@ -552,28 +343,6 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
             const [, setStore] = target(input.directory)
             setOptimisticRemove(setStore as (...args: unknown[]) => void, input)
           },
-        },
-        addOptimisticMessage(input: {
-          sessionID: string
-          messageID: string
-          parts: Part[]
-          agent: string
-          model: { providerID: string; modelID: string }
-        }) {
-          const message: Message = {
-            id: input.messageID,
-            sessionID: input.sessionID,
-            role: "user",
-            time: { created: Date.now() },
-            agent: input.agent,
-            model: input.model,
-          }
-          const [, setStore] = target()
-          setOptimisticAdd(setStore as (...args: unknown[]) => void, {
-            sessionID: input.sessionID,
-            message,
-            parts: input.parts,
-          })
         },
         async sync(sessionID: string) {
           const directory = sdk.directory
@@ -587,7 +356,7 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
           const sessionReq = hasSession
             ? Promise.resolve()
             : retry(() => client.session.get({ sessionID })).then((session) => {
-                const data = toSession(session)
+                const data = session
                 setStore(
                   "session",
                   produce((draft) => {
@@ -677,7 +446,6 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
           await client.session.list({ directory }).then((x) => {
             const sessions = x.data
               .filter((s) => !!s?.id)
-              .map(toSession)
               .map(globalSync.project.applySessionArchive)
               .sort((a, b) => cmp(a.id, b.id))
               .slice(0, store.limit)
