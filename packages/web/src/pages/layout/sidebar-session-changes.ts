@@ -1,4 +1,4 @@
-import type { Message, Session } from "@opencode-ai/sdk/v2/client"
+import type { Message, Session } from "@/types/opencode"
 
 export function sessionHistoryChanges(summary: Session["summary"], messages: Message[] | undefined) {
   if (!messages) return summary

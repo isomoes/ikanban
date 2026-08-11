@@ -194,9 +194,9 @@ function createDirectorySearch(args: {
     const query = normalizeDriveRoot(scopedInput.path)
 
     const find = () =>
-      args.sdk.client.find
-        .files({ directory: scopedInput.directory, query, type: "directory", limit: 50 })
-        .then((x) => x.data ?? [])
+      args.sdk.client.file
+        .find({ location: { directory: scopedInput.directory }, query, type: "directory", limit: 50 })
+        .then((x) => x.data.map((entry) => entry.path))
         .catch(() => [])
 
     if (!isPath) {
@@ -261,17 +261,16 @@ export function DialogSelectDirectory(props: DialogSelectDirectoryProps) {
   const [fallbackPath] = createResource(
     () => (missingBase() ? true : undefined),
     async () => {
-      return sdk.client.path
+      return sdk.client.location
         .get()
-        .then((x) => x.data)
         .catch(() => undefined)
     },
     { initialValue: undefined },
   )
 
-  const home = createMemo(() => sync.data.path.home || fallbackPath()?.home || "")
+  const home = createMemo(() => sync.data.path.home || "")
   const start = createMemo(
-    () => sync.data.path.home || sync.data.path.directory || fallbackPath()?.home || fallbackPath()?.directory,
+    () => sync.data.path.home || sync.data.path.directory || fallbackPath()?.directory,
   )
 
   const directories = createDirectorySearch({

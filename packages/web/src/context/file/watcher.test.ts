@@ -7,8 +7,10 @@ describe("file watcher invalidation", () => {
     const refresh: string[] = []
     invalidateFromWatcher(
       {
-        type: "file.watcher.updated",
-        properties: {
+        id: "evt_1",
+        created: 1,
+        type: "filesystem.changed",
+        data: {
           file: "src/new.ts",
           event: "add",
         },
@@ -32,8 +34,10 @@ describe("file watcher invalidation", () => {
 
     invalidateFromWatcher(
       {
-        type: "file.watcher.updated",
-        properties: {
+        id: "evt_2",
+        created: 2,
+        type: "filesystem.changed",
+        data: {
           file: "src/open.ts",
           event: "change",
         },
@@ -63,8 +67,10 @@ describe("file watcher invalidation", () => {
 
     invalidateFromWatcher(
       {
-        type: "file.watcher.updated",
-        properties: {
+        id: "evt_3",
+        created: 3,
+        type: "filesystem.changed",
+        data: {
           file: "src",
           event: "change",
         },
@@ -81,8 +87,10 @@ describe("file watcher invalidation", () => {
 
     invalidateFromWatcher(
       {
-        type: "file.watcher.updated",
-        properties: {
+        id: "evt_4",
+        created: 4,
+        type: "filesystem.changed",
+        data: {
           file: "src/file.ts",
           event: "change",
         },
@@ -111,8 +119,10 @@ describe("file watcher invalidation", () => {
 
     invalidateFromWatcher(
       {
-        type: "file.watcher.updated",
-        properties: {
+        id: "evt_5",
+        created: 5,
+        type: "filesystem.changed",
+        data: {
           file: ".git/index.lock",
           event: "change",
         },
@@ -131,8 +141,9 @@ describe("file watcher invalidation", () => {
 
     invalidateFromWatcher(
       {
-        type: "project.updated",
-        properties: {},
+        id: "evt_6",
+        type: "server.connected",
+        data: {},
       },
       {
         normalize: (input) => input,

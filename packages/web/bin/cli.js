@@ -64,37 +64,8 @@ const server = http.createServer((req, res) => {
     return
   }
 
-  // Proxy OpenCode API paths to backend.
-  // These are the top-level path segments used by @opencode-ai/sdk.
-  const API_PREFIXES = [
-    "/agent",
-    "/auth",
-    "/command",
-    "/config",
-    "/event",
-    "/experimental",
-    "/file",
-    "/find",
-    "/formatter",
-    "/global",
-    "/instance",
-    "/log",
-    "/lsp",
-    "/mcp",
-    "/path",
-    "/permission",
-    "/project",
-    "/provider",
-    "/pty",
-    "/question",
-    "/session",
-    "/skill",
-    "/tui",
-    "/vcs",
-  ]
-  // Support both /session/... (SDK default, same-origin) and
-  // /ikanban/session/... (prefixed, e.g. from a reverse proxy).
-  // Determine the effective API pathname by stripping the base prefix if present.
+  // V2 exposes all HTTP routes below /api.
+  const API_PREFIXES = ["/api"]
   let apiPathname = url.pathname
   if (apiPathname.startsWith(BASE + "/")) {
     const stripped = apiPathname.slice(BASE.length)

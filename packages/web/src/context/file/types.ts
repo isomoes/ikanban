@@ -1,14 +1,64 @@
-import type { FileContent, SnapshotFileDiff } from "@opencode-ai/sdk/v2"
+import type { FileContent, SnapshotFileDiff } from "@/types/opencode"
 import { parsePatch, type StructuredPatch } from "diff"
+
+const BINARY_FILE_RE = /\.(?:png|jpe?g|gif|webp|bmp|ico|avif|mp3|wav|ogg|flac|mp4|mov|avi|mkv|webm|pdf|zip|gz|tar|7z|woff2?|ttf|eot|otf|exe|bin|so|dylib|dll|class|jar|wasm)$/i
+
+const MIME_TYPES: Record<string, string> = {
+  avif: "image/avif",
+  bmp: "image/bmp",
+  gif: "image/gif",
+  ico: "image/x-icon",
+  jpeg: "image/jpeg",
+  jpg: "image/jpeg",
+  mp3: "audio/mpeg",
+  mp4: "video/mp4",
+  ogg: "audio/ogg",
+  pdf: "application/pdf",
+  png: "image/png",
+  svg: "image/svg+xml",
+  wav: "audio/wav",
+  webm: "video/webm",
+  webp: "image/webp",
+}
+
+function bytesToBase64(bytes: Uint8Array) {
+  let binary = ""
+  const chunkSize = 0x8000
+  for (let index = 0; index < bytes.length; index += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(index, index + chunkSize))
+  }
+  return btoa(binary)
+}
+
+export function bytesToFileContent(bytes: Uint8Array, path: string): FileContent {
+  const extension = path.split(".").pop()?.toLowerCase() ?? ""
+  const mimeType = MIME_TYPES[extension] ?? "application/octet-stream"
+  const binary = BINARY_FILE_RE.test(path) || bytes.includes(0)
+
+  if (!binary) {
+    try {
+      return {
+        type: "text",
+        content: new TextDecoder("utf-8", { fatal: true }).decode(bytes),
+        mimeType: extension === "svg" ? mimeType : undefined,
+      }
+    } catch {}
+  }
+
+  return {
+    type: "binary",
+    content: bytesToBase64(bytes),
+    encoding: "base64",
+    mimeType,
+  }
+}
 
 /**
  * Canonical diff shape used throughout the app UI.
  *
- * The upstream `@opencode-ai/sdk` `FileDiff` type changed in v1.17.x to a
- * patch-only shape (`{ path, status, additions, deletions, patch }`) and the
- * session diff endpoint now returns `SnapshotFileDiff`. The app still models
- * diffs with explicit `before`/`after` content keyed by `file`, so we keep a
- * local type and convert SDK payloads at the boundaries.
+ * OpenCode exposes patch-only diffs, while the app models diffs with explicit
+ * `before`/`after` content keyed by `file`, so conversion happens at the API
+ * boundary.
  */
 export type FileDiff = {
   file: string
@@ -55,8 +105,7 @@ export function patchToTexts(patch: StructuredPatch): { before: string; after: s
 }
 
 /**
- * Convert the SDK `SnapshotFileDiff` shape (returned by `session.diff()`,
- * `vcs.diff()`, and carried on `UserMessage.summary.diffs`) into the app's
+ * Convert an OpenCode snapshot/VCS diff into the app's
  * canonical `FileDiff`. These diffs are patch-only, so `before`/`after` are
  * reconstructed from the patch when available.
  */

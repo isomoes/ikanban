@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test"
-import type { Session } from "@opencode-ai/sdk/v2/client"
+import type { Session } from "@/types/opencode"
 import { archiveSessionOnServer } from "./session-archive"
 
 describe("archiveSessionOnServer", () => {
-  test("persists the archived timestamp through the session SDK", async () => {
+  test("does not call a removed V2 archive endpoint", async () => {
     const calls: unknown[] = []
     const archived = {
       id: "ses_1",
@@ -29,13 +29,7 @@ describe("archiveSessionOnServer", () => {
       archivedAt: 123,
     })
 
-    expect(calls).toEqual([
-      {
-        directory: "/project",
-        sessionID: "ses_1",
-        time: { archived: 123 },
-      },
-    ])
-    expect(result).toBe(archived)
+    expect(calls).toEqual([])
+    expect(result).toBeUndefined()
   })
 })

@@ -11,7 +11,7 @@ import { InlineInput } from "@/ui/components/inline-input"
 import { SessionTurn } from "@/ui/components/session-turn"
 import { formatTurnDurationLabel } from "@/ui/components/session-turn-duration"
 import { ScrollView } from "@/ui/components/scroll-view"
-import type { AssistantMessage, Message as MessageType, Part, TextPart, UserMessage } from "@opencode-ai/sdk/v2"
+import type { AssistantMessage, Message as MessageType, Part, TextPart, UserMessage } from "@/types/opencode"
 import { showToast } from "@/ui/components/toast"
 import { Binary } from "@/utils/binary"
 import { getFilename } from "@/utils/path"
@@ -355,7 +355,7 @@ export function MessageTimeline(props: {
 
     setTitle("saving", true)
     await sdk.client.session
-      .update({ sessionID: id, title: next })
+      .rename({ sessionID: id, title: next })
       .then(() => {
         sync.set(
           produce((draft) => {
@@ -408,8 +408,8 @@ export function MessageTimeline(props: {
     const nextSession = index === -1 ? undefined : (sessions[index + 1] ?? sessions[index - 1])
 
     const result = await sdk.client.session
-      .delete({ sessionID })
-      .then((x) => x.data)
+      .remove({ sessionID })
+      .then(() => true)
       .catch((err) => {
         showToast({
           title: language.t("session.delete.failed.title"),

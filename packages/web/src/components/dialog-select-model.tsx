@@ -94,7 +94,13 @@ const ModelList: Component<{
           class="w-full"
           placement="right-start"
           gutter={12}
-          value={<ModelTooltip model={item} latest={item.latest} free={isFree(item.provider.id, item.cost)} />}
+          value={
+            <ModelTooltip
+              model={item as unknown as Parameters<typeof ModelTooltip>[0]["model"]}
+              latest={item.latest}
+              free={isFree(item.provider.id, item.cost)}
+            />
+          }
         >
           {node}
         </Tooltip>

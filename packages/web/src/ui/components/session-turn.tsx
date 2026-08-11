@@ -1,6 +1,6 @@
 /** @jsxImportSource solid-js */
-import { AssistantMessage, Message as MessageType, Part as PartType } from "@opencode-ai/sdk/v2/client"
-import type { SessionStatus } from "@opencode-ai/sdk/v2"
+import { AssistantMessage, Message as MessageType, Part as PartType } from "@/types/opencode"
+import type { SessionStatus } from "@/types/opencode"
 import { snapshotToFileDiff, type FileDiff } from "@/context/file/types"
 import { useData } from "../context"
 import { useFileComponent } from "../context/file"

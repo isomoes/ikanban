@@ -8,7 +8,6 @@ import { showToast } from "@/ui/components/toast"
 import { For } from "solid-js"
 import { createStore } from "solid-js/store"
 import { Link } from "@/components/link"
-import { useGlobalSDK } from "@/context/global-sdk"
 import { useGlobalSync } from "@/context/global-sync"
 import { useLanguage } from "@/context/language"
 import { DialogSelectProvider } from "./dialog-select-provider"
@@ -49,7 +48,6 @@ type FormErrors = {
 type ValidateArgs = {
   form: FormState
   t: Translator
-  disabledProviders: string[]
   existingProviderIDs: Set<string>
 }
 
@@ -75,10 +73,9 @@ function validateCustomProvider(input: ValidateArgs) {
       ? input.t("provider.custom.error.baseURL.format")
       : undefined
 
-  const disabled = input.disabledProviders.includes(providerID)
   const existsError = idError
     ? undefined
-    : input.existingProviderIDs.has(providerID) && !disabled
+    : input.existingProviderIDs.has(providerID)
       ? input.t("provider.custom.error.providerID.exists")
       : undefined
 
@@ -164,7 +161,6 @@ type Props = {
 export function DialogCustomProvider(props: Props) {
   const dialog = useDialog()
   const globalSync = useGlobalSync()
-  const globalSDK = useGlobalSDK()
   const language = useLanguage()
 
   const [form, setForm] = createStore<FormState>({
@@ -219,7 +215,6 @@ export function DialogCustomProvider(props: Props) {
     const output = validateCustomProvider({
       form,
       t: language.t,
-      disabledProviders: globalSync.data.config.disabled_providers ?? [],
       existingProviderIDs: new Set(globalSync.data.provider.all.map((p) => p.id)),
     })
     setErrors(output.errors)
@@ -233,41 +228,10 @@ export function DialogCustomProvider(props: Props) {
     const result = validate()
     if (!result) return
 
-    setForm("saving", true)
-
-    const disabledProviders = globalSync.data.config.disabled_providers ?? []
-    const nextDisabled = disabledProviders.filter((id) => id !== result.providerID)
-
-    const auth = result.key
-      ? globalSDK.client.auth.set({
-          providerID: result.providerID,
-          auth: {
-            type: "api",
-            key: result.key,
-          },
-        })
-      : Promise.resolve()
-
-    auth
-      .then(() =>
-        globalSync.updateConfig({ provider: { [result.providerID]: result.config }, disabled_providers: nextDisabled }),
-      )
-      .then(() => {
-        dialog.close()
-        showToast({
-          variant: "success",
-          icon: "circle-check",
-          title: language.t("provider.connect.toast.connected.title", { provider: result.name }),
-          description: language.t("provider.connect.toast.connected.description", { provider: result.name }),
-        })
-      })
-      .catch((err: unknown) => {
-        const message = err instanceof Error ? err.message : String(err)
-        showToast({ title: language.t("common.requestFailed"), description: message })
-      })
-      .finally(() => {
-        setForm("saving", false)
-      })
+    showToast({
+      title: language.t("common.requestFailed"),
+      description: "Configuration updates are not supported by the OpenCode V2 API",
+    })
   }
 
   return (

@@ -1,6 +1,6 @@
 import { createEffect, createMemo, on, onCleanup } from "solid-js"
 import { createStore } from "solid-js/store"
-import type { PermissionRequest, QuestionRequest, Todo } from "@opencode-ai/sdk/v2"
+import type { PermissionRequest, QuestionRequest, Todo } from "@/types/opencode"
 import { useParams } from "@solidjs/router"
 import { showToast } from "@/ui/components/toast"
 import { useGlobalSync } from "@/context/global-sync"
@@ -79,7 +79,7 @@ export function createSessionComposerState(options?: { closeMs?: number | (() =>
 
     setStore("responding", perm.id)
     sdk.client.permission
-      .respond({ sessionID: perm.sessionID, permissionID: perm.id, response })
+      .reply({ sessionID: perm.sessionID, requestID: perm.id, reply: response })
       .catch((err: unknown) => {
         const description = err instanceof Error ? err.message : String(err)
         showToast({ title: language.t("common.requestFailed"), description })

@@ -25,7 +25,8 @@ import { Tooltip, TooltipKeybind } from "@/ui/components/tooltip"
 import { DropdownMenu } from "@/ui/components/dropdown-menu"
 import { Dialog } from "@/ui/components/dialog"
 import { getFilename } from "@/utils/path"
-import { Session, type Message } from "@opencode-ai/sdk/v2/client"
+import { Session, type Message, type Part, type PermissionRequest } from "@/types/opencode"
+import type { SessionInfo, SessionMessageInfo } from "@opencode-ai/client"
 import { usePlatform } from "@/context/platform"
 import { useSettings } from "@/context/settings"
 import { createStore, produce, reconcile } from "solid-js/store"
@@ -60,7 +61,6 @@ import {
   childMapByParent,
   displayName,
   effectiveWorkspaceOrder,
-  errorMessage,
   getDraggableId,
   sortedRootSessions,
   workspaceKey,
@@ -76,6 +76,199 @@ import {
 import { workspaceOpenState } from "./layout/sidebar-workspace-helpers"
 import { ProjectDragOverlay, SortableProject, type ProjectSidebarContext } from "./layout/sidebar-project"
 import { SidebarContent } from "./layout/sidebar-shell"
+
+const emptyTokens = () => ({ input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } })
+
+function toSession(info: SessionInfo): Session {
+  return {
+    id: info.id,
+    slug: info.id,
+    projectID: info.projectID,
+    workspaceID: info.location.workspaceID,
+    directory: info.location.directory,
+    parentID: info.parentID,
+    title: info.title ?? "",
+    agent: info.agent,
+    model: info.model && { id: info.model.id, providerID: info.model.providerID, variant: info.model.variant },
+    version: "",
+    cost: info.cost,
+    tokens: info.tokens,
+    time: info.time,
+    revert: info.revert && {
+      messageID: info.revert.messageID,
+      partID: info.revert.partID,
+      snapshot: info.revert.snapshot,
+    },
+  }
+}
+
+function toMessages(items: SessionMessageInfo[], sessionID: string, directory: string) {
+  const messages: Message[] = []
+  const parts: Array<{ id: string; part: Part[] }> = []
+  const users = new Map<string, Extract<Message, { role: "user" }>>()
+  let parentID = ""
+
+  for (const item of [...items].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))) {
+    if (item.type === "user") {
+      parentID = item.id
+      const message: Message = {
+        id: item.id,
+        sessionID,
+        role: "user",
+        time: item.time,
+        agent: "",
+        model: { providerID: "", modelID: "" },
+      }
+      users.set(item.id, message)
+      const next: Part[] = [
+        {
+          id: `${item.id}:text`,
+          sessionID,
+          messageID: item.id,
+          type: "text",
+          text: item.text,
+          metadata: item.metadata,
+        },
+      ]
+      for (const [index, file] of (item.files ?? []).entries()) {
+        next.push({
+          id: `${item.id}:file:${index}`,
+          sessionID,
+          messageID: item.id,
+          type: "file",
+          mime: file.mime,
+          filename: file.name,
+          url: file.source.type === "uri" ? file.source.uri : `data:${file.mime};base64,${file.data}`,
+          source: file.mention
+            ? {
+                type: "file",
+                text: { value: file.mention.text, start: file.mention.start, end: file.mention.end },
+              }
+            : undefined,
+        })
+      }
+      for (const [index, agent] of (item.agents ?? []).entries()) {
+        next.push({
+          id: `${item.id}:agent:${index}`,
+          sessionID,
+          messageID: item.id,
+          type: "agent",
+          name: agent.name,
+          source: agent.mention
+            ? { value: agent.mention.text, start: agent.mention.start, end: agent.mention.end }
+            : undefined,
+        })
+      }
+      messages.push(message)
+      parts.push({ id: item.id, part: next })
+      continue
+    }
+
+    if (item.type !== "assistant") continue
+    const parent = users.get(parentID)
+    if (parent) {
+      parent.agent = item.agent
+      parent.model = {
+        providerID: item.model.providerID,
+        modelID: item.model.id,
+        variant: item.model.variant,
+      }
+    }
+    const message: Message = {
+      id: item.id,
+      sessionID,
+      role: "assistant",
+      time: item.time,
+      parentID,
+      modelID: item.model.id,
+      providerID: item.model.providerID,
+      mode: item.agent,
+      agent: item.agent,
+      path: { cwd: directory, root: directory },
+      cost: item.cost ?? 0,
+      tokens: item.tokens ?? emptyTokens(),
+      variant: item.model.variant,
+      finish: item.finish,
+      error: item.error
+        ? { name: item.error.type, data: { message: item.error.message, status: item.error.status } }
+        : undefined,
+    }
+    const next = item.content.map((content, index): Part => {
+      const id = `${item.id}:${content.type}:${"id" in content ? content.id : index}`
+      if (content.type === "text") {
+        return { id, sessionID, messageID: item.id, type: "text", text: content.text, metadata: content.state }
+      }
+      if (content.type === "reasoning") {
+        return {
+          id,
+          sessionID,
+          messageID: item.id,
+          type: "reasoning",
+          text: content.text,
+          metadata: content.state,
+          time: { start: content.time?.created ?? item.time.created, end: content.time?.completed },
+        }
+      }
+
+      const start = content.time.ran ?? content.time.created
+      const attachments =
+        content.state.status === "completed"
+          ? content.state.content.flatMap((value, attachmentIndex) =>
+              value.type === "file"
+                ? [
+                    {
+                      id: `${id}:attachment:${attachmentIndex}`,
+                      sessionID,
+                      messageID: item.id,
+                      type: "file" as const,
+                      mime: value.mime,
+                      filename: value.name ?? undefined,
+                      url: value.uri,
+                    },
+                  ]
+                : [],
+            )
+          : undefined
+      const state: Extract<Part, { type: "tool" }>["state"] =
+        content.state.status === "streaming"
+          ? { status: "pending", input: {}, raw: content.state.input }
+          : content.state.status === "running"
+            ? { status: "running", input: content.state.input, metadata: content.state.metadata, time: { start } }
+            : content.state.status === "completed"
+              ? {
+                  status: "completed",
+                  input: content.state.input,
+                  output: content.state.content
+                    .flatMap((value) => (value.type === "text" ? [value.text] : []))
+                    .join("\n"),
+                  title: content.name,
+                  metadata: content.state.metadata ?? {},
+                  time: { start, end: content.time.completed ?? start },
+                  attachments,
+                }
+              : {
+                  status: "error",
+                  input: content.state.input,
+                  error: content.state.error.message,
+                  metadata: content.state.metadata,
+                  time: { start, end: content.time.completed ?? start },
+                }
+      return {
+        id,
+        sessionID,
+        messageID: item.id,
+        type: "tool",
+        callID: content.id,
+        tool: content.name,
+        state,
+      }
+    })
+    messages.push(message)
+    parts.push({ id: item.id, part: next })
+  }
+
+  return { messages, parts }
+}
 
 export default function Layout(props: ParentProps) {
   const [store, setStore, , ready] = persisted(
@@ -286,27 +479,27 @@ export default function Layout(props: ParentProps) {
       }
 
       const unsub = globalSDK.event.listen((e) => {
-        if (e.details?.type === "worktree.ready") {
-          setBusy(e.name, false)
-          WorktreeState.ready(e.name)
-          return
-        }
-
-        if (e.details?.type === "worktree.failed") {
-          setBusy(e.name, false)
-          WorktreeState.failed(e.name, e.details.properties?.message ?? language.t("common.requestFailed"))
-          return
-        }
-
-        if (e.details?.type !== "permission.asked" && e.details?.type !== "question.asked") return
+        const event = e.details
+        if (event.type !== "permission.asked" && event.type !== "question.asked") return
         const title =
-          e.details.type === "permission.asked"
+          event.type === "permission.asked"
             ? language.t("notification.permission.title")
             : language.t("notification.question.title")
-        const icon = e.details.type === "permission.asked" ? ("checklist" as const) : ("bubble-5" as const)
+        const icon = event.type === "permission.asked" ? ("checklist" as const) : ("bubble-5" as const)
         const directory = e.name
-        const props = e.details.properties
-        if (e.details.type === "permission.asked" && permission.autoResponds(e.details.properties, directory)) return
+        const props = event.data
+        if (event.type === "permission.asked") {
+          const request: PermissionRequest = {
+            id: event.data.id,
+            sessionID: event.data.sessionID,
+            permission: event.data.action,
+            patterns: event.data.resources,
+            metadata: event.data.metadata ?? {},
+            always: event.data.save ?? [],
+            tool: event.data.source && { messageID: event.data.source.messageID, callID: event.data.source.id },
+          }
+          if (permission.autoResponds(request, directory)) return
+        }
 
         const [store] = globalSync.child(directory, { bootstrap: false })
         const session = store.session.find((s) => s.id === props.sessionID)
@@ -315,7 +508,7 @@ export default function Layout(props: ParentProps) {
         const sessionTitle = session?.title ?? language.t("command.session.new")
         const projectName = getFilename(directory)
         const description =
-          e.details.type === "permission.asked"
+          event.type === "permission.asked"
             ? language.t("notification.permission.description", { sessionTitle, projectName })
             : language.t("notification.question.description", { sessionTitle, projectName })
         const href = `/${base64Encode(directory)}/${props.sessionID}`
@@ -325,7 +518,7 @@ export default function Layout(props: ParentProps) {
         if (now - lastAlerted < cooldownMs) return
         alertedAtBySession.set(sessionKey, now)
 
-        if (e.details.type === "permission.asked") {
+        if (event.type === "permission.asked") {
           if (settings.sounds.permissionsEnabled()) {
             playSound(soundSrc(settings.sounds.permissions()))
           }
@@ -334,7 +527,7 @@ export default function Layout(props: ParentProps) {
           }
         }
 
-        if (e.details.type === "question.asked") {
+        if (event.type === "question.asked") {
           if (settings.notifications.agent()) {
             void platform.notify(title, description, href)
           }
@@ -567,13 +760,12 @@ export default function Layout(props: ParentProps) {
   async function prefetchMessages(directory: string, sessionID: string, token: number) {
     const [store, setStore] = globalSync.child(directory, { bootstrap: false })
 
-    return retry(() => globalSDK.client.session.messages({ directory, sessionID, limit: prefetchChunk }))
-      .then((messages) => {
+    return retry(() => globalSDK.client.message.list({ sessionID, limit: prefetchChunk, order: "desc" }))
+      .then((response) => {
         if (prefetchToken.value !== token) return
 
-        const items = (messages.data ?? []).filter((x) => !!x?.info?.id)
-        const next = items.map((x) => x.info).filter((m): m is Message => !!m?.id)
-        const sorted = mergeByID([], next)
+        const converted = toMessages(response.data, sessionID, directory)
+        const sorted = mergeByID([], converted.messages)
 
         const current = store.message[sessionID] ?? []
         const merged = mergeByID(
@@ -584,14 +776,14 @@ export default function Layout(props: ParentProps) {
         batch(() => {
           setStore("message", sessionID, reconcile(merged, { key: "id" }))
 
-          for (const message of items) {
-            const currentParts = store.part[message.info.id] ?? []
+          for (const message of converted.parts) {
+            const currentParts = store.part[message.id] ?? []
             const mergedParts = mergeByID(
               currentParts.filter((item): item is (typeof currentParts)[number] & { id: string } => !!item?.id),
-              message.parts.filter((item): item is (typeof message.parts)[number] & { id: string } => !!item?.id),
+              message.part.filter((item): item is (typeof message.part)[number] & { id: string } => !!item?.id),
             )
 
-            setStore("part", message.info.id, reconcile(mergedParts, { key: "id" }))
+            setStore("part", message.id, reconcile(mergedParts, { key: "id" }))
           }
         })
       })
@@ -848,12 +1040,8 @@ export default function Layout(props: ParentProps) {
         title: language.t("workspace.new"),
         category: language.t("command.category.workspace"),
         keybind: "mod+shift+w",
-        disabled: !workspaceSetting(),
-        onSelect: () => {
-          const project = currentProject()
-          if (!project) return
-          return createWorkspace(project)
-        },
+        disabled: true,
+        onSelect: () => undefined,
       },
       {
         id: "workspace.toggle",
@@ -987,16 +1175,6 @@ export default function Layout(props: ParentProps) {
     return root
   }
 
-  function clearLastProjectSession(root: string) {
-    if (!store.lastProjectSession[root]) return
-    setStore(
-      "lastProjectSession",
-      produce((draft) => {
-        delete draft[root]
-      }),
-    )
-  }
-
   function syncSessionRoute(directory: string, id: string, root = activeProjectRoot(directory)) {
     rememberSessionRoute(directory, id, root)
     notification.session.markViewed(id)
@@ -1045,16 +1223,10 @@ export default function Layout(props: ParentProps) {
     onCleanup(() => window.removeEventListener(deepLinkEvent, handler as EventListener))
   })
 
-  async function renameProject(project: LocalProject, next: string) {
+  function renameProject(project: LocalProject, next: string) {
     const current = displayName(project)
     if (next === current) return
     const name = next === getFilename(project.worktree) ? "" : next
-
-    if (project.id && project.id !== "global") {
-      await globalSDK.client.project.update({ projectID: project.id, directory: project.worktree, name })
-      return
-    }
-
     globalSync.project.meta(project.worktree, { name })
   }
 
@@ -1140,130 +1312,6 @@ export default function Layout(props: ParentProps) {
     ))
   }
 
-  const deleteWorkspace = async (root: string, directory: string, leaveDeletedWorkspace = false) => {
-    if (directory === root) return
-
-    const current = currentDir()
-    const currentKey = workspaceKey(current)
-    const deletedKey = workspaceKey(directory)
-    const shouldLeave = leaveDeletedWorkspace || (!!params.dir && currentKey === deletedKey)
-    if (!leaveDeletedWorkspace && shouldLeave) {
-      navigateWithSidebarReset(`/${base64Encode(root)}`)
-    }
-
-    setBusy(directory, true)
-
-    const result = await globalSDK.client.worktree
-      .remove({ directory: root, worktreeRemoveInput: { directory } })
-      .then((x) => x.data)
-      .catch((err) => {
-        showToast({
-          title: language.t("workspace.delete.failed.title"),
-          description: errorMessage(err, language.t("common.requestFailed")),
-        })
-        return false
-      })
-
-    setBusy(directory, false)
-
-    if (!result) return
-
-    if (workspaceKey(store.lastProjectSession[root]?.directory ?? "") === workspaceKey(directory)) {
-      clearLastProjectSession(root)
-    }
-
-    globalSync.set(
-      "project",
-      produce((draft) => {
-        const project = draft.find((item) => item.worktree === root)
-        if (!project) return
-        project.sandboxes = (project.sandboxes ?? []).filter((sandbox) => sandbox !== directory)
-      }),
-    )
-    setStore("workspaceOrder", root, (order) => (order ?? []).filter((workspace) => workspace !== directory))
-
-    layout.projects.close(directory)
-    layout.projects.open(root)
-
-    if (shouldLeave) return
-
-    const nextCurrent = currentDir()
-    const nextKey = workspaceKey(nextCurrent)
-    const project = layout.projects.list().find((item) => item.worktree === root)
-    const dirs = project
-      ? effectiveWorkspaceOrder(root, [root, ...(project.sandboxes ?? [])], store.workspaceOrder[root])
-      : [root]
-    const valid = dirs.some((item) => workspaceKey(item) === nextKey)
-
-    if (params.dir && projectRoot(nextCurrent) === root && !valid) {
-      navigateWithSidebarReset(`/${base64Encode(root)}`)
-    }
-  }
-
-  const resetWorkspace = async (root: string, directory: string) => {
-    if (directory === root) return
-    setBusy(directory, true)
-
-    const progress = showToast({
-      persistent: true,
-      title: language.t("workspace.resetting.title"),
-      description: language.t("workspace.resetting.description"),
-    })
-    const dismiss = () => toaster.dismiss(progress)
-
-    const sessions: Session[] = await globalSDK.client.session
-      .list({ directory })
-      .then((x) => x.data ?? [])
-      .catch(() => [])
-
-    await globalSDK.client.instance.dispose({ directory }).catch(() => undefined)
-
-    const result = await globalSDK.client.worktree
-      .reset({ directory: root, worktreeResetInput: { directory } })
-      .then((x) => x.data)
-      .catch((err) => {
-        showToast({
-          title: language.t("workspace.reset.failed.title"),
-          description: errorMessage(err, language.t("common.requestFailed")),
-        })
-        return false
-      })
-
-    if (!result) {
-      setBusy(directory, false)
-      dismiss()
-      return
-    }
-
-    await Promise.all(
-      sessions
-        .filter((session) => !session.time.archived)
-        .map((session) => globalSync.project.archiveSession(session.directory, session.id)),
-    )
-
-    setBusy(directory, false)
-    dismiss()
-
-    showToast({
-      title: language.t("workspace.reset.success.title"),
-      description: language.t("workspace.reset.success.description"),
-      actions: [
-        {
-          label: language.t("command.session.new"),
-          onClick: () => {
-            const href = `/${base64Encode(directory)}`
-            navigate(href)
-            layout.mobileSidebar.hide()
-          },
-        },
-        {
-          label: language.t("common.dismiss"),
-          onClick: "dismiss",
-        },
-      ],
-    })
-  }
-
   function DialogDeleteWorkspace(props: { root: string; directory: string }) {
     const name = createMemo(() => getFilename(props.directory))
     const [data, setData] = createStore({
@@ -1272,8 +1320,8 @@ export default function Layout(props: ParentProps) {
     })
 
     onMount(() => {
-      globalSDK.client.file
-        .status({ directory: props.directory })
+      globalSDK.client.vcs
+        .status({ location: { directory: props.directory } })
         .then((x) => {
           const files = x.data ?? []
           const dirty = files.length > 0
@@ -1283,15 +1331,6 @@ export default function Layout(props: ParentProps) {
           setData({ status: "error", dirty: false })
         })
     })
-
-    const handleDelete = () => {
-      const leaveDeletedWorkspace = !!params.dir && workspaceKey(currentDir()) === workspaceKey(props.directory)
-      if (leaveDeletedWorkspace) {
-        navigateWithSidebarReset(`/${base64Encode(props.root)}`)
-      }
-      dialog.close()
-      void deleteWorkspace(props.root, props.directory, leaveDeletedWorkspace)
-    }
 
     const description = () => {
       if (data.status === "loading") return language.t("workspace.status.checking")
@@ -1313,7 +1352,7 @@ export default function Layout(props: ParentProps) {
             <Button variant="ghost" size="large" onClick={() => dialog.close()}>
               {language.t("common.cancel")}
             </Button>
-            <Button variant="primary" size="large" disabled={data.status === "loading"} onClick={handleDelete}>
+            <Button variant="primary" size="large" disabled>
               {language.t("workspace.delete.button")}
             </Button>
           </div>
@@ -1333,15 +1372,15 @@ export default function Layout(props: ParentProps) {
     const refresh = async () => {
       const sessions = await globalSDK.client.session
         .list({ directory: props.directory })
-        .then((x) => x.data ?? [])
+        .then((x) => x.data.map(toSession))
         .catch(() => [])
       const active = sessions.filter((session) => !session.time.archived)
       setState({ sessions: active })
     }
 
     onMount(() => {
-      globalSDK.client.file
-        .status({ directory: props.directory })
+      globalSDK.client.vcs
+        .status({ location: { directory: props.directory } })
         .then((x) => {
           const files = x.data ?? []
           const dirty = files.length > 0
@@ -1352,11 +1391,6 @@ export default function Layout(props: ParentProps) {
           setState({ status: "error", dirty: false })
         })
     })
-
-    const handleReset = () => {
-      dialog.close()
-      void resetWorkspace(props.root, props.directory)
-    }
 
     const archivedCount = () => state.sessions.length
 
@@ -1389,7 +1423,7 @@ export default function Layout(props: ParentProps) {
             <Button variant="ghost" size="large" onClick={() => dialog.close()}>
               {language.t("common.cancel")}
             </Button>
-            <Button variant="primary" size="large" disabled={state.status === "loading"} onClick={handleReset}>
+            <Button variant="primary" size="large" disabled>
               {language.t("workspace.reset.button")}
             </Button>
           </div>
@@ -1545,46 +1579,6 @@ export default function Layout(props: ParentProps) {
 
   function handleWorkspaceDragEnd() {
     setStore("activeWorkspace", undefined)
-  }
-
-  const createWorkspace = async (project: LocalProject) => {
-    clearSidebarHoverState()
-    const created = await globalSDK.client.worktree
-      .create({ directory: project.worktree })
-      .then((x) => x.data)
-      .catch((err) => {
-        showToast({
-          title: language.t("workspace.create.failed.title"),
-          description: errorMessage(err, language.t("common.requestFailed")),
-        })
-        return undefined
-      })
-
-    if (!created?.directory || !created.branch) return
-
-    setWorkspaceName(created.directory, created.branch, project.id, created.branch)
-
-    const local = project.worktree
-    const key = workspaceKey(created.directory)
-    const root = workspaceKey(local)
-
-    setBusy(created.directory, true)
-    WorktreeState.pending(created.directory)
-    setStore("workspaceExpanded", key, true)
-    if (key !== created.directory) {
-      setStore("workspaceExpanded", created.directory, true)
-    }
-    setStore("workspaceOrder", project.worktree, (prev) => {
-      const existing = prev ?? []
-      const next = existing.filter((item) => {
-        const id = workspaceKey(item)
-        return id !== root && id !== key
-      })
-      return [created.directory, ...next]
-    })
-
-    globalSync.child(created.directory)
-    navigateWithSidebarReset(`/${base64Encode(created.directory)}`)
   }
 
   const workspaceSidebarCtx: WorkspaceSidebarContext = {
@@ -1801,7 +1795,7 @@ export default function Layout(props: ParentProps) {
                         keybind={command.keybind("workspace.new")}
                         placement="top"
                       >
-                        <Button size="large" icon="plus-small" class="w-full" onClick={() => createWorkspace(p())}>
+                        <Button size="large" icon="plus-small" class="w-full" disabled>
                           {language.t("workspace.new")}
                         </Button>
                       </TooltipKeybind>

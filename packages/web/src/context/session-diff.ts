@@ -1,4 +1,4 @@
-import type { Message, SnapshotFileDiff } from "@opencode-ai/sdk/v2/client"
+import type { Message, SnapshotFileDiff } from "@/types/opencode"
 import { diffLines } from "diff"
 import { snapshotToFileDiff, type FileDiff } from "./file/types"
 

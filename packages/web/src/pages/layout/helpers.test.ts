@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { type Session } from "@opencode-ai/sdk/v2/client"
+import { type Session } from "@/types/opencode"
 import { collectOpenProjectDeepLinks, drainPendingDeepLinks, parseDeepLink } from "./deep-links"
 import {
   displayName,

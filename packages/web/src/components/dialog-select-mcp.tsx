@@ -31,13 +31,21 @@ export const DialogSelectMcp: Component = () => {
     try {
       const status = sync.data.mcp[name]
       if (status?.status === "connected") {
-        await sdk.client.mcp.disconnect({ name })
+        await sdk.client.mcp.disconnect({ server: name, location: { directory: sdk.directory } })
       } else {
-        await sdk.client.mcp.connect({ name })
+        await sdk.client.mcp.connect({ server: name, location: { directory: sdk.directory } })
       }
 
-      const result = await sdk.client.mcp.status()
-      if (result.data) sync.set("mcp", result.data)
+      const result = await sdk.client.mcp.list({ location: { directory: sdk.directory } })
+      sync.set(
+        "mcp",
+        Object.fromEntries(
+          result.data.map((server) => [
+            server.name,
+            server.status.status === "pending" ? { status: "disabled" as const } : server.status,
+          ]),
+        ),
+      )
     } finally {
       setLoading(null)
     }

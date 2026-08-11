@@ -6,7 +6,8 @@ import type {
   ProviderAuthResponse,
   ProviderListResponse,
   Todo,
-} from "@opencode-ai/sdk/v2/client"
+} from "@/types/opencode"
+import type { SessionInfo } from "@opencode-ai/client"
 import { showToast } from "@/ui/components/toast"
 import { getFilename } from "@/utils/path"
 import {
@@ -37,6 +38,29 @@ import type { ProjectMeta } from "./global-sync/types"
 import { SESSION_RECENT_LIMIT } from "./global-sync/types"
 import { sanitizeProject } from "./global-sync/utils"
 import { formatServerError } from "@/utils/server-errors"
+
+function toSession(info: SessionInfo): import("@/types/opencode").Session {
+  return {
+    id: info.id,
+    slug: info.id,
+    projectID: info.projectID,
+    workspaceID: info.location.workspaceID,
+    directory: info.location.directory,
+    parentID: info.parentID,
+    title: info.title ?? "",
+    agent: info.agent,
+    model: info.model && { id: info.model.id, providerID: info.model.providerID, variant: info.model.variant },
+    version: "",
+    cost: info.cost,
+    tokens: info.tokens,
+    time: info.time,
+    revert: info.revert && {
+      messageID: info.revert.messageID,
+      partID: info.revert.partID,
+      snapshot: info.revert.snapshot,
+    },
+  }
+}
 
 type GlobalStore = {
   ready: boolean
@@ -200,7 +224,10 @@ function createGlobalSync() {
     const promise = loadRootSessionsWithFallback({
       directory,
       limit,
-      list: (query) => globalSDK.client.session.list(query),
+      list: (query) =>
+        globalSDK.client.session.list({ directory, parentID: null, limit: query.limit }).then((result) => ({
+          data: result.data.map(toSession),
+        })),
     })
       .then((x) => {
         const nonArchived = (x.data ?? [])
@@ -287,7 +314,7 @@ function createGlobalSync() {
         refresh: queue.refresh,
         setGlobalProject: setProjects,
       })
-      if (event.type === "server.connected" || event.type === "global.disposed") {
+      if (event.type === "server.connected") {
         for (const directory of Object.keys(children.children)) {
           queue.push(directory)
         }
@@ -307,13 +334,9 @@ function createGlobalSync() {
       push: queue.push,
       setSessionTodo,
       vcsCache: children.vcsCache.get(directory),
-      loadLsp: () => {
-        sdkFor(directory)
-          .lsp.status()
-          .then((x) => setStore("lsp", x.data ?? []))
-      },
     })
   })
+  void globalSDK.event.start()
 
   onCleanup(unsub)
   onCleanup(() => {
@@ -351,7 +374,7 @@ function createGlobalSync() {
   const projectApi = {
     loadSessions,
     async archiveSession(directory: string, sessionID: string) {
-      const info = await archiveSessionOnServer(sdkFor(directory), { directory, sessionID })
+      const info = await archiveSessionOnServer({ directory, sessionID })
       if (!info) return
 
       const existing = children.children[directory]
@@ -369,20 +392,8 @@ function createGlobalSync() {
     },
   }
 
-  const updateConfig = async (config: Config) => {
-    setGlobalStore("reload", "pending")
-    return globalSDK.client.global.config
-      .update({ config })
-      .then(bootstrap)
-      .then(() => {
-        queue.refresh()
-        setGlobalStore("reload", undefined)
-        queue.refresh()
-      })
-      .catch((error) => {
-        setGlobalStore("reload", undefined)
-        throw error
-      })
+  const updateConfig = async (_config: Config) => {
+    throw new Error("Configuration updates are not supported by the OpenCode V2 API")
   }
 
   return {

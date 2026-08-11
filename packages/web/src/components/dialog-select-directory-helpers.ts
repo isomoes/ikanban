@@ -1,16 +1,23 @@
 type DirectoryClient = {
   client: {
     file: {
-      list(input: { directory: string; path: string }): PromiseLike<{
-        data?: Array<{ name: string; absolute: string; type: string }>
+      list(input: { location: { directory: string }; path: string }): PromiseLike<{
+        data: Array<{ path: string; type: "file" | "directory" }>
       }>
     }
   }
 }
 
 export async function listInitialDirectories(sdk: DirectoryClient, directory: string) {
-  const result = await sdk.client.file.list({ directory, path: "" })
-  return (result.data ?? [])
+  const result = await sdk.client.file.list({ location: { directory }, path: "" })
+  return result.data
     .filter((node) => node.type === "directory")
-    .map((node) => ({ name: node.name, absolute: node.absolute }))
+    .map((node) => {
+      const path = node.path.replaceAll("\\", "/")
+      const name = path.replace(/\/+$/, "").split("/").pop() ?? path
+      const absolute = /^(?:\/|[A-Za-z]:\/)/.test(path)
+        ? path
+        : `${directory.replace(/[\\/]+$/, "")}/${path.replace(/^\/+/, "")}`
+      return { name, absolute }
+    })
 }

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import type { Session } from "@opencode-ai/sdk/v2/client"
+import type { Session } from "@/types/opencode"
 import { buildBoardColumns, formatRelativeTime, performArchive, trackedProjectDirectories } from "./helpers"
 
 const homeSource = await Bun.file(new URL("../home.tsx", import.meta.url)).text()

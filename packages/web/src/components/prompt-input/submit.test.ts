@@ -14,22 +14,21 @@ let selected = "/repo/worktree-a"
 const promptValue: Prompt = [{ type: "text", content: "ls", start: 0, end: 2 }]
 
 const clientFor = (directory: string) => {
-  createdClients.push(directory)
   return {
     session: {
-      create: async () => {
-        createdSessions.push(directory)
-        return { data: { id: `session-${createdSessions.length}` } }
+      create: async (input: { location?: { directory?: string } }) => {
+        const target = input.location?.directory ?? directory
+        createdClients.push(target)
+        createdSessions.push(target)
+        return { id: `session-${createdSessions.length}` }
       },
-      promptAsync: async () => {
-        sentPrompts.push(directory)
-        return { data: undefined }
+      prompt: async (input: { sessionID: string }) => {
+        sentPrompts.push(input.sessionID)
       },
-      command: async () => ({ data: undefined }),
-      abort: async () => ({ data: undefined }),
-    },
-    worktree: {
-      create: async () => ({ data: { directory: `${directory}/new` } }),
+      command: async () => undefined,
+      interrupt: async () => undefined,
+      switchAgent: async () => undefined,
+      switchModel: async () => undefined,
     },
   }
 }
@@ -40,13 +39,6 @@ beforeAll(async () => {
   mock.module("@solidjs/router", () => ({
     useNavigate: () => () => undefined,
     useParams: () => ({}),
-  }))
-
-  mock.module("@opencode-ai/sdk/v2/client", () => ({
-    createOpencodeClient: (input: { directory: string }) => {
-      createdClients.push(input.directory)
-      return clientFor(input.directory)
-    },
   }))
 
   mock.module("@/ui/components/toast", () => ({
@@ -104,9 +96,7 @@ beforeAll(async () => {
         directory: "/repo/main",
         client: rootClient,
         url: "http://localhost:4097",
-        createClient(opts: any) {
-          return clientFor(opts.directory)
-        },
+        createClient: () => rootClient,
       }
       return sdk
     },
@@ -183,10 +173,11 @@ describe("prompt submit worktree selection", () => {
     await submit.handleSubmit(event)
     selected = "/repo/worktree-b"
     await submit.handleSubmit(event)
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
     expect(createdClients).toEqual(["/repo/worktree-a", "/repo/worktree-b"])
     expect(createdSessions).toEqual(["/repo/worktree-a", "/repo/worktree-b"])
-    expect(sentPrompts).toEqual(["/repo/worktree-a", "/repo/worktree-b"])
+    expect(sentPrompts).toEqual(["session-1", "session-2"])
     expect(syncedDirectories).toEqual(["/repo/worktree-a", "/repo/worktree-b"])
   })
 

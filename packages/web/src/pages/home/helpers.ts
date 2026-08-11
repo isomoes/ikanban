@@ -1,4 +1,4 @@
-import type { Session } from "@opencode-ai/sdk/v2/client"
+import type { Session } from "@/types/opencode"
 import { DateTime } from "luxon"
 
 export type BoardColumn = "progress" | "idle"

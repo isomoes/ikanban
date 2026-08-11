@@ -1,12 +1,4 @@
-import type { FileNode } from "@opencode-ai/sdk/v2"
-
-// Minimal structural shape the invalidation logic reads. The full SDK event
-// payload union is assignable to this, and test fixtures can construct it
-// directly without carrying every SDK field.
-type WatcherEvent = {
-  type: string
-  properties?: unknown
-}
+import type { FileNode, V2Event } from "@/types/opencode"
 
 type WatcherOps = {
   normalize: (input: string) => string
@@ -18,14 +10,10 @@ type WatcherOps = {
   refreshDir: (path: string) => void
 }
 
-export function invalidateFromWatcher(event: WatcherEvent, ops: WatcherOps) {
-  if (event.type !== "file.watcher.updated") return
-  const props =
-    typeof event.properties === "object" && event.properties ? (event.properties as Record<string, unknown>) : undefined
-  const rawPath = typeof props?.file === "string" ? props.file : undefined
-  const kind = typeof props?.event === "string" ? props.event : undefined
-  if (!rawPath) return
-  if (!kind) return
+export function invalidateFromWatcher(event: V2Event, ops: WatcherOps) {
+  if (event.type !== "filesystem.changed") return
+  const rawPath = event.data.file
+  const kind = event.data.event
 
   const path = ops.normalize(rawPath)
   if (!path) return

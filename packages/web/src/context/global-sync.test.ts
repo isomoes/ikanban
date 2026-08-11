@@ -137,16 +137,13 @@ describe("bootstrapGlobal", () => {
 
     await bootstrapGlobal({
       globalSDK: {
-        global: {
-          health: async () => ({ data: { healthy: true } }),
-          config: { get: async () => ({ data: {} }) },
-        },
-        path: { get: async () => ({ data: { state: "", config: "", worktree: "", directory: "", home: "" } }) },
+        health: { get: async () => ({ healthy: true }) },
+        location: { get: async () => ({ directory: "", project: { id: "", directory: "", canonical: "" } }) },
+        config: { get: async () => [] },
         project,
-        provider: {
-          list: async () => ({ data: { all: [], connected: [], default: {} } }),
-          auth: async () => ({ data: {} }),
-        },
+        provider: { list: async () => ({ data: [] }) },
+        model: { list: async () => ({ data: [] }), default: async () => ({ data: undefined }) },
+        integration: { list: async () => ({ data: [] }) },
       } as never,
       connectErrorTitle: "connect",
       connectErrorDescription: "connect desc",

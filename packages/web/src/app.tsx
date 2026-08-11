@@ -30,7 +30,7 @@ import { PermissionProvider } from "@/context/permission";
 import { usePlatform } from "@/context/platform";
 import { PromptProvider } from "@/context/prompt";
 import {
-  type ServerConnection,
+  ServerConnection,
   ServerProvider,
   useServer,
 } from "@/context/server";
@@ -163,7 +163,7 @@ export function AppBaseProviders(props: ParentProps) {
 function ServerKey(props: ParentProps) {
   const server = useServer();
   return (
-    <Show when={server.key} keyed>
+    <Show when={server.current ? ServerConnection.runtimeKey(server.current) : undefined} keyed>
       <Title>{server.name ? `IKanban - ${server.name}` : "IKanban"}</Title>
       {props.children}
     </Show>

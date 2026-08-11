@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import type { Message, SnapshotFileDiff } from "@opencode-ai/sdk/v2/client"
+import type { Message, SnapshotFileDiff } from "@/types/opencode"
 import { loadSessionDiff } from "./session-diff"
 
 const patch = (before: string, after: string): SnapshotFileDiff => ({

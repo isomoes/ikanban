@@ -4,7 +4,7 @@ import { useSync } from "@/context/sync"
 import { useLanguage } from "@/context/language"
 import { Dialog } from "@/ui/components/dialog"
 import { List } from "@/ui/components/list"
-import type { TextPart as SDKTextPart, UserMessage } from "@opencode-ai/sdk/v2/client"
+import type { TextPart as SDKTextPart, UserMessage } from "@/types/opencode"
 
 interface TimelineMessage {
   id: string

@@ -8,7 +8,7 @@ import { Dialog } from "@/ui/components/dialog"
 import { List } from "@/ui/components/list"
 import { showToast } from "@/ui/components/toast"
 import { extractPromptFromParts } from "@/utils/prompt"
-import type { TextPart as SDKTextPart } from "@opencode-ai/sdk/v2/client"
+import type { TextPart as SDKTextPart } from "@/types/opencode"
 import { base64Encode } from "@/utils/encode"
 import { useLanguage } from "@/context/language"
 
@@ -68,14 +68,10 @@ export const DialogFork: Component = () => {
     })
 
     sdk.client.session
-      .fork({ sessionID, messageID: item.id })
+      .fork({ sessionID, boundary: { type: "before", messageID: item.id } })
       .then((forked) => {
-        if (!forked.data) {
-          showToast({ title: language.t("common.requestFailed") })
-          return
-        }
         dialog.close()
-        navigate(`/${base64Encode(sdk.directory)}/${forked.data.id}`)
+        navigate(`/${base64Encode(sdk.directory)}/${forked.id}`)
         requestAnimationFrame(() => {
           prompt.set(restored)
         })

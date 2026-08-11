@@ -1,7 +1,7 @@
 import { createMemo, onCleanup } from "solid-js"
 import { createStore, produce } from "solid-js/store"
 import { createSimpleContext } from "@/ui/context/index"
-import type { PermissionRequest } from "@opencode-ai/sdk/v2/client"
+import type { PermissionRequest } from "@/types/opencode"
 import { Persist, persisted } from "@/utils/persist"
 import { useGlobalSDK } from "@/context/global-sdk"
 import { useGlobalSync } from "./global-sync"
@@ -11,8 +11,8 @@ import { acceptKey, autoRespondsPermission } from "./permission-auto-respond"
 
 type PermissionRespondFn = (input: {
   sessionID: string
-  permissionID: string
-  response: "once" | "always" | "reject"
+  requestID: string
+  reply: "once" | "always" | "reject"
   directory?: string
 }) => void
 
@@ -37,6 +37,27 @@ function hasPermissionPromptRules(permission: unknown) {
 
   const config = permission as Record<string, unknown>
   return Object.values(config).some(isNonAllowRule)
+}
+
+function normalizePermission(permission: {
+  id: string
+  sessionID: string
+  action?: string
+  resources?: string[]
+  save?: string[]
+  permission?: string
+  patterns?: string[]
+  always?: string[]
+  metadata?: Record<string, unknown>
+}): PermissionRequest {
+  return {
+    id: permission.id,
+    sessionID: permission.sessionID,
+    permission: permission.permission ?? permission.action ?? "",
+    patterns: permission.patterns ?? permission.resources ?? [],
+    metadata: permission.metadata ?? {},
+    always: permission.always ?? permission.save ?? [],
+  }
 }
 
 export const { use: usePermission, provider: PermissionProvider } = createSimpleContext({
@@ -94,9 +115,11 @@ export const { use: usePermission, provider: PermissionProvider } = createSimple
     }
 
     const respond: PermissionRespondFn = (input) => {
-      globalSDK.client.permission.respond(input).catch(() => {
-        responded.delete(input.permissionID)
-      })
+      globalSDK.client.permission
+        .reply({ sessionID: input.sessionID, requestID: input.requestID, reply: input.reply })
+        .catch(() => {
+          responded.delete(input.requestID)
+        })
     }
 
     function respondOnce(permission: PermissionRequest, directory?: string) {
@@ -108,8 +131,8 @@ export const { use: usePermission, provider: PermissionProvider } = createSimple
       if (hit) return
       respond({
         sessionID: permission.sessionID,
-        permissionID: permission.id,
-        response: "once",
+        requestID: permission.id,
+        reply: "once",
         directory,
       })
     }
@@ -135,7 +158,7 @@ export const { use: usePermission, provider: PermissionProvider } = createSimple
       const event = e.details
       if (event?.type !== "permission.asked") return
 
-      const perm = event.properties
+      const perm = normalizePermission(event.data)
       if (!shouldAutoRespond(perm, e.name)) return
 
       respondOnce(perm, e.name)
@@ -153,11 +176,12 @@ export const { use: usePermission, provider: PermissionProvider } = createSimple
       )
 
       globalSDK.client.permission
-        .list({ directory })
+        .list({ sessionID })
         .then((x) => {
           if (enableVersion.get(key) !== version) return
           if (!isAutoAccepting(sessionID, directory)) return
-          for (const perm of x.data ?? []) {
+          for (const item of x) {
+            const perm = normalizePermission(item)
             if (!perm?.id) continue
             if (!shouldAutoRespond(perm, directory)) continue
             respondOnce(perm, directory)

@@ -1,4 +1,4 @@
-import type { ProviderAuthAuthorization } from "@opencode-ai/sdk/v2/client"
+import type { ProviderAuthAuthorization } from "@/types/opencode"
 import { Button } from "@/ui/components/button"
 import { useDialog } from "@/ui/context/dialog"
 import { Dialog } from "@/ui/components/dialog"
@@ -28,9 +28,17 @@ export function DialogConnectProvider(props: { provider: string }) {
 
   const alive = { value: true }
   const timer = { current: undefined as ReturnType<typeof setTimeout> | undefined }
+  let activeAttempt: ProviderAuthAuthorization | undefined
 
   onCleanup(() => {
     alive.value = false
+    const attempt = activeAttempt
+    activeAttempt = undefined
+    if (attempt) {
+      void globalSDK.client.integration.oauth
+        .cancel({ integrationID: attempt.integrationID, attemptID: attempt.attemptID })
+        .catch(() => undefined)
+    }
     if (timer.current === undefined) return
     clearTimeout(timer.current)
     timer.current = undefined
@@ -120,6 +128,17 @@ export function DialogConnectProvider(props: { provider: string }) {
     return fallback
   }
 
+  async function integrationMethod(index: number) {
+    const { data: info } = await globalSDK.client.provider.get({ providerID: props.provider })
+    if (!info.integrationID) throw new Error(`Provider ${props.provider} has no credential integration`)
+    const { data: integration } = await globalSDK.client.integration.get({ integrationID: info.integrationID })
+    if (!integration) throw new Error(`Integration ${info.integrationID} was not found`)
+    const connectable = integration.methods.filter((item) => item.type === "oauth" || item.type === "key")
+    const selected = connectable[index]
+    if (!selected) throw new Error(`Authentication method ${index} was not found`)
+    return { integrationID: info.integrationID, method: selected }
+  }
+
   async function selectMethod(index: number) {
     if (timer.current !== undefined) {
       clearTimeout(timer.current)
@@ -132,16 +151,22 @@ export function DialogConnectProvider(props: { provider: string }) {
     if (method.type === "oauth") {
       dispatch({ type: "auth.pending" })
       const start = Date.now()
-      await globalSDK.client.provider.oauth
-        .authorize(
-          {
-            providerID: props.provider,
-            method: index,
-          },
-          { throwOnError: true },
-        )
+      await integrationMethod(index)
+        .then(({ integrationID, method }) => {
+          if (method.type !== "oauth") throw new Error("Selected authentication method is not OAuth")
+          return globalSDK.client.integration.oauth
+            .connect({ integrationID, methodID: method.id })
+            .then(({ data }) => ({
+              integrationID,
+              attemptID: data.attemptID,
+              url: data.url,
+              instructions: data.instructions,
+              method: data.mode,
+            }))
+        })
         .then((x) => {
           if (!alive.value) return
+          activeAttempt = x
           const elapsed = Date.now() - start
           const delay = 1000 - elapsed
 
@@ -150,11 +175,11 @@ export function DialogConnectProvider(props: { provider: string }) {
             timer.current = setTimeout(() => {
               timer.current = undefined
               if (!alive.value) return
-              dispatch({ type: "auth.complete", authorization: x.data! })
+              dispatch({ type: "auth.complete", authorization: x })
             }, delay)
             return
           }
-          dispatch({ type: "auth.complete", authorization: x.data! })
+          dispatch({ type: "auth.complete", authorization: x })
         })
         .catch((e) => {
           if (!alive.value) return
@@ -179,7 +204,7 @@ export function DialogConnectProvider(props: { provider: string }) {
   })
 
   async function complete() {
-    await globalSDK.client.global.dispose()
+    activeAttempt = undefined
     dialog.close()
     showToast({
       variant: "success",
@@ -190,6 +215,13 @@ export function DialogConnectProvider(props: { provider: string }) {
   }
 
   function goBack() {
+    const attempt = activeAttempt
+    activeAttempt = undefined
+    if (attempt) {
+      void globalSDK.client.integration.oauth
+        .cancel({ integrationID: attempt.integrationID, attemptID: attempt.attemptID })
+        .catch(() => undefined)
+    }
     if (methods().length === 1) {
       dialog.show(() => <DialogSelectProvider />)
       return
@@ -256,13 +288,12 @@ export function DialogConnectProvider(props: { provider: string }) {
       }
 
       setFormStore("error", undefined)
-      await globalSDK.client.auth.set({
-        providerID: props.provider,
-        auth: {
-          type: "api",
-          key: apiKey,
-        },
-      })
+      const selected = await integrationMethod(store.methodIndex!)
+      if (selected.method.type !== "key") {
+        setFormStore("error", language.t("common.requestFailed"))
+        return
+      }
+      await globalSDK.client.integration.connect.key({ integrationID: selected.integrationID, key: apiKey })
       await complete()
     }
 
@@ -333,13 +364,14 @@ export function DialogConnectProvider(props: { provider: string }) {
       }
 
       setFormStore("error", undefined)
-      const result = await globalSDK.client.provider.oauth
-        .callback({
-          providerID: props.provider,
-          method: store.methodIndex,
+      const authorization = store.authorization!
+      const result = await globalSDK.client.integration.oauth
+        .complete({
+          integrationID: authorization.integrationID,
+          attemptID: authorization.attemptID,
           code,
         })
-        .then((value) => (value.error ? { ok: false as const, error: value.error } : { ok: true as const }))
+        .then(() => ({ ok: true as const }))
         .catch((error) => ({ ok: false as const, error }))
       if (result.ok) {
         await complete()
@@ -390,23 +422,36 @@ export function DialogConnectProvider(props: { provider: string }) {
           platform.openLink(store.authorization.url)
         }
 
-        const result = await globalSDK.client.provider.oauth
-          .callback({
-            providerID: props.provider,
-            method: store.methodIndex,
+        const authorization = store.authorization!
+        while (alive.value && activeAttempt?.attemptID === authorization.attemptID) {
+          const result = await globalSDK.client.integration.oauth
+            .status({ integrationID: authorization.integrationID, attemptID: authorization.attemptID })
+            .then((value) => ({ ok: true as const, status: value.data }))
+            .catch((error) => ({ ok: false as const, error }))
+          if (!alive.value || activeAttempt?.attemptID !== authorization.attemptID) return
+          if (!result.ok) {
+            dispatch({ type: "auth.error", error: formatError(result.error, language.t("common.requestFailed")) })
+            return
+          }
+          if (result.status.status === "complete") {
+            await complete()
+            return
+          }
+          if (result.status.status === "failed") {
+            dispatch({ type: "auth.error", error: result.status.message })
+            return
+          }
+          if (result.status.status === "expired") {
+            dispatch({ type: "auth.error", error: language.t("common.requestFailed") })
+            return
+          }
+          await new Promise<void>((resolve) => {
+            timer.current = setTimeout(() => {
+              timer.current = undefined
+              resolve()
+            }, 1000)
           })
-          .then((value) => (value.error ? { ok: false as const, error: value.error } : { ok: true as const }))
-          .catch((error) => ({ ok: false as const, error }))
-
-        if (!alive.value) return
-
-        if (!result.ok) {
-          const message = formatError(result.error, language.t("common.requestFailed"))
-          dispatch({ type: "auth.error", error: message })
-          return
         }
-
-        await complete()
       })()
     })
 

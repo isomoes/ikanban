@@ -1,4 +1,4 @@
-import type { Todo } from "@opencode-ai/sdk/v2"
+import type { Todo } from "@/types/opencode"
 import { AnimatedNumber } from "@/ui/components/animated-number"
 import { Checkbox } from "@/ui/components/checkbox"
 import { DockTray } from "@/ui/components/dock-surface"

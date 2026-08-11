@@ -1,14 +1,30 @@
 import type {
+  Agent,
+  Command,
   Config,
+  McpStatus,
+  Model,
   OpencodeClient,
   Path,
   PermissionRequest,
   Project,
+  Provider,
+  ProviderAuthMethod,
   ProviderAuthResponse,
   ProviderListResponse,
   QuestionRequest,
   Todo,
-} from "@opencode-ai/sdk/v2/client"
+} from "@/types/opencode"
+import type {
+  AgentInfo,
+  ConfigEntry,
+  IntegrationInfo,
+  McpServer,
+  ModelInfo,
+  PermissionRequest as NativePermissionRequest,
+  Project as NativeProject,
+  ProviderInfo,
+} from "@opencode-ai/client"
 import { showToast } from "@/ui/components/toast"
 import { getFilename } from "@/utils/path"
 import { retry } from "@/utils/retry"
@@ -17,6 +33,188 @@ import { reconcile, type SetStoreFunction, type Store } from "solid-js/store"
 import type { State, VcsCache } from "./types"
 import { cmp, normalizeProviderList } from "./utils"
 import { formatServerError } from "@/utils/server-errors"
+
+const location = (directory: string) => ({ location: { directory } })
+
+function toPath(info: Awaited<ReturnType<OpencodeClient["location"]["get"]>>): Path {
+  return {
+    home: "",
+    state: "",
+    config: "",
+    worktree: info.project.canonical,
+    directory: info.directory,
+  }
+}
+
+function toProject(project: NativeProject): Project {
+  return {
+    id: project.id,
+    worktree: project.canonical,
+    vcs: project.vcs,
+    name: project.name,
+    icon: project.icon,
+    commands: project.commands,
+    time: project.time,
+    sandboxes: project.sandboxes,
+  }
+}
+
+function toConfig(entries: ConfigEntry[]): Config {
+  const documents = entries.filter((entry): entry is Extract<ConfigEntry, { type: "document" }> => entry.type === "document")
+  const info: Extract<ConfigEntry, { type: "document" }>["info"] = Object.assign(
+    {},
+    ...documents.map((entry) => entry.info),
+  )
+  const permissions = info.permissions?.reduce<Record<string, Record<string, string>>>((result, rule) => {
+    result[rule.action] = { ...result[rule.action], [rule.resource]: rule.effect }
+    return result
+  }, {})
+  const model = typeof info.model === "string" ? info.model : info.model && `${info.model.providerID}/${info.model.model}`
+
+  return {
+    ...info,
+    model,
+    permission: permissions,
+    plugin: info.plugins,
+    provider: info.providers,
+  }
+}
+
+function toModel(model: ModelInfo): Model {
+  const cost = model.cost.find((item) => !item.tier) ?? model.cost[0]
+  return {
+    id: model.id,
+    providerID: model.providerID,
+    name: model.name,
+    family: model.family,
+    capabilities: {
+      temperature: true,
+      reasoning: model.capabilities.output.includes("reasoning"),
+      attachment: model.capabilities.input.some((item) => item !== "text"),
+      toolcall: model.capabilities.tools,
+      input: Object.fromEntries(model.capabilities.input.map((item) => [item, true])),
+      output: Object.fromEntries(model.capabilities.output.map((item) => [item, true])),
+      interleaved: false,
+    },
+    cost: cost ?? { input: 0, output: 0, cache: { read: 0, write: 0 } },
+    limit: model.limit,
+    status: model.status,
+    variants: Object.fromEntries(model.variants.map((variant) => [variant.id, variant.settings ?? {}])),
+  }
+}
+
+function toProviderList(
+  providers: ProviderInfo[],
+  models: ModelInfo[],
+  integrations: IntegrationInfo[],
+  defaultModel: ModelInfo | null,
+): ProviderListResponse {
+  const modelsByProvider = models.reduce<Map<string, ModelInfo[]>>((result, model) => {
+    const items = result.get(model.providerID)
+    if (items) items.push(model)
+    if (!items) result.set(model.providerID, [model])
+    return result
+  }, new Map())
+  const integrationByID = new Map(integrations.map((integration) => [integration.id, integration]))
+  const all: Provider[] = providers.map((provider) => ({
+    id: provider.id,
+    name: provider.name,
+    source: "custom",
+    env: [],
+    options: provider.settings ?? {},
+    models: Object.fromEntries((modelsByProvider.get(provider.id) ?? []).map((model) => [model.id, toModel(model)])),
+  }))
+  return normalizeProviderList({
+    all,
+    connected: providers
+      .filter((provider) => provider.integrationID && integrationByID.get(provider.integrationID)?.connections.length)
+      .map((provider) => provider.id),
+    default: defaultModel ? { [defaultModel.providerID]: defaultModel.id } : {},
+  })
+}
+
+function toProviderAuth(providers: ProviderInfo[], integrations: IntegrationInfo[]): ProviderAuthResponse {
+  const integrationByID = new Map(integrations.map((integration) => [integration.id, integration]))
+  const result: ProviderAuthResponse = {}
+  for (const provider of providers) {
+    const integration = provider.integrationID && integrationByID.get(provider.integrationID)
+    if (!integration) continue
+    const methods: ProviderAuthMethod[] = []
+    for (const method of integration.methods) {
+      if (method.type === "oauth") {
+        methods.push({ type: "oauth", label: method.label, prompts: method.form?.map((field) => ({ ...field })) })
+      }
+      if (method.type === "key") {
+        methods.push({ type: "api", label: method.label ?? "API key", prompts: method.form?.map((field) => ({ ...field })) })
+      }
+    }
+    if (methods.length) result[provider.id] = methods
+  }
+  return result
+}
+
+function toAgent(agent: AgentInfo): Agent {
+  return {
+    name: agent.id,
+    description: agent.description,
+    mode: agent.mode,
+    hidden: agent.hidden,
+    color: agent.color,
+    permission: agent.permissions.map((rule) => ({
+      permission: rule.action,
+      pattern: rule.resource,
+      action: rule.effect,
+    })),
+    model: agent.model && { modelID: agent.model.id, providerID: agent.model.providerID },
+    variant: agent.model?.variant,
+    options: agent.request.settings,
+    steps: agent.steps,
+  }
+}
+
+function toCommand(command: Awaited<ReturnType<OpencodeClient["command"]["list"]>>["data"][number]): Command {
+  return {
+    ...command,
+    model: command.model && `${command.model.providerID}/${command.model.id}`,
+    source: "command",
+    hints: [],
+  }
+}
+
+function toMcp(servers: McpServer[]): Record<string, McpStatus> {
+  return Object.fromEntries(
+    servers.map((server) => [
+      server.name,
+      server.status.status === "pending" ? { status: "failed" as const, error: "Connection pending" } : server.status,
+    ]),
+  )
+}
+
+function toPermission(request: NativePermissionRequest): PermissionRequest {
+  return {
+    id: request.id,
+    sessionID: request.sessionID,
+    permission: request.action,
+    patterns: request.resources,
+    metadata: request.metadata ?? {},
+    always: request.save ?? [],
+    tool: request.source && { messageID: request.source.messageID, callID: request.source.id },
+  }
+}
+
+async function providerState(client: OpencodeClient, directory?: string) {
+  const scope = directory ? location(directory) : undefined
+  const [providers, models, integrations, defaultModel] = await Promise.all([
+    client.provider.list(scope),
+    client.model.list(scope),
+    client.integration.list(scope),
+    client.model.default(scope),
+  ])
+  return {
+    list: toProviderList(providers.data, models.data, integrations.data, defaultModel.data),
+    auth: toProviderAuth(providers.data, integrations.data),
+  }
+}
 
 type GlobalStore = {
   ready: boolean
@@ -42,10 +240,7 @@ export async function bootstrapGlobal(input: {
   loadProjects?: boolean
   setGlobalStore: SetStoreFunction<GlobalStore>
 }) {
-  const health = await input.globalSDK.global
-    .health()
-    .then((x) => x.data)
-    .catch(() => undefined)
+  const health = await input.globalSDK.health.get().catch(() => undefined)
   if (!health?.healthy) {
     showToast({
       variant: "error",
@@ -58,23 +253,19 @@ export async function bootstrapGlobal(input: {
 
   const tasks = [
     retry(() =>
-      input.globalSDK.path.get().then((x) => {
-        input.setGlobalStore("path", x.data!)
+      input.globalSDK.location.get().then((info) => {
+        input.setGlobalStore("path", toPath(info))
       }),
     ),
     retry(() =>
-      input.globalSDK.global.config.get().then((x) => {
-        input.setGlobalStore("config", x.data!)
+      input.globalSDK.config.get().then((entries) => {
+        input.setGlobalStore("config", toConfig(entries))
       }),
     ),
     retry(() =>
-      input.globalSDK.provider.list().then((x) => {
-        input.setGlobalStore("provider", normalizeProviderList(x.data!))
-      }),
-    ),
-    retry(() =>
-      input.globalSDK.provider.auth().then((x) => {
-        input.setGlobalStore("provider_auth", x.data ?? {})
+      providerState(input.globalSDK).then((state) => {
+        input.setGlobalStore("provider", state.list)
+        input.setGlobalStore("provider_auth", state.auth)
       }),
     ),
   ]
@@ -85,8 +276,9 @@ export async function bootstrapGlobal(input: {
       0,
       retry(() =>
         input.globalSDK.project.list().then((x) => {
-          const projects = (x.data ?? [])
+          const projects = x
             .filter((p) => !!p?.id)
+            .map(toProject)
             .filter((p) => !!p.worktree && !p.worktree.includes("opencode-test"))
             .slice()
             .sort((a, b) => cmp(a.id, b.id))
@@ -134,15 +326,16 @@ export async function bootstrapDirectory(input: {
   invalidConfigurationError: string
 }) {
   if (input.store.status !== "complete") input.setStore("status", "loading")
+  const scope = location(input.directory)
 
   const blockingRequests = {
-    project: () => input.sdk.project.current().then((x) => input.setStore("project", x.data!.id)),
+    project: () => input.sdk.project.current(scope).then((project) => input.setStore("project", project.id)),
     provider: () =>
-      input.sdk.provider.list().then((x) => {
-        input.setStore("provider", normalizeProviderList(x.data!))
+      providerState(input.sdk, input.directory).then((state) => {
+        input.setStore("provider", state.list)
       }),
-    agent: () => input.sdk.app.agents().then((x) => input.setStore("agent", x.data ?? [])),
-    config: () => input.sdk.config.get().then((x) => input.setStore("config", x.data!)),
+    agent: () => input.sdk.agent.list(scope).then((x) => input.setStore("agent", x.data.map(toAgent))),
+    config: () => input.sdk.config.get(scope).then((entries) => input.setStore("config", toConfig(entries))),
   }
 
   try {
@@ -165,20 +358,24 @@ export async function bootstrapDirectory(input: {
   if (input.store.status !== "complete") input.setStore("status", "partial")
 
   Promise.all([
-    input.sdk.path.get().then((x) => input.setStore("path", x.data!)),
-    input.sdk.command.list().then((x) => input.setStore("command", x.data ?? [])),
-    input.sdk.session.status().then((x) => input.setStore("session_status", x.data!)),
+    input.sdk.location.get(scope).then((info) => input.setStore("path", toPath(info))),
+    input.sdk.command.list(scope).then((x) => input.setStore("command", x.data.map(toCommand))),
+    input.sdk.session.active().then((sessions) =>
+      input.setStore(
+        "session_status",
+        Object.fromEntries(Object.keys(sessions).map((sessionID) => [sessionID, { type: "busy" as const }])),
+      ),
+    ),
     input.loadSessions(input.directory),
-    input.sdk.mcp.status().then((x) => input.setStore("mcp", x.data!)),
-    input.sdk.lsp.status().then((x) => input.setStore("lsp", x.data!)),
-    input.sdk.vcs.get().then((x) => {
-      const next = x.data ?? input.store.vcs
+    input.sdk.mcp.list(scope).then((x) => input.setStore("mcp", toMcp(x.data))),
+    input.sdk.vcs.get(scope).then((x) => {
+      const next = { branch: x.data.branch.current, default_branch: x.data.branch.default }
       input.setStore("vcs", next)
       if (next?.branch) input.vcsCache.setStore("value", next)
     }),
-    input.sdk.permission.list().then((x) => {
+    input.sdk.permission.request.list(scope).then((x) => {
       const grouped = groupBySession(
-        (x.data ?? []).filter((perm): perm is PermissionRequest => !!perm?.id && !!perm.sessionID),
+        x.data.filter((perm) => !!perm?.id && !!perm.sessionID).map(toPermission),
       )
       batch(() => {
         for (const sessionID of Object.keys(input.store.permission)) {
@@ -197,8 +394,8 @@ export async function bootstrapDirectory(input: {
         }
       })
     }),
-    input.sdk.question.list().then((x) => {
-      const grouped = groupBySession((x.data ?? []).filter((q): q is QuestionRequest => !!q?.id && !!q.sessionID))
+    input.sdk.question.request.list(scope).then((x) => {
+      const grouped = groupBySession(x.data.filter((q): q is QuestionRequest => !!q?.id && !!q.sessionID))
       batch(() => {
         for (const sessionID of Object.keys(input.store.question)) {
           if (grouped[sessionID]) continue

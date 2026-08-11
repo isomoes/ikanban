@@ -1,8 +1,18 @@
 import { createSimpleContext } from "@/ui/context/index"
 import { type Accessor, createMemo } from "solid-js"
-import { useGlobalSDK } from "./global-sdk"
+import { useGlobalSDK, type GlobalSDKContext } from "./global-sdk"
 
-export const { use: useSDK, provider: SDKProvider } = createSimpleContext({
+export interface SDKContext {
+  readonly directory: string
+  readonly client: GlobalSDKContext["client"]
+  readonly url: string
+  createClient(opts: Parameters<GlobalSDKContext["createClient"]>[0]): GlobalSDKContext["client"]
+}
+
+export const { use: useSDK, provider: SDKProvider } = createSimpleContext<
+  SDKContext,
+  { directory: Accessor<string> }
+>({
   name: "SDK",
   init: (props: { directory: Accessor<string> }) => {
     const globalSDK = useGlobalSDK()

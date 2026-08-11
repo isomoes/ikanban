@@ -1,4 +1,4 @@
-import type { Message } from "@opencode-ai/sdk/v2/client"
+import type { Message } from "@/types/opencode"
 import { showToast } from "@/ui/components/toast"
 import { base64Encode } from "@/utils/encode"
 import { useNavigate, useParams } from "@solidjs/router"
@@ -87,7 +87,7 @@ export function createPromptSubmit(input: PromptSubmitInput) {
       return Promise.resolve()
     }
     return sdk.client.session
-      .abort({
+      .interrupt({
         sessionID,
       })
       .catch(() => {})
@@ -142,32 +142,23 @@ export function createPromptSubmit(input: PromptSubmitInput) {
     const isNewSession = !params.id
     const shouldAutoAccept = isNewSession && input.autoAccept()
     const worktreeSelection = input.newSessionWorktree?.() || "main"
+    const model = {
+      modelID: currentModel.id,
+      providerID: currentModel.provider.id,
+    }
+    const agent = currentAgent.name
+    const variant = local.model.variant.current()
 
     let sessionDirectory = projectDirectory
-    let client = sdk.client
+    const client = sdk.client
 
     if (isNewSession) {
       if (worktreeSelection === "create") {
-        const createdWorktree = await client.worktree
-          .create({ directory: projectDirectory })
-          .then((x) => x.data)
-          .catch((err) => {
-            showToast({
-              title: language.t("prompt.toast.worktreeCreateFailed.title"),
-              description: errorMessage(err),
-            })
-            return undefined
-          })
-
-        if (!createdWorktree?.directory) {
-          showToast({
-            title: language.t("prompt.toast.worktreeCreateFailed.title"),
-            description: language.t("common.requestFailed"),
-          })
-          return
-        }
-        WorktreeState.pending(createdWorktree.directory)
-        sessionDirectory = createdWorktree.directory
+        showToast({
+          title: language.t("prompt.toast.worktreeCreateFailed.title"),
+          description: language.t("common.requestFailed"),
+        })
+        return
       }
 
       if (worktreeSelection !== "main" && worktreeSelection !== "create") {
@@ -175,10 +166,6 @@ export function createPromptSubmit(input: PromptSubmitInput) {
       }
 
       if (sessionDirectory !== projectDirectory) {
-        client = sdk.createClient({
-          directory: sessionDirectory,
-          throwOnError: true,
-        })
         globalSync.child(sessionDirectory)
       }
 
@@ -188,8 +175,12 @@ export function createPromptSubmit(input: PromptSubmitInput) {
     let session = input.info()
     if (!session && isNewSession) {
       session = await client.session
-        .create()
-        .then((x) => x.data ?? undefined)
+        .create({
+          location: { directory: sessionDirectory },
+          agent,
+          model: { id: model.modelID, providerID: model.providerID, variant },
+        })
+        .then((x) => x ?? undefined)
         .catch((err) => {
           showToast({
             title: language.t("prompt.toast.sessionCreateFailed.title"),
@@ -212,13 +203,6 @@ export function createPromptSubmit(input: PromptSubmitInput) {
     }
 
     input.onSubmit?.()
-
-    const model = {
-      modelID: currentModel.id,
-      providerID: currentModel.provider.id,
-    }
-    const agent = currentAgent.name
-    const variant = local.model.variant.current()
 
     const clearInput = () => {
       prompt.reset()
@@ -249,14 +233,10 @@ export function createPromptSubmit(input: PromptSubmitInput) {
             command: commandName,
             arguments: args.join(" "),
             agent,
-            model: `${model.providerID}/${model.modelID}`,
-            variant,
-            parts: images.map((attachment) => ({
-              id: Identifier.ascending("part"),
-              type: "file" as const,
-              mime: attachment.mime,
-              url: attachment.dataUrl,
-              filename: attachment.filename,
+            model: { id: model.modelID, providerID: model.providerID, variant },
+            files: images.map((attachment) => ({
+              uri: attachment.dataUrl,
+              name: attachment.filename,
             })),
           })
           .catch((err) => {
@@ -370,14 +350,51 @@ export function createPromptSubmit(input: PromptSubmitInput) {
     const send = async () => {
       const ok = await waitForWorktree()
       if (!ok) return
-      await client.session.promptAsync({
-        sessionID: session.id,
-        agent,
-        model,
-        messageID,
-        parts: requestParts,
-        variant,
-      })
+      const files = requestParts.flatMap((part) =>
+        part.type === "file"
+          ? [
+              {
+                uri: part.url,
+                name: part.filename,
+                mention:
+                  part.source?.type === "file"
+                    ? {
+                        start: part.source.text.start,
+                        end: part.source.text.end,
+                        text: part.source.text.value,
+                      }
+                    : undefined,
+              },
+            ]
+          : [],
+      )
+      const agents = requestParts.flatMap((part) =>
+        part.type === "agent" && part.source
+          ? [
+              {
+                name: part.name,
+                mention: {
+                  start: part.source.start,
+                  end: part.source.end,
+                  text: part.source.value,
+                },
+              },
+            ]
+          : [],
+      )
+      const promptText = requestParts
+        .filter((part) => part.type === "text")
+        .map((part) => part.text)
+        .join("\n")
+
+      await Promise.all([
+        client.session.switchAgent({ sessionID: session.id, agent }),
+        client.session.switchModel({
+          sessionID: session.id,
+          model: { id: model.modelID, providerID: model.providerID, variant },
+        }),
+      ])
+      await client.session.prompt({ sessionID: session.id, id: messageID, text: promptText, files, agents })
     }
 
     void send().catch((err) => {

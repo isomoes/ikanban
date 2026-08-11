@@ -1,5 +1,5 @@
 import { getFilename } from "@/utils/path"
-import { type Session } from "@opencode-ai/sdk/v2/client"
+import { type Session } from "@/types/opencode"
 
 export const workspaceKey = (directory: string) => {
   const drive = directory.match(/^([A-Za-z]:)[\\/]+$/)

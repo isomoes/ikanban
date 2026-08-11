@@ -27,6 +27,7 @@ import { invalidateFromWatcher } from "./file/watcher"
 import {
   selectionFromLines,
   snapshotToFileDiff,
+  bytesToFileContent,
   type FileState,
   type FileSelection,
   type FileViewState,
@@ -77,7 +78,15 @@ export const { use: useFile, provider: FileProvider } = createSimpleContext({
     const tree = createFileTreeStore({
       scope,
       normalizeDir: path.normalizeDir,
-      list: (dir) => sdk.client.file.list({ path: dir }).then((x) => x.data ?? []),
+      list: (dir) =>
+        sdk.client.file.list({ location: { directory: scope() }, path: dir }).then((result) =>
+          result.data.map((entry) => ({
+            ...entry,
+            name: getFilename(entry.path),
+            absolute: `${scope()}/${entry.path}`.replace(/\/{2,}/g, "/"),
+            ignored: false,
+          })),
+        ),
       onError: (message) => {
         showToast({
           variant: "error",
@@ -176,13 +185,12 @@ export const { use: useFile, provider: FileProvider } = createSimpleContext({
       setLoading(file)
 
       const promise = sdk.client.file
-        .read({ path: file })
-        .then((x) => {
+        .read({ location: { directory }, path: file })
+        .then((bytes) => {
           if (scope() !== directory) return
-          const content = x.data
+          const content = bytesToFileContent(bytes, file)
           setLoaded(file, content)
 
-          if (!content) return
           touchFileContent(file, approxBytes(content))
           evictContent(new Set([file]))
         })
@@ -198,9 +206,9 @@ export const { use: useFile, provider: FileProvider } = createSimpleContext({
       return promise
     }
 
-    const search = (query: string, dirs: "true" | "false") =>
-      sdk.client.find.files({ query, dirs }).then(
-        (x) => (x.data ?? []).map(path.normalize),
+    const search = (query: string, type?: "file") =>
+      sdk.client.file.find({ location: { directory: scope() }, query, type }).then(
+        (result) => result.data.map((entry) => path.normalize(entry.path)),
         () => [],
       )
 
@@ -278,8 +286,8 @@ export const { use: useFile, provider: FileProvider } = createSimpleContext({
       setScrollLeft,
       selectedLines,
       setSelectedLines,
-      searchFiles: (query: string) => search(query, "false"),
-      searchFilesAndDirectories: (query: string) => search(query, "true"),
+      searchFiles: (query: string) => search(query, "file"),
+      searchFilesAndDirectories: (query: string) => search(query),
     }
   },
 })

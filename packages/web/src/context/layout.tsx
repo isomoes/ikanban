@@ -2,10 +2,9 @@ import { createStore, produce } from "solid-js/store"
 import { batch, createEffect, createMemo, onCleanup, onMount, type Accessor } from "solid-js"
 import { createSimpleContext } from "@/ui/context/index"
 import { useGlobalSync } from "./global-sync"
-import { useGlobalSDK } from "./global-sdk"
 import { useServer } from "./server"
 import { usePlatform } from "./platform"
-import { Project } from "@opencode-ai/sdk/v2"
+import { Project } from "@/types/opencode"
 import { Persist, persisted, removePersisted } from "@/utils/persist"
 import { decode64 } from "@/utils/base64"
 import { same } from "@/utils/same"
@@ -134,7 +133,6 @@ const normalizeStoredSessionTabs = (key: string, tabs: SessionTabs) => {
 export const { use: useLayout, provider: LayoutProvider } = createSimpleContext({
   name: "Layout",
   init: () => {
-    const globalSdk = useGlobalSDK()
     const globalSync = useGlobalSync()
     const server = useServer()
     const platform = usePlatform()
@@ -379,8 +377,6 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
     })
 
     const [colors, setColors] = createStore<Record<string, AvatarColorKey>>({})
-    const colorRequested = new Map<string, AvatarColorKey>()
-
     function pickAvailableColor(used: Set<string>): AvatarColorKey {
       const available = AVATAR_COLOR_KEYS.filter((c) => !used.has(c))
       if (available.length === 0) return AVATAR_COLOR_KEYS[Math.floor(Math.random() * AVATAR_COLOR_KEYS.length)]
@@ -395,11 +391,9 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
         : globalSync.data.project.find((x) => x.worktree === project.worktree)
 
       const local = childStore.projectMeta
+      const has = (value: object | undefined, key: string) => !!value && Object.hasOwn(value, key)
       const localOverride =
-        local?.name !== undefined ||
-        local?.commands?.start !== undefined ||
-        local?.icon?.override !== undefined ||
-        local?.icon?.color !== undefined
+        has(local, "name") || has(local?.commands, "start") || has(local?.icon, "override") || has(local?.icon, "color")
 
       const base = {
         ...(metadata ?? {}),
@@ -411,18 +405,20 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
         },
       }
 
-      const isGlobal = projectID === "global" || (metadata?.id === undefined && localOverride)
-      if (!isGlobal) return base
+      if (!localOverride) return base
 
       return {
         ...base,
         id: base.id ?? "global",
-        name: local?.name,
-        commands: local?.commands,
+        name: has(local, "name") ? local?.name : base.name,
+        commands: {
+          ...base.commands,
+          ...(has(local?.commands, "start") ? { start: local?.commands?.start } : {}),
+        },
         icon: {
           url: base.icon?.url,
-          override: local?.icon?.override,
-          color: local?.icon?.color,
+          override: has(local?.icon, "override") ? local?.icon?.override : base.icon?.override,
+          color: has(local?.icon, "color") ? local?.icon?.color : base.icon?.color,
         },
       }
     }
@@ -508,10 +504,6 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
       const projects = enriched()
       if (projects.length === 0) return
 
-      for (const project of projects) {
-        if (project.icon?.color) colorRequested.delete(project.worktree)
-      }
-
       const used = new Set<string>()
       for (const project of projects) {
         const color = project.icon?.color ?? colors[project.worktree]
@@ -527,22 +519,7 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
           used.add(color)
           setColors(worktree, color)
         }
-        if (!project.id) continue
-
-        const requested = colorRequested.get(worktree)
-        if (requested === color) continue
-        colorRequested.set(worktree, color)
-
-        if (project.id === "global") {
-          globalSync.project.meta(worktree, { icon: { color } })
-          continue
-        }
-
-        void globalSdk.client.project
-          .update({ projectID: project.id, directory: worktree, icon: { color } })
-          .catch(() => {
-            if (colorRequested.get(worktree) === color) colorRequested.delete(worktree)
-          })
+        globalSync.project.meta(worktree, { icon: { color } })
       }
     })
 

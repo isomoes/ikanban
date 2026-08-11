@@ -1,5 +1,5 @@
 import { createEffect, onCleanup, type JSX } from "solid-js"
-import type { FileDiff } from "@/context/file/types"
+import { bytesToFileContent, type FileDiff } from "@/context/file/types"
 import { SessionReview } from "@/ui/components/session-review"
 import type {
   SessionReviewCommentActions,
@@ -60,8 +60,8 @@ export function SessionReviewTab(props: SessionReviewTabProps) {
 
   const readFile = async (path: string) => {
     return sdk.client.file
-      .read({ path, directory: sdk.directory })
-      .then((x) => x.data)
+      .read({ path, location: { directory: sdk.directory } })
+      .then((bytes) => bytesToFileContent(bytes, path))
       .catch((error) => {
         console.debug("[session-review] failed to read file", { path, error })
         return undefined

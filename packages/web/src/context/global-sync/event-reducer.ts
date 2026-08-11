@@ -1,52 +1,18 @@
-import { Binary } from "@/utils/binary";
-import {
-  produce,
-  reconcile,
-  type SetStoreFunction,
-  type Store,
-} from "solid-js/store";
+import { Binary } from "@/utils/binary"
+import { produce, reconcile, type SetStoreFunction, type Store } from "solid-js/store"
 import type {
   Message,
   Part,
   PermissionRequest,
   Project,
-  QuestionRequest,
   Session,
-  SessionStatus,
-  SnapshotFileDiff,
   Todo,
-} from "@opencode-ai/sdk/v2/client";
-import { snapshotToFileDiff } from "@/context/file/types";
-import type { State, VcsCache } from "./types";
-import { trimSessions } from "./session-trim";
+  V2Event,
+} from "@/types/opencode"
+import type { State, VcsCache } from "./types"
+import { trimSessions } from "./session-trim"
 
-export function applyGlobalEvent(input: {
-  event: { type: string; properties?: unknown };
-  project: Project[];
-  setGlobalProject: (next: Project[] | ((draft: Project[]) => void)) => void;
-  refresh: () => void;
-}) {
-  if (
-    input.event.type === "global.disposed" ||
-    input.event.type === "server.connected"
-  ) {
-    input.refresh();
-    return;
-  }
-
-  if (input.event.type !== "project.updated") return;
-  const properties = input.event.properties as Project;
-  const result = Binary.search(input.project, properties.id, (s) => s.id);
-  if (result.found) {
-    input.setGlobalProject((draft) => {
-      draft[result.index] = { ...draft[result.index], ...properties };
-    });
-    return;
-  }
-  input.setGlobalProject((draft) => {
-    draft.splice(result.index, 0, properties);
-  });
-}
+const emptyTokens = () => ({ input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } })
 
 function cleanupSessionCaches(
   store: Store<State>,
@@ -54,374 +20,535 @@ function cleanupSessionCaches(
   sessionID: string,
   setSessionTodo?: (sessionID: string, todos: Todo[] | undefined) => void,
 ) {
-  if (!sessionID) return;
+  if (!sessionID) return
   const hasAny =
     store.message[sessionID] !== undefined ||
     store.session_diff[sessionID] !== undefined ||
     store.todo[sessionID] !== undefined ||
     store.permission[sessionID] !== undefined ||
     store.question[sessionID] !== undefined ||
-    store.session_status[sessionID] !== undefined;
-  setSessionTodo?.(sessionID, undefined);
-  if (!hasAny) return;
+    store.session_status[sessionID] !== undefined
+  setSessionTodo?.(sessionID, undefined)
+  if (!hasAny) return
   setStore(
     produce((draft) => {
-      const messages = draft.message[sessionID];
-      if (messages) {
-        for (const message of messages) {
-          const id = message?.id;
-          if (!id) continue;
-          delete draft.part[id];
-        }
-      }
-      delete draft.message[sessionID];
-      delete draft.session_diff[sessionID];
-      delete draft.todo[sessionID];
-      delete draft.permission[sessionID];
-      delete draft.question[sessionID];
-      delete draft.session_status[sessionID];
+      for (const message of draft.message[sessionID] ?? []) delete draft.part[message.id]
+      delete draft.message[sessionID]
+      delete draft.session_diff[sessionID]
+      delete draft.todo[sessionID]
+      delete draft.permission[sessionID]
+      delete draft.question[sessionID]
+      delete draft.session_status[sessionID]
     }),
-  );
+  )
+}
+
+function createdSession(event: Extract<V2Event, { type: "session.created" }>): Session {
+  const data = event.data
+  return {
+    id: data.sessionID,
+    slug: data.slug,
+    projectID: data.projectID,
+    workspaceID: data.location.workspaceID,
+    directory: data.location.directory,
+    path: data.subpath,
+    parentID: data.parentID,
+    title: data.title ?? data.slug,
+    agent: data.agent,
+    model: data.model,
+    version: data.version,
+    time: { created: event.created, updated: event.created },
+  }
+}
+
+function nativePermission(data: Extract<V2Event, { type: "permission.asked" }>["data"]): PermissionRequest {
+  return {
+    id: data.id,
+    sessionID: data.sessionID,
+    permission: data.action,
+    patterns: data.resources,
+    metadata: data.metadata ?? {},
+    always: data.save ?? [],
+    tool: data.source && { messageID: data.source.messageID, callID: data.source.id },
+  }
+}
+
+function upsertMessage(store: Store<State>, setStore: SetStoreFunction<State>, message: Message) {
+  const messages = store.message[message.sessionID]
+  if (!messages) {
+    setStore("message", message.sessionID, [message])
+    return
+  }
+  const result = Binary.search(messages, message.id, (item) => item.id)
+  if (result.found) {
+    setStore("message", message.sessionID, result.index, reconcile(message))
+    return
+  }
+  setStore(
+    "message",
+    message.sessionID,
+    produce((draft) => void draft.splice(result.index, 0, message)),
+  )
+}
+
+function upsertPart(store: Store<State>, setStore: SetStoreFunction<State>, part: Part) {
+  const parts = store.part[part.messageID]
+  if (!parts) {
+    setStore("part", part.messageID, [part])
+    return
+  }
+  const result = Binary.search(parts, part.id, (item) => item.id)
+  if (result.found) {
+    setStore("part", part.messageID, result.index, reconcile(part))
+    return
+  }
+  setStore(
+    "part",
+    part.messageID,
+    produce((draft) => void draft.splice(result.index, 0, part)),
+  )
+}
+
+function updatePart(
+  store: Store<State>,
+  setStore: SetStoreFunction<State>,
+  messageID: string,
+  partID: string,
+  update: (part: Part) => Part,
+) {
+  const parts = store.part[messageID]
+  if (!parts) return
+  const result = Binary.search(parts, partID, (part) => part.id)
+  if (!result.found) return
+  setStore("part", messageID, result.index, reconcile(update(parts[result.index]!)))
+}
+
+function textPartID(messageID: string, type: "text" | "reasoning", ordinal: number) {
+  return `${messageID}:${type}:${ordinal}`
+}
+
+function toolPartID(messageID: string, id: string) {
+  return `${messageID}:tool:${id}`
+}
+
+function structuredError(error: { type: string; message: string; status?: number }) {
+  return { name: error.type, data: { message: error.message, status: error.status } }
+}
+
+export function applyGlobalEvent(input: {
+  event: V2Event
+  project: Project[]
+  setGlobalProject: (next: Project[] | ((draft: Project[]) => void)) => void
+  refresh: () => void
+}) {
+  if (
+    input.event.type === "server.connected" ||
+    input.event.type === "project.directories.updated" ||
+    input.event.type === "catalog.updated" ||
+    input.event.type === "config.updated"
+  ) {
+    input.refresh()
+  }
 }
 
 export function applyDirectoryEvent(input: {
-  event: { type: string; properties?: unknown };
-  store: Store<State>;
-  setStore: SetStoreFunction<State>;
-  push: (directory: string) => void;
-  directory: string;
-  loadLsp: () => void;
-  vcsCache?: VcsCache;
-  setSessionTodo?: (sessionID: string, todos: Todo[] | undefined) => void;
+  event: V2Event
+  store: Store<State>
+  setStore: SetStoreFunction<State>
+  push: (directory: string) => void
+  directory: string
+  vcsCache?: VcsCache
+  setSessionTodo?: (sessionID: string, todos: Todo[] | undefined) => void
 }) {
-  const event = input.event;
+  const event = input.event
   switch (event.type) {
-    case "server.instance.disposed": {
-      input.push(input.directory);
-      return;
+    case "server.connected":
+    case "project.directories.updated":
+    case "config.updated":
+    case "catalog.updated": {
+      input.push(input.directory)
+      return
     }
     case "session.created": {
-      const info = (event.properties as { info: Session }).info;
-      const result = Binary.search(input.store.session, info.id, (s) => s.id);
+      const info = createdSession(event)
+      const result = Binary.search(input.store.session, info.id, (session) => session.id)
       if (result.found) {
-        input.setStore("session", result.index, reconcile(info));
-        break;
+        input.setStore("session", result.index, reconcile(info))
+        return
       }
-      const next = input.store.session.slice();
-      next.splice(result.index, 0, info);
-      const trimmed = trimSessions(next, {
-        limit: input.store.limit,
-        permission: input.store.permission,
-      });
-      input.setStore("session", reconcile(trimmed, { key: "id" }));
-      if (!info.parentID) input.setStore("sessionTotal", (value) => value + 1);
-      break;
-    }
-    case "session.updated": {
-      const info = (event.properties as { info: Session }).info;
-      const result = Binary.search(input.store.session, info.id, (s) => s.id);
-      if (info.time.archived) {
-        if (result.found) {
-          input.setStore(
-            "session",
-            produce((draft) => {
-              draft.splice(result.index, 1);
-            }),
-          );
-        }
-        cleanupSessionCaches(
-          input.store,
-          input.setStore,
-          info.id,
-          input.setSessionTodo,
-        );
-        if (info.parentID) break;
-        input.setStore("sessionTotal", (value) => Math.max(0, value - 1));
-        break;
-      }
-      if (result.found) {
-        input.setStore("session", result.index, reconcile(info));
-        break;
-      }
-      const next = input.store.session.slice();
-      next.splice(result.index, 0, info);
-      const trimmed = trimSessions(next, {
-        limit: input.store.limit,
-        permission: input.store.permission,
-      });
-      input.setStore("session", reconcile(trimmed, { key: "id" }));
-      break;
+      const next = input.store.session.slice()
+      next.splice(result.index, 0, info)
+      const trimmed = trimSessions(next, { limit: input.store.limit, permission: input.store.permission })
+      input.setStore("session", reconcile(trimmed, { key: "id" }))
+      if (!info.parentID) input.setStore("sessionTotal", (value) => value + 1)
+      return
     }
     case "session.deleted": {
-      const info = (event.properties as { info: Session }).info;
-      const result = Binary.search(input.store.session, info.id, (s) => s.id);
+      const result = Binary.search(input.store.session, event.data.sessionID, (session) => session.id)
+      const info = result.found ? input.store.session[result.index] : undefined
       if (result.found) {
         input.setStore(
           "session",
-          produce((draft) => {
-            draft.splice(result.index, 1);
-          }),
-        );
+          produce((draft) => void draft.splice(result.index, 1)),
+        )
       }
-      cleanupSessionCaches(
-        input.store,
-        input.setStore,
-        info.id,
-        input.setSessionTodo,
-      );
-      if (info.parentID) break;
-      input.setStore("sessionTotal", (value) => Math.max(0, value - 1));
-      break;
+      cleanupSessionCaches(input.store, input.setStore, event.data.sessionID, input.setSessionTodo)
+      if (info && !info.parentID) input.setStore("sessionTotal", (value) => Math.max(0, value - 1))
+      return
     }
-    case "session.diff": {
-      const props = event.properties as { sessionID: string; diff: SnapshotFileDiff[] };
-      input.setStore(
-        "session_diff",
-        props.sessionID,
-        reconcile(props.diff.map(snapshotToFileDiff), { key: "file" }),
-      );
-      break;
+    case "session.renamed":
+    case "session.agent.selected":
+    case "session.model.selected":
+    case "session.usage.updated": {
+      const result = Binary.search(input.store.session, event.data.sessionID, (session) => session.id)
+      if (!result.found) return
+      input.setStore("session", result.index, (session) => ({
+        ...session,
+        ...(event.type === "session.renamed" ? { title: event.data.title } : {}),
+        ...(event.type === "session.agent.selected" ? { agent: event.data.agent } : {}),
+        ...(event.type === "session.model.selected" ? { model: event.data.model } : {}),
+        ...(event.type === "session.usage.updated" ? { cost: event.data.cost, tokens: event.data.tokens } : {}),
+        time: { ...session.time, updated: event.created },
+      }))
+      return
     }
-    case "todo.updated": {
-      const props = event.properties as { sessionID: string; todos: Todo[] };
-      input.setStore(
-        "todo",
-        props.sessionID,
-        reconcile(props.todos, { key: "id" }),
-      );
-      input.setSessionTodo?.(props.sessionID, props.todos);
-      break;
+    case "session.moved": {
+      const result = Binary.search(input.store.session, event.data.sessionID, (session) => session.id)
+      if (!result.found) return
+      if (event.data.location.directory !== input.directory) {
+        const info = input.store.session[result.index]
+        input.setStore(
+          "session",
+          produce((draft) => void draft.splice(result.index, 1)),
+        )
+        if (!info?.parentID) input.setStore("sessionTotal", (value) => Math.max(0, value - 1))
+        return
+      }
+      input.setStore("session", result.index, (session) => ({
+        ...session,
+        directory: event.data.location.directory,
+        workspaceID: event.data.location.workspaceID,
+        projectID: event.data.projectID ?? session.projectID,
+        path: event.data.subpath,
+        time: { ...session.time, updated: event.created },
+      }))
+      return
     }
     case "session.status": {
-      const props = event.properties as {
-        sessionID: string;
-        status: SessionStatus;
-      };
-      if (props.status.type === "idle") {
+      input.setStore("session_status", event.data.sessionID, reconcile(event.data.status))
+      if (event.data.status.type === "idle") {
         input.setStore(
           produce((draft) => {
-            delete draft.session_diff[props.sessionID];
-            delete draft.project_diff[input.directory];
+            delete draft.session_diff[event.data.sessionID]
+            delete draft.project_diff[input.directory]
           }),
-        );
+        )
+        input.push(input.directory)
       }
-      input.setStore(
-        "session_status",
-        props.sessionID,
-        reconcile(props.status),
-      );
-      break;
+      return
     }
-    case "message.updated": {
-      const info = (event.properties as { info: Message }).info;
-      const messages = input.store.message[info.sessionID];
-      if (!messages) {
-        input.setStore("message", info.sessionID, [info]);
-        break;
-      }
-      const result = Binary.search(messages, info.id, (m) => m.id);
-      if (result.found) {
-        input.setStore(
-          "message",
-          info.sessionID,
-          result.index,
-          reconcile(info),
-        );
-        break;
-      }
-      input.setStore(
-        "message",
-        info.sessionID,
-        produce((draft) => {
-          draft.splice(result.index, 0, info);
-        }),
-      );
-      break;
+    case "session.input.admitted": {
+      if (event.data.input.type !== "user") return
+      upsertMessage(input.store, input.setStore, {
+        id: event.data.inputID,
+        sessionID: event.data.sessionID,
+        role: "user",
+        time: { created: event.created },
+        agent: "",
+        model: { providerID: "", modelID: "" },
+      })
+      upsertPart(input.store, input.setStore, {
+        id: `${event.data.inputID}:text`,
+        sessionID: event.data.sessionID,
+        messageID: event.data.inputID,
+        type: "text",
+        text: event.data.input.data.text,
+        metadata: event.data.input.data.metadata,
+      })
+      return
     }
-    case "message.removed": {
-      const props = event.properties as {
-        sessionID: string;
-        messageID: string;
-      };
-      input.setStore(
-        produce((draft) => {
-          const messages = draft.message[props.sessionID];
-          if (messages) {
-            const result = Binary.search(
-              messages,
-              props.messageID,
-              (m) => m.id,
-            );
-            if (result.found) messages.splice(result.index, 1);
+    case "session.step.started": {
+      const messages = input.store.message[event.data.sessionID] ?? []
+      const parent = [...messages].reverse().find((message) => message.role === "user")
+      upsertMessage(input.store, input.setStore, {
+        id: event.data.assistantMessageID,
+        sessionID: event.data.sessionID,
+        role: "assistant",
+        time: { created: event.created },
+        parentID: parent?.id ?? "",
+        modelID: event.data.model.id,
+        providerID: event.data.model.providerID,
+        mode: event.data.agent,
+        agent: event.data.agent,
+        path: { cwd: input.directory, root: input.directory },
+        cost: 0,
+        tokens: emptyTokens(),
+        variant: event.data.model.variant,
+      })
+      return
+    }
+    case "session.step.ended": {
+      const messages = input.store.message[event.data.sessionID]
+      const index = messages?.findIndex((message) => message.id === event.data.assistantMessageID) ?? -1
+      if (index < 0) return
+      input.setStore("message", event.data.sessionID, index, (message) =>
+        message.role === "assistant"
+          ? {
+              ...message,
+              time: { ...message.time, completed: event.created },
+              finish: event.data.finish,
+              cost: event.data.cost,
+              tokens: event.data.tokens,
+            }
+          : message,
+      )
+      return
+    }
+    case "session.execution.failed":
+    case "session.step.failed": {
+      const messages = input.store.message[event.data.sessionID]
+      const messageID = event.type === "session.step.failed" ? event.data.assistantMessageID : undefined
+      const index = messageID
+        ? (messages?.findIndex((message) => message.id === messageID) ?? -1)
+        : (messages?.findLastIndex((message) => message.role === "assistant") ?? -1)
+      if (!messages || index < 0) return
+      input.setStore("message", event.data.sessionID, index, (message) =>
+        message.role === "assistant"
+          ? { ...message, time: { ...message.time, completed: event.created }, error: structuredError(event.data.error) }
+          : message,
+      )
+      return
+    }
+    case "session.text.started":
+    case "session.reasoning.started": {
+      const type = event.type === "session.text.started" ? "text" : "reasoning"
+      const id = textPartID(event.data.assistantMessageID, type, event.data.ordinal)
+      const base = {
+        id,
+        sessionID: event.data.sessionID,
+        messageID: event.data.assistantMessageID,
+        type,
+        text: "",
+      } as Part
+      upsertPart(
+        input.store,
+        input.setStore,
+        type === "reasoning"
+          ? {
+              ...base,
+              time: { start: event.created },
+              metadata: event.type === "session.reasoning.started" ? event.data.state : undefined,
+            } as Part
+          : base,
+      )
+      return
+    }
+    case "session.text.delta":
+    case "session.reasoning.delta": {
+      const type = event.type === "session.text.delta" ? "text" : "reasoning"
+      const id = textPartID(event.data.assistantMessageID, type, event.data.ordinal)
+      const parts = input.store.part[event.data.assistantMessageID]
+      if (!parts?.some((part) => part.id === id)) {
+        upsertPart(input.store, input.setStore, {
+          id,
+          sessionID: event.data.sessionID,
+          messageID: event.data.assistantMessageID,
+          type,
+          text: "",
+          ...(type === "reasoning" ? { time: { start: event.created } } : {}),
+        } as Part)
+      }
+      updatePart(input.store, input.setStore, event.data.assistantMessageID, id, (part) =>
+        part.type === type ? { ...part, text: part.text + event.data.delta } : part,
+      )
+      return
+    }
+    case "session.text.ended":
+    case "session.reasoning.ended": {
+      const type = event.type === "session.text.ended" ? "text" : "reasoning"
+      const id = textPartID(event.data.assistantMessageID, type, event.data.ordinal)
+      const previous = input.store.part[event.data.assistantMessageID]?.find((part) => part.id === id)
+      const base = {
+        id,
+        sessionID: event.data.sessionID,
+        messageID: event.data.assistantMessageID,
+        type,
+        text: event.data.text,
+        metadata: event.data.state,
+      } as Part
+      upsertPart(
+        input.store,
+        input.setStore,
+        type === "reasoning"
+          ? ({
+              ...base,
+              time: { start: previous?.type === "reasoning" ? previous.time.start : event.created, end: event.created },
+            } as Part)
+          : base,
+      )
+      return
+    }
+    case "session.tool.input.started": {
+      upsertPart(input.store, input.setStore, {
+        id: toolPartID(event.data.assistantMessageID, event.data.id),
+        sessionID: event.data.sessionID,
+        messageID: event.data.assistantMessageID,
+        type: "tool",
+        callID: event.data.id,
+        tool: event.data.name,
+        state: { status: "pending", input: {}, raw: "" },
+      })
+      return
+    }
+    case "session.tool.input.delta": {
+      updatePart(
+        input.store,
+        input.setStore,
+        event.data.assistantMessageID,
+        toolPartID(event.data.assistantMessageID, event.data.id),
+        (part) =>
+          part.type === "tool" && part.state.status === "pending"
+            ? { ...part, state: { ...part.state, raw: part.state.raw + event.data.delta } }
+            : part,
+      )
+      return
+    }
+    case "session.tool.called": {
+      updatePart(
+        input.store,
+        input.setStore,
+        event.data.assistantMessageID,
+        toolPartID(event.data.assistantMessageID, event.data.id),
+        (part) =>
+          part.type === "tool"
+            ? {
+                ...part,
+                state: { status: "running", input: event.data.input, metadata: {}, time: { start: event.created } },
+              }
+            : part,
+      )
+      return
+    }
+    case "session.tool.progress": {
+      updatePart(
+        input.store,
+        input.setStore,
+        event.data.assistantMessageID,
+        toolPartID(event.data.assistantMessageID, event.data.id),
+        (part) =>
+          part.type === "tool" && part.state.status === "running"
+            ? { ...part, state: { ...part.state, metadata: event.data.metadata } }
+            : part,
+      )
+      return
+    }
+    case "session.tool.success":
+    case "session.tool.failed": {
+      updatePart(
+        input.store,
+        input.setStore,
+        event.data.assistantMessageID,
+        toolPartID(event.data.assistantMessageID, event.data.id),
+        (part) => {
+          if (part.type !== "tool") return part
+          const inputValue = part.state.input
+          const start = "time" in part.state ? part.state.time.start : event.created
+          if (event.type === "session.tool.failed") {
+            return {
+              ...part,
+              state: {
+                status: "error",
+                input: inputValue,
+                error: event.data.error.message,
+                metadata: event.data.metadata,
+                time: { start, end: event.created },
+              },
+            }
           }
-          delete draft.part[props.messageID];
-        }),
-      );
-      break;
-    }
-    case "message.part.updated": {
-      const part = (event.properties as { part: Part }).part;
-      const parts = input.store.part[part.messageID];
-      if (!parts) {
-        input.setStore("part", part.messageID, [part]);
-        break;
-      }
-      const result = Binary.search(parts, part.id, (p) => p.id);
-      if (result.found) {
-        input.setStore("part", part.messageID, result.index, reconcile(part));
-        break;
-      }
-      input.setStore(
-        "part",
-        part.messageID,
-        produce((draft) => {
-          draft.splice(result.index, 0, part);
-        }),
-      );
-      break;
-    }
-    case "message.part.removed": {
-      const props = event.properties as { messageID: string; partID: string };
-      const parts = input.store.part[props.messageID];
-      if (!parts) break;
-      const result = Binary.search(parts, props.partID, (p) => p.id);
-      if (result.found) {
-        input.setStore(
-          produce((draft) => {
-            const list = draft.part[props.messageID];
-            if (!list) return;
-            const next = Binary.search(list, props.partID, (p) => p.id);
-            if (!next.found) return;
-            list.splice(next.index, 1);
-            if (list.length === 0) delete draft.part[props.messageID];
-          }),
-        );
-      }
-      break;
-    }
-    case "message.part.delta": {
-      const props = event.properties as {
-        messageID: string;
-        partID: string;
-        field: string;
-        delta: string;
-      };
-      const parts = input.store.part[props.messageID];
-      if (!parts) break;
-      const result = Binary.search(parts, props.partID, (p) => p.id);
-      if (!result.found) break;
-      input.setStore(
-        "part",
-        props.messageID,
-        produce((draft) => {
-          const part = draft[result.index];
-          const field = props.field as keyof typeof part;
-          const existing = part[field] as string | undefined;
-          (part[field] as string) = (existing ?? "") + props.delta;
-        }),
-      );
-      break;
+          return {
+            ...part,
+            state: {
+              status: "completed",
+              input: inputValue,
+              output: event.data.content.flatMap((content) => (content.type === "text" ? [content.text] : [])).join("\n"),
+              title: part.tool,
+              metadata: event.data.metadata ?? {},
+              time: { start, end: event.created },
+            },
+          }
+        },
+      )
+      return
     }
     case "vcs.branch.updated": {
-      const props = event.properties as { branch: string };
-      if (input.store.vcs?.branch === props.branch) break;
-      const next = { branch: props.branch };
-      input.setStore("vcs", next);
-      if (input.vcsCache) input.vcsCache.setStore("value", next);
-      break;
+      if (input.store.vcs?.branch === event.data.branch) return
+      const next = { ...input.store.vcs, branch: event.data.branch }
+      input.setStore("vcs", next)
+      input.vcsCache?.setStore("value", next)
+      return
     }
     case "permission.asked": {
-      const permission = event.properties as PermissionRequest;
-      const permissions = input.store.permission[permission.sessionID];
+      const permission = nativePermission(event.data)
+      const permissions = input.store.permission[permission.sessionID]
       if (!permissions) {
-        input.setStore("permission", permission.sessionID, [permission]);
-        break;
+        input.setStore("permission", permission.sessionID, [permission])
+        return
       }
-      const result = Binary.search(permissions, permission.id, (p) => p.id);
+      const result = Binary.search(permissions, permission.id, (item) => item.id)
       if (result.found) {
-        input.setStore(
-          "permission",
-          permission.sessionID,
-          result.index,
-          reconcile(permission),
-        );
-        break;
+        input.setStore("permission", permission.sessionID, result.index, reconcile(permission))
+        return
       }
       input.setStore(
         "permission",
         permission.sessionID,
-        produce((draft) => {
-          draft.splice(result.index, 0, permission);
-        }),
-      );
-      break;
+        produce((draft) => void draft.splice(result.index, 0, permission)),
+      )
+      return
     }
     case "permission.replied": {
-      const props = event.properties as {
-        sessionID: string;
-        requestID: string;
-      };
-      const permissions = input.store.permission[props.sessionID];
-      if (!permissions) break;
-      const result = Binary.search(permissions, props.requestID, (p) => p.id);
-      if (!result.found) break;
+      const permissions = input.store.permission[event.data.sessionID]
+      if (!permissions) return
+      const result = Binary.search(permissions, event.data.requestID, (item) => item.id)
+      if (!result.found) return
       input.setStore(
         "permission",
-        props.sessionID,
-        produce((draft) => {
-          draft.splice(result.index, 1);
-        }),
-      );
-      break;
+        event.data.sessionID,
+        produce((draft) => void draft.splice(result.index, 1)),
+      )
+      return
     }
     case "question.asked": {
-      const question = event.properties as QuestionRequest;
-      const questions = input.store.question[question.sessionID];
+      const question = event.data
+      const questions = input.store.question[question.sessionID]
       if (!questions) {
-        input.setStore("question", question.sessionID, [question]);
-        break;
+        input.setStore("question", question.sessionID, [question])
+        return
       }
-      const result = Binary.search(questions, question.id, (q) => q.id);
+      const result = Binary.search(questions, question.id, (item) => item.id)
       if (result.found) {
-        input.setStore(
-          "question",
-          question.sessionID,
-          result.index,
-          reconcile(question),
-        );
-        break;
+        input.setStore("question", question.sessionID, result.index, reconcile(question))
+        return
       }
       input.setStore(
         "question",
         question.sessionID,
-        produce((draft) => {
-          draft.splice(result.index, 0, question);
-        }),
-      );
-      break;
+        produce((draft) => void draft.splice(result.index, 0, question)),
+      )
+      return
     }
     case "question.replied":
     case "question.rejected": {
-      const props = event.properties as {
-        sessionID: string;
-        requestID: string;
-      };
-      const questions = input.store.question[props.sessionID];
-      if (!questions) break;
-      const result = Binary.search(questions, props.requestID, (q) => q.id);
-      if (!result.found) break;
+      const questions = input.store.question[event.data.sessionID]
+      if (!questions) return
+      const result = Binary.search(questions, event.data.requestID, (item) => item.id)
+      if (!result.found) return
       input.setStore(
         "question",
-        props.sessionID,
-        produce((draft) => {
-          draft.splice(result.index, 1);
-        }),
-      );
-      break;
-    }
-    case "lsp.updated": {
-      input.loadLsp();
-      break;
+        event.data.sessionID,
+        produce((draft) => void draft.splice(result.index, 1)),
+      )
+      return
     }
   }
 }

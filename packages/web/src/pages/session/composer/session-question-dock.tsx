@@ -4,7 +4,7 @@ import { Button } from "@/ui/components/button"
 import { DockPrompt } from "@/ui/components/dock-prompt"
 import { Icon } from "@/ui/components/icon"
 import { showToast } from "@/ui/components/toast"
-import type { QuestionAnswer, QuestionRequest } from "@opencode-ai/sdk/v2"
+import type { QuestionAnswer, QuestionRequest } from "@/types/opencode"
 import { useLanguage } from "@/context/language"
 import { useSDK } from "@/context/sdk"
 
@@ -118,7 +118,7 @@ export const SessionQuestionDock: Component<{ request: QuestionRequest; onSubmit
     props.onSubmit()
     setStore("sending", true)
     try {
-      await sdk.client.question.reply({ requestID: props.request.id, answers })
+      await sdk.client.question.reply({ sessionID: props.request.sessionID, requestID: props.request.id, answers })
     } catch (err) {
       fail(err)
     } finally {
@@ -132,7 +132,7 @@ export const SessionQuestionDock: Component<{ request: QuestionRequest; onSubmit
     props.onSubmit()
     setStore("sending", true)
     try {
-      await sdk.client.question.reject({ requestID: props.request.id })
+      await sdk.client.question.reject({ sessionID: props.request.sessionID, requestID: props.request.id })
     } catch (err) {
       fail(err)
     } finally {

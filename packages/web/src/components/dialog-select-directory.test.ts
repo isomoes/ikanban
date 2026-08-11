@@ -14,8 +14,8 @@ describe("directory selection", () => {
           file: {
             list: async () => ({
               data: [
-                { name: "src", absolute: "/home/user/src", type: "directory" },
-                { name: "notes.txt", absolute: "/home/user/notes.txt", type: "file" },
+                { path: "/home/user/src", type: "directory" },
+                { path: "/home/user/notes.txt", type: "file" },
               ],
             }),
           },

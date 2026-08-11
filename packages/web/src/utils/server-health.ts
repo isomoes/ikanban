@@ -49,10 +49,8 @@ function wait(ms: number, signal?: AbortSignal) {
 
 function retryable(error: unknown, signal?: AbortSignal) {
   if (signal?.aborted) return false
-  if (!(error instanceof Error)) return false
-  if (error.name === "AbortError" || error.name === "TimeoutError") return false
-  if (error instanceof TypeError) return true
-  return /network|fetch|econnreset|econnrefused|enotfound|timedout/i.test(error.message)
+  if (error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError")) return false
+  return true
 }
 
 export async function checkServerHealth(
@@ -74,10 +72,9 @@ export async function checkServerHealth(
     createSdkForServer({
       server,
       fetch,
-      signal,
     })
-      .global.health()
-      .then((x) => (x.error ? next(count, x.error) : { healthy: x.data?.healthy === true, version: x.data?.version }))
+      .health.get({ signal })
+      .then((x) => ({ healthy: x.healthy === true, version: x.version }))
       .catch((error) => next(count, error))
   return attempt(0).finally(() => timeout?.clear?.())
 }

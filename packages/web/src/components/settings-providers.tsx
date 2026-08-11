@@ -74,43 +74,23 @@ export const SettingsProviders: Component = () => {
   const isConfigCustom = (providerID: string) => {
     const provider = globalSync.data.config.provider?.[providerID]
     if (!provider) return false
-    if (provider.npm !== "@ai-sdk/openai-compatible") return false
+    if (provider.package !== "@ai-sdk/openai-compatible") return false
     if (!provider.models || Object.keys(provider.models).length === 0) return false
     return true
   }
 
-  const disableProvider = async (providerID: string, name: string) => {
-    const before = globalSync.data.config.disabled_providers ?? []
-    const next = before.includes(providerID) ? before : [...before, providerID]
-    globalSync.set("config", "disabled_providers", next)
-
-    await globalSync
-      .updateConfig({ disabled_providers: next })
-      .then(() => {
-        showToast({
-          variant: "success",
-          icon: "circle-check",
-          title: language.t("provider.disconnect.toast.disconnected.title", { provider: name }),
-          description: language.t("provider.disconnect.toast.disconnected.description", { provider: name }),
-        })
-      })
-      .catch((err: unknown) => {
-        globalSync.set("config", "disabled_providers", before)
-        const message = err instanceof Error ? err.message : String(err)
-        showToast({ title: language.t("common.requestFailed"), description: message })
-      })
-  }
-
   const disconnect = async (providerID: string, name: string) => {
-    if (isConfigCustom(providerID)) {
-      await globalSDK.client.auth.remove({ providerID }).catch(() => undefined)
-      await disableProvider(providerID, name)
-      return
-    }
-    await globalSDK.client.auth
-      .remove({ providerID })
+    await globalSDK.client.provider
+      .get({ providerID })
+      .then(async ({ data: provider }) => {
+        if (!provider.integrationID) throw new Error(`Provider ${providerID} has no credential integration`)
+        const { data: integration } = await globalSDK.client.integration.get({ integrationID: provider.integrationID })
+        if (!integration) throw new Error(`Integration ${provider.integrationID} was not found`)
+        const credentials = integration.connections.filter((item) => item.type === "credential")
+        if (!credentials.length) throw new Error(`Provider ${providerID} has no removable credentials`)
+        await Promise.all(credentials.map((item) => globalSDK.client.credential.remove({ credentialID: item.id })))
+      })
       .then(async () => {
-        await globalSDK.client.global.dispose()
         showToast({
           variant: "success",
           icon: "circle-check",

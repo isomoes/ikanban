@@ -1,4 +1,4 @@
-import type { AgentPart as MessageAgentPart, FilePart, Part, TextPart } from "@opencode-ai/sdk/v2"
+import type { AgentPart as MessageAgentPart, FilePart, Part, TextPart } from "@/types/opencode"
 import type { AgentPart, FileAttachmentPart, ImageAttachmentPart, Prompt } from "@/context/prompt"
 
 type Inline =
@@ -88,7 +88,8 @@ export function extractPromptFromParts(parts: Part[], opts?: { directory?: strin
         let path = value
         if (value.startsWith("@")) path = value.slice(1)
         if (!value.startsWith("@") && filePart.source && "path" in filePart.source) {
-          path = filePart.source.path
+          const sourcePath = filePart.source.path
+          if (typeof sourcePath === "string") path = sourcePath
         }
         inline.push({
           type: "file",

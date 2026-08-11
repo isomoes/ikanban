@@ -90,6 +90,9 @@ export namespace ServerConnection {
     }
   }
 
+  export const runtimeKey = (conn: Any) =>
+    JSON.stringify([key(conn), conn.http.username ?? "", conn.http.password ?? ""])
+
   export type Key = string & { _brand: "Key" }
   export const Key = { make: (v: string) => v as Key }
 }

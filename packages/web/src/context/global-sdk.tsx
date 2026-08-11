@@ -1,27 +1,143 @@
-import type { GlobalEvent } from "@opencode-ai/sdk/v2/client"
-// The streamed event payload is a broader union than the top-level `Event`
-// type; alias it from the stream shape so the coalescing pipeline stays in sync
-// with the SDK.
-type Event = GlobalEvent["payload"]
+import type { V2Event } from "@/types/opencode"
 import { createSimpleContext } from "@/ui/context/index"
-import { createGlobalEmitter } from "@solid-primitives/event-bus"
-import { batch, onCleanup } from "solid-js"
-import z from "zod"
+import { createGlobalEmitter, type GlobalEmitter } from "@solid-primitives/event-bus"
+import { batch, onCleanup, onMount } from "solid-js"
 import { createSdkForServer } from "@/utils/server"
 import { usePlatform } from "./platform"
 import { useServer } from "./server"
 
-const abortError = z.object({
-  name: z.literal("AbortError"),
-})
+type SDKClient = ReturnType<typeof createSdkForServer>
 
-export const { use: useGlobalSDK, provider: GlobalSDKProvider } = createSimpleContext({
+export interface GlobalSDKContext {
+  url: string
+  client: SDKClient
+  event: GlobalEmitter<Record<string, V2Event>> & { start: () => Promise<void> | undefined }
+  createClient(opts?: { directory?: string; throwOnError?: boolean }): SDKClient
+}
+
+type QueuedV2Event = { directory: string; event: V2Event }
+type DeltaEvent = Extract<
+  V2Event,
+  { type: "session.text.delta" | "session.reasoning.delta" | "session.tool.input.delta" | "session.compaction.delta" }
+>
+
+function deltaKey(event: DeltaEvent) {
+  if (event.type === "session.tool.input.delta") {
+    return `${event.type}:${event.data.sessionID}:${event.data.assistantMessageID}:${event.data.id}`
+  }
+  if (event.type === "session.compaction.delta") return `${event.type}:${event.data.sessionID}`
+  return `${event.type}:${event.data.sessionID}:${event.data.assistantMessageID}:${event.data.ordinal}`
+}
+
+function deltaFragment(event: DeltaEvent) {
+  return event.type === "session.compaction.delta" ? event.data.text : event.data.delta
+}
+
+function asDelta(event: V2Event | undefined): DeltaEvent | undefined {
+  if (
+    event?.type === "session.text.delta" ||
+    event?.type === "session.reasoning.delta" ||
+    event?.type === "session.tool.input.delta" ||
+    event?.type === "session.compaction.delta"
+  ) {
+    return event
+  }
+}
+
+export function eventDirectory(event: V2Event) {
+  if (event.location?.directory) return event.location.directory
+  if (event.type === "session.created") return event.data.location.directory
+  return "global"
+}
+
+export function coalesceV2Events(events: QueuedV2Event[]) {
+  const output: QueuedV2Event[] = []
+  for (const item of events) {
+    const current = asDelta(item.event)
+    const previous = output[output.length - 1]
+    const prior = asDelta(previous?.event)
+    if (!current || !prior || previous.directory !== item.directory || deltaKey(prior) !== deltaKey(current)) {
+      output.push(item)
+      continue
+    }
+    const fragment = deltaFragment(prior) + deltaFragment(current)
+    const data =
+      current.type === "session.compaction.delta"
+        ? { ...current.data, text: fragment }
+        : { ...current.data, delta: fragment }
+    output[output.length - 1] = {
+      directory: item.directory,
+      event: { ...current, data } as DeltaEvent,
+    }
+  }
+  return output
+}
+
+export function resumeStreamAfterPageShow(event: PageTransitionEvent, start: () => unknown) {
+  if (event.persisted) start()
+}
+
+export function createStreamLifecycle(input: {
+  subscribe: (signal: AbortSignal) => AsyncIterable<V2Event>
+  onEvent: (event: V2Event) => void | Promise<void>
+  onError?: (error: unknown) => void
+  reconnectDelayMs?: number
+}) {
+  const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
+  let attempt: AbortController | undefined
+  let run: Promise<void> | undefined
+  let started = false
+  let disposed = false
+  let generation = 0
+
+  const start = () => {
+    if (disposed || started) return run
+    started = true
+    const active = ++generation
+    const previous = run
+    const current = (async () => {
+      if (previous) await previous
+      while (!disposed && started && generation === active) {
+        attempt = new AbortController()
+        try {
+          for await (const event of input.subscribe(attempt.signal)) await input.onEvent(event)
+        } catch (error) {
+          const aborted = attempt.signal.aborted || (error instanceof Error && error.name === "AbortError")
+          if (!aborted) input.onError?.(error)
+        } finally {
+          attempt = undefined
+        }
+        if (disposed || !started || generation !== active) return
+        await wait(input.reconnectDelayMs ?? 250)
+      }
+    })().finally(() => {
+      if (run === current) run = undefined
+    })
+    run = current
+    return run
+  }
+
+  const stop = () => {
+    started = false
+    generation++
+    attempt?.abort()
+  }
+
+  return {
+    start,
+    stop,
+    dispose() {
+      disposed = true
+      stop()
+    },
+  }
+}
+
+export const { use: useGlobalSDK, provider: GlobalSDKProvider } = createSimpleContext<GlobalSDKContext, {}>({
   name: "GlobalSDK",
   init: () => {
     const server = useServer()
     const platform = usePlatform()
-    const abort = new AbortController()
-
     const eventFetch = (() => {
       if (!platform.fetch || !server.current) return
       try {
@@ -37,36 +153,20 @@ export const { use: useGlobalSDK, provider: GlobalSDKProvider } = createSimpleCo
     if (!currentServer) throw new Error("No server available")
 
     const eventSdk = createSdkForServer({
-      signal: abort.signal,
       fetch: eventFetch,
       server: currentServer.http,
     })
-    const emitter = createGlobalEmitter<{
-      [key: string]: Event
-    }>()
+    const emitter = createGlobalEmitter<{ [key: string]: V2Event }>()
 
-    type Queued = { directory: string; payload: Event }
+    type Queued = QueuedV2Event
     const FLUSH_FRAME_MS = 16
     const STREAM_YIELD_MS = 8
     const RECONNECT_DELAY_MS = 250
 
     let queue: Queued[] = []
     let buffer: Queued[] = []
-    const coalesced = new Map<string, number>()
-    const staleDeltas = new Set<string>()
     let timer: ReturnType<typeof setTimeout> | undefined
     let last = 0
-
-    const deltaKey = (directory: string, messageID: string, partID: string) => `${directory}:${messageID}:${partID}`
-
-    const key = (directory: string, payload: Event) => {
-      if (payload.type === "session.status") return `session.status:${directory}:${payload.properties.sessionID}`
-      if (payload.type === "lsp.updated") return `lsp.updated:${directory}`
-      if (payload.type === "message.part.updated") {
-        const part = payload.properties.part
-        return `message.part.updated:${directory}:${part.messageID}:${part.id}`
-      }
-    }
 
     const flush = () => {
       if (timer) clearTimeout(timer)
@@ -75,21 +175,14 @@ export const { use: useGlobalSDK, provider: GlobalSDKProvider } = createSimpleCo
       if (queue.length === 0) return
 
       const events = queue
-      const skip = staleDeltas.size > 0 ? new Set(staleDeltas) : undefined
       queue = buffer
       buffer = events
       queue.length = 0
-      coalesced.clear()
-      staleDeltas.clear()
 
       last = Date.now()
       batch(() => {
-        for (const event of events) {
-          if (skip && event.payload.type === "message.part.delta") {
-            const props = event.payload.properties
-            if (skip.has(deltaKey(event.directory, props.messageID, props.partID))) continue
-          }
-          emitter.emit(event.directory, event.payload)
+        for (const item of coalesceV2Events(events)) {
+          emitter.emit(item.directory, item.event)
         }
       })
 
@@ -102,131 +195,59 @@ export const { use: useGlobalSDK, provider: GlobalSDKProvider } = createSimpleCo
       timer = setTimeout(flush, Math.max(0, FLUSH_FRAME_MS - elapsed))
     }
 
+    let yielded = Date.now()
     let streamErrorLogged = false
-    const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
-    const aborted = (error: unknown) => abortError.safeParse(error).success
+    const lifecycle = createStreamLifecycle({
+      subscribe: (signal) => eventSdk.event.subscribe({ signal }),
+      reconnectDelayMs: RECONNECT_DELAY_MS,
+      async onEvent(event) {
+        streamErrorLogged = false
+        queue.push({ directory: eventDirectory(event), event })
+        schedule()
+        if (Date.now() - yielded < STREAM_YIELD_MS) return
+        yielded = Date.now()
+        await new Promise<void>((resolve) => setTimeout(resolve, 0))
+      },
+      onError(error) {
+        if (streamErrorLogged) return
+        streamErrorLogged = true
+        console.error("[global-sdk] event stream failed", {
+          url: currentServer.http.url,
+          fetch: eventFetch ? "platform" : "webview",
+          error,
+        })
+      },
+    })
 
-    let attempt: AbortController | undefined
-    const HEARTBEAT_TIMEOUT_MS = 15_000
-    let lastEventAt = Date.now()
-    let heartbeat: ReturnType<typeof setTimeout> | undefined
-    const resetHeartbeat = () => {
-      lastEventAt = Date.now()
-      if (heartbeat) clearTimeout(heartbeat)
-      heartbeat = setTimeout(() => {
-        attempt?.abort()
-      }, HEARTBEAT_TIMEOUT_MS)
-    }
-    const clearHeartbeat = () => {
-      if (!heartbeat) return
-      clearTimeout(heartbeat)
-      heartbeat = undefined
-    }
-
-    void (async () => {
-      while (!abort.signal.aborted) {
-        attempt = new AbortController()
-        lastEventAt = Date.now()
-        const onAbort = () => {
-          attempt?.abort()
-        }
-        abort.signal.addEventListener("abort", onAbort)
-        try {
-          const events = await eventSdk.global.event({
-            signal: attempt.signal,
-            onSseError: (error) => {
-              if (aborted(error)) return
-              if (streamErrorLogged) return
-              streamErrorLogged = true
-              console.error("[global-sdk] event stream error", {
-                url: currentServer.http.url,
-                fetch: eventFetch ? "platform" : "webview",
-                error,
-              })
-            },
-          })
-          let yielded = Date.now()
-          resetHeartbeat()
-          for await (const event of events.stream) {
-            resetHeartbeat()
-            streamErrorLogged = false
-            const directory = event.directory ?? "global"
-            const payload = event.payload
-            const k = key(directory, payload)
-            if (k) {
-              const i = coalesced.get(k)
-              if (i !== undefined) {
-                queue[i] = { directory, payload }
-                if (payload.type === "message.part.updated") {
-                  const part = payload.properties.part
-                  staleDeltas.add(deltaKey(directory, part.messageID, part.id))
-                }
-                continue
-              }
-              coalesced.set(k, queue.length)
-            }
-            queue.push({ directory, payload })
-            schedule()
-
-            if (Date.now() - yielded < STREAM_YIELD_MS) continue
-            yielded = Date.now()
-            await wait(0)
-          }
-        } catch (error) {
-          if (!aborted(error) && !streamErrorLogged) {
-            streamErrorLogged = true
-            console.error("[global-sdk] event stream failed", {
-              url: currentServer.http.url,
-              fetch: eventFetch ? "platform" : "webview",
-              error,
-            })
-          }
-        } finally {
-          abort.signal.removeEventListener("abort", onAbort)
-          attempt = undefined
-          clearHeartbeat()
-        }
-
-        if (abort.signal.aborted) return
-        await wait(RECONNECT_DELAY_MS)
-      }
-    })().finally(flush)
-
-    const onVisibility = () => {
-      if (typeof document === "undefined") return
-      if (document.visibilityState !== "visible") return
-      if (Date.now() - lastEventAt < HEARTBEAT_TIMEOUT_MS) return
-      attempt?.abort()
-    }
-    if (typeof document !== "undefined") {
-      document.addEventListener("visibilitychange", onVisibility)
-    }
+    const onPageHide = () => lifecycle.stop()
+    const onPageShow = (event: PageTransitionEvent) => resumeStreamAfterPageShow(event, lifecycle.start)
+    onMount(() => {
+      window.addEventListener("pagehide", onPageHide)
+      window.addEventListener("pageshow", onPageShow)
+    })
 
     onCleanup(() => {
-      if (typeof document !== "undefined") {
-        document.removeEventListener("visibilitychange", onVisibility)
-      }
-      abort.abort()
+      window.removeEventListener("pagehide", onPageHide)
+      window.removeEventListener("pageshow", onPageShow)
+      lifecycle.dispose()
       flush()
     })
 
     const sdk = createSdkForServer({
       server: server.current.http,
       fetch: platform.fetch,
-      throwOnError: true,
     })
 
     return {
       url: currentServer.http.url,
       client: sdk,
-      event: emitter,
-      createClient(opts: Omit<Parameters<typeof createSdkForServer>[0], "server" | "fetch">) {
+      event: Object.assign(emitter, { start: lifecycle.start }),
+      createClient(_opts: { directory?: string; throwOnError?: boolean } = {}) {
         const s = server.current
         if (!s) throw new Error("Server not available")
         return createSdkForServer({
           server: s.http,
           fetch: platform.fetch,
-          ...opts,
         })
       },
     }

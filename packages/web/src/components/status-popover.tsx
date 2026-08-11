@@ -141,10 +141,18 @@ const useMcpToggle = (input: {
     try {
       const status = input.sync.data.mcp[name]
       await (status?.status === "connected"
-        ? input.sdk.client.mcp.disconnect({ name })
-        : input.sdk.client.mcp.connect({ name }))
-      const result = await input.sdk.client.mcp.status()
-      if (result.data) input.sync.set("mcp", result.data)
+        ? input.sdk.client.mcp.disconnect({ server: name, location: { directory: input.sdk.directory } })
+        : input.sdk.client.mcp.connect({ server: name, location: { directory: input.sdk.directory } }))
+      const result = await input.sdk.client.mcp.list({ location: { directory: input.sdk.directory } })
+      input.sync.set(
+        "mcp",
+        Object.fromEntries(
+          result.data.map((server) => [
+            server.name,
+            server.status.status === "pending" ? { status: "disabled" as const } : server.status,
+          ]),
+        ),
+      )
     } catch (err) {
       showToast({
         variant: "error",
@@ -185,7 +193,10 @@ export function StatusPopover() {
   const mcpConnected = createMemo(() => mcpNames().filter((name) => mcpStatus(name) === "connected").length)
   const lspItems = createMemo(() => sync.data.lsp ?? [])
   const lspCount = createMemo(() => lspItems().length)
-  const plugins = createMemo(() => sync.data.config.plugin ?? [])
+  const plugins = createMemo(() => {
+    const value = sync.data.config.plugin
+    return Array.isArray(value) ? value : []
+  })
   const pluginCount = createMemo(() => plugins().length)
   const pluginEmpty = createMemo(() => pluginEmptyMessage(language.t("dialog.plugins.empty"), "opencode.json"))
   const overallHealthy = createMemo(() => {
