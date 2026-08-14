@@ -718,11 +718,7 @@ window.__ModuleLoader__.load({
 					className: clsx(Rows_module_css_default.sessionRow, selected && Rows_module_css_default.selected, menuOpen && Rows_module_css_default.menuOpen, flat && !showStatus && Rows_module_css_default.flatSessionRowWithoutStatus, drag?.marker === "before" && Rows_module_css_default.dropBefore, drag?.marker === "after" && Rows_module_css_default.dropAfter),
 					role: "treeitem",
 					"aria-selected": selected,
-					onClick: (e) => {
-						if (e.detail === 0 && !row.blank) {
-							setMenuOpen(true);
-							return;
-						}
+					onClick: () => {
 						onOpen(node.id);
 					},
 					onContextMenu: row.blank ? void 0 : (e) => {

@@ -16,10 +16,10 @@ test('opens session actions from the row context menu', async () => {
   assert.match(client, /onContextMenu: row\.blank \? void 0 : \(e\) => \{\s*e\.preventDefault\(\);\s*setMenuOpen\(true\);\s*\}/)
 })
 
-test('opens session actions when Surfingkeys activates a row hint', async () => {
+test('opens a session when Surfingkeys activates its row hint', async () => {
   const client = await readFile(new URL('../lib/client.js', import.meta.url), 'utf8')
 
-  assert.match(client, /onClick: \(e\) => \{\s*if \(e\.detail === 0 && !row\.blank\) \{\s*setMenuOpen\(true\);\s*return;\s*\}\s*onOpen\(node\.id\);\s*\}/)
+  assert.match(client, /onClick: \(\) => \{\s*onOpen\(node\.id\);\s*\}/)
 })
 
 test('supports keyboard-first host path entry when adding a workspace', async () => {
