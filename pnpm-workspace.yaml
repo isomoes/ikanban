@@ -1,2 +1,10 @@
 packages:
   - packages/*
+
+allowBuilds:
+  # Required by DSH's native directory picker; koffi installs its N-API binary.
+  koffi: true
+
+# This project intentionally tracks the newest DSH prerelease family.
+minimumReleaseAgeExclude:
+  - '@deepseek-ai/*'

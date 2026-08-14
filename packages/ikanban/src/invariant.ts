@@ -1,4 +1,2 @@
-/** Invariant companion scaffold for @isomoes/dsh-ikanban. */
-
-/** Stable Cordis plugin name. */
-export const name = 'ikanban-invariant'
+/** Stock web invariant companion delegated to DSH. */
+export * from '@deepseek-ai/dsh-web-app/invariant'

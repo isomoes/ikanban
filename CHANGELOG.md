@@ -6,7 +6,8 @@ All notable changes to this project will be documented in this file.
 
 - Reinitialized iKanban as the `@isomoes/dsh-ikanban` DeepSeek Harness plugin bundle.
 - Removed the legacy standalone web application, Docker deployment, Bun workspace, and generated assets.
-- Added the initial DSH-style bundle, startup, invariant, and Cordis patch structure without feature implementation.
+- Repackaged the published DSH `0.1.0-rc.6` stock Web composition and delegated runtime companions as the keyboard-first customization baseline.
+- Added upstream parity tests and reproducible patch synchronization.
 - Organized the publishable plugin under `packages/ikanban` in a private pnpm workspace.
 - Standardized workspace dependency management and scripts on pnpm.
 

@@ -18,6 +18,11 @@
   },
   "scripts": {
     "build": "pnpm -r --if-present run build",
-    "typecheck": "pnpm -r --if-present run typecheck"
+    "dev": "pnpm dev:install && dsh --profile ikanban",
+    "dev:config": "dsh --profile ikanban --dump-config",
+    "dev:install": "pnpm build && dsh plugin --profile ikanban add ./packages/ikanban",
+    "dev:remove": "dsh plugin --profile ikanban remove @isomoes/dsh-ikanban",
+    "typecheck": "pnpm -r --if-present run typecheck",
+    "test": "pnpm -r --if-present run test"
   }
 }
