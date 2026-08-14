@@ -140,7 +140,7 @@
     # is a row rather than a child of web-runtime because its node half is a
     # client-side package, which a host-side bundle cannot import.
     - id: client-hmr
-      name: '@deepseek-ai/dsh-client-hmr'
+      name: '@isomoes/dsh-ikanban/hmr'
 
     # ── browser plugin roster (dsh.client rows; node halves are layer-2 hosts) ──
 
@@ -178,10 +178,10 @@
       name: '@deepseek-ai/dsh-client-locale'
 
     - id: ui-layout
-      name: '@deepseek-ai/dsh-client-ui-layout'
+      name: '@isomoes/dsh-ikanban/layout'
 
     - id: ui-sidebar
-      name: '@deepseek-ai/dsh-client-ui-sidebar'
+      name: '@isomoes/dsh-ikanban/sidebar'
 
     - id: ui-settings
       name: '@deepseek-ai/dsh-client-ui-settings'
@@ -217,7 +217,7 @@
 
 
     - id: ui-workspace
-      name: '@deepseek-ai/dsh-client-ui-workspace'
+      name: '@isomoes/dsh-ikanban/workspace'
 
     # Input triggers: the '/' | '@' pipeline (ui-input-trigger), the command surface over
     # it (ui-commands), and the two reference sources (ui-skill / ui-subagent).

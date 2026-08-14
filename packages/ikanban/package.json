@@ -18,6 +18,26 @@
       "types": "./lib/types/startup.d.ts",
       "default": "./lib/startup.js"
     },
+    "./layout": {
+      "types": "./lib/types/layout.d.ts",
+      "default": "./lib/layout.js"
+    },
+    "./sidebar": {
+      "types": "./lib/types/sidebar.d.ts",
+      "default": "./lib/sidebar.js"
+    },
+    "./workspace": {
+      "types": "./lib/types/workspace.d.ts",
+      "default": "./lib/workspace.js"
+    },
+    "./hmr": {
+      "types": "./lib/types/hmr.d.ts",
+      "default": "./lib/hmr.js"
+    },
+    "./client": {
+      "types": "./lib/types/client.d.ts",
+      "default": "./lib/client.js"
+    },
     "./invariant": {
       "types": "./lib/types/invariant.d.ts",
       "default": "./lib/invariant.js"
@@ -42,11 +62,20 @@
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-theme",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-conversation"
+      ],
+      "platform": "web"
     }
   },
   "scripts": {
     "sync:upstream": "node scripts/sync-upstream.mjs",
-    "build": "pnpm sync:upstream && tsc -p tsconfig.json",
+    "build": "node scripts/clean.mjs && pnpm sync:upstream && tsc -p tsconfig.json && node scripts/build-client.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "pnpm build && node --test tests/*.test.mjs",
     "prepare": "pnpm build"
@@ -70,7 +99,6 @@
     "@deepseek-ai/dsh-client-ui-goal": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-client-ui-input-trigger": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-client-ui-jobs": "^0.1.0-rc.6",
-    "@deepseek-ai/dsh-client-ui-layout": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-client-ui-message-feedback": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-client-ui-model-selection": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-client-ui-permission-presets": "^0.1.0-rc.6",
@@ -80,7 +108,6 @@
     "@deepseek-ai/dsh-client-ui-settings-models": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-client-ui-settings-plugin-inventory": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-client-ui-settings-plugins": "^0.1.0-rc.6",
-    "@deepseek-ai/dsh-client-ui-sidebar": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-client-ui-skill": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-client-ui-subagent": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-client-ui-theme": "^0.1.0-rc.6",
@@ -88,7 +115,6 @@
     "@deepseek-ai/dsh-client-ui-trajectory": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-client-ui-user-questions": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-client-ui-workflow-run": "^0.1.0-rc.6",
-    "@deepseek-ai/dsh-client-ui-workspace": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-cmdline": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-code-runtime-worker-thread": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-cordis-client-runner": "^0.1.0-rc.6",

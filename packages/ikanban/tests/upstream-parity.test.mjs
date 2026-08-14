@@ -34,7 +34,15 @@ test('bundle composition matches the published web app', async () => {
   const repackaged = expected
     .replace("name: '@deepseek-ai/dsh-web-app/startup'", "name: '@isomoes/dsh-ikanban/startup'")
     .replace("name: '@deepseek-ai/dsh-web-app'", "name: '@isomoes/dsh-ikanban'")
+    .replace("name: '@deepseek-ai/dsh-client-ui-layout'", "name: '@isomoes/dsh-ikanban/layout'")
+    .replace("name: '@deepseek-ai/dsh-client-ui-sidebar'", "name: '@isomoes/dsh-ikanban/sidebar'")
+    .replace("name: '@deepseek-ai/dsh-client-ui-workspace'", "name: '@isomoes/dsh-ikanban/workspace'")
+    .replace("name: '@deepseek-ai/dsh-client-hmr'", "name: '@isomoes/dsh-ikanban/hmr'")
 
   assert.equal(actual, repackaged)
   assert.doesNotMatch(actual, /name: '@deepseek-ai\/dsh-web-app(?:\/startup)?'/)
+  assert.match(actual, /name: '@isomoes\/dsh-ikanban\/layout'/)
+  assert.match(actual, /name: '@isomoes\/dsh-ikanban\/sidebar'/)
+  assert.match(actual, /name: '@isomoes\/dsh-ikanban\/workspace'/)
+  assert.match(actual, /name: '@isomoes\/dsh-ikanban\/hmr'/)
 })
