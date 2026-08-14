@@ -718,8 +718,16 @@ window.__ModuleLoader__.load({
 					className: clsx(Rows_module_css_default.sessionRow, selected && Rows_module_css_default.selected, menuOpen && Rows_module_css_default.menuOpen, flat && !showStatus && Rows_module_css_default.flatSessionRowWithoutStatus, drag?.marker === "before" && Rows_module_css_default.dropBefore, drag?.marker === "after" && Rows_module_css_default.dropAfter),
 					role: "treeitem",
 					"aria-selected": selected,
-					onClick: () => {
+					onClick: (e) => {
+						if (e.detail === 0 && !row.blank) {
+							setMenuOpen(true);
+							return;
+						}
 						onOpen(node.id);
+					},
+					onContextMenu: row.blank ? void 0 : (e) => {
+						e.preventDefault();
+						setMenuOpen(true);
 					},
 					draggable: drag !== void 0,
 					onDragStart: drag === void 0 ? void 0 : (e) => {
@@ -795,7 +803,7 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:/home/runner/work/deepseek-harness/deepseek-harness/packages/client/ui-workspace/src/client/WorkspacePicker.module.css.mjs
-		const css$1 = "._G5b-a_modalAction{min-width:72px}._G5b-a_modalError,._G5b-a_menuStatus{margin-top:8px;font-size:12px;line-height:18px}._G5b-a_modalError{color:var(--dsw-alias-state-error-primary)}._G5b-a_menuStatus{color:var(--dsw-alias-label-secondary)}";
+		const css$1 = "._G5b-a_modalAction{min-width:72px}._G5b-a_modalError,._G5b-a_menuStatus{margin-top:8px;font-size:12px;line-height:18px}._G5b-a_modalError{color:var(--dsw-alias-state-error-primary)}._G5b-a_menuStatus{color:var(--dsw-alias-label-secondary)}._G5b-a_pathField{display:flex;flex-direction:column;gap:8px}._G5b-a_pathLabel{color:var(--dsw-alias-label-secondary);font-size:13px;line-height:20px}._G5b-a_pathInput{box-sizing:border-box;width:100%;height:36px;color:var(--dsw-alias-label-primary);background:0 0;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;outline:none;padding:0 10px;font:inherit}._G5b-a_pathInput:focus{border-color:var(--dsw-alias-label-primary)}";
 		const tagId$1 = "@isomoes/dsh-ikanban-ui-workspace/WorkspacePicker.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
 			const tag = document.createElement("style");
@@ -807,7 +815,10 @@ window.__ModuleLoader__.load({
 		var WorkspacePicker_module_css_default = {
 			"modalAction": "_G5b-a_modalAction",
 			"menuStatus": "_G5b-a_menuStatus",
-			"modalError": "_G5b-a_modalError"
+			"modalError": "_G5b-a_modalError",
+			"pathField": "_G5b-a_pathField",
+			"pathLabel": "_G5b-a_pathLabel",
+			"pathInput": "_G5b-a_pathInput"
 		};
 		//#endregion
 		//#region lib/types/client/WorkspacePicker.js
@@ -825,17 +836,20 @@ window.__ModuleLoader__.load({
 			const [modalError, setModalError] = (0, react.useState)(null);
 			const [flowOpen, setFlowOpen] = (0, react.useState)(false);
 			const [pickingFolder, setPickingFolder] = (0, react.useState)(false);
-			const flowBusy = flowOpen || pickingFolder;
+			const [pathOpen, setPathOpen] = (0, react.useState)(false);
+			const [pathDraft, setPathDraft] = (0, react.useState)("");
+			const [pathSubmitting, setPathSubmitting] = (0, react.useState)(false);
+			const flowBusy = pathOpen || flowOpen || pickingFolder || pathSubmitting;
 			const flowAvailable = useDirectoryFlow((occupied) => occupied);
 			(0, react.useEffect)(() => {
 				if (flowOpen && !flowAvailable) setFlowOpen(false);
 			}, [flowOpen, flowAvailable]);
-			const addEntries = flowAvailable ? [{
+			const addEntries = [{
 				id: ADD_WORKSPACE,
 				label: t("menu.addWorkspace"),
 				icon: (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconPlusOutline16, { size: 16 }),
 				disabled: flowBusy
-			}] : [];
+			}];
 			const pinAdd = !addOnly && workspaces.length > 0;
 			const items = pinAdd ? workspaces.map((workspace) => ({
 				id: workspace.workspaceId,
@@ -851,27 +865,42 @@ window.__ModuleLoader__.load({
 			/** Adopt a picked directory; failures land in the folder-error dialog (Choose again reopens the flow). */
 			const adoptDirectory = (path) => createWorkspace({ path }).then((workspace) => {
 				setFlowOpen(false);
+				setPathOpen(false);
 				onPick(workspace.workspaceId);
 			}).catch((reason) => {
 				setModalError(reason instanceof Error ? reason.message : String(reason));
 				setFlowOpen(false);
+				setPathOpen(false);
 				setErrorOpen(true);
 			});
-			const openDirectoryFlow = (0, react.useCallback)(() => {
+			const openPathDialog = (0, react.useCallback)(() => {
 				onClose();
 				setErrorOpen(false);
 				setModalError(null);
-				setFlowOpen(true);
+				setPathDraft("");
+				setPathOpen(true);
 			}, [onClose]);
+			const openDirectoryFlow = () => {
+				setPathOpen(false);
+				setFlowOpen(true);
+			};
+			const submitPath = () => {
+				const path = pathDraft.trim();
+				if (path === "" || pathSubmitting) return;
+				setPathSubmitting(true);
+				adoptDirectory(path).finally(() => {
+					setPathSubmitting(false);
+				});
+			};
 			const listSettled = addOnly || workspaceSnapshot.phase === "ready";
 			const addIsTheOnlyEntry = !pinAdd && listSettled && addEntries.length === 1;
 			(0, react.useEffect)(() => {
-				if (open && addIsTheOnlyEntry && !flowBusy) openDirectoryFlow();
+				if (open && addIsTheOnlyEntry && !flowBusy) openPathDialog();
 			}, [
 				open,
 				addIsTheOnlyEntry,
 				flowBusy,
-				openDirectoryFlow
+				openPathDialog
 			]);
 			/** Owner side of the flow conversation: adopt keeps the flow open (busy) until the Host answers. */
 			const flowOwner = {
@@ -894,7 +923,7 @@ window.__ModuleLoader__.load({
 			};
 			const handleSelect = (id) => {
 				if (id === ADD_WORKSPACE) {
-					openDirectoryFlow();
+					openPathDialog();
 					return;
 				}
 				onPick(id);
@@ -919,6 +948,50 @@ window.__ModuleLoader__.load({
 				}),
 				renderDirectoryFlow(flowOwner),
 				(0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
+					open: pathOpen,
+					onClose: () => {
+						if (!pathSubmitting) setPathOpen(false);
+					},
+					closeLabel: t("close"),
+					title: t("path.title"),
+					footer: (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [(0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+						variant: "outline",
+						className: WorkspacePicker_module_css_default.modalAction,
+						disabled: pathSubmitting || !flowAvailable,
+						onClick: openDirectoryFlow,
+						children: t("path.browse")
+					}), (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+						variant: "primary",
+						className: WorkspacePicker_module_css_default.modalAction,
+						disabled: pathDraft.trim() === "" || pathSubmitting,
+						onClick: submitPath,
+						children: t("path.open")
+					})] }),
+					children: (0, react_jsx_runtime.jsxs)("label", {
+						className: WorkspacePicker_module_css_default.pathField,
+						children: [(0, react_jsx_runtime.jsx)("span", {
+							className: WorkspacePicker_module_css_default.pathLabel,
+							children: t("path.label")
+						}), (0, react_jsx_runtime.jsx)("input", {
+							className: WorkspacePicker_module_css_default.pathInput,
+							type: "text",
+							placeholder: t("path.placeholder"),
+							value: pathDraft,
+							autoFocus: true,
+							disabled: pathSubmitting,
+							onChange: (e) => {
+								setPathDraft(e.target.value.replaceAll("\0", ""));
+							},
+							onKeyDown: (e) => {
+								if (e.key === "Enter") {
+									e.preventDefault();
+									submitPath();
+								}
+							}
+						})]
+					})
+				}),
+				(0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
 					open: errorOpen,
 					onClose: closeModal,
 					closeLabel: t("close"),
@@ -931,8 +1004,7 @@ window.__ModuleLoader__.load({
 					}), (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 						variant: "primary",
 						className: WorkspacePicker_module_css_default.modalAction,
-						disabled: !flowAvailable,
-						onClick: openDirectoryFlow,
+						onClick: openPathDialog,
 						children: t("folderError.retry")
 					})] }),
 					children: (0, react_jsx_runtime.jsx)("div", {
@@ -1648,7 +1720,6 @@ window.__ModuleLoader__.load({
 			const workspaces = useWorkspaces((state) => state.items);
 			const workspacePhase = useWorkspaces((state) => state.phase);
 			const archivedSessionIds = useWorkspaces((state) => state.archivedSessionIds);
-			const directoryFlowAvailable = useDirectoryFlow((occupied) => occupied);
 			const groupBy = useStore((s) => s.groupBy);
 			const orderBy = useStore((s) => s.orderBy);
 			const groupExpansion = useStore((s) => s.groupExpansion);
@@ -1927,7 +1998,7 @@ window.__ModuleLoader__.load({
 										actions.setOrderBy(mode);
 									},
 									t
-								}), directoryFlowAvailable && (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tooltip, {
+								}), (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tooltip, {
 									label: t("workspace.add"),
 									side: "bottom",
 									delayMs: 500,
@@ -2208,6 +2279,11 @@ window.__ModuleLoader__.load({
 			"search.hasMore": "仅显示前 {n} 条结果，请缩小搜索范围。",
 			"menu.addWorkspace": "添加工作区…",
 			"picker.loading": "正在加载工作区…",
+			"path.title": "添加工作区",
+			"path.label": "主机上的文件夹路径",
+			"path.placeholder": "输入绝对路径",
+			"path.browse": "浏览…",
+			"path.open": "添加",
 			"conflict.named": "已存在名为“{name}”的工作区。",
 			"folderError.title": "无法打开文件夹",
 			"folderError.retry": "重新选择",
@@ -2273,6 +2349,11 @@ window.__ModuleLoader__.load({
 			"search.hasMore": "Showing the first {n} results. Narrow your search.",
 			"menu.addWorkspace": "Add workspace…",
 			"picker.loading": "Loading workspaces…",
+			"path.title": "Add workspace",
+			"path.label": "Folder path on the host",
+			"path.placeholder": "Enter an absolute path",
+			"path.browse": "Browse…",
+			"path.open": "Add",
 			"conflict.named": "A workspace named “{name}” already exists.",
 			"folderError.title": "Couldn’t open folder",
 			"folderError.retry": "Choose again",
