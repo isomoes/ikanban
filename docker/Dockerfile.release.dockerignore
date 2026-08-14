@@ -1,7 +1,0 @@
-**
-!packages
-!packages/web
-!packages/web/bin
-!packages/web/bin/cli.js
-!packages/web/dist
-!packages/web/dist/**

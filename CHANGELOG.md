@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0]
+
+- Reinitialized iKanban as the `@isomoes/dsh-ikanban` DeepSeek Harness plugin bundle.
+- Removed the legacy standalone web application, Docker deployment, Bun workspace, and generated assets.
+- Added the initial DSH-style bundle, startup, invariant, and Cordis patch structure without feature implementation.
+- Organized the publishable plugin under `packages/ikanban` in a private pnpm workspace.
+- Standardized workspace dependency management and scripts on pnpm.
+
 ## [0.3.18]
 
 - Web: Restored undo for pasted prompt content, including programmatic paste paths, so pasted text can be reverted reliably. (@isomoes)
