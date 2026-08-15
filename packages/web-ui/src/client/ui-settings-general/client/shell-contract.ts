@@ -32,6 +32,8 @@ export interface SettingsOnboardingStep {
  * the shell reads no locale state and subscribes through the bound hook.
  */
 export type SettingsRootInjected = {
+  /** Register the settings-open action against the shell's local state. */
+  registerOpenAction: (open: () => void) => () => void
   hooks: {
     /** settings.section ledger projected into ordered nav rows. */
     sections: HostObservable<readonly SettingsSectionRow[]>

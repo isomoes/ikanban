@@ -17,6 +17,7 @@ import { bindSnapshotSelector } from '@deepseek-ai/dsh-client-web-react'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 // Type-only: pulls ctx.locale into this program.
 import type {} from '@deepseek-ai/dsh-client-locale/client'
+import type {} from '@deepseek-ai/dsh-client-ui-commands/client'
 import type {
   SettingsOnboardingStep, SettingsRootInjected, SettingsSectionRow,
 } from './shell-contract.ts'
@@ -54,7 +55,7 @@ const NS = 'settings'
  * ui-settings' apply, whose activation order relative to this one is NOT
  * constrained; registrations depend on their slots through `slots.inject()`.
  */
-export const inject = ['slots', 'locale', 'connection']
+export const inject = ['slots', 'locale', 'connection', 'commandUi']
 
 /**
  * Register the `settings` dictionaries, the chrome content, and the General
@@ -68,6 +69,13 @@ export function apply(ctx: ClientContext): void {
   // seat, and the nav label is a thunk the owner resolves per render — no
   // locale/change re-registration wiring.
   const t = ctx.locale.bind(NS)
+  const registerOpenAction: SettingsRootInjected['registerOpenAction'] = open => ctx.commandUi.registerAction({
+    id: 'settings.open',
+    title: () => t('trigger'),
+    category: () => t('title'),
+    keybind: 'mod+comma',
+    run: open,
+  })
   const connection = ctx.get('connection') as ConnectionHandle
   const documentController = connection.isLoopback
     ? new SettingsDocumentStore(connection.api)
@@ -92,6 +100,7 @@ export function apply(ctx: ClientContext): void {
   let onboardingVersion = -1
   let onboardingSteps: readonly SettingsOnboardingStep[] = []
   const shellInjected = (): SettingsRootInjected => ({
+    registerOpenAction,
     hooks: {
       sections: {
         getSnapshot: () => {

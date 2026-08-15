@@ -1,7 +1,7 @@
 /**
  * CommandUiRuntime (`ctx.commandUi`): the '/' command source over the
- * session-keyed directory, the client-contribution registry, and the
- * per-session popupSelect controllers. Candidate synthesis merges the host
+ * session-keyed directory, the local UI action registry, the client command
+ * contribution registry, and the per-session popupSelect controllers. Candidate synthesis merges the host
  * catalog with contributions by availability, then fuzzy query/position
  * filtering; a host/contribution name collision fails loud. Every execute
  * addresses the session's agent by sessionId — sessions are always
@@ -19,6 +19,7 @@ import type {
   SubmitOutcome,
 } from '@deepseek-ai/dsh-client-ui-input-trigger/client'
 import type { CommandContribution, CommandDecoration, CommandUiContract } from './contract.ts'
+import { UiActionRegistry, type UiAction, type UiActionSource } from './actions.ts'
 import type { CommandDescriptor } from './directory.ts'
 import { CommandDirectory } from './directory.ts'
 import { PopupSelectController } from './popup.ts'
@@ -122,6 +123,8 @@ export class CommandUiRuntime extends Service implements CommandUiContract {
 
   private readonly directory: CommandDirectory
   private readonly live: LiveState = { contributions: new Map(), decorations: new Map(), popups: new Map() }
+  /** Local application actions, separate from Host slash commands. */
+  readonly actions = new UiActionRegistry()
 
   /**
    * @param ctx - owning root context (plugin fiber; the service registers
@@ -153,6 +156,22 @@ export class CommandUiRuntime extends Service implements CommandUiContract {
     // the menu until the new one lands.
     ctx.remote.$on('agent-preset/selected', (sessionId) => { void this.directory.refresh(sessionId) })
     ctx.on('connection/reset', () => { this.directory.resetConnected() })
+    ctx.effect(() => {
+      const onKeyDown = (event: KeyboardEvent): void => { this.actions.handleKeyDown(event) }
+      document.addEventListener('keydown', onKeyDown)
+      return () => { document.removeEventListener('keydown', onKeyDown) }
+    }, 'command: local action keybinds')
+  }
+
+  /** Register one local UI action for the calling plugin's lifetime. */
+  registerAction(action: UiAction): () => void {
+    const dispose = this.ctx.effect(() => this.actions.register(action), `command.action(${action.id})`)
+    return () => { void dispose() }
+  }
+
+  /** Invoke one enabled local UI action by stable id. */
+  triggerAction(id: string, source: UiActionSource = 'api'): boolean {
+    return this.actions.trigger(id, source)
   }
 
   /**

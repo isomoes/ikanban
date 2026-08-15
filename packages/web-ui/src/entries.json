@@ -15,7 +15,7 @@
   },
   "@deepseek-ai/dsh-client-ui-sidebar": {
     "source": "client/ui-sidebar/client/index.ts",
-    "client": { "inject": ["@deepseek-ai/dsh-client-runtime", "@deepseek-ai/dsh-client-ui-layout", "@deepseek-ai/dsh-client-locale"], "platform": "web" }
+    "client": { "inject": ["@deepseek-ai/dsh-client-runtime", "@deepseek-ai/dsh-client-ui-layout", "@deepseek-ai/dsh-client-locale", "@deepseek-ai/dsh-client-ui-commands"], "platform": "web" }
   },
   "@deepseek-ai/dsh-client-ui-settings": {
     "source": "client/ui-settings/client/index.ts",
@@ -24,7 +24,7 @@
   "@deepseek-ai/dsh-client-ui-settings-general": {
     "host": "client/ui-settings-general/index.ts",
     "source": "client/ui-settings-general/client/index.ts",
-    "client": { "inject": ["@deepseek-ai/dsh-client-runtime", "@deepseek-ai/dsh-client-ui-settings", "@deepseek-ai/dsh-client-locale", "@deepseek-ai/dsh-client-connection", "@deepseek-ai/dsh-api-remotes", "@deepseek-ai/dsh-client-ui-sidebar"], "platform": "web" }
+    "client": { "inject": ["@deepseek-ai/dsh-client-runtime", "@deepseek-ai/dsh-client-ui-settings", "@deepseek-ai/dsh-client-locale", "@deepseek-ai/dsh-client-connection", "@deepseek-ai/dsh-api-remotes", "@deepseek-ai/dsh-client-ui-sidebar", "@deepseek-ai/dsh-client-ui-commands"], "platform": "web" }
   },
   "@deepseek-ai/dsh-client-ui-settings-models": {
     "source": "client/ui-settings-models/client/index.ts",
@@ -66,7 +66,7 @@
   },
   "@deepseek-ai/dsh-client-ui-commands": {
     "source": "client/ui-commands/client/index.ts",
-    "client": { "inject": ["@deepseek-ai/dsh-api-remotes", "@deepseek-ai/dsh-client-runtime", "@deepseek-ai/dsh-client-locale", "@deepseek-ai/dsh-client-ui-input-trigger", "@deepseek-ai/dsh-client-ui-conversation"], "platform": "web" }
+    "client": { "inject": ["@deepseek-ai/dsh-api-remotes", "@deepseek-ai/dsh-client-runtime", "@deepseek-ai/dsh-client-locale", "@deepseek-ai/dsh-client-ui-input-trigger", "@deepseek-ai/dsh-client-ui-conversation", "@deepseek-ai/dsh-client-ui-layout"], "platform": "web" }
   },
   "@deepseek-ai/dsh-client-ui-skill": {
     "source": "client/ui-skill/client/index.ts",

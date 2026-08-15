@@ -9,6 +9,12 @@ export const zh = {
   'status.empty': '无选项',
   'overlay.aria': '/{command} 选项',
   'listbox.aria': '/{command} 匹配项',
+  'palette.title': '命令面板',
+  'palette.placeholder': '搜索操作…',
+  'palette.search.aria': '搜索界面操作',
+  'palette.list.aria': '界面操作',
+  'palette.empty': '无匹配操作',
+  'palette.close': '关闭命令面板',
 } satisfies Record<string, string>
 
 /** The command namespace key union. */
@@ -23,4 +29,10 @@ export const en = {
   'status.empty': 'No options',
   'overlay.aria': '/{command} options',
   'listbox.aria': '/{command} matches',
+  'palette.title': 'Command Palette',
+  'palette.placeholder': 'Search actions…',
+  'palette.search.aria': 'Search interface actions',
+  'palette.list.aria': 'Interface actions',
+  'palette.empty': 'No matching actions',
+  'palette.close': 'Close command palette',
 } satisfies Record<CommandKey, string>

@@ -15,9 +15,9 @@ export const name = 'client-ui-commands-invariant'
 export const inject = ['invariants']
 
 /**
- * No runtime invariant: a browser-side source over the wire command
- * directory — it emits no cordis events and owns no cross-plugin mutable
- * state; dispatch and cache behavior are asserted by this package's specs.
+ * No runtime invariant: the browser-side slash directory and local action
+ * registry emit no Cordis events; dispatch, keybinding, and cache behavior are
+ * asserted by this package's specs.
  */
 const install: InvariantInstaller = () => {}
 
