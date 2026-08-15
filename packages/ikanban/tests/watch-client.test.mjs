@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { watchFiles } from '../scripts/watch-client.mjs'
+import { createCoalescedRunner, startWatchers, watchFiles } from '../scripts/watch-client.mjs'
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -95,4 +95,63 @@ test('coalesces concurrent changes into one queued rebuild', async () => {
     watcher.close()
     await rm(directory, { recursive: true, force: true })
   }
+})
+
+test('serializes copies and coalesces events received during a copy', async () => {
+  let copies = 0
+  let active = 0
+  let maximumActive = 0
+  let releaseFirst
+  const firstStarted = new Promise(resolve => { releaseFirst = resolve })
+  let unblockFirst
+  const firstBlocked = new Promise(resolve => { unblockFirst = resolve })
+  const copy = createCoalescedRunner(async () => {
+    copies += 1
+    active += 1
+    maximumActive = Math.max(maximumActive, active)
+    if (copies === 1) {
+      releaseFirst()
+      await firstBlocked
+    }
+    active -= 1
+  })
+
+  const running = copy()
+  await firstStarted
+  const queued = Promise.all([copy(), copy()])
+  assert.equal(copies, 1)
+  unblockFirst()
+  await Promise.all([running, queued])
+
+  assert.equal(copies, 2)
+  assert.equal(maximumActive, 1)
+})
+
+test('closes fulfilled watchers when another watcher fails to start', async () => {
+  const startupError = new Error('frontend startup failed')
+  const closed = []
+  const watcher = { close: async () => { closed.push('client') } }
+
+  await assert.rejects(
+    startWatchers([
+      async () => watcher,
+      async () => { throw startupError },
+    ]),
+    startupError,
+  )
+  assert.deepEqual(closed, ['client'])
+})
+
+test('closes every fulfilled watcher shape after startup failure', async () => {
+  const closed = []
+
+  await assert.rejects(
+    startWatchers([
+      async () => [{ close: () => { closed.push('close') } }],
+      async () => ({ [Symbol.asyncDispose]: async () => { closed.push('dispose') } }),
+      async () => { throw new Error('startup failed') },
+    ]),
+    /startup failed/,
+  )
+  assert.deepEqual(closed.sort(), ['close', 'dispose'])
 })

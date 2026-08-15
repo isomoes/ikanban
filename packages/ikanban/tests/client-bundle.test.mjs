@@ -42,10 +42,13 @@ test('resolves virtual clients and their manifests from an install-like anchor',
   const resolve = createRequire(join(root, 'anchor.cjs')).resolve
 
   try {
+    assert.equal(resolve('@isomoes/dsh-ikanban'), join(packagePath, 'lib', 'index.js'))
+    assert.equal(resolve('@isomoes/dsh-ikanban/package.json'), join(packagePath, 'package.json'))
     for (const stockId of Object.keys(entries)) {
       const id = stockId.replace('@deepseek-ai/dsh-client-', '')
       const virtualId = `@isomoes/dsh-ikanban/client/${id}`
       assert.equal(resolve(virtualId), join(packagePath, 'lib', 'clients', id, 'index.js'))
+      assert.equal(resolve(`${virtualId}/client`), join(packagePath, 'lib', 'clients', id, 'client.js'))
       assert.equal(resolve(`${virtualId}/package.json`), join(packagePath, 'lib', 'clients', id, 'package.json'))
     }
   } finally {

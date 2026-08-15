@@ -11,6 +11,30 @@ const webRequire = createRequire(new URL('../../web-ui/package.json', import.met
 const editableSource = /\.(?:[cm]?[jt]sx?|css|html)$/
 const generatedSegment = new RegExp(`(?:^|\\${sep})(?:lib|dist)(?:\\${sep}|$)`)
 
+export function createCoalescedRunner(run) {
+  let running
+  let pending = false
+
+  return function requestRun() {
+    pending = true
+    if (running === undefined) {
+      running = (async () => {
+        let failure
+        do {
+          pending = false
+          try {
+            await run()
+          } catch (error) {
+            failure ??= error
+          }
+        } while (pending)
+        if (failure !== undefined) throw failure
+      })().finally(() => { running = undefined })
+    }
+    return running
+  }
+}
+
 export function watchFiles(paths, rebuild, options = {}) {
   const debounceMs = options.debounceMs ?? 75
   const onError = options.onError ?? ((error) => console.error(error))
@@ -71,6 +95,25 @@ async function copyWithEntryLast(source, target, entry) {
   await rename(temporary, resolve(target, entry))
 }
 
+async function closeWatcher(watcher) {
+  if (typeof watcher.close === 'function') return watcher.close()
+  if (typeof watcher[Symbol.asyncDispose] === 'function') return watcher[Symbol.asyncDispose]()
+  throw new TypeError('Build watcher has no close operation')
+}
+
+export async function startWatchers(starters) {
+  const results = await Promise.allSettled(starters.map(start => start()))
+  const watchers = results
+    .filter(result => result.status === 'fulfilled')
+    .flatMap(result => result.value)
+  const failure = results.find(result => result.status === 'rejected')
+  if (failure !== undefined) {
+    await Promise.allSettled(watchers.map(closeWatcher))
+    throw failure.reason
+  }
+  return watchers
+}
+
 async function startClientWatcher() {
   const { build } = await import(pathToFileURL(webRequire.resolve('tsdown')).href)
   return build({
@@ -95,32 +138,27 @@ async function startFrontendWatcher() {
     build: { watch: {} },
   })
   if (!('on' in watcher)) throw new Error('Vite did not return a build watcher')
-  watcher.on('event', async event => {
+  const copyFrontend = createCoalescedRunner(async () => {
+    await copyWithEntryLast(resolve(webRoot, 'dist'), resolve(packageRoot, 'lib/web'), 'index.html')
+    console.log('iKanban frontend rebuilt; reload the browser to use the new shell')
+  })
+  watcher.on('event', event => {
     if (event.code === 'ERROR') console.error(event.error)
     if (event.code !== 'END') return
-    try {
-      await copyWithEntryLast(resolve(webRoot, 'dist'), resolve(packageRoot, 'lib/web'), 'index.html')
-      console.log('iKanban frontend rebuilt; reload the browser to use the new shell')
-    } catch (error) {
-      console.error(error)
-    }
+    void copyFrontend().catch(error => console.error(error))
   })
   return watcher
 }
 
 async function main() {
-  const watchers = await Promise.all([startClientWatcher(), startFrontendWatcher()])
+  const watchers = await startWatchers([startClientWatcher, startFrontendWatcher])
   console.log('Watching iKanban TS, TSX, CSS, and frontend shell sources...')
 
   await new Promise(resolveSignal => {
     process.once('SIGINT', resolveSignal)
     process.once('SIGTERM', resolveSignal)
   })
-  await Promise.allSettled(watchers.flat().map(watcher => {
-    if (typeof watcher.close === 'function') return watcher.close()
-    if (typeof watcher[Symbol.asyncDispose] === 'function') return watcher[Symbol.asyncDispose]()
-    throw new TypeError('Build watcher has no close operation')
-  }))
+  await Promise.allSettled(watchers.map(closeWatcher))
 }
 
 if (process.argv[1] !== undefined && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {

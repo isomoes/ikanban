@@ -26,6 +26,7 @@
       "types": "./lib/types/directory-picker-auto.d.ts",
       "default": "./lib/directory-picker-auto.js"
     },
+    "./client/*/client": "./lib/clients/*/client.js",
     "./client/*/package.json": "./lib/clients/*/package.json",
     "./client/*": "./lib/clients/*/index.js",
     "./invariant": {
