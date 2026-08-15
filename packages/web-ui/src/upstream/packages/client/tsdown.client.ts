@@ -64,7 +64,7 @@ const RUNTIME_STORE_EXEMPTION = '@deepseek-ai/dsh-client-runtime/client'
 /** Externals resolved from the loader module table: the platform seed entries plus the documented runtime exemption. */
 export const CLIENT_EXTERNALS: readonly string[] = [...PLATFORM_MODULES, RUNTIME_STORE_EXEMPTION]
 
-const REPOSITORY_ROOT = fileURLToPath(new URL('../..', import.meta.url))
+const REPOSITORY_ROOT = fileURLToPath(new URL('../../..', import.meta.url))
 
 /** Rebase a physical lib-relative source onto a browser URL that mirrors the repository directories. */
 function browserSourcePath(source: string, sourcemapPath: string): string {
@@ -167,14 +167,18 @@ function clientLibraryConfig(
   }
 }
 
-function clientConfig(id: string, entry: string): UserConfig {
+export function isolatedClientConfig(id: string, entry: string, outDir: string): UserConfig {
+  return clientConfig(id, entry, outDir)
+}
+
+function clientConfig(id: string, entry: string, outDir = 'lib'): UserConfig {
   return {
     name: `${id}/client`,
     entry: { client: entry },
     // Browser bundle lands next to the node half (single lib/ artifact dir;
     // the entryFileNames pin keeps it exactly lib/client.js). clean must stay
     // off — a default clean would wipe the node-half output emitted above.
-    outDir: 'lib',
+    outDir,
     format: 'cjs',
     platform: 'browser',
     // Types ship from lib/types (tsc); dts here would wrap the banner/footer into .d.cts and break parsing.
@@ -183,7 +187,6 @@ function clientConfig(id: string, entry: string): UserConfig {
     // must carry the TS/TSX mapping consumed by browser profiling tools.
     sourcemap: true,
     clean: false,
-    external: [...CLIENT_EXTERNALS],
     // Browser bundles inline node-idiom deps (zustand/immer read
     // process.env.NODE_ENV; zustand's esm build also probes
     // import.meta.env.MODE, which a CJS output cannot carry — rolldown flags
@@ -204,7 +207,11 @@ function clientConfig(id: string, entry: string): UserConfig {
     // every non-shared dep). A require() the table cannot answer is a
     // guaranteed runtime throw, so the rule is the table list itself: no
     // opinion for table entries (external above wins), bundle everything else.
-    noExternal: (id: string) => (CLIENT_EXTERNALS.includes(id) ? undefined : true),
+    deps: {
+      neverBundle: [...CLIENT_EXTERNALS],
+      alwaysBundle: (id: string) => (CLIENT_EXTERNALS.includes(id) ? undefined : true),
+      onlyBundle: false,
+    },
     plugins: [{
       // Bundle purity gate (build-time mirror of the module-edge rules):
       // platform seed entries stay external, inline-safe wire layers inline,

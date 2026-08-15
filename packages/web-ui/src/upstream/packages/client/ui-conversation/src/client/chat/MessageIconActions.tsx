@@ -53,7 +53,7 @@ export function MessageIconActions({
   // gated so re-clicks during the window neither re-copy nor stack timers.
   const [copied, setCopied] = useState(false)
   const copyPending = useRef(false)
-  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const copyTimer = useRef<number | null>(null)
   const copyEpoch = useRef(0)
   useEffect(() => () => {
     copyEpoch.current += 1
