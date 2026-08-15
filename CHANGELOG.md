@@ -6,10 +6,14 @@ All notable changes to this project will be documented in this file.
 
 - Reinitialized iKanban as the `@isomoes/dsh-ikanban` DeepSeek Harness plugin bundle.
 - Removed the legacy standalone web application, Docker deployment, Bun workspace, and generated assets.
-- Repackaged the published DSH `0.1.0-rc.6` stock Web composition and delegated runtime companions as the keyboard-first customization baseline.
-- Added upstream parity tests and reproducible patch synchronization.
-- Organized the publishable plugin under `packages/ikanban` in a private pnpm workspace.
-- Standardized workspace dependency management and scripts on pnpm.
+- Delegated the host runtime to the published DSH `0.1.0-rc.6` packages while replacing its browser composition with iKanban-owned clients.
+- Imported the complete editable Web UI source into `packages/web-ui`, with pinned upstream provenance and explicit reviewed refreshes.
+- Packaged the Vite browser shell and 30 isolated virtual client bundles inside the public plugin so profiles install only `@isomoes/dsh-ikanban`.
+- Added a full development watch loop with per-client HMR, browser shell rebuilds, and an isolated `ikanban-dev` profile.
+- Replaced DeepSeek browser branding with iKanban visuals and fixed Surfingkeys hints for opening sessions and session actions.
+- Added self-contained package builds, browser boot and bundle coverage, upstream parity checks, and reproducible composition synchronization.
+- Added tag-driven npm trusted publishing, packaged GitHub release artifacts, and documented release and local development workflows.
+- Organized the publishable plugin and private Web UI fork in a pnpm workspace with standardized dependency management and scripts.
 
 ## [0.3.18]
 
