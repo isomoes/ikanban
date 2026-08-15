@@ -1,0 +1,39 @@
+{
+  "compilerOptions": {
+    "target": "ES2024",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "types": ["node", "vite/client"],
+    "allowImportingTsExtensions": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "paths": {
+      "@deepseek-ai/dsh-client-web": ["./src/upstream/packages/client/web/src/boot.tsx"],
+      "@deepseek-ai/dsh-client-web-react": ["./src/upstream/packages/client/web-react/src/index.ts"],
+      "@deepseek-ai/dsh-client-ui-slots": ["./src/upstream/packages/client/ui-slots/src/index.ts"],
+      "@deepseek-ai/dsh-client-ui-primitives": ["./src/upstream/packages/client/ui-primitives/src/index.ts"],
+      "@deepseek-ai/dsh-client-ui-attachment": ["./src/upstream/packages/client/ui-attachment/src/index.ts"],
+      "@deepseek-ai/dsh-client-schema-form": ["./src/upstream/packages/client/schema-form/src/index.ts"]
+    }
+  },
+  "include": [
+    "vite.config.ts",
+    "src/node-module-stub.ts",
+    "src/upstream/apps/web/src",
+    "src/upstream/packages/client/web/src",
+    "src/upstream/packages/client/web-react/src",
+    "src/upstream/packages/client/ui-slots/src",
+    "src/upstream/packages/client/ui-primitives/src",
+    "src/upstream/packages/client/ui-attachment/src",
+    "src/upstream/packages/client/schema-form/src"
+  ]
+}

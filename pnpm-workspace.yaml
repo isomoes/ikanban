@@ -2,6 +2,8 @@ packages:
   - packages/*
 
 allowBuilds:
+  # Required by Vite to install its platform-specific build binary.
+  esbuild: true
   # Required by DSH's native directory picker; koffi installs its N-API binary.
   koffi: true
 
