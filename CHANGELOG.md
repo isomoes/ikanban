@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.3]
+
+- Added workspace file mentions with fuzzy-search suggestions in the prompt composer.
+- Stabilized file suggestions with improved matching, menu layout, and source ownership coverage.
+- Refreshed README links and documented the recent release history.
+
 ## [0.4.2]
 
 - Linked the sidebar brand to the home page for quicker navigation.
