@@ -5,7 +5,7 @@
 - This is a DSH Web bundle plugin, not a standalone frontend. `@isomoes/dsh-ikanban` delegates the host startup and invariant entries to the installed `@deepseek-ai/dsh-web-app`, wraps its runtime to serve the local dist, and owns the complete browser surface in `packages/web-ui`.
 - DSH runs a layered Cordis plugin tree. A patch row replaces the target row's whole `config`, not individual keys; inspect the effective tree with `pnpm dev:install && pnpm dev:config` before changing composition.
 - `packages/web-ui` contains an editable source fork flattened into one package. Refresh it only through an explicit reviewed merge; builds never refresh browser source. `packages/web-ui/UPSTREAM.md` records the pinned commit and imported paths.
-- Use the sibling DSH checkout's [`packages/bundle/web-app`](../deepseek-harness/packages/bundle/web-app) and [`docs`](../deepseek-harness/docs) to understand upstream architecture. The installed versions in `packages/ikanban/package.json` and `pnpm-lock.yaml` are the dependency source of truth; the sibling checkout may be on another prerelease.
+- Use the upstream DSH repository's [`packages/bundle/web-app`](https://github.com/deepseek-ai/deepseek-harness/tree/main/packages/bundle/web-app) and [`docs`](https://github.com/deepseek-ai/deepseek-harness/tree/main/docs) to understand upstream architecture. The installed versions in `packages/ikanban/package.json` and `pnpm-lock.yaml` are the dependency source of truth; the upstream repository may be on another prerelease.
 
 ## Commands
 
