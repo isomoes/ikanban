@@ -11,6 +11,7 @@ import {
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import { workspaceTitleOf } from '@deepseek-ai/dsh-client-runtime/client'
 import type { ConversationSlotProps } from '../contract/slots.ts'
+import { buildBadge } from '../../../../build-presentation.ts'
 import css from './HeroShell.module.css'
 
 /** The owner's locale seat type, passed to hero chrome as a plain prop. */
@@ -122,7 +123,7 @@ export function HeroShell({ t, children }: HeroShellProps) {
             <FishLogo size={34} className={css.fish} />
           </span>
           <span className={css.headlineText}>{t('hero.headline')}</span>
-          <span className={css.previewBadge}>{t('hero.preview')}</span>
+          <span className={css.previewBadge}>{buildBadge(__IKANBAN_VERSION__, __IKANBAN_DEV__)}</span>
         </div>
         <div className={css.body}>
           {/* The resident composer (ConversationRoot's root-owned scrollport;

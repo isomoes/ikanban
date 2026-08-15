@@ -32,6 +32,8 @@
   "include": [
     "vite.config.ts",
     "tsdown.config.ts",
+    "src/build-globals.d.ts",
+    "src/build-presentation.ts",
     "src/css-modules.d.ts",
     "src/node-module-stub.ts",
     "src/main.ts",

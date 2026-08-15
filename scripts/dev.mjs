@@ -4,7 +4,10 @@ const args = process.argv.slice(2)
 if (args[0] === '--') args.shift()
 
 const children = [
-  spawn(process.execPath, ['packages/ikanban/scripts/watch-client.mjs'], { stdio: 'inherit' }),
+  spawn(process.execPath, ['packages/ikanban/scripts/watch-client.mjs'], {
+    stdio: 'inherit',
+    env: { ...process.env, IKANBAN_DEV: '1' },
+  }),
   spawn('dsh', ['--profile', 'ikanban-dev', ...args], { stdio: 'inherit' }),
 ]
 

@@ -4,6 +4,7 @@ import { test } from 'node:test'
 
 const packageRoot = new URL('../', import.meta.url)
 const entries = JSON.parse(await readFile(new URL('src/entries.json', packageRoot), 'utf8'))
+const packageManifest = JSON.parse(await readFile(new URL('package.json', packageRoot), 'utf8'))
 
 const hostPlugins = new Set([
   '@deepseek-ai/dsh-client-locale',
@@ -54,6 +55,10 @@ test('each forked client entry emits an isolated virtual package', async () => {
     }
     assert.equal(sourcemap.sources.length, sourcemap.sourcesContent.length)
     assert.doesNotMatch(JSON.stringify(sourcemap.sources), /deepseek-harness/)
+    if (stockId === '@deepseek-ai/dsh-client-ui-conversation') {
+      assert.ok(bundle.includes(`buildBadge(${JSON.stringify(packageManifest.version)}, false)`))
+      assert.doesNotMatch(bundle, /__IKANBAN_(?:DEV|VERSION)__/)
+    }
     for (const owner of bundle.matchAll(/tag\.dataset\.plugin = "([^"]+)"/g)) {
       assert.equal(owner[1], virtualId)
     }

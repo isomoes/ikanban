@@ -13,6 +13,7 @@ import { existsSync } from 'node:fs'
 import { basename, dirname, relative, resolve as resolvePath, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { UserConfig } from 'tsdown'
+import packageJson from '../../package.json' with { type: 'json' }
 import { transform } from 'lightningcss'
 import { PLATFORM_MODULES } from './web/platform.ts'
 
@@ -198,6 +199,8 @@ function clientConfig(id: string, entry: string, outDir = 'lib'): UserConfig {
     // key: zustand probes `import.meta.env ? import.meta.env.MODE : ...`, and
     // the truthiness probe would otherwise survive as an empty import.meta.
     define: {
+      __IKANBAN_DEV__: JSON.stringify(process.env.IKANBAN_DEV === '1'),
+      __IKANBAN_VERSION__: JSON.stringify(packageJson.version),
       'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV ?? 'production'),
       'import.meta.env.MODE': JSON.stringify(process.env.NODE_ENV ?? 'production'),
       'import.meta.env': JSON.stringify({ MODE: process.env.NODE_ENV ?? 'production' }),
