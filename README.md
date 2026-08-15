@@ -15,7 +15,7 @@ Install the published plugin into an `ikanban` profile. The `dsh plugin`
 command creates the profile if it does not already exist:
 
 ```bash
-dsh plugin --profile ikanban add @isomoes/dsh-ikanban
+dsh plugin --profile ikanban add @isomoes/dsh-ikanban --registry=https://registry.npmjs.org
 ```
 
 Run iKanban through that profile:

@@ -10,6 +10,11 @@ let repackaged = (await readFile(source, 'utf8'))
   .replace("name: '@deepseek-ai/dsh-web-app/startup'", "name: '@isomoes/dsh-ikanban/startup'")
   .replace("name: '@deepseek-ai/dsh-web-app'", "name: '@isomoes/dsh-ikanban'")
   .replace("name: '@deepseek-ai/dsh-host-directory-picker-auto'", "name: '@isomoes/dsh-ikanban/directory-picker-auto'")
+  .replace(
+    '# Resolve bind host, SSH launch, and display once at boot, then mount the\n    # matching dual-face directory picker. Mount -native or -browse directly in\n    # an overlay to pin the interaction.',
+    '# Use the browser directory picker on every host; the published bundle has\n    # no native addon installation path.',
+  )
+  .replace('assembly fact of dsh-web-app, never user config)', 'assembly fact of iKanban, never user config)')
 
 for (const stockId of Object.keys(entries)) {
   const id = stockId.replace('@deepseek-ai/dsh-client-', '')

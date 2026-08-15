@@ -84,9 +84,8 @@
     - id: session-stats
       name: '@deepseek-ai/dsh-session-stats'
 
-    # Resolve bind host, SSH launch, and display once at boot, then mount the
-    # matching dual-face directory picker. Mount -native or -browse directly in
-    # an overlay to pin the interaction.
+    # Use the browser directory picker on every host; the published bundle has
+    # no native addon installation path.
     - id: directory-picker
       name: '@isomoes/dsh-ikanban/directory-picker-auto'
 
@@ -120,7 +119,7 @@
         port: !!js ctx.webStartup.port ?? 3080
 
     # Web glue owned by this bundle: resolves the built frontend dist (an
-    # assembly fact of dsh-web-app, never user config), mounts the
+    # assembly fact of iKanban, never user config), mounts the
     # frontend-static fallback owner, registers the web-surface prompt
     # section and the bash runtime variable, and prints the URL line. The
     # webStartup provider supplies invocation-only values; after the server

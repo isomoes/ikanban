@@ -20,4 +20,7 @@ test('build lifecycles produce private Web UI artifacts without recursive orches
   )
   assert.ok(ikanban.scripts['build:package'])
   assert.doesNotMatch(ikanban.scripts['build:package'], /(?:^|\s)pnpm build(?:\s|$)/)
+  assert.equal(ikanban.dependencies['@deepseek-ai/dsh-web-app'], undefined)
+  assert.equal(ikanban.dependencies['@deepseek-ai/dsh-host-directory-picker-native'], undefined)
+  assert.equal(ikanban.devDependencies['@deepseek-ai/dsh-web-app'], '^0.1.0-rc.6')
 })
