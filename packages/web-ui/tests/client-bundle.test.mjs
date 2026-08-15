@@ -59,6 +59,9 @@ test('each forked client entry emits an isolated virtual package', async () => {
       assert.ok(bundle.includes(`buildBadge(${JSON.stringify(packageManifest.version)}, false)`))
       assert.doesNotMatch(bundle, /__IKANBAN_(?:DEV|VERSION)__/)
     }
+    if (stockId === '@deepseek-ai/dsh-client-ui-sidebar') {
+      assert.match(bundle, /https:\/\/github\.com\/isomoes\/ikanban/)
+    }
     for (const owner of bundle.matchAll(/tag\.dataset\.plugin = "([^"]+)"/g)) {
       assert.equal(owner[1], virtualId)
     }

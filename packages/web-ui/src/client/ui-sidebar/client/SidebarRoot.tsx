@@ -18,7 +18,7 @@
 import { useEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
 import {
-  BrandWordmark, FishLogo,
+  FishLogo,
   IconNewChatOutline16, IconPanelLeftOutline16,
   Tooltip,
 } from '@deepseek-ai/dsh-client-ui-primitives'
@@ -35,6 +35,7 @@ const COLLAPSE_SETTLE_MS = 150
  * edge — on the way to the conversation, or around a portalled menu.
  */
 const SCROLLBAR_LINGER_MS = 2000
+const PROJECT_HOMEPAGE = 'https://github.com/isomoes/ikanban'
 
 /**
  * Render the sidebar column shell.
@@ -128,17 +129,27 @@ export function SidebarRoot({
       onPointerLeave={() => { armLinger() }}
     >
       <div className={css.logoRow}>
-        {/* Expanded, the wordmark doubles as a New Session shortcut; the
-            collapsed rail's mark is the expand toggle below instead. */}
+        {/* Expanded, the mark remains a New Session shortcut while only the
+            product name links away to the project homepage. */}
         {wide && (
-          <button
-            type="button"
-            className={clsx(css.brand, css.wide)}
-            aria-label={t('session.new.label')}
-            onClick={() => { startSession() }}
-          >
-            <BrandWordmark />
-          </button>
+          <div className={clsx(css.brand, css.wide)}>
+            <button
+              type="button"
+              className={css.brandMark}
+              aria-label={t('session.new.label')}
+              onClick={() => { startSession() }}
+            >
+              <FishLogo size={24} />
+            </button>
+            <a
+              className={css.brandLink}
+              href={PROJECT_HOMEPAGE}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              iKanban
+            </a>
+          </div>
         )}
         {/* Rail resting state is the iKanban mark; hovering swaps in the panel
             icon (the expand affordance, figma sidebar-hover flow). */}

@@ -107,21 +107,39 @@
   justify-content: flex-start;
 }
 
-/* Brand group (figma I133:7632): the full wordmark rides the text ink
-   (figma flows: the main-screen instance is black; blue is brand
-   emphasis only). A button only in behavior (New Session shortcut): the
-   pointer cursor is the sole affordance — no hover chrome on the mark. */
+/* Brand group (figma I133:7632): the mark keeps the New Session shortcut;
+   the product-name text is the project-homepage link. */
 .brand {
   flex: 1;
   min-width: 0;
   display: inline-flex;
   align-items: center;
+  gap: 8px;
   overflow: hidden;
+  color: inherit;
+}
+
+.brandMark {
+  flex: none;
+  display: inline-flex;
   padding: 0;
   border: none;
   background: transparent;
-  color: inherit;
   cursor: pointer;
+}
+
+.brandLink {
+  color: inherit;
+  font-size: 17px;
+  font-weight: 650;
+  line-height: 24px;
+  letter-spacing: -0.4px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.brandLink:hover {
+  text-decoration: underline;
 }
 
 .iconButton {
