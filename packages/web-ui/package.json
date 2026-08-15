@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "pnpm typecheck && pnpm build:frontend && pnpm build:client",
+    "build": "pnpm build:package",
+    "build:package": "pnpm typecheck && pnpm build:frontend && pnpm build:client",
     "build:client": "rm -rf lib/clients && tsdown",
     "build:frontend": "vite build",
     "typecheck": "tsc -p tsconfig.json --noEmit && node --check tests/source-ownership.test.mjs && node --check tests/frontend-build.test.mjs && node --check tests/client-bundle.test.mjs",

@@ -17,7 +17,7 @@
     "url": "git+https://github.com/isomoes/ikanban.git"
   },
   "scripts": {
-    "build": "pnpm -r --if-present run build",
+    "build": "pnpm -r --if-present run build:package",
     "dev": "pnpm dev:install && node scripts/dev.mjs",
     "dev:config": "dsh --profile ikanban --dump-config",
     "dev:install": "pnpm build && dsh plugin --profile ikanban add ./packages/ikanban",
