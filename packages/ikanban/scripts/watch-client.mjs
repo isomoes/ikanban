@@ -11,6 +11,10 @@ const webRequire = createRequire(new URL('../../web-ui/package.json', import.met
 const editableSource = /\.(?:[cm]?[jt]sx?|css|html)$/
 const generatedSegment = new RegExp(`(?:^|\\${sep})(?:lib|dist)(?:\\${sep}|$)`)
 
+export function markDevelopmentBuild(environment) {
+  environment.IKANBAN_DEV = '1'
+}
+
 export function createCoalescedRunner(run) {
   let running
   let pending = false
@@ -151,6 +155,7 @@ async function startFrontendWatcher() {
 }
 
 async function main() {
+  markDevelopmentBuild(process.env)
   const watchers = await startWatchers([startClientWatcher, startFrontendWatcher])
   console.log('Watching iKanban TS, TSX, CSS, and frontend shell sources...')
 

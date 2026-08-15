@@ -3,9 +3,15 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { createCoalescedRunner, startWatchers, watchFiles } from '../scripts/watch-client.mjs'
+import { createCoalescedRunner, markDevelopmentBuild, startWatchers, watchFiles } from '../scripts/watch-client.mjs'
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
+
+test('marks watcher builds as development', () => {
+  const environment = {}
+  markDevelopmentBuild(environment)
+  assert.equal(environment.IKANBAN_DEV, '1')
+})
 
 async function waitFor(predicate, message) {
   const deadline = Date.now() + 2000
