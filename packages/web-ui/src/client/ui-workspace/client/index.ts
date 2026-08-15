@@ -9,7 +9,9 @@
  * packages/client/AGENTS.md.
  */
 import type { HostObservable } from '@deepseek-ai/dsh-client-ui-slots'
+import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+import type { InputTriggerServiceContract, InputTriggerSource } from '@deepseek-ai/dsh-client-ui-input-trigger/client'
 // Type-only: pulls the locale plugin's Context merge (ctx.locale).
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type { WorkspaceBrowserInjected, WorkspacePickerInjected } from './contract/slots.ts'
@@ -33,6 +35,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 
 /** Dictionary namespace owned by this plugin. */
 const NS = 'workspace'
+const WORKSPACE_FILE_CHANNEL = '/ikanban.workspace-files'
 
 /**
  * Required services (cordis fiber inject). The target slots are declared by
@@ -42,7 +45,7 @@ const NS = 'workspace'
  * provides a waitable service. apply therefore depends on each slot
  * declaration through `slots.inject()` instead of assuming order.
  */
-export const inject = ['slots', 'sessions', 'workspaces', 'locale']
+export const inject = ['slots', 'sessions', 'workspaces', 'locale', 'connection', 'inputTriggers']
 
 /**
  * Register the browser and picker once their slot declarations are on the
@@ -52,6 +55,26 @@ export const inject = ['slots', 'sessions', 'workspaces', 'locale']
  */
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-workspace: dictionaries')
+
+  const connection = ctx.get('connection') as ConnectionHandle
+  const fileSource: InputTriggerSource = {
+    trigger: '@',
+    name: 'file',
+    order: -10,
+    async candidates(session, { query, signal }) {
+      const cwd = ctx.sessions.list.getSnapshot().byId[session.sessionId]?.cwd
+      if (cwd === undefined || cwd === '') return []
+      const result = await connection.rpc.call(WORKSPACE_FILE_CHANNEL, 'search', { cwd, query }, signal)
+      if (!result.ok) return []
+      if (!Array.isArray(result.value) || !result.value.every(path => typeof path === 'string')) return []
+      return result.value.map(path => ({ name: path }))
+    },
+    onPick({ candidate }) {
+      return { text: `@${candidate.name} ` }
+    },
+  }
+  const inputTriggers = ctx.get('inputTriggers') as InputTriggerServiceContract
+  ctx.effect(() => inputTriggers.registerSource(fileSource), 'ui-workspace: @ file source')
 
   const searchSessions: WorkspaceBrowserInjected['searchSessions'] = async (query, signal) => {
     const result = await ctx.sessions.search(query, signal)

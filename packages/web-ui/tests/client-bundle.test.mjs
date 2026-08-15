@@ -12,6 +12,7 @@ const hostPlugins = new Set([
   '@deepseek-ai/dsh-client-ui-deliverables',
   '@deepseek-ai/dsh-client-ui-settings-general',
   '@deepseek-ai/dsh-client-ui-theme',
+  '@deepseek-ai/dsh-client-ui-workspace',
 ])
 
 test('each forked client entry emits an isolated virtual package', async () => {

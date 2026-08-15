@@ -57,8 +57,9 @@
     "client": { "inject": ["@deepseek-ai/dsh-client-connection", "@deepseek-ai/dsh-client-locale", "@deepseek-ai/dsh-client-runtime", "@deepseek-ai/dsh-client-ui-conversation"], "platform": "web" }
   },
   "@deepseek-ai/dsh-client-ui-workspace": {
+    "host": "client/ui-workspace/index.ts",
     "source": "client/ui-workspace/client/index.ts",
-    "client": { "inject": ["@deepseek-ai/dsh-client-locale", "@deepseek-ai/dsh-client-runtime", "@deepseek-ai/dsh-client-ui-conversation", "@deepseek-ai/dsh-client-ui-sidebar"], "platform": "web" }
+    "client": { "inject": ["@deepseek-ai/dsh-client-connection", "@deepseek-ai/dsh-client-locale", "@deepseek-ai/dsh-client-runtime", "@deepseek-ai/dsh-client-ui-conversation", "@deepseek-ai/dsh-client-ui-input-trigger", "@deepseek-ai/dsh-client-ui-sidebar"], "platform": "web" }
   },
   "@deepseek-ai/dsh-client-ui-input-trigger": {
     "source": "client/ui-input-trigger/client/index.ts",
