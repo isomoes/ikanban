@@ -88,7 +88,7 @@
     # matching dual-face directory picker. Mount -native or -browse directly in
     # an overlay to pin the interaction.
     - id: directory-picker
-      name: '@deepseek-ai/dsh-host-directory-picker-auto'
+      name: '@isomoes/dsh-ikanban/directory-picker-auto'
 
     # Read-only projection of current Loader entries for trusted client RPCs.
     - id: plugin-inventory
@@ -140,7 +140,7 @@
     # is a row rather than a child of web-runtime because its node half is a
     # client-side package, which a host-side bundle cannot import.
     - id: client-hmr
-      name: '@isomoes/dsh-ikanban/hmr'
+      name: '@deepseek-ai/dsh-client-hmr'
 
     # ── browser plugin roster (dsh.client rows; node halves are layer-2 hosts) ──
 
@@ -172,106 +172,106 @@
       name: '@deepseek-ai/dsh-cordis-client-runner'
 
     - id: ui-theme
-      name: '@deepseek-ai/dsh-client-ui-theme'
+      name: '@isomoes/dsh-ikanban/client/ui-theme'
 
     - id: locale
-      name: '@deepseek-ai/dsh-client-locale'
+      name: '@isomoes/dsh-ikanban/client/locale'
 
     - id: ui-layout
-      name: '@isomoes/dsh-ikanban/layout'
+      name: '@isomoes/dsh-ikanban/client/ui-layout'
 
     - id: ui-sidebar
-      name: '@isomoes/dsh-ikanban/sidebar'
+      name: '@isomoes/dsh-ikanban/client/ui-sidebar'
 
     - id: ui-settings
-      name: '@deepseek-ai/dsh-client-ui-settings'
+      name: '@isomoes/dsh-ikanban/client/ui-settings'
 
     - id: ui-settings-general
-      name: '@deepseek-ai/dsh-client-ui-settings-general'
+      name: '@isomoes/dsh-ikanban/client/ui-settings-general'
 
     - id: ui-settings-models
-      name: '@deepseek-ai/dsh-client-ui-settings-models'
+      name: '@isomoes/dsh-ikanban/client/ui-settings-models'
 
     - id: ui-settings-plugin-inventory
-      name: '@deepseek-ai/dsh-client-ui-settings-plugin-inventory'
+      name: '@isomoes/dsh-ikanban/client/ui-settings-plugin-inventory'
 
     - id: ui-conversation
-      name: '@deepseek-ai/dsh-client-ui-conversation'
+      name: '@isomoes/dsh-ikanban/client/ui-conversation'
 
     # Tool call tree, generic fallback, and keyed business Tool views.
     - id: ui-tool
-      name: '@deepseek-ai/dsh-client-ui-tool'
+      name: '@isomoes/dsh-ikanban/client/ui-tool'
 
     - id: ui-cordis
-      name: '@deepseek-ai/dsh-client-ui-cordis'
+      name: '@isomoes/dsh-ikanban/client/ui-cordis'
 
     # Durable workflow lifecycle as an independent Chat node after the
     # existing generic workflow tool row.
     - id: ui-workflow-run
-      name: '@deepseek-ai/dsh-client-ui-workflow-run'
+      name: '@isomoes/dsh-ikanban/client/ui-workflow-run'
 
     # Turn tail: the produced-files row under each closing assistant message.
     # Remove this entry to turn the surface off; the tail hole renders empty.
     - id: ui-deliverables
-      name: '@deepseek-ai/dsh-client-ui-deliverables'
+      name: '@isomoes/dsh-ikanban/client/ui-deliverables'
 
 
     - id: ui-workspace
-      name: '@isomoes/dsh-ikanban/workspace'
+      name: '@isomoes/dsh-ikanban/client/ui-workspace'
 
     # Input triggers: the '/' | '@' pipeline (ui-input-trigger), the command surface over
     # it (ui-commands), and the two reference sources (ui-skill / ui-subagent).
     - id: ui-input-trigger
-      name: '@deepseek-ai/dsh-client-ui-input-trigger'
+      name: '@isomoes/dsh-ikanban/client/ui-input-trigger'
 
     - id: ui-commands
-      name: '@deepseek-ai/dsh-client-ui-commands'
+      name: '@isomoes/dsh-ikanban/client/ui-commands'
 
     - id: ui-skill
-      name: '@deepseek-ai/dsh-client-ui-skill'
+      name: '@isomoes/dsh-ikanban/client/ui-skill'
 
     - id: ui-subagent
-      name: '@deepseek-ai/dsh-client-ui-subagent'
+      name: '@isomoes/dsh-ikanban/client/ui-subagent'
 
     # Background jobs: the session-header list over the jobsBySession mirror.
     - id: ui-jobs
-      name: '@deepseek-ai/dsh-client-ui-jobs'
+      name: '@isomoes/dsh-ikanban/client/ui-jobs'
 
     # Goal surface: GoalBar in the input dock over the goal session projection.
     - id: ui-goal
-      name: '@deepseek-ai/dsh-client-ui-goal'
+      name: '@isomoes/dsh-ikanban/client/ui-goal'
 
     # Per-message feedback: Like/Dislike plus an optional note in the
     # assistant-message action strip, over the messageFeedback Remote.
     - id: ui-message-feedback
-      name: '@deepseek-ai/dsh-client-ui-message-feedback'
+      name: '@isomoes/dsh-ikanban/client/ui-message-feedback'
 
     # Model selection: the /model popupSelect + composer seat over session.models.
     - id: ui-model-selection
-      name: '@deepseek-ai/dsh-client-ui-model-selection'
+      name: '@isomoes/dsh-ikanban/client/ui-model-selection'
 
     - id: ui-permission
-      name: '@deepseek-ai/dsh-client-ui-permission-presets'
+      name: '@isomoes/dsh-ikanban/client/ui-permission-presets'
 
     # The agent-preset row in General settings: the default preset for
     # sessions created later. Absent a roster it renders nothing.
     - id: ui-agent-preset
-      name: '@deepseek-ai/dsh-client-ui-agent-preset'
+      name: '@isomoes/dsh-ikanban/client/ui-agent-preset'
 
     # Plugin configuration: the host-plane sections a user owns, as expandable
     # cards. A namespace this deployment does not expose renders nothing.
     - id: ui-settings-plugins
-      name: '@deepseek-ai/dsh-client-ui-settings-plugins'
+      name: '@isomoes/dsh-ikanban/client/ui-settings-plugins'
 
     # Plan control: the composer plan seat over the plan projection + /plan channel.
     - id: ui-plan
-      name: '@deepseek-ai/dsh-client-ui-plan'
+      name: '@isomoes/dsh-ikanban/client/ui-plan'
 
     - id: ui-user-questions
-      name: '@deepseek-ai/dsh-client-ui-user-questions'
+      name: '@isomoes/dsh-ikanban/client/ui-user-questions'
 
     - id: ui-trajectory
-      name: '@deepseek-ai/dsh-client-ui-trajectory'
+      name: '@isomoes/dsh-ikanban/client/ui-trajectory'
 
 # ── the agent plane moves behind agent presets ─────────────────────────────
 #
