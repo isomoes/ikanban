@@ -19,9 +19,9 @@
   "scripts": {
     "build": "pnpm -r --if-present run build:package",
     "dev": "pnpm dev:install && node scripts/dev.mjs",
-    "dev:config": "dsh --profile ikanban --dump-config",
-    "dev:install": "pnpm build && dsh plugin --profile ikanban add ./packages/ikanban",
-    "dev:remove": "dsh plugin --profile ikanban remove @isomoes/dsh-ikanban",
+    "dev:config": "dsh --profile ikanban-dev --dump-config",
+    "dev:install": "pnpm build && dsh plugin --profile ikanban-dev add ./packages/ikanban",
+    "dev:remove": "dsh plugin --profile ikanban-dev remove @isomoes/dsh-ikanban",
     "typecheck": "pnpm -r --if-present run typecheck",
     "test": "pnpm -r --if-present run test"
   }

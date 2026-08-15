@@ -36,7 +36,7 @@ dsh --version
 ```
 
 Install dependencies. The primary development command then builds iKanban,
-links its checkout into a dedicated profile, and starts that profile. It is
+links its checkout into the dedicated `ikanban-dev` profile, and starts that profile. It is
 safe to run from a clean DSH home because it creates or refreshes the profile
 before every launch:
 

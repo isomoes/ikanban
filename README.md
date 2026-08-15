@@ -7,6 +7,23 @@ Monorepo for the iKanban browser-surface fork for DeepSeek Harness.
 - [`@isomoes/dsh-ikanban`](packages/ikanban) - the public DSH bundle, host adapters, generated composition, and packaged browser artifacts
 - [`packages/web-ui`](packages/web-ui) - the private editable TS/TSX/CSS fork of the full browser plugin surface and Vite shell
 
+## Usage
+
+Install the published plugin into an `ikanban` profile. The `dsh plugin`
+command creates the profile if it does not already exist:
+
+```bash
+dsh plugin --profile ikanban add @isomoes/dsh-ikanban
+```
+
+Run iKanban through that profile:
+
+```bash
+dsh --profile ikanban
+```
+
+See [CHANGELOG.md](CHANGELOG.md) for project history.
+
 ## Development
 
 ```bash
@@ -15,7 +32,7 @@ pnpm typecheck
 pnpm build
 ```
 
-Build, install the linked checkout into an isolated `ikanban` DSH profile, and
+Build, install the linked checkout into an isolated `ikanban-dev` DSH profile, and
 run it:
 
 ```bash
@@ -30,5 +47,3 @@ are copied into the linked package and require a browser reload.
 
 See the package [development guide](packages/ikanban/README.md#local-development)
 for rebuild behavior and profile cleanup.
-
-See [CHANGELOG.md](CHANGELOG.md) for project history.

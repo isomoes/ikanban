@@ -17,7 +17,7 @@
 
 ## Development Loop
 
-- `pnpm dev` builds, links this checkout into the isolated `ikanban` DSH profile, starts DSH (default `http://127.0.0.1:3080`), and runs tsdown/Vite source watchers. Pass app flags as in `pnpm dev -- --port 8080`.
+- `pnpm dev` builds, links this checkout into the isolated `ikanban-dev` DSH profile, starts DSH (default `http://127.0.0.1:3080`), and runs tsdown/Vite source watchers. Pass app flags as in `pnpm dev -- --port 8080`.
 - Dynamic plugin code lives below `packages/web-ui/src/client` and `packages/web-ui/src/extensions`. A successful rebuild copies one virtual bundle into `packages/ikanban/lib/clients/<id>` and DSH hot-reloads that package ID.
 - The Vite app context lives at `packages/web-ui`; shared platform code lives below its `src/client` tree. Successful builds copy `dist` into `packages/ikanban/lib/web` and require a browser reload.
 - Changes to TypeScript host entries, build scripts, dependencies, or composition require stopping `pnpm dev`, rebuilding, and restarting it.

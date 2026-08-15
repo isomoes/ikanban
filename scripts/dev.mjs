@@ -5,7 +5,7 @@ if (args[0] === '--') args.shift()
 
 const children = [
   spawn(process.execPath, ['packages/ikanban/scripts/watch-client.mjs'], { stdio: 'inherit' }),
-  spawn('dsh', ['--profile', 'ikanban', ...args], { stdio: 'inherit' }),
+  spawn('dsh', ['--profile', 'ikanban-dev', ...args], { stdio: 'inherit' }),
 ]
 
 const exits = children.map((child) => new Promise((resolve, reject) => {
