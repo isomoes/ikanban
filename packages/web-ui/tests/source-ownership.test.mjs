@@ -14,6 +14,7 @@ test('pins the source fork and declares its client entries', async () => {
 test('owns the complete path-preserved browser source surface', async () => {
   const sources = [
     '../src/upstream/apps/web/src/main.ts',
+    '../src/upstream/packages/client/modules/src/client/index.ts',
     '../src/upstream/packages/client/web/src/AppRoot.tsx',
     '../src/upstream/packages/client/web/src/AppRoot.module.css',
     '../src/upstream/packages/client/ui-directory-picker-browse/src/client/DirectoryBrowser.tsx',

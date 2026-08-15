@@ -91,6 +91,7 @@ export default defineConfig({
       { find: /^@deepseek-ai\/dsh-client-ui-primitives$/, replacement: src('./src/upstream/packages/client/ui-primitives/src/index.ts') },
       { find: /^@deepseek-ai\/dsh-client-ui-attachment$/, replacement: src('./src/upstream/packages/client/ui-attachment/src/index.ts') },
       { find: /^@deepseek-ai\/dsh-client-schema-form$/, replacement: src('./src/upstream/packages/client/schema-form/src/index.ts') },
+      { find: /^@deepseek-ai\/dsh-client-modules\/client$/, replacement: src('./src/upstream/packages/client/modules/src/client/index.ts') },
     ],
   },
   define: {

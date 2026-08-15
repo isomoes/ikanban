@@ -11,6 +11,7 @@ The path-preserved import contains exactly these upstream roots and files:
 - `apps/web/src`
 - `packages/client/tsdown.client.ts`
 - `packages/client/locale/src`
+- `packages/client/modules/src/client`
 - `packages/client/schema-form/src`
 - `packages/client/web/src`
 - `packages/client/web-react/src`

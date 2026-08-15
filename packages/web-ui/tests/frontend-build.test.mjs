@@ -16,5 +16,10 @@ test('frontend build emits local hashed assets', async () => {
   for (const script of scripts) {
     const source = await readFile(`${packageRoot}/dist/assets/${script}`, 'utf8')
     assert.doesNotMatch(source, /\.\.\/deepseek-harness/)
+    assert.doesNotMatch(
+      source,
+      /window\.__ModuleLoader__\.load\(\{/,
+      'the shell must bundle the module-system source, not its runtime plugin wrapper',
+    )
   }
 })
