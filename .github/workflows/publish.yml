@@ -135,4 +135,4 @@ jobs:
           draft: false
           prerelease: false
           body_path: RELEASE_NOTES.md
-         files: dist/*.tgz
+          files: dist/*.tgz
