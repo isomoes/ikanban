@@ -129,7 +129,7 @@ export function SidebarRoot({
     >
       <div className={css.logoRow}>
         {/* Expanded, the wordmark doubles as a New Session shortcut; the
-            collapsed rail's logo is the expand toggle below instead. */}
+            collapsed rail's mark is the expand toggle below instead. */}
         {wide && (
           <button
             type="button"
@@ -140,7 +140,7 @@ export function SidebarRoot({
             <BrandWordmark />
           </button>
         )}
-        {/* Rail resting state is the whale mark; hovering swaps in the panel
+        {/* Rail resting state is the iKanban mark; hovering swaps in the panel
             icon (the expand affordance, figma sidebar-hover flow). */}
         <Tooltip label={collapsed ? t('toggle.open') : t('toggle.collapse')} delayMs={500}>
           <button

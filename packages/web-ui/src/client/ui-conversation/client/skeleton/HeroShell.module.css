@@ -1,4 +1,4 @@
-/* NEW SESSION hero (figma Input_Bottom 75:8208): fish + title, workspace chip
+/* NEW SESSION hero: brand mark + title, workspace chip
    above the shared InputBar card. The input itself is InputBar — only stack
    geometry and the chip live here. */
 
@@ -23,7 +23,7 @@
   overflow: visible;
 }
 
-/* figma 34:10411: fish + title, gap 10, centered; 26/32 wt500. The preview
+/* Brand mark + title, gap 10, centered; 26/32 wt500. The preview
    badge is a product addition outside that source: a mono superscript pill
    riding the title's top-right. */
 .headline {
@@ -76,7 +76,7 @@
   transform-origin: 50% 60%;
 }
 
-@keyframes hero-fish-swim {
+@keyframes hero-mark-hover {
   0%, 100% {
     transform: translate(0, 0) rotate(0deg);
   }
@@ -92,7 +92,7 @@
 
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
   .fishHitbox:hover .fish {
-    animation: hero-fish-swim var(--ds-transition-duration-slow) var(--ds-ease-in-out);
+    animation: hero-mark-hover var(--ds-transition-duration-slow) var(--ds-ease-in-out);
   }
 }
 
