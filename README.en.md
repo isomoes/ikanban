@@ -16,12 +16,7 @@ These videos introduce the original iKanban workflow and its evolution through
 the `v0.3` releases. They predate the current DSH-based package, so installation
 steps and parts of the interface may differ.
 
-- [Why I made iKanban](https://www.bilibili.com/video/BV1t9AhztEjX/)
-- [v0.1](https://www.bilibili.com/video/BV1W3Pgz8ExJ/)
-- [v0.2](https://www.bilibili.com/video/BV1ZNP1znEn5/)
-- [v0.2.11 usage guide](https://www.bilibili.com/video/BV1Y9wMzKE2b/)
-- [v0.3](https://www.bilibili.com/video/BV1n9QEBSEch/)
-- [v0.3.14](https://www.bilibili.com/video/BV1zy3F6aEb2/)
+**Bilibili videos:** [Why I made iKanban](https://www.bilibili.com/video/BV1t9AhztEjX/) · [v0.1](https://www.bilibili.com/video/BV1W3Pgz8ExJ/) · [v0.2](https://www.bilibili.com/video/BV1ZNP1znEn5/) · [v0.2.11 usage guide](https://www.bilibili.com/video/BV1Y9wMzKE2b/) · [v0.3](https://www.bilibili.com/video/BV1n9QEBSEch/) · [v0.3.14](https://www.bilibili.com/video/BV1zy3F6aEb2/)
 
 ## Packages
 
@@ -66,10 +61,7 @@ dsh --profile ikanban
 See [CHANGELOG.md](CHANGELOG.md) for the release history. The current
 architecture and earlier product transitions are preserved in these documents:
 
-- [`v0.4.2` current architecture and basic features (Chinese)](docs/0.4.2.md)
-- [`v0.1.6` to `v0.2.7`](docs/0.1.6TO0.2.7.md)
-- [`v0.2.7` to `v0.3.1`](docs/0.2.7TO0.3.1.md)
-- [`v0.3.1` to `v0.3.14`](docs/0.3.1TO0.3.14.md)
+**Version documents:** [`v0.4.2` current architecture and basic features (Chinese)](docs/0.4.2.md) · [`v0.1.6` to `v0.2.7`](docs/0.1.6TO0.2.7.md) · [`v0.2.7` to `v0.3.1`](docs/0.2.7TO0.3.1.md) · [`v0.3.1` to `v0.3.14`](docs/0.3.1TO0.3.14.md)
 
 ## Development
 

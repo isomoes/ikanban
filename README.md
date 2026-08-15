@@ -10,12 +10,7 @@ iKanban 是一个面向键盘操作、基于 [DeepSeek Harness](https://github.c
 
 以下视频介绍了 iKanban 最初的工作流及其贯穿 `v0.3` 系列版本的演进。这些视频早于当前基于 DSH 的软件包，因此安装步骤和部分界面可能有所不同。
 
-- [为什么做它](https://www.bilibili.com/video/BV1t9AhztEjX/)
-- [v0.1](https://www.bilibili.com/video/BV1W3Pgz8ExJ/)
-- [v0.2](https://www.bilibili.com/video/BV1ZNP1znEn5/)
-- [v0.2.11 如何使用](https://www.bilibili.com/video/BV1Y9wMzKE2b/)
-- [v0.3](https://www.bilibili.com/video/BV1n9QEBSEch/)
-- [v0.3.14](https://www.bilibili.com/video/BV1zy3F6aEb2/)
+**Bilibili 视频：** [为什么做它](https://www.bilibili.com/video/BV1t9AhztEjX/) · [v0.1](https://www.bilibili.com/video/BV1W3Pgz8ExJ/) · [v0.2](https://www.bilibili.com/video/BV1ZNP1znEn5/) · [v0.2.11 如何使用](https://www.bilibili.com/video/BV1Y9wMzKE2b/) · [v0.3](https://www.bilibili.com/video/BV1n9QEBSEch/) · [v0.3.14](https://www.bilibili.com/video/BV1zy3F6aEb2/)
 
 ## 软件包
 
@@ -55,10 +50,7 @@ dsh --profile ikanban
 
 发布历史请参阅 [CHANGELOG.md](CHANGELOG.md)。当前架构与产品演进记录保留在以下文档中：
 
-- [`v0.4.2` 当前架构与基础功能](docs/0.4.2.md)
-- [`v0.1.6` 到 `v0.2.7`](docs/0.1.6TO0.2.7.md)
-- [`v0.2.7` 到 `v0.3.1`](docs/0.2.7TO0.3.1.md)
-- [`v0.3.1` 到 `v0.3.14`](docs/0.3.1TO0.3.14.md)
+**版本文档：** [`v0.4.2` 当前架构与基础功能](docs/0.4.2.md) · [`v0.1.6` 到 `v0.2.7`](docs/0.1.6TO0.2.7.md) · [`v0.2.7` 到 `v0.3.1`](docs/0.2.7TO0.3.1.md) · [`v0.3.1` 到 `v0.3.14`](docs/0.3.1TO0.3.14.md)
 
 ## 开发
 
