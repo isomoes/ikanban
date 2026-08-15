@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.1]
+
+- Added a local command palette with searchable actions, keyboard navigation, and responsive desktop and mobile presentation.
+- Identified release and development builds in the browser UI so the active build type and version are visible at runtime.
+- Removed the native directory picker installation requirement by providing the picker through the iKanban bundle.
+- Improved npm package metadata and installation documentation.
+
 ## [0.4.0]
 
 - Reinitialized iKanban as the `@isomoes/dsh-ikanban` DeepSeek Harness plugin bundle.
