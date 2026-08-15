@@ -1,13 +1,11 @@
 # iKanban
 
-Monorepo for the iKanban plugin packages for DeepSeek Harness.
+Monorepo for the iKanban browser-surface fork for DeepSeek Harness.
 
 ## Packages
 
-- [`@isomoes/dsh-ikanban`](packages/ikanban) - the stock DSH Web repackage and keyboard-first customization base
-- [`packages/ui-layout`](packages/ui-layout) - private source for the three-column web shell
-- [`packages/ui-sidebar`](packages/ui-sidebar) - private source for the branded sidebar shell
-- [`packages/ui-workspace`](packages/ui-workspace) - private source for the workspace and session browser
+- [`@isomoes/dsh-ikanban`](packages/ikanban) - the public DSH bundle, host adapters, generated composition, and packaged browser artifacts
+- [`packages/web-ui`](packages/web-ui) - the private editable TS/TSX/CSS fork of the full browser plugin surface and Vite shell
 
 ## Development
 
@@ -26,6 +24,9 @@ pnpm dev
 
 `pnpm dev` creates or refreshes the profile automatically. Use
 `pnpm dev:config` to inspect the resulting composition without booting it.
+It watches every forked client bundle with tsdown and the browser shell with
+Vite. Client changes hot-reload their own virtual DSH package; shell changes
+are copied into the linked package and require a browser reload.
 
 See the package [development guide](packages/ikanban/README.md#local-development)
 for rebuild behavior and profile cleanup.
