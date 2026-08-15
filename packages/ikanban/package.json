@@ -78,6 +78,7 @@
   },
   "dependencies": {
     "@deepseek-ai/dsh-api-remotes": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-agent-loop": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-agent-presets": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-app-boot": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-client-connection": "^0.1.0-rc.6",
@@ -101,6 +102,7 @@
     "@deepseek-ai/dsh-storage": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-storage-domain": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-storage-json": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-tools": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-workspace": "^0.1.0-rc.6",
     "@deepseek-ai/schemastery": "^3.18.1",
     "commander": "^15.0.0"
