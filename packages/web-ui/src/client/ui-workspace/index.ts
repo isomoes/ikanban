@@ -3,9 +3,12 @@ import { opendir } from 'node:fs/promises'
 import { join, relative, sep } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-client-connection'
+import { fuzzyWorkspaceFiles } from './file-fuzzy.ts'
 
 export const WORKSPACE_FILE_CHANNEL = '/ikanban.workspace-files'
-const RESULT_LIMIT = 100
+const CATALOG_LIMIT = 20_000
+
+export { fuzzyWorkspaceFiles } from './file-fuzzy.ts'
 
 function gitFiles(cwd: string, signal: AbortSignal): Promise<string[]> {
   return new Promise((resolve, reject) => {
@@ -37,16 +40,16 @@ async function directoryFiles(cwd: string, signal: AbortSignal): Promise<string[
 }
 
 /** Search workspace files by relative path, respecting gitignore when available. */
-export async function searchWorkspaceFiles(cwd: string, query: string, signal: AbortSignal): Promise<string[]> {
-  const needle = query.toLocaleLowerCase()
+export async function listWorkspaceFiles(cwd: string, signal: AbortSignal): Promise<string[]> {
   const files = await gitFiles(cwd, signal).catch((error: unknown) => {
     if (signal.aborted) throw error
     return directoryFiles(cwd, signal)
   })
-  return files
-    .filter(path => path.toLocaleLowerCase().includes(needle))
-    .sort((left, right) => left.localeCompare(right))
-    .slice(0, RESULT_LIMIT)
+  return files.sort((left, right) => left.localeCompare(right)).slice(0, CATALOG_LIMIT)
+}
+
+export async function searchWorkspaceFiles(cwd: string, query: string, signal: AbortSignal): Promise<string[]> {
+  return fuzzyWorkspaceFiles(await listWorkspaceFiles(cwd, signal), query)
 }
 
 export const inject = ['connection', 'workspaceRegistry']
@@ -58,14 +61,14 @@ export function apply(ctx: Context): void {
       return { ok: false, error: { code: 'internal', message: 'Invalid workspace file search request', details: {} } }
     }
     const { cwd, query } = payload as Record<string, unknown>
-    if (typeof cwd !== 'string' || cwd === '' || typeof query !== 'string') {
+    if (typeof cwd !== 'string' || cwd === '' || query !== '') {
       return { ok: false, error: { code: 'internal', message: 'Invalid workspace file search request', details: {} } }
     }
     if (!workspaceRegistry.list().some(workspace => workspace.path === cwd)) {
       return { ok: false, error: { code: 'internal', message: 'Unknown workspace', details: {} } }
     }
     try {
-      return { ok: true, value: await searchWorkspaceFiles(cwd, query, signal) }
+      return { ok: true, value: await listWorkspaceFiles(cwd, signal) }
     } catch (error) {
       return {
         ok: false,

@@ -9,6 +9,7 @@
   bottom: calc(100% + 4px);
   left: 0;
   z-index: 100;
+  width: min(537px, 100%);
   min-width: min(260px, 100%);
   /* 537 is the design cap; the 100% clamp keeps the menu inside the composer
      card when a narrow viewport shrinks the card below the cap (the overlay
@@ -16,6 +17,7 @@
   max-width: min(537px, 100%);
   /* Height cap: the 320px design maximum, clamped at runtime to the space
    * above the composer (inline max-height set in MenuView.tsx). */
+  height: 320px;
   max-height: 320px;
   overflow: hidden;
   /* Elevated surface: the scrollbar thumb takes the l2 elevation tokens
@@ -76,6 +78,12 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.itemName:only-child {
+  flex: 1;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .itemDescription {

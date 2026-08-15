@@ -24,3 +24,14 @@ test('owns the complete browser source surface', async () => {
 
   await Promise.all(sources.map(source => access(new URL(source, import.meta.url))))
 })
+
+test('allows full-width trigger labels when no description is present', async () => {
+  const css = await readFile(new URL('../src/client/ui-input-trigger/client/MenuView.module.css', import.meta.url), 'utf8')
+  assert.match(css, /\.itemName:only-child\s*\{[^}]*max-width:\s*100%/s)
+})
+
+test('keeps the trigger menu width stable while filtering', async () => {
+  const css = await readFile(new URL('../src/client/ui-input-trigger/client/MenuView.module.css', import.meta.url), 'utf8')
+  assert.match(css, /\.menu\s*\{[^}]*\n\s{2}width:\s*min\(537px,\s*100%\)/s)
+  assert.match(css, /\.menu\s*\{[^}]*\n\s{2}height:\s*320px/s)
+})
