@@ -1,6 +1,8 @@
 # iKanban
 
-Monorepo for the iKanban browser-surface fork for DeepSeek Harness.
+Keyboard-oriented iKanban web application bundle for DeepSeek Harness.
+
+This monorepo contains the public DSH bundle and its private, editable browser-surface fork.
 
 ## Packages
 
@@ -32,7 +34,7 @@ pnpm typecheck
 pnpm build
 ```
 
-Build, install the linked checkout into an isolated `ikanban-dev` DSH profile, and
+Build, install the linked checkout into an isolated `ikanban` DSH profile, and
 run it:
 
 ```bash

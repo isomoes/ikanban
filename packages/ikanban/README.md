@@ -8,6 +8,24 @@ full browser surface is locally owned as TS/TSX/CSS in the private sibling
 30 isolated virtual client bundles, so a DSH profile installs only
 `@isomoes/dsh-ikanban`.
 
+## Usage
+
+Install the published plugin into an `ikanban` profile. The `dsh plugin`
+command creates the profile if it does not already exist:
+
+```bash
+dsh plugin --profile ikanban add @isomoes/dsh-ikanban
+```
+
+Run iKanban through that profile:
+
+```bash
+dsh --profile ikanban
+```
+
+See the project [changelog](https://github.com/isomoes/ikanban/blob/main/CHANGELOG.md)
+for release history.
+
 ## Structure
 
 ```text
@@ -36,7 +54,7 @@ dsh --version
 ```
 
 Install dependencies. The primary development command then builds iKanban,
-links its checkout into the dedicated `ikanban-dev` profile, and starts that profile. It is
+links its checkout into the dedicated `ikanban` profile, and starts that profile. It is
 safe to run from a clean DSH home because it creates or refreshes the profile
 before every launch:
 
