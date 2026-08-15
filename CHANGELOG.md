@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.2]
+
+- Linked the sidebar brand to the home page for quicker navigation.
+- Preserved the development build marker when client bundles rebuild during watch mode.
+- Aligned tool scheduler dependencies with the packaged runtime composition.
+
 ## [0.4.1]
 
 - Added a local command palette with searchable actions, keyboard navigation, and responsive desktop and mobile presentation.
