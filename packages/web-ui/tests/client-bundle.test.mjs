@@ -5,6 +5,14 @@ import { test } from 'node:test'
 const packageRoot = new URL('../', import.meta.url)
 const entries = JSON.parse(await readFile(new URL('src/entries.json', packageRoot), 'utf8'))
 
+const hostPlugins = new Set([
+  '@deepseek-ai/dsh-client-locale',
+  '@deepseek-ai/dsh-client-ui-conversation',
+  '@deepseek-ai/dsh-client-ui-deliverables',
+  '@deepseek-ai/dsh-client-ui-settings-general',
+  '@deepseek-ai/dsh-client-ui-theme',
+])
+
 test('each forked client entry emits an isolated virtual package', async () => {
   assert.equal(Object.keys(entries).length, 30)
 
@@ -36,7 +44,14 @@ test('each forked client entry emits an isolated virtual package', async () => {
       './client': './client.js',
       './package.json': './package.json',
     })
-    assert.match(index, /^export function apply\(\) \{\}\s*$/)
+    if (hostPlugins.has(stockId)) {
+      assert.equal(typeof entry.host, 'string', `${stockId} host source`)
+      assert.doesNotMatch(index, /^export function apply\(\) \{\}\s*$/)
+      assert.match(index, /function apply\(ctx\)/)
+    } else {
+      assert.equal(entry.host, undefined, `${stockId} unexpected host source`)
+      assert.match(index, /^export function apply\(\) \{\}\s*$/)
+    }
     assert.equal(sourcemap.sources.length, sourcemap.sourcesContent.length)
     assert.doesNotMatch(JSON.stringify(sourcemap.sources), /deepseek-harness/)
     for (const owner of bundle.matchAll(/tag\.dataset\.plugin = "([^"]+)"/g)) {

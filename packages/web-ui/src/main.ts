@@ -4,7 +4,7 @@
  * in @deepseek-ai/dsh-client-web; this file only finds the mount point.
  */
 import { AppWebEntry } from '@deepseek-ai/dsh-client-web'
-import { remapForkedClientInjects } from '../../../../client-id-aliases.ts'
+import { remapForkedClientInjects } from './client-id-aliases.ts'
 
 const el = document.getElementById('root')
 if (el === null) throw new Error('web app: missing #root')

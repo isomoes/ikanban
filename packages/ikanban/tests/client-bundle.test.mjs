@@ -28,9 +28,26 @@ test('publishes every local client as an isolated virtual package', async () => 
     assert.match(bundle, new RegExp(`id: ${JSON.stringify(virtualId).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`))
     assert.equal(manifest.name, virtualId)
     assert.deepEqual(manifest.dsh.client, entry.client)
-    assert.match(index, /^export function apply\(\) \{\}\s*$/)
+    if (entry.host === undefined) {
+      assert.match(index, /^export function apply\(\) \{\}\s*$/)
+    } else {
+      assert.doesNotMatch(index, /^export function apply\(\) \{\}\s*$/)
+      assert.match(index, /function apply\(ctx\)/)
+    }
     assert.equal(sourcemap.sources.length, sourcemap.sourcesContent.length)
   }
+})
+
+test('loads every host entry with public runtime dependencies', async () => {
+  assert.equal(manifest.dependencies['@deepseek-ai/dsh-settings'], '^0.1.0-rc.6')
+  assert.equal(manifest.dependencies['@deepseek-ai/schemastery'], '^3.18.1')
+
+  await Promise.all(Object.entries(entries)
+    .filter(([, entry]) => entry.host !== undefined)
+    .map(([stockId]) => {
+      const id = stockId.replace('@deepseek-ai/dsh-client-', '')
+      return import(new URL(`lib/clients/${id}/index.js`, packageRoot))
+    }))
 })
 
 test('resolves virtual clients and their manifests from an install-like anchor', async () => {

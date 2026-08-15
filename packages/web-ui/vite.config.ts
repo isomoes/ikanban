@@ -53,7 +53,7 @@ function npmPackageOf(id: string): string | undefined {
 }
 
 export default defineConfig({
-  root: src('./src/upstream/apps/web'),
+  root: src('./'),
   plugins: [rejectStandaloneServe(), react()],
   build: {
     outDir: src('./dist'),
@@ -85,13 +85,13 @@ export default defineConfig({
   resolve: {
     alias: [
       { find: /^node:module$/, replacement: src('./src/node-module-stub.ts') },
-      { find: /^@deepseek-ai\/dsh-client-web$/, replacement: src('./src/upstream/packages/client/web/src/boot.tsx') },
-      { find: /^@deepseek-ai\/dsh-client-web-react$/, replacement: src('./src/upstream/packages/client/web-react/src/index.ts') },
-      { find: /^@deepseek-ai\/dsh-client-ui-slots$/, replacement: src('./src/upstream/packages/client/ui-slots/src/index.ts') },
-      { find: /^@deepseek-ai\/dsh-client-ui-primitives$/, replacement: src('./src/upstream/packages/client/ui-primitives/src/index.ts') },
-      { find: /^@deepseek-ai\/dsh-client-ui-attachment$/, replacement: src('./src/upstream/packages/client/ui-attachment/src/index.ts') },
-      { find: /^@deepseek-ai\/dsh-client-schema-form$/, replacement: src('./src/upstream/packages/client/schema-form/src/index.ts') },
-      { find: /^@deepseek-ai\/dsh-client-modules\/client$/, replacement: src('./src/upstream/packages/client/modules/src/client/index.ts') },
+      { find: /^@deepseek-ai\/dsh-client-web$/, replacement: src('./src/client/web/boot.tsx') },
+      { find: /^@deepseek-ai\/dsh-client-web-react$/, replacement: src('./src/client/web-react/index.ts') },
+      { find: /^@deepseek-ai\/dsh-client-ui-slots$/, replacement: src('./src/client/ui-slots/index.ts') },
+      { find: /^@deepseek-ai\/dsh-client-ui-primitives$/, replacement: src('./src/client/ui-primitives/index.ts') },
+      { find: /^@deepseek-ai\/dsh-client-ui-attachment$/, replacement: src('./src/client/ui-attachment/index.ts') },
+      { find: /^@deepseek-ai\/dsh-client-schema-form$/, replacement: src('./src/client/schema-form/index.ts') },
+      { find: /^@deepseek-ai\/dsh-client-modules\/client$/, replacement: src('./src/client/modules/client/index.ts') },
     ],
   },
   define: {

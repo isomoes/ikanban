@@ -3,8 +3,8 @@
 Keyboard-oriented iKanban web application bundle for DeepSeek Harness.
 
 The host runtime delegates to the published DSH prerelease (`0.1.0-rc.6`). The
-full browser surface is locally owned as TS/TSX/CSS under the private sibling
-`packages/web-ui/src/upstream` tree. The public package ships its Vite shell and
+full browser surface is locally owned as TS/TSX/CSS in the private sibling
+`packages/web-ui` package. The public package ships its Vite shell and
 30 isolated virtual client bundles, so a DSH profile installs only
 `@isomoes/dsh-ikanban`.
 
@@ -82,16 +82,16 @@ pnpm dev
 and every browser UI row while retaining published transport and backend rows. Change
 `scripts/sync-upstream.mjs` rather than editing the generated patch directly.
 
-`packages/web-ui/src/upstream` is the editable browser fork. Client plugin code
-under its `packages/client` and `packages/extensions` paths is built by tsdown
+`packages/web-ui` is the editable browser fork. Client plugin code under its
+`src/client` and `src/extensions` paths is built by tsdown
 as isolated virtual packages. During `pnpm dev`, a successful plugin build is
 copied to this package's `lib/clients/<id>` path; DSH detects that bundle write
 and emits HMR for `@isomoes/dsh-ikanban/client/<id>` only.
 
-The Vite shell and shared browser platform code live under the upstream
-`apps/web`, `client/web`, `client/web-react`, `ui-slots`, `ui-primitives`,
-`ui-attachment`, and `schema-form` paths. Vite rebuilds this code into the local
-dist and copies it to `lib/web`; reload the browser after a shell build. A
+The Vite app context lives at the `web-ui` package root. Shared browser platform
+code lives under `src/client`, including `web`, `web-react`, `ui-slots`,
+`ui-primitives`, `ui-attachment`, and `schema-form`. Vite rebuilds this code into
+the local dist and copies it to `lib/web`; reload the browser after a shell build. A
 production `pnpm build` always rebuilds both artifact families.
 
 Upstream refreshes are explicit reviewed merges, never an automatic build

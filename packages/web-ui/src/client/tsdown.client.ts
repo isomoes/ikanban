@@ -14,7 +14,7 @@ import { basename, dirname, relative, resolve as resolvePath, sep } from 'node:p
 import { fileURLToPath } from 'node:url'
 import type { UserConfig } from 'tsdown'
 import { transform } from 'lightningcss'
-import { PLATFORM_MODULES } from './web/src/platform.ts'
+import { PLATFORM_MODULES } from './web/platform.ts'
 
 /**
  * Virtual-id wrapper keeping module CSS away from tsdown's own css pipeline

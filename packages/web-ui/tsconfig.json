@@ -18,15 +18,15 @@
     "resolveJsonModule": true,
     "noEmit": true,
     "paths": {
-      "@deepseek-ai/dsh-client-web": ["./src/upstream/packages/client/web/src/boot.tsx"],
-      "@deepseek-ai/dsh-client-web-react": ["./src/upstream/packages/client/web-react/src/index.ts"],
-      "@deepseek-ai/dsh-client-ui-slots": ["./src/upstream/packages/client/ui-slots/src/index.ts"],
-      "@deepseek-ai/dsh-client-ui-primitives": ["./src/upstream/packages/client/ui-primitives/src/index.ts"],
-      "@deepseek-ai/dsh-client-ui-attachment": ["./src/upstream/packages/client/ui-attachment/src/index.ts"],
-      "@deepseek-ai/dsh-client-schema-form": ["./src/upstream/packages/client/schema-form/src/index.ts"],
-      "@deepseek-ai/dsh-client-locale/client": ["./src/upstream/packages/client/locale/src/client/index.ts"],
-      "@deepseek-ai/dsh-client-ui-*/client": ["./src/upstream/packages/client/ui-*/src/client/index.ts"],
-      "@deepseek-ai/dsh-client-ui-cordis/client": ["./src/upstream/packages/extensions/ui-cordis/src/client/index.ts"]
+      "@deepseek-ai/dsh-client-web": ["./src/client/web/boot.tsx"],
+      "@deepseek-ai/dsh-client-web-react": ["./src/client/web-react/index.ts"],
+      "@deepseek-ai/dsh-client-ui-slots": ["./src/client/ui-slots/index.ts"],
+      "@deepseek-ai/dsh-client-ui-primitives": ["./src/client/ui-primitives/index.ts"],
+      "@deepseek-ai/dsh-client-ui-attachment": ["./src/client/ui-attachment/index.ts"],
+      "@deepseek-ai/dsh-client-schema-form": ["./src/client/schema-form/index.ts"],
+      "@deepseek-ai/dsh-client-locale/client": ["./src/client/locale/client/index.ts"],
+      "@deepseek-ai/dsh-client-ui-*/client": ["./src/client/ui-*/client/index.ts"],
+      "@deepseek-ai/dsh-client-ui-cordis/client": ["./src/extensions/ui-cordis/client/index.ts"]
     }
   },
   "include": [
@@ -34,15 +34,15 @@
     "tsdown.config.ts",
     "src/css-modules.d.ts",
     "src/node-module-stub.ts",
-    "src/upstream/apps/web/src",
-    "src/upstream/packages/client/web/src",
-    "src/upstream/packages/client/web-react/src",
-    "src/upstream/packages/client/ui-slots/src",
-    "src/upstream/packages/client/ui-primitives/src",
-    "src/upstream/packages/client/ui-attachment/src",
-    "src/upstream/packages/client/schema-form/src",
-    "src/upstream/packages/client/locale/src/client",
-    "src/upstream/packages/client/ui-*/src/client",
-    "src/upstream/packages/extensions/ui-cordis/src/client"
+    "src/main.ts",
+    "src/client/web",
+    "src/client/web-react",
+    "src/client/ui-slots",
+    "src/client/ui-primitives",
+    "src/client/ui-attachment",
+    "src/client/schema-form",
+    "src/client/locale/client",
+    "src/client/ui-*/client",
+    "src/extensions/ui-cordis/client"
   ]
 }
