@@ -70,6 +70,7 @@ export function apply(ctx: ClientContext): void {
     id: 'session.archive',
     title: () => t('menu.archiveSession'),
     category: () => t('section.sessions'),
+    keybind: 'ctrl+a',
     disabled: () => {
       const sessions = ctx.sessions.list.getSnapshot()
       const current = sessions.current
