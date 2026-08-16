@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.5]
+
+- Added a GitHub Dark Colorblind theme preset for higher-contrast, colorblind-friendly diffs and interface colors.
+- Restored the `Cmd/Ctrl + L` sidebar toggle shortcut.
+- Made Web UI builds reproducible by preserving the reviewed fork composition and discovering client entries dynamically.
+- Strengthened browser bundle ownership by using local client package identities, theme styles, runtime slots, and platform module aliases.
+
 ## [0.4.4]
 
 - Added an archive-session command with a keyboard shortcut for faster session cleanup.
