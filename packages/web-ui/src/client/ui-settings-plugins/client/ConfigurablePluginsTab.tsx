@@ -1,6 +1,6 @@
 /** Configurable Host plugins contributed to the shared Plugins section. */
 
-import type { InjectFace, PropsLocale, PropsRenderSlots, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
+import type { InjectFace, PropsLocale, PropsRenderSlots, PropsRuntime } from '@isomoes/dsh-ikanban/client/ui-slots'
 import type {} from './slot-contract.ts'
 import css from './PluginsSettingsSection.module.css'
 

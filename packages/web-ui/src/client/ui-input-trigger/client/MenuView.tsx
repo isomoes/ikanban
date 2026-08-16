@@ -9,8 +9,8 @@
  */
 import { Fragment, useEffect, useRef, useSyncExternalStore } from 'react'
 import clsx from 'clsx'
-import { useAnchoredMaxHeight } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
+import { useAnchoredMaxHeight } from '@isomoes/dsh-ikanban/client/ui-primitives'
+import type { PropsLocale } from '@isomoes/dsh-ikanban/client/ui-slots'
 import css from './MenuView.module.css'
 import type { MenuViewInjected } from './slots.ts'
 import type { MenuKey } from './locales.ts'

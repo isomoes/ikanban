@@ -10,7 +10,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import type {
   ConnectionHandle, IApiClient, SettingsNamespaceView, SettingsPathOpView,
 } from '@deepseek-ai/dsh-api-remotes/client'
-import { rehydrateSchema, validateDraft } from '@deepseek-ai/dsh-client-schema-form'
+import { rehydrateSchema, validateDraft } from '@isomoes/dsh-ikanban/client/schema-form'
 import {
   createSnapshotStore, type SettingsScope, type SettingsScopeSnapshot,
   type SettingsScopeSpec, type SnapshotStore,

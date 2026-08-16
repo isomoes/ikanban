@@ -7,8 +7,8 @@ import type {
   ConversationNodeDefinition, ToolResultNode,
 } from '@deepseek-ai/dsh-client-runtime/client'
 import { isAppendSurfaceEvent } from '@deepseek-ai/dsh-client-runtime/client'
-import type { MarkdownFileMentions } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { TurnTailOwnerProps } from '@deepseek-ai/dsh-client-ui-conversation/client'
+import type { MarkdownFileMentions } from '@isomoes/dsh-ikanban/client/ui-primitives'
+import type { TurnTailOwnerProps } from '@isomoes/dsh-ikanban/client/ui-conversation/client'
 
 interface ProducedPath {
   readonly seq: number

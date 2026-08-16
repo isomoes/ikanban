@@ -100,12 +100,12 @@ export default defineConfig(() => {
     resolve: {
       alias: [
         { find: /^node:module$/, replacement: src('./src/node-module-stub.ts') },
-        { find: /^@deepseek-ai\/dsh-client-web$/, replacement: src('./src/client/web/boot.tsx') },
-        { find: /^@deepseek-ai\/dsh-client-web-react$/, replacement: src('./src/client/web-react/index.ts') },
-        { find: /^@deepseek-ai\/dsh-client-ui-slots$/, replacement: src('./src/client/ui-slots/index.ts') },
-        { find: /^@deepseek-ai\/dsh-client-ui-primitives$/, replacement: src('./src/client/ui-primitives/index.ts') },
-        { find: /^@deepseek-ai\/dsh-client-ui-attachment$/, replacement: src('./src/client/ui-attachment/index.ts') },
-        { find: /^@deepseek-ai\/dsh-client-schema-form$/, replacement: src('./src/client/schema-form/index.ts') },
+        { find: /^@isomoes\/dsh-ikanban\/client\/web$/, replacement: src('./src/client/web/boot.tsx') },
+        { find: /^@isomoes\/dsh-ikanban\/client\/web-react$/, replacement: src('./src/client/web-react/index.ts') },
+        { find: /^@isomoes\/dsh-ikanban\/client\/ui-slots$/, replacement: src('./src/client/ui-slots/index.ts') },
+        { find: /^@isomoes\/dsh-ikanban\/client\/ui-primitives$/, replacement: src('./src/client/ui-primitives/index.ts') },
+        { find: /^@isomoes\/dsh-ikanban\/client\/ui-attachment$/, replacement: src('./src/client/ui-attachment/index.ts') },
+        { find: /^@isomoes\/dsh-ikanban\/client\/schema-form$/, replacement: src('./src/client/schema-form/index.ts') },
         { find: /^@deepseek-ai\/dsh-client-modules\/client$/, replacement: src('./src/client/modules/client/index.ts') },
       ],
     },

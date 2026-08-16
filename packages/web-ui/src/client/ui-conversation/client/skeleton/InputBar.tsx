@@ -11,9 +11,9 @@ import type { ChangeEvent, KeyboardEvent, MouseEvent, ReactNode } from 'react'
 import clsx from 'clsx'
 import {
   IconPlusOutline16, IconWarningOutline16, Toast, Tooltip,
-} from '@deepseek-ai/dsh-client-ui-primitives'
-import { AttachmentRail, DropOverlay, ImageLightbox } from '@deepseek-ai/dsh-client-ui-attachment'
-import type { AttachmentRailItem } from '@deepseek-ai/dsh-client-ui-attachment'
+} from '@isomoes/dsh-ikanban/client/ui-primitives'
+import { AttachmentRail, DropOverlay, ImageLightbox } from '@isomoes/dsh-ikanban/client/ui-attachment'
+import type { AttachmentRailItem } from '@isomoes/dsh-ikanban/client/ui-attachment'
 // Type-only: the `plan` projection key merge (the TodoDock posture — the
 // composer reads a host-computed value; the domain owns the key).
 import type {} from '@deepseek-ai/dsh-plan-mode/client'
@@ -22,7 +22,7 @@ import type {} from '@deepseek-ai/dsh-goal/client'
 // The `imageLimits` projection key merge (intake pre-check) arrives with the
 // wire types: apiproxy's sessions contract declares it, and client-runtime's
 // api-remotes import already places it in every client program.
-import type { Translate } from '@deepseek-ai/dsh-client-ui-slots'
+import type { Translate } from '@isomoes/dsh-ikanban/client/ui-slots'
 import type { ComposerAttachment, ComposerBarProps } from '../contract/slots.ts'
 import { deriveDecorations } from '../input/decorations.ts'
 import type { DraftDecorations } from '../input/decorations.ts'

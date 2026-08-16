@@ -4,15 +4,15 @@ import type { ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
 import type {
   InjectFace, MaybeSnapshotSelectorHook, PropsLocale, PropsRenderSlots, PropsRuntime, PropsStore,
   SlotHookFactory, SnapshotSelectorHook,
-} from '@deepseek-ai/dsh-client-ui-slots'
+} from '@isomoes/dsh-ikanban/client/ui-slots'
 import type {
   CommandNode, CompactionSummaryNode, ConversationSnapshot, ConversationTurnDataMap,
   ObservableSnapshot, PendingInteraction, PendingWait, SessionId, ToolCallBlock,
   TurnLocation, WorkspaceId,
 } from '@deepseek-ai/dsh-client-runtime/client'
-import type { MarkdownFileMentions } from '@deepseek-ai/dsh-client-ui-primitives'
+import type { MarkdownFileMentions } from '@isomoes/dsh-ikanban/client/ui-primitives'
 import type { MessageId } from '@deepseek-ai/dsh-client-connection/client'
-import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
+import type {} from '@isomoes/dsh-ikanban/client/ui-layout/client'
 import type { ComposerBlock } from '../input/blocks.ts'
 import type {
   ComposerKeyboard, DraftAttachmentId, EditSelection, InputActions, InputNotice, InputState,
@@ -30,7 +30,7 @@ export interface ComposerAttachment {
   previewUrl: string
 }
 
-declare module '@deepseek-ai/dsh-client-ui-slots' {
+declare module '@isomoes/dsh-ikanban/client/ui-slots' {
   interface SlotMap {
     /**
      * The entire body of one session: taking this seat means rendering that

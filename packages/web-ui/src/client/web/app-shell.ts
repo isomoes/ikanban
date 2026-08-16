@@ -4,7 +4,7 @@
  */
 import type { ReactNode } from 'react'
 import type { Context } from '@deepseek-ai/cordis'
-import { createSlotRenderer } from '@deepseek-ai/dsh-client-web-react'
+import { createSlotRenderer } from '@isomoes/dsh-ikanban/client/web-react'
 import { buildRenderApp } from './app.tsx'
 
 /** Shell-owned pseudo entry id under which the host graph mounts this plugin. */

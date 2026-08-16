@@ -1,13 +1,13 @@
 /**
- * Package-owned invariant companion for `@deepseek-ai/dsh-client-web-react`.
- * @module @deepseek-ai/dsh-client-web-react/invariant
+ * Package-owned invariant companion for `@isomoes/dsh-ikanban/client/web-react`.
+ * @module @isomoes/dsh-ikanban/client/web-react/invariant
  */
 
 /* jscpd:ignore-start */
 import type { Context } from '@deepseek-ai/cordis'
 import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
 
-const PACKAGE_NAME = '@deepseek-ai/dsh-client-web-react'
+const PACKAGE_NAME = '@isomoes/dsh-ikanban/client/web-react'
 
 /** Cordis companion plugin name. */
 export const name = 'client-web-react-invariant'

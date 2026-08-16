@@ -34,7 +34,7 @@ export interface WorkflowRunChatData {
   readonly phases: readonly WorkflowRunPhaseData[]
 }
 
-declare module '@deepseek-ai/dsh-client-ui-conversation/client' {
+declare module '@isomoes/dsh-ikanban/client/ui-conversation/client' {
   interface ChatNodeDataMap {
     /** Durable top-level workflow run and all members that actually started. */
     'workflow-run': WorkflowRunChatData

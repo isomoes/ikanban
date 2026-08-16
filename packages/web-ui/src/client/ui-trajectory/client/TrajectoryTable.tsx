@@ -11,7 +11,7 @@ import {
   JsonTree,
   MarkdownText,
   Tooltip,
-} from '@deepseek-ai/dsh-client-ui-primitives'
+} from '@isomoes/dsh-ikanban/client/ui-primitives'
 import { structuredPatch } from 'diff'
 import type {
   AssistantRequestConfig, ConversationPromptSnapshot,

@@ -13,7 +13,7 @@
 // resolved frame.
 
 import { useMemo, useState } from 'react'
-import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '@isomoes/dsh-ikanban/client/ui-primitives'
 import type { RunningToolCall } from '@deepseek-ai/dsh-client-runtime/client'
 import { PendingApproval, type ApprovalComposerProps } from '../contract/slots.ts'
 import { rootToolCall } from '../chat/tool-node-reader.ts'

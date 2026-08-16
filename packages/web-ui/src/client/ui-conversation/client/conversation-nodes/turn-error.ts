@@ -6,7 +6,7 @@ import { displayFailureMessage } from '@deepseek-ai/dsh-client-runtime/client'
 import type {} from '@deepseek-ai/dsh-llm-retry/types'
 import { chatNode } from './common.ts'
 
-declare module '@deepseek-ai/dsh-client-ui-conversation/client' {
+declare module '@isomoes/dsh-ikanban/client/ui-conversation/client' {
   interface ChatNodeDataMap {
     /** Terminal turn failure not superseded by retry. */
     'turn-error': TurnErrorNode

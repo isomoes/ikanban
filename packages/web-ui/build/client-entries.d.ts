@@ -15,5 +15,4 @@ export interface ClientEntry {
 
 export function discoverClientEntries(options: {
   readonly packageRoot: string
-  readonly upstreamAnchor: string
 }): Promise<ClientEntry[]>

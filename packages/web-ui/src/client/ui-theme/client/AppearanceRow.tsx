@@ -9,11 +9,11 @@ import { useState } from 'react'
 import clsx from 'clsx'
 import {
   IconChevronDownOutline14, IconDarkOutline16, IconFollowsystemOutline16, IconLightOutline16, Menu,
-} from '@deepseek-ai/dsh-client-ui-primitives'
-import type { PropsLocale, PropsRuntime, PropsStore } from '@deepseek-ai/dsh-client-ui-slots'
+} from '@isomoes/dsh-ikanban/client/ui-primitives'
+import type { PropsLocale, PropsRuntime, PropsStore } from '@isomoes/dsh-ikanban/client/ui-slots'
 import type { ThemePreference } from '../theme-settings.ts'
 import type { ThemeKey } from './locales.ts'
-import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
+import type {} from '@isomoes/dsh-ikanban/client/ui-settings/client'
 import type { createAppearanceRowStore } from './settings-store.ts'
 import css from './AppearanceRow.module.css'
 

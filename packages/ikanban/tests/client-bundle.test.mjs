@@ -10,7 +10,6 @@ import { discoverClientEntries } from '../../web-ui/build/client-entries.js'
 const packageRoot = new URL('../', import.meta.url)
 const entries = await discoverClientEntries({
   packageRoot: fileURLToPath(new URL('../../web-ui/', import.meta.url)),
-  upstreamAnchor: fileURLToPath(new URL('../package.json', import.meta.url)),
 })
 const manifest = JSON.parse(await readFile(new URL('package.json', packageRoot), 'utf8'))
 

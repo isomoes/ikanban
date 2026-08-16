@@ -2,13 +2,13 @@
  * Per-message feedback controls: a Like/Dislike pair plus an optional note.
  * Rendered inside the assistant message's IconActions row, so the buttons
  * reuse that row's chrome and sit between copy and branch.
- * @module @deepseek-ai/dsh-client-ui-message-feedback/client/MessageFeedbackActions
+ * @module @isomoes/dsh-ikanban/client/ui-message-feedback/client/MessageFeedbackActions
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   IconDislikeOutline16, IconLikeOutline16, Tooltip,
-} from '@deepseek-ai/dsh-client-ui-primitives'
+} from '@isomoes/dsh-ikanban/client/ui-primitives'
 import type { MessageFeedbackRating } from '@deepseek-ai/dsh-message-feedback/types'
 import type { MessageFeedbackActionProps } from './slots.ts'
 import css from './MessageFeedbackActions.module.css'

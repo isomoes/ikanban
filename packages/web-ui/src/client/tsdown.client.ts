@@ -61,6 +61,7 @@ const SKIP_WORKSPACE_BUILD: UserConfig = { entry: '' }
  * store-engine relocation follow-up.
  */
 const RUNTIME_STORE_EXEMPTION = '@deepseek-ai/dsh-client-runtime/client'
+const LOCAL_CLIENT_PREFIX = '@isomoes/dsh-ikanban/client/'
 
 /** Externals resolved from the loader module table: the platform seed entries plus the documented runtime exemption. */
 export const CLIENT_EXTERNALS: readonly string[] = [...PLATFORM_MODULES, RUNTIME_STORE_EXEMPTION]
@@ -224,10 +225,11 @@ function clientConfig(id: string, entry: string, outDir = 'lib'): UserConfig {
       // Cross-plugin collaboration goes through cordis services instead.
       name: 'dsh-client-bundle-purity',
       resolveId(source: string) {
-        if (!source.startsWith('@deepseek-ai/')) return null
+        const ownedClient = source.startsWith(LOCAL_CLIENT_PREFIX)
+        if (!ownedClient && !source.startsWith('@deepseek-ai/')) return null
         if (CLIENT_EXTERNALS.includes(source)) return null // platform module: external wins
-        if (VENDORED_LIBRARY.test(source)) return null // vendored library: inline, no shared identity
-        if (INLINE_SAFE.test(source) || GENERATED_REMOTE.test(source)) return null // wire contribution: inline is the point
+        if (!ownedClient && VENDORED_LIBRARY.test(source)) return null // vendored library: inline, no shared identity
+        if (!ownedClient && (INLINE_SAFE.test(source) || GENERATED_REMOTE.test(source))) return null // wire contribution: inline is the point
         throw new Error(
           `client bundle purity: "${source}" is not a platform module (CLIENT_EXTERNALS), an inline-safe wire layer, or a generated /remote contribution — `
           + 'cross-plugin value imports are forbidden; collaborate through cordis services (type-only imports are erased and never reach this gate)',

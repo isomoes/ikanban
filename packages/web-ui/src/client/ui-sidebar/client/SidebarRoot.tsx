@@ -21,7 +21,7 @@ import {
   FishLogo,
   IconNewChatOutline16, IconPanelLeftOutline16,
   Tooltip,
-} from '@deepseek-ai/dsh-client-ui-primitives'
+} from '@isomoes/dsh-ikanban/client/ui-primitives'
 import type { SidebarRootComponentProps } from './contract/slots.ts'
 import { buildBadge } from '../../../build-presentation.ts'
 import css from './SidebarRoot.module.css'

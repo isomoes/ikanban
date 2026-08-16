@@ -6,7 +6,6 @@ import { discoverClientEntries } from '../../web-ui/build/client-entries.js'
 
 const entries = await discoverClientEntries({
   packageRoot: fileURLToPath(new URL('../../web-ui/', import.meta.url)),
-  upstreamAnchor: fileURLToPath(new URL('../package.json', import.meta.url)),
 })
 
 test('runtime entry serves the packaged frontend dist', async () => {

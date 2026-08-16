@@ -6,7 +6,7 @@
 
 import type { ReactNode } from 'react'
 import type { ContextMessageNode, KnownContextForm } from '@deepseek-ai/dsh-client-runtime/client'
-import { JsonBlock } from '@deepseek-ai/dsh-client-ui-primitives'
+import { JsonBlock } from '@isomoes/dsh-ikanban/client/ui-primitives'
 import type { ChatViewSlotProps } from '../contract/slots.ts'
 import css from './ContextBody.module.css'
 

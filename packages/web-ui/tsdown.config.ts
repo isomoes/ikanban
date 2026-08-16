@@ -5,10 +5,7 @@ import { discoverClientEntries } from './build/client-entries.js'
 import { isolatedClientConfig } from './src/client/tsdown.client.ts'
 
 const packageRoot = import.meta.dirname
-const entries = await discoverClientEntries({
-  packageRoot,
-  upstreamAnchor: resolve(packageRoot, '../ikanban/package.json'),
-})
+const entries = await discoverClientEntries({ packageRoot })
 const configs: UserConfig[] = []
 
 for (const entry of entries) {

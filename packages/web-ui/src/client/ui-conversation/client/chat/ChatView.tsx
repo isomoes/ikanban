@@ -14,7 +14,7 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { ConversationTimelineSnapshot } from '@deepseek-ai/dsh-client-runtime/client'
-import { IconChevronDownOutline14 } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconChevronDownOutline14 } from '@isomoes/dsh-ikanban/client/ui-primitives'
 import type { ChatViewSlotProps } from '../contract/slots.ts'
 import { PendingSteeringBubble } from './MessageItem.tsx'
 import { ChatNodeSeat } from './ChatNodeSeat.tsx'

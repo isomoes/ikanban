@@ -12,7 +12,7 @@ import {
 } from '@deepseek-ai/dsh-client-runtime/client'
 import {
   nodeAtPath, rehydrateSchema, type SchemaNode,
-} from '@deepseek-ai/dsh-client-schema-form'
+} from '@isomoes/dsh-ikanban/client/schema-form'
 import { displayPermissionPreset } from './presentation.ts'
 
 /** Permission's settings namespace on the host wire. */

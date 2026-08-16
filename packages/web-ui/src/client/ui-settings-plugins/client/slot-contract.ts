@@ -10,7 +10,7 @@
  * already depends on this package for the card chrome. The type therefore
  * lives with the section that declares it at runtime.
  */
-declare module '@deepseek-ai/dsh-client-ui-slots' {
+declare module '@isomoes/dsh-ikanban/client/ui-slots' {
   interface SlotMap {
     /** One plugin's card inside the plugin configuration section (see module JSDoc). */
     'settings.plugin.item': { kind: 'list'; scope: 'root'; owner: SettingsPluginItemOwnerProps }

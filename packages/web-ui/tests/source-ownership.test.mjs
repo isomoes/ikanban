@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { access, readFile } from 'node:fs/promises'
+import { access, readFile, readdir } from 'node:fs/promises'
 import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { discoverClientEntries } from '../build/client-entries.js'
@@ -9,12 +9,23 @@ test('pins the source fork and discovers its client entries', async () => {
   assert.match(provenance, /47f943859b/)
   const entries = await discoverClientEntries({
     packageRoot: fileURLToPath(new URL('../', import.meta.url)),
-    upstreamAnchor: fileURLToPath(new URL('../../ikanban/package.json', import.meta.url)),
   })
-  const byStockId = new Map(entries.map(entry => [entry.stockId, entry]))
-  assert.match(byStockId.get('@deepseek-ai/dsh-client-ui-layout').source, /client\/ui-layout\/client\/index\.ts$/)
-  assert.match(byStockId.get('@deepseek-ai/dsh-client-ui-sidebar').source, /client\/ui-sidebar\/client\/index\.ts$/)
-  assert.match(byStockId.get('@deepseek-ai/dsh-client-ui-workspace').source, /client\/ui-workspace\/client\/index\.ts$/)
+  const byId = new Map(entries.map(entry => [entry.id, entry]))
+  assert.match(byId.get('ui-layout').source, /client\/ui-layout\/client\/index\.ts$/)
+  assert.match(byId.get('ui-sidebar').source, /client\/ui-sidebar\/client\/index\.ts$/)
+  assert.match(byId.get('ui-workspace').source, /client\/ui-workspace\/client\/index\.ts$/)
+})
+
+test('uses iKanban identities for every owned invariant package', async () => {
+  const sourceRoot = new URL('../src/', import.meta.url)
+  const invariantPaths = (await readdir(sourceRoot, { recursive: true }))
+    .filter(path => path.endsWith('/invariant.ts'))
+  assert.ok(invariantPaths.length > 0)
+  for (const path of invariantPaths) {
+    const source = await readFile(new URL(path, sourceRoot), 'utf8')
+    assert.match(source, /const PACKAGE_NAME = '@isomoes\/dsh-ikanban\/client\//, path)
+    assert.doesNotMatch(source, /const PACKAGE_NAME = '@deepseek-ai\//, path)
+  }
 })
 
 test('owns the complete browser source surface', async () => {

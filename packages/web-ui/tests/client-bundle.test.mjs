@@ -5,10 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { discoverClientEntries } from '../build/client-entries.js'
 
 const packageRoot = new URL('../', import.meta.url)
-const entries = await discoverClientEntries({
-  packageRoot: fileURLToPath(packageRoot),
-  upstreamAnchor: fileURLToPath(new URL('../../ikanban/package.json', import.meta.url)),
-})
+const entries = await discoverClientEntries({ packageRoot: fileURLToPath(packageRoot) })
 const packageManifest = JSON.parse(await readFile(new URL('package.json', packageRoot), 'utf8'))
 
 test('each forked client entry emits an isolated virtual package', async () => {
@@ -18,6 +15,13 @@ test('each forked client entry emits an isolated virtual package', async () => {
     const { id, stockId, virtualId } = entry
     assert.equal(typeof entry.source, 'string', `${stockId} source`)
     assert.ok(entry.client && Array.isArray(entry.client.inject), `${stockId} client metadata`)
+    for (const dependency of entry.client.inject) {
+      assert.doesNotMatch(
+        dependency,
+        /^@deepseek-ai\/dsh-client-(?:locale|schema-form|web(?:-react)?|ui-)/,
+        `${virtualId} must use local UI dependency identities`,
+      )
+    }
     const output = new URL(`lib/clients/${id}/`, packageRoot)
     await Promise.all([
       access(new URL('client.js', output)),
@@ -48,14 +52,14 @@ test('each forked client entry emits an isolated virtual package', async () => {
     }
     assert.equal(sourcemap.sources.length, sourcemap.sourcesContent.length)
     assert.doesNotMatch(JSON.stringify(sourcemap.sources), /deepseek-harness/)
-    if (stockId === '@deepseek-ai/dsh-client-ui-conversation') {
+    if (id === 'ui-conversation') {
       assert.ok(bundle.includes(`buildBadge(${JSON.stringify(packageManifest.version)}, false)`))
       assert.doesNotMatch(bundle, /__IKANBAN_(?:DEV|VERSION)__/)
     }
-    if (stockId === '@deepseek-ai/dsh-client-ui-sidebar') {
+    if (id === 'ui-sidebar') {
       assert.match(bundle, /https:\/\/github\.com\/isomoes\/ikanban/)
     }
-    if (stockId === '@deepseek-ai/dsh-client-ui-theme') {
+    if (id === 'ui-theme') {
       assert.match(bundle, /github-dark-colorblind/)
       assert.match(bundle, /GitHub Dark Colorblind/)
       assert.match(bundle, /--shiki-token-string/)

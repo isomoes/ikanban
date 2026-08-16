@@ -17,7 +17,7 @@ import type { ClientContext, ISessions, SessionId } from '@deepseek-ai/dsh-clien
 import type {
   CandidateRequest, ClientSessionContext, CommandClaim, PickOutcome, InputTriggerCandidate, InputTriggerPick,
   SubmitOutcome,
-} from '@deepseek-ai/dsh-client-ui-input-trigger/client'
+} from '@isomoes/dsh-ikanban/client/ui-input-trigger/client'
 import type { CommandContribution, CommandDecoration, CommandUiContract } from './contract.ts'
 import { UiActionRegistry, type UiAction, type UiActionSource } from './actions.ts'
 import type { CommandDescriptor } from './directory.ts'

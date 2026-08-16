@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
-import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
+import type { PropsLocale } from '@isomoes/dsh-ikanban/client/ui-slots'
 import { filterUiActions, formatKeybind, type UiActionRegistry } from './actions.ts'
 import css from './CommandPaletteView.module.css'
 

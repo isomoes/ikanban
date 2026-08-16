@@ -13,7 +13,7 @@ import {
   IconChevronDownOutline14,
   IconChevronRightOutline14,
   MarkdownText,
-} from '@deepseek-ai/dsh-client-ui-primitives'
+} from '@isomoes/dsh-ikanban/client/ui-primitives'
 import type { ChatViewSlotProps } from '../contract/slots.ts'
 import css from './MessageItem.module.css'
 

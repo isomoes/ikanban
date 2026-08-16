@@ -1,45 +1,46 @@
 import { access, readFile, readdir } from 'node:fs/promises'
-import { createRequire } from 'node:module'
 import { resolve } from 'node:path'
 
 const STOCK_PREFIX = '@deepseek-ai/dsh-client-'
 const VIRTUAL_PREFIX = '@isomoes/dsh-ikanban/client/'
+const local = id => `${VIRTUAL_PREFIX}${id}`
 
-// Local cross-plugin collaborations added since the pinned upstream fork.
-// Keep only metadata differences here; the stock manifests own every other row.
-const CLIENT_INJECT_OVERRIDES = {
-  'ui-sidebar': [
-    '@deepseek-ai/dsh-client-runtime',
-    '@deepseek-ai/dsh-client-ui-layout',
-    '@deepseek-ai/dsh-client-locale',
-    '@deepseek-ai/dsh-client-ui-commands',
-  ],
-  'ui-settings-general': [
-    '@deepseek-ai/dsh-client-runtime',
-    '@deepseek-ai/dsh-client-ui-settings',
-    '@deepseek-ai/dsh-client-locale',
-    '@deepseek-ai/dsh-client-connection',
-    '@deepseek-ai/dsh-api-remotes',
-    '@deepseek-ai/dsh-client-ui-sidebar',
-    '@deepseek-ai/dsh-client-ui-commands',
-  ],
-  'ui-workspace': [
-    '@deepseek-ai/dsh-client-connection',
-    '@deepseek-ai/dsh-client-locale',
-    '@deepseek-ai/dsh-client-runtime',
-    '@deepseek-ai/dsh-client-ui-conversation',
-    '@deepseek-ai/dsh-client-ui-input-trigger',
-    '@deepseek-ai/dsh-client-ui-sidebar',
-  ],
-  'ui-commands': [
-    '@deepseek-ai/dsh-api-remotes',
-    '@deepseek-ai/dsh-client-runtime',
-    '@deepseek-ai/dsh-client-locale',
-    '@deepseek-ai/dsh-client-ui-input-trigger',
-    '@deepseek-ai/dsh-client-ui-conversation',
-    '@deepseek-ai/dsh-client-ui-layout',
-  ],
+// Package-owned Loader graph. Local UI edges always point at iKanban virtual
+// packages; only shared DSH infrastructure retains its published package id.
+const CLIENT_INJECTS = {
+  'locale': ['@deepseek-ai/dsh-client-connection', '@deepseek-ai/dsh-client-runtime', local('ui-settings'), '@deepseek-ai/dsh-api-remotes'],
+  'ui-agent-preset': ['@deepseek-ai/dsh-client-connection', local('locale'), '@deepseek-ai/dsh-client-runtime', local('ui-conversation'), local('ui-settings'), '@deepseek-ai/dsh-api-remotes'],
+  'ui-commands': ['@deepseek-ai/dsh-api-remotes', '@deepseek-ai/dsh-client-runtime', local('locale'), local('ui-input-trigger'), local('ui-conversation'), local('ui-layout')],
+  'ui-conversation': ['@deepseek-ai/dsh-client-connection', local('locale'), '@deepseek-ai/dsh-client-runtime', local('ui-settings'), '@deepseek-ai/dsh-api-remotes', local('ui-layout')],
+  'ui-cordis': ['@deepseek-ai/dsh-client-runtime', '@deepseek-ai/dsh-client-connection', '@deepseek-ai/dsh-cordis-client-runner', '@deepseek-ai/dsh-api-remotes', local('locale'), local('ui-input-trigger'), local('ui-tool'), local('ui-sidebar')],
+  'ui-deliverables': ['@deepseek-ai/dsh-client-connection', local('locale'), '@deepseek-ai/dsh-client-runtime', local('ui-conversation')],
+  'ui-directory-picker-browse': ['@deepseek-ai/dsh-client-runtime', local('ui-workspace'), local('locale')],
+  'ui-directory-picker-native': ['@deepseek-ai/dsh-client-runtime', local('ui-workspace')],
+  'ui-goal': ['@deepseek-ai/dsh-client-runtime', '@deepseek-ai/dsh-api-remotes', local('locale'), local('ui-conversation')],
+  'ui-input-trigger': ['@deepseek-ai/dsh-client-runtime', local('locale')],
+  'ui-jobs': [local('locale'), '@deepseek-ai/dsh-client-runtime', local('ui-conversation'), local('ui-primitives')],
+  'ui-layout': ['@deepseek-ai/dsh-client-runtime', local('ui-theme')],
+  'ui-message-feedback': ['@deepseek-ai/dsh-client-runtime', '@deepseek-ai/dsh-api-remotes', local('locale'), local('ui-conversation')],
+  'ui-model-selection': [local('locale'), '@deepseek-ai/dsh-client-runtime', local('ui-commands'), '@deepseek-ai/dsh-api-remotes'],
+  'ui-permission-presets': ['@deepseek-ai/dsh-client-connection', local('locale'), '@deepseek-ai/dsh-client-runtime', local('ui-commands'), '@deepseek-ai/dsh-api-remotes', local('ui-settings')],
+  'ui-plan': ['@deepseek-ai/dsh-api-remotes', local('locale'), local('ui-conversation')],
+  'ui-settings': ['@deepseek-ai/dsh-client-connection', '@deepseek-ai/dsh-client-runtime', '@deepseek-ai/dsh-api-remotes'],
+  'ui-settings-general': ['@deepseek-ai/dsh-client-runtime', local('ui-settings'), local('locale'), '@deepseek-ai/dsh-client-connection', '@deepseek-ai/dsh-api-remotes', local('ui-sidebar'), local('ui-commands')],
+  'ui-settings-models': ['@deepseek-ai/dsh-client-runtime', local('ui-settings'), local('locale'), '@deepseek-ai/dsh-api-remotes'],
+  'ui-settings-plugin-inventory': ['@deepseek-ai/dsh-api-remotes', '@deepseek-ai/dsh-client-runtime', local('ui-settings'), local('locale')],
+  'ui-settings-plugins': ['@deepseek-ai/dsh-client-connection', local('locale'), '@deepseek-ai/dsh-client-runtime', local('ui-settings'), '@deepseek-ai/dsh-api-remotes'],
+  'ui-sidebar': ['@deepseek-ai/dsh-client-runtime', local('ui-layout'), local('locale'), local('ui-commands')],
+  'ui-skill': ['@deepseek-ai/dsh-client-runtime', local('locale'), local('ui-tool'), local('ui-input-trigger'), '@deepseek-ai/dsh-api-remotes'],
+  'ui-subagent': [local('locale'), '@deepseek-ai/dsh-client-runtime', local('ui-conversation'), local('ui-primitives'), local('ui-input-trigger')],
+  'ui-theme': ['@deepseek-ai/dsh-client-connection', '@deepseek-ai/dsh-client-runtime', local('locale'), local('ui-settings'), '@deepseek-ai/dsh-api-remotes'],
+  'ui-tool': ['@deepseek-ai/dsh-client-runtime', local('locale'), local('ui-conversation')],
+  'ui-trajectory': [local('locale'), '@deepseek-ai/dsh-client-runtime', local('ui-conversation')],
+  'ui-user-questions': [local('locale'), local('ui-conversation')],
+  'ui-workflow-run': [local('locale'), '@deepseek-ai/dsh-client-runtime', local('ui-conversation')],
+  'ui-workspace': ['@deepseek-ai/dsh-client-connection', local('locale'), '@deepseek-ai/dsh-client-runtime', local('ui-conversation'), local('ui-input-trigger'), local('ui-sidebar')],
 }
+
+const IMMEDIATE_CLIENTS = new Set(['locale', 'ui-theme'])
 
 async function exists(path) {
   try {
@@ -63,28 +64,18 @@ async function sourceEntries(sourceRoot, parent, excluded = new Set()) {
   return entries
 }
 
-/**
- * Discover the complete locally owned client surface from source conventions.
- * Upstream package manifests remain the authority for Loader ordering metadata.
- */
-export async function discoverClientEntries({ packageRoot, upstreamAnchor }) {
+/** Discover the complete locally owned client surface and Loader graph. */
+export async function discoverClientEntries({ packageRoot }) {
   const sourceRoot = resolve(packageRoot, 'src')
   const discovered = [
     ...await sourceEntries(sourceRoot, 'client', new Set(['modules'])),
     ...await sourceEntries(sourceRoot, 'extensions'),
   ].sort((left, right) => left.id.localeCompare(right.id))
-
-  const upstreamRequire = createRequire(upstreamAnchor)
-  const webAppManifest = upstreamRequire.resolve('@deepseek-ai/dsh-web-app/package.json')
-  const webAppRequire = createRequire(webAppManifest)
   const entries = []
 
   for (const item of discovered) {
-    const stockId = `${STOCK_PREFIX}${item.id}`
-    const stockManifest = webAppRequire(`${stockId}/package.json`)
-    if (stockManifest.dsh?.client === undefined) {
-      throw new Error(`${stockId} does not declare dsh.client metadata`)
-    }
+    const inject = CLIENT_INJECTS[item.id]
+    if (inject === undefined) throw new Error(`Missing local client metadata for ${item.id}`)
 
     const hostCandidate = resolve(sourceRoot, 'client', item.id, 'index.ts')
     let host
@@ -93,19 +84,22 @@ export async function discoverClientEntries({ packageRoot, upstreamAnchor }) {
       if (/^import\s|\sfrom\s+['"]/m.test(hostSource)) host = hostCandidate
     }
 
-    const inject = CLIENT_INJECT_OVERRIDES[item.id]
-    const client = inject === undefined
-      ? stockManifest.dsh.client
-      : { ...stockManifest.dsh.client, inject }
     entries.push({
       id: item.id,
-      stockId,
-      virtualId: `${VIRTUAL_PREFIX}${item.id}`,
+      stockId: `${STOCK_PREFIX}${item.id}`,
+      virtualId: local(item.id),
       source: item.source,
       ...(host === undefined ? {} : { host }),
-      client,
+      client: {
+        inject,
+        platform: 'web',
+        ...(IMMEDIATE_CLIENTS.has(item.id) ? { immediately: true } : {}),
+      },
     })
   }
 
+  if (entries.length !== Object.keys(CLIENT_INJECTS).length) {
+    throw new Error(`Discovered ${entries.length} clients but metadata declares ${Object.keys(CLIENT_INJECTS).length}`)
+  }
   return entries
 }

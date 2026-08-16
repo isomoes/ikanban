@@ -9,7 +9,7 @@
  */
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 // Type-only: pulls the SlotMap merge declaring the directory-flow holes.
-import type {} from '@deepseek-ai/dsh-client-ui-workspace/client'
+import type {} from '@isomoes/dsh-ikanban/client/ui-workspace/client'
 import type { NativeFlowInjected } from './flow.ts'
 import { NativeDirectoryFlow } from './flow.ts'
 

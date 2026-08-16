@@ -12,7 +12,7 @@ export interface GoalCommandInputData {
   readonly time: number
 }
 
-declare module '@deepseek-ai/dsh-client-ui-conversation/client' {
+declare module '@isomoes/dsh-ikanban/client/ui-conversation/client' {
   interface ChatNodeDataMap {
     /** Human-entered `/goal` command input. */
     'command-input': GoalCommandInputData

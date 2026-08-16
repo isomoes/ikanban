@@ -1,6 +1,6 @@
 import { memo } from 'react'
-import { MessageText } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
+import { MessageText } from '@isomoes/dsh-ikanban/client/ui-primitives'
+import type { PropsLocale, PropsRuntime } from '@isomoes/dsh-ikanban/client/ui-slots'
 import type { GoalCommandInputData } from './goal-command-input.ts'
 import css from './GoalCommandInputView.module.css'
 
