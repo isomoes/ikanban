@@ -49,10 +49,10 @@
   },
   "files": [
     "lib/**/*.js",
-    "lib/**/*.js.map",
     "lib/types/**/*.d.ts",
     "lib/clients/**/package.json",
     "lib/web/**",
+    "!lib/**/*.js.map",
     "cordis.patch.yml"
   ],
   "engines": {
