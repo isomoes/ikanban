@@ -12,8 +12,9 @@ import type { HostObservable } from '@deepseek-ai/dsh-client-ui-slots'
 import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 import type { InputTriggerServiceContract, InputTriggerSource } from '@deepseek-ai/dsh-client-ui-input-trigger/client'
-// Type-only: pulls the locale plugin's Context merge (ctx.locale).
+// Type-only: pulls the locale and command plugin Context merges.
 import type {} from '@deepseek-ai/dsh-client-locale/client'
+import type {} from '@deepseek-ai/dsh-client-ui-commands/client'
 import type { WorkspaceBrowserInjected, WorkspacePickerInjected } from './contract/slots.ts'
 import { createWorkspaceViewStore } from './stores.ts'
 import { WorkspaceBrowser } from './WorkspaceBrowser.tsx'
@@ -54,7 +55,7 @@ interface FileCatalog {
  * provides a waitable service. apply therefore depends on each slot
  * declaration through `slots.inject()` instead of assuming order.
  */
-export const inject = ['slots', 'sessions', 'workspaces', 'locale', 'connection', 'inputTriggers']
+export const inject = ['slots', 'sessions', 'workspaces', 'locale', 'connection', 'inputTriggers', 'commandUi']
 
 /**
  * Register the browser and picker once their slot declarations are on the
@@ -64,6 +65,25 @@ export const inject = ['slots', 'sessions', 'workspaces', 'locale', 'connection'
  */
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-workspace: dictionaries')
+  const t = ctx.locale.bind(NS)
+  ctx.effect(() => ctx.commandUi.registerAction({
+    id: 'session.archive',
+    title: () => t('menu.archiveSession'),
+    category: () => t('section.sessions'),
+    disabled: () => {
+      const sessions = ctx.sessions.list.getSnapshot()
+      const current = sessions.current
+      const session = current === undefined ? undefined : sessions.byId[current]
+      return session === undefined || session.blank || session.origin === 'subagent'
+    },
+    run: async () => {
+      const sessions = ctx.sessions.list.getSnapshot()
+      const current = sessions.current
+      const session = current === undefined ? undefined : sessions.byId[current]
+      if (current === undefined || session === undefined || session.blank || session.origin === 'subagent') return
+      await ctx.workspaces.archiveSession(current)
+    },
+  }), 'ui-workspace: archive action')
 
   const connection = ctx.get('connection') as ConnectionHandle
   const catalogs = new Map<string, FileCatalog>()
