@@ -94,7 +94,6 @@
     "@deepseek-ai/dsh-host-plugin-inventory": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-host-webserver": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-message-feedback": "^0.1.0-rc.6",
-    "@deepseek-ai/dsh-session-log-export": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-session-projection-cache": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-session-stats": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-settings": "^0.1.0-rc.6",

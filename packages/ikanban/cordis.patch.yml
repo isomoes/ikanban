@@ -66,10 +66,6 @@
       config:
         maxNoteBytes: 8192
 
-    # Browser Session export: `/export` command plus the shared download dialog.
-    - id: session-log-download
-      name: '@deepseek-ai/dsh-session-log-export'
-
     - id: workspace
       name: '@deepseek-ai/dsh-workspace'
 
