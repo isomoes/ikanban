@@ -149,6 +149,7 @@ export function SidebarRoot({
             >
               iKanban
             </a>
+            <span className={css.versionBadge}>v{__IKANBAN_VERSION__}</span>
           </div>
         )}
         {/* Rail resting state is the iKanban mark; hovering swaps in the panel

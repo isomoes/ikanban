@@ -142,6 +142,20 @@
   text-decoration: underline;
 }
 
+.versionBadge {
+  flex: none;
+  padding: 0 6px;
+  border: 1px solid var(--dsw-alias-interactive-bg-hover);
+  border-radius: 999px;
+  background: var(--dsw-alias-state-business-tertiary);
+  color: var(--dsw-alias-label-primary-bluish);
+  font-family: var(--ds-font-family-code);
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 17px;
+  white-space: nowrap;
+}
+
 .iconButton {
   flex: none;
   display: inline-flex;
