@@ -69,7 +69,6 @@
     }
   },
   "scripts": {
-    "sync:upstream": "node scripts/sync-upstream.mjs",
     "build": "pnpm --filter @isomoes/dsh-ikanban-web-ui build:package && pnpm build:package",
     "build:package": "node scripts/clean.mjs && tsc -p tsconfig.json && node scripts/build-client.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
