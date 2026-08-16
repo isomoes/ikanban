@@ -50,7 +50,22 @@ dsh plugin --profile ikanban add @isomoes/dsh-ikanban --registry=https://registr
 The `--registry` value can also be replaced with a local mirror. Use the
 official npm registry when you need the latest iKanban version.
 
-### 3. Run iKanban
+### 3. Update iKanban
+
+Stop the running iKanban instance, then use DSH to update the plugin in that
+profile to the latest published version:
+
+```bash
+dsh plugin --profile ikanban update @isomoes/dsh-ikanban --latest --config.minimumReleaseAge=0 --registry=https://registry.npmjs.org
+```
+
+`--config.minimumReleaseAge=0` bypasses pnpm's default 24-hour waiting period
+for new releases during this explicit update; without it, a newly published
+version may be reported as "Already up to date." Restart iKanban after the
+update completes. Registry mirrors can also lag behind; use the official npm
+registry shown above if the latest version is unavailable.
+
+### 4. Run iKanban
 
 Start iKanban through that profile:
 

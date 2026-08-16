@@ -40,7 +40,17 @@ dsh plugin --profile ikanban add @isomoes/dsh-ikanban --registry=https://registr
 
 这里的 `--registry` 同样可以替换为国内镜像；需要最新 iKanban 版本时请使用 npm 官方 registry。
 
-### 3. 运行 iKanban
+### 3. 更新 iKanban
+
+停止正在运行的 iKanban，然后通过 DSH 将该 profile 中的插件更新到最新版本：
+
+```bash
+dsh plugin --profile ikanban update @isomoes/dsh-ikanban --latest --config.minimumReleaseAge=0 --registry=https://registry.npmjs.org
+```
+
+`--config.minimumReleaseAge=0` 会在此次显式更新中绕过 pnpm 默认的 24 小时新版本等待期，否则刚发布的版本可能被报告为“Already up to date”。更新完成后，重新启动 iKanban 即可。国内镜像也可能存在同步延迟；若未获取到最新版本，请改用上述 npm 官方 registry。
+
+### 4. 运行 iKanban
 
 通过该 profile 启动 iKanban：
 
