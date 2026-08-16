@@ -44,7 +44,7 @@ export function apply(ctx: ClientContext): void {
       id: 'sidebar.toggle',
       title: () => t('action.toggle'),
       category: () => t('action.category.view'),
-      keybind: 'mod+b',
+      keybind: 'mod+l',
       run: () => { ctx.layout.toggleSidebar() },
     })
     return () => { disposeToggle(); disposeNew() }

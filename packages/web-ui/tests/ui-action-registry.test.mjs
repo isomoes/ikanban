@@ -69,7 +69,7 @@ test('opens the palette and dispatches registered shortcuts', () => {
   registry.register({
     id: 'sidebar.toggle',
     title: () => 'Toggle sidebar',
-    keybind: 'mod+b',
+    keybind: 'mod+l',
     run(source) { sources.push(source) },
   })
 
@@ -82,7 +82,7 @@ test('opens the palette and dispatches registered shortcuts', () => {
   assert.equal(paletteEvent.defaultPrevented, true)
 
   registry.closePalette()
-  const actionEvent = keyboardEvent('b', { ctrlKey: true })
+  const actionEvent = keyboardEvent('l', { ctrlKey: true })
   assert.equal(registry.handleKeyDown(actionEvent), true)
   assert.deepEqual(sources, ['keybind'])
 })
