@@ -12,11 +12,11 @@ This monorepo contains the public DSH bundle and its private, editable browser-s
 
 ## Introduction Videos
 
-These videos introduce the original iKanban workflow and its evolution through
-the `v0.3` releases. They predate the current DSH-based package, so installation
-steps and parts of the interface may differ.
+These videos introduce the iKanban workflow and its evolution, including the
+current DSH-based `v0.4.2`. Videos for `v0.3` and earlier predate the current
+package, so their installation steps and parts of the interface may differ.
 
-**Bilibili videos:** [Why I made iKanban](https://www.bilibili.com/video/BV1t9AhztEjX/) · [v0.1](https://www.bilibili.com/video/BV1W3Pgz8ExJ/) · [v0.2](https://www.bilibili.com/video/BV1ZNP1znEn5/) · [v0.2.11 usage guide](https://www.bilibili.com/video/BV1Y9wMzKE2b/) · [v0.3](https://www.bilibili.com/video/BV1n9QEBSEch/) · [v0.3.14](https://www.bilibili.com/video/BV1zy3F6aEb2/)
+**Bilibili videos:** [Why I made iKanban](https://www.bilibili.com/video/BV1t9AhztEjX/) · [v0.1](https://www.bilibili.com/video/BV1W3Pgz8ExJ/) · [v0.2](https://www.bilibili.com/video/BV1ZNP1znEn5/) · [v0.2.11 usage guide](https://www.bilibili.com/video/BV1Y9wMzKE2b/) · [v0.3](https://www.bilibili.com/video/BV1n9QEBSEch/) · [v0.3.14](https://www.bilibili.com/video/BV1zy3F6aEb2/) · [v0.4.2](https://www.bilibili.com/video/BV156b26eEbn/)
 
 ## Packages
 
