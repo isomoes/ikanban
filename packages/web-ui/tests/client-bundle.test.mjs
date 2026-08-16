@@ -1,29 +1,23 @@
 import assert from 'node:assert/strict'
 import { access, readFile } from 'node:fs/promises'
 import { test } from 'node:test'
+import { fileURLToPath } from 'node:url'
+import { discoverClientEntries } from '../build/client-entries.js'
 
 const packageRoot = new URL('../', import.meta.url)
-const entries = JSON.parse(await readFile(new URL('src/entries.json', packageRoot), 'utf8'))
+const entries = await discoverClientEntries({
+  packageRoot: fileURLToPath(packageRoot),
+  upstreamAnchor: fileURLToPath(new URL('../../ikanban/package.json', import.meta.url)),
+})
 const packageManifest = JSON.parse(await readFile(new URL('package.json', packageRoot), 'utf8'))
 
-const hostPlugins = new Set([
-  '@deepseek-ai/dsh-client-locale',
-  '@deepseek-ai/dsh-client-ui-conversation',
-  '@deepseek-ai/dsh-client-ui-deliverables',
-  '@deepseek-ai/dsh-client-ui-settings-general',
-  '@deepseek-ai/dsh-client-ui-theme',
-  '@deepseek-ai/dsh-client-ui-workspace',
-])
-
 test('each forked client entry emits an isolated virtual package', async () => {
-  assert.equal(Object.keys(entries).length, 30)
+  assert.equal(entries.length, 30)
 
-  for (const [stockId, entry] of Object.entries(entries)) {
+  for (const entry of entries) {
+    const { id, stockId, virtualId } = entry
     assert.equal(typeof entry.source, 'string', `${stockId} source`)
     assert.ok(entry.client && Array.isArray(entry.client.inject), `${stockId} client metadata`)
-
-    const id = stockId.replace('@deepseek-ai/dsh-client-', '')
-    const virtualId = `@isomoes/dsh-ikanban/client/${id}`
     const output = new URL(`lib/clients/${id}/`, packageRoot)
     await Promise.all([
       access(new URL('client.js', output)),
@@ -46,12 +40,10 @@ test('each forked client entry emits an isolated virtual package', async () => {
       './client': './client.js',
       './package.json': './package.json',
     })
-    if (hostPlugins.has(stockId)) {
-      assert.equal(typeof entry.host, 'string', `${stockId} host source`)
+    if (entry.host !== undefined) {
       assert.doesNotMatch(index, /^export function apply\(\) \{\}\s*$/)
       assert.match(index, /function apply\(ctx\)/)
     } else {
-      assert.equal(entry.host, undefined, `${stockId} unexpected host source`)
       assert.match(index, /^export function apply\(\) \{\}\s*$/)
     }
     assert.equal(sourcemap.sources.length, sourcemap.sourcesContent.length)

@@ -5,18 +5,21 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { test } from 'node:test'
+import { discoverClientEntries } from '../../web-ui/build/client-entries.js'
 
 const packageRoot = new URL('../', import.meta.url)
-const entries = JSON.parse(await readFile(new URL('../../web-ui/src/entries.json', import.meta.url), 'utf8'))
+const entries = await discoverClientEntries({
+  packageRoot: fileURLToPath(new URL('../../web-ui/', import.meta.url)),
+  upstreamAnchor: fileURLToPath(new URL('../package.json', import.meta.url)),
+})
 const manifest = JSON.parse(await readFile(new URL('package.json', packageRoot), 'utf8'))
 
 test('publishes every local client as an isolated virtual package', async () => {
-  assert.equal(Object.keys(entries).length, 30)
+  assert.equal(entries.length, 30)
   assert.equal(manifest.dsh.client, undefined)
 
-  for (const [stockId, entry] of Object.entries(entries)) {
-    const id = stockId.replace('@deepseek-ai/dsh-client-', '')
-    const virtualId = `@isomoes/dsh-ikanban/client/${id}`
+  for (const entry of entries) {
+    const { id, virtualId } = entry
     const output = new URL(`lib/clients/${id}/`, packageRoot)
     const [bundle, sourcemap, manifest, index] = await Promise.all([
       readFile(new URL('client.js', output), 'utf8'),
@@ -42,12 +45,9 @@ test('loads every host entry with public runtime dependencies', async () => {
   assert.equal(manifest.dependencies['@deepseek-ai/dsh-settings'], '^0.1.0-rc.6')
   assert.equal(manifest.dependencies['@deepseek-ai/schemastery'], '^3.18.1')
 
-  await Promise.all(Object.entries(entries)
-    .filter(([, entry]) => entry.host !== undefined)
-    .map(([stockId]) => {
-      const id = stockId.replace('@deepseek-ai/dsh-client-', '')
-      return import(new URL(`lib/clients/${id}/index.js`, packageRoot))
-    }))
+  await Promise.all(entries
+    .filter(entry => entry.host !== undefined)
+    .map(entry => import(new URL(`lib/clients/${entry.id}/index.js`, packageRoot))))
 })
 
 test('resolves virtual clients and their manifests from an install-like anchor', async () => {
@@ -61,9 +61,7 @@ test('resolves virtual clients and their manifests from an install-like anchor',
   try {
     assert.equal(resolve('@isomoes/dsh-ikanban'), join(packagePath, 'lib', 'index.js'))
     assert.equal(resolve('@isomoes/dsh-ikanban/package.json'), join(packagePath, 'package.json'))
-    for (const stockId of Object.keys(entries)) {
-      const id = stockId.replace('@deepseek-ai/dsh-client-', '')
-      const virtualId = `@isomoes/dsh-ikanban/client/${id}`
+    for (const { id, virtualId } of entries) {
       assert.equal(resolve(virtualId), join(packagePath, 'lib', 'clients', id, 'index.js'))
       assert.equal(resolve(`${virtualId}/client`), join(packagePath, 'lib', 'clients', id, 'client.js'))
       assert.equal(resolve(`${virtualId}/package.json`), join(packagePath, 'lib', 'clients', id, 'package.json'))

@@ -83,6 +83,7 @@
     "use-sync-external-store": "1.2.0"
   },
   "devDependencies": {
+    "@deepseek-ai/dsh-web-app": "^0.1.0-rc.6",
     "@types/node": "^22.0.0",
     "@types/react": "~18.3.1",
     "@types/react-dom": "~18.3.0",

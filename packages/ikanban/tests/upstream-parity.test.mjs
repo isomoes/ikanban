@@ -2,8 +2,12 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { test } from 'node:test'
+import { discoverClientEntries } from '../../web-ui/build/client-entries.js'
 
-const entries = JSON.parse(await readFile(new URL('../../web-ui/src/entries.json', import.meta.url), 'utf8'))
+const entries = await discoverClientEntries({
+  packageRoot: fileURLToPath(new URL('../../web-ui/', import.meta.url)),
+  upstreamAnchor: fileURLToPath(new URL('../package.json', import.meta.url)),
+})
 
 test('runtime entry serves the packaged frontend dist', async () => {
   const ikanban = await import('../lib/index.js')
@@ -31,12 +35,11 @@ test('startup and invariant entries are locally owned', async () => {
 
 test('bundle composition replaces the complete UI roster and keeps DSH infrastructure', async () => {
   const actual = await readFile(new URL('../cordis.patch.yml', import.meta.url), 'utf8')
-  const explicitStockEntries = Object.keys(entries).filter((stockId) => actual.includes(`client/${stockId.replace('@deepseek-ai/dsh-client-', '')}'`))
+  const explicitEntries = entries.filter(entry => actual.includes(entry.virtualId))
 
-  assert.equal(explicitStockEntries.length, 28)
-  for (const stockId of explicitStockEntries) {
-    const id = stockId.replace('@deepseek-ai/dsh-client-', '')
-    assert.match(actual, new RegExp(`name: '@isomoes/dsh-ikanban/client/${id}'`))
+  assert.equal(explicitEntries.length, 28)
+  for (const entry of explicitEntries) {
+    assert.match(actual, new RegExp(`name: '${entry.virtualId}'`))
   }
   assert.doesNotMatch(actual, /name: '@deepseek-ai\/dsh-client-(?:ui-|locale)/)
   assert.match(actual, /name: '@isomoes\/dsh-ikanban\/directory-picker-auto'/)

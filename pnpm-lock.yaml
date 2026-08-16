@@ -336,6 +336,9 @@ importers:
         specifier: 1.2.0
         version: 1.2.0(react@18.3.1)
     devDependencies:
+      '@deepseek-ai/dsh-web-app':
+        specifier: ^0.1.0-rc.6
+        version: 0.1.0-rc.6(639f3a733d0e8c3e6550cd28aa4fd9b4)
       '@types/node':
         specifier: ^22.0.0
         version: 22.20.1

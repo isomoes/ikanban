@@ -1,14 +1,20 @@
 import assert from 'node:assert/strict'
 import { access, readFile } from 'node:fs/promises'
 import { test } from 'node:test'
+import { fileURLToPath } from 'node:url'
+import { discoverClientEntries } from '../build/client-entries.js'
 
-test('pins the source fork and declares its client entries', async () => {
+test('pins the source fork and discovers its client entries', async () => {
   const provenance = await readFile(new URL('../UPSTREAM.md', import.meta.url), 'utf8')
   assert.match(provenance, /47f943859b/)
-  const entries = JSON.parse(await readFile(new URL('../src/entries.json', import.meta.url), 'utf8'))
-  assert.equal(entries['@deepseek-ai/dsh-client-ui-layout'].source, 'client/ui-layout/client/index.ts')
-  assert.equal(entries['@deepseek-ai/dsh-client-ui-sidebar'].source, 'client/ui-sidebar/client/index.ts')
-  assert.equal(entries['@deepseek-ai/dsh-client-ui-workspace'].source, 'client/ui-workspace/client/index.ts')
+  const entries = await discoverClientEntries({
+    packageRoot: fileURLToPath(new URL('../', import.meta.url)),
+    upstreamAnchor: fileURLToPath(new URL('../../ikanban/package.json', import.meta.url)),
+  })
+  const byStockId = new Map(entries.map(entry => [entry.stockId, entry]))
+  assert.match(byStockId.get('@deepseek-ai/dsh-client-ui-layout').source, /client\/ui-layout\/client\/index\.ts$/)
+  assert.match(byStockId.get('@deepseek-ai/dsh-client-ui-sidebar').source, /client\/ui-sidebar\/client\/index\.ts$/)
+  assert.match(byStockId.get('@deepseek-ai/dsh-client-ui-workspace').source, /client\/ui-workspace\/client\/index\.ts$/)
 })
 
 test('owns the complete browser source surface', async () => {

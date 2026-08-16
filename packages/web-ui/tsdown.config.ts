@@ -1,24 +1,26 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { defineConfig, type UserConfig } from 'tsdown'
-import entries from './src/entries.json' with { type: 'json' }
+import { discoverClientEntries } from './build/client-entries.js'
 import { isolatedClientConfig } from './src/client/tsdown.client.ts'
 
 const packageRoot = import.meta.dirname
+const entries = await discoverClientEntries({
+  packageRoot,
+  upstreamAnchor: resolve(packageRoot, '../ikanban/package.json'),
+})
 const configs: UserConfig[] = []
 
-for (const [stockId, entry] of Object.entries(entries)) {
-  const id = stockId.replace('@deepseek-ai/dsh-client-', '')
-  const virtualId = `@isomoes/dsh-ikanban/client/${id}`
+for (const entry of entries) {
+  const { id, virtualId, host } = entry
   const outDir = resolve(packageRoot, 'lib/clients', id)
-  const host = 'host' in entry ? entry.host : undefined
   mkdirSync(outDir, { recursive: true })
   if (host === undefined) {
     writeFileSync(resolve(outDir, 'index.js'), 'export function apply() {}\n')
   } else {
     configs.push({
       name: virtualId,
-      entry: { index: resolve(packageRoot, 'src', host) },
+      entry: { index: host },
       outDir,
       format: 'esm',
       platform: 'node',
@@ -40,7 +42,7 @@ for (const [stockId, entry] of Object.entries(entries)) {
   }, null, 2)}\n`)
   configs.push(isolatedClientConfig(
     virtualId,
-    resolve(packageRoot, 'src', entry.source),
+    entry.source,
     outDir,
   ))
 }
