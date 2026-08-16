@@ -203,25 +203,12 @@ export function InputBar({
     revealCaret(caret ?? el.value.length)
   }
 
-  // Unlock (mount / session switch) returns focus to the box, and owns the
-  // reveal that comes with it. `preventScroll` because this focus is ours, not
-  // a gesture: the textarea is as tall as the draft, so the browser's reveal
-  // would walk up to the conversation scrollport and move the transcript under
-  // a user who only switched session. That leaves the caret to us — the DOM is
-  // reused across sessions, so switching to a longer draft keeps the previous
-  // offset while the value swap puts the caret at the new draft's end, which is
-  // off screen (measured on all three engines: offset 0 with the caret 940px
-  // down). Suppress the walk, then reveal in our own box.
-  useEffect(() => {
-    const el = inputRef.current
-    if (locked || el === null) return
-    el.focus({ preventScroll: true })
-    revealSelectionFocus(el)
-  }, [locked, sessionId])
+  // Do not focus the composer when a session is created or selected. Session
+  // navigation should preserve the user's focus instead of immediately
+  // capturing keyboard input in the textarea.
 
-  // A persisted draft arrives AFTER the unlock effect: ConversationSession
-  // adopts it in its own mount effect, and a parent's mount effect runs after
-  // its children's. Reveal when the draft becomes non-empty so a restored long
+  // A persisted draft arrives after ConversationSession mounts and adopts it.
+  // Reveal when the draft becomes non-empty so a restored long
   // draft does not stay at its head with the caret at its end. This effect does
   // not focus: send-clear, failed-send restore, and first-character transitions
   // must not steal focus from another control the user moved to.
@@ -525,9 +512,9 @@ export function InputBar({
   }
 
   // Button presses steal focus from the textarea; suppress at mousedown so
-  // typing continues seamlessly. `preventScroll` for the same reason as the
-  // unlock effect, and with no reveal of its own: the caret has not moved, and
-  // the next keystroke gets the browser's native one.
+  // typing continues seamlessly. `preventScroll` avoids moving the transcript,
+  // and no reveal is needed: the caret has not moved, and the next keystroke
+  // gets the browser's native one.
   const keepFocus = (e: MouseEvent<HTMLButtonElement>): void => {
     e.preventDefault()
     inputRef.current?.focus({ preventScroll: true })
