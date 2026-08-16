@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.6]
+
+- Added a timeline branch command for starting a new session from an earlier conversation point.
+- Removed obsolete upstream synchronization metadata and checks from the self-contained Web UI fork.
+- Removed the session log download extension and its unused dependency.
+
 ## [0.4.5]
 
 - Added a GitHub Dark Colorblind theme preset for higher-contrast, colorblind-friendly diffs and interface colors.

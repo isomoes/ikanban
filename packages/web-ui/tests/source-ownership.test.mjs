@@ -4,9 +4,7 @@ import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { discoverClientEntries } from '../build/client-entries.js'
 
-test('pins the source fork and discovers its client entries', async () => {
-  const provenance = await readFile(new URL('../UPSTREAM.md', import.meta.url), 'utf8')
-  assert.match(provenance, /47f943859b/)
+test('discovers owned client entries', async () => {
   const entries = await discoverClientEntries({
     packageRoot: fileURLToPath(new URL('../', import.meta.url)),
   })
