@@ -1,3 +1,5 @@
+// Explicit maintenance helper only. This overwrites the fork-owned composition;
+// normal builds must not invoke it.
 import { readFile, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 
