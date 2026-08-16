@@ -42,6 +42,12 @@ test('owns the complete browser source surface', async () => {
   await Promise.all(sources.map(source => access(new URL(source, import.meta.url))))
 })
 
+test('loads theme styles from the owned source tree', async () => {
+  const css = await readFile(new URL('../src/client/web/base.css', import.meta.url), 'utf8')
+  assert.match(css, /@import '\.\.\/ui-theme\/styles\/base\.css'/)
+  assert.doesNotMatch(css, /@deepseek-ai\/dsh-client-ui-theme/)
+})
+
 test('allows full-width trigger labels when no description is present', async () => {
   const css = await readFile(new URL('../src/client/ui-input-trigger/client/MenuView.module.css', import.meta.url), 'utf8')
   assert.match(css, /\.itemName:only-child\s*\{[^}]*max-width:\s*100%/s)
