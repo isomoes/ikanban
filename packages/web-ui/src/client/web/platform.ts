@@ -21,6 +21,10 @@ export const PLATFORM_MODULES = [
  */
 export const PLATFORM_COMPATIBILITY_ALIASES = {
   '@deepseek-ai/dsh-client-ui-slots': '@isomoes/dsh-ikanban/client/ui-slots',
+  '@deepseek-ai/dsh-client-web-react': '@isomoes/dsh-ikanban/client/web-react',
+  '@deepseek-ai/dsh-client-ui-primitives': '@isomoes/dsh-ikanban/client/ui-primitives',
+  '@deepseek-ai/dsh-client-ui-attachment': '@isomoes/dsh-ikanban/client/ui-attachment',
+  '@deepseek-ai/dsh-client-schema-form': '@isomoes/dsh-ikanban/client/schema-form',
 } as const
 
 /** One canonical or compatibility platform module specifier. */

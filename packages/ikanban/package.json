@@ -120,7 +120,6 @@
     "@deepseek-ai/dsh-invariants": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-shell-env": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-system-prompt": "^0.1.0-rc.6",
-    "@deepseek-ai/dsh-web-app": "^0.1.0-rc.6",
     "@isomoes/dsh-ikanban-web-ui": "workspace:*",
     "@types/node": "^22.0.0",
     "typescript": "^6.0.3"

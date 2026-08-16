@@ -33,12 +33,16 @@ export function getStaticModules(): Record<string, unknown> {
     'react-dom/client': ReactDomClient,
     '@deepseek-ai/cordis': Cordis,
     '@isomoes/dsh-ikanban/client/ui-slots': UiSlots,
-    // Published dsh-client-runtime still requires its historical contract word.
-    // Both keys intentionally expose the exact same locally owned singleton.
+    // Published DSH infrastructure clients still require these historical
+    // contract words. Every alias exposes the exact same locally owned module.
     '@deepseek-ai/dsh-client-ui-slots': UiSlots,
     '@isomoes/dsh-ikanban/client/web-react': WebReact,
+    '@deepseek-ai/dsh-client-web-react': WebReact,
     '@isomoes/dsh-ikanban/client/ui-primitives': UiPrimitives,
+    '@deepseek-ai/dsh-client-ui-primitives': UiPrimitives,
     '@isomoes/dsh-ikanban/client/ui-attachment': UiAttachment,
+    '@deepseek-ai/dsh-client-ui-attachment': UiAttachment,
     '@isomoes/dsh-ikanban/client/schema-form': SchemaForm,
+    '@deepseek-ai/dsh-client-schema-form': SchemaForm,
   } satisfies Record<PlatformModule, unknown>
 }

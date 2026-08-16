@@ -42,14 +42,25 @@ test('owns the complete browser source surface', async () => {
   await Promise.all(sources.map(source => access(new URL(source, import.meta.url))))
 })
 
-test('bridges published runtime imports to the owned slots singleton', async () => {
-  const [platform, seed] = await Promise.all([
+test('bridges every published infrastructure import to an owned singleton', async () => {
+  const [platform, seed, manifest] = await Promise.all([
     readFile(new URL('../src/client/web/platform.ts', import.meta.url), 'utf8'),
     readFile(new URL('../src/client/web/seed.ts', import.meta.url), 'utf8'),
+    readFile(new URL('../package.json', import.meta.url), 'utf8').then(JSON.parse),
   ])
-  assert.match(platform, /'@deepseek-ai\/dsh-client-ui-slots': '@isomoes\/dsh-ikanban\/client\/ui-slots'/)
-  assert.match(seed, /'@deepseek-ai\/dsh-client-ui-slots': UiSlots/)
-  assert.match(seed, /'@isomoes\/dsh-ikanban\/client\/ui-slots': UiSlots/)
+  const aliases = [
+    ['@deepseek-ai/dsh-client-ui-slots', '@isomoes/dsh-ikanban/client/ui-slots', 'UiSlots'],
+    ['@deepseek-ai/dsh-client-web-react', '@isomoes/dsh-ikanban/client/web-react', 'WebReact'],
+    ['@deepseek-ai/dsh-client-ui-primitives', '@isomoes/dsh-ikanban/client/ui-primitives', 'UiPrimitives'],
+    ['@deepseek-ai/dsh-client-ui-attachment', '@isomoes/dsh-ikanban/client/ui-attachment', 'UiAttachment'],
+    ['@deepseek-ai/dsh-client-schema-form', '@isomoes/dsh-ikanban/client/schema-form', 'SchemaForm'],
+  ]
+  for (const [legacy, owned, binding] of aliases) {
+    assert.ok(platform.includes(`'${legacy}': '${owned}'`), legacy)
+    assert.ok(seed.includes(`'${legacy}': ${binding}`), legacy)
+    assert.ok(seed.includes(`'${owned}': ${binding}`), owned)
+    assert.equal(manifest.dependencies[legacy], undefined, `${legacy} must not be an upstream dependency`)
+  }
 })
 
 test('loads theme styles from the owned source tree', async () => {
