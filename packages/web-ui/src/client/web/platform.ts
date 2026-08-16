@@ -14,5 +14,16 @@ export const PLATFORM_MODULES = [
   '@isomoes/dsh-ikanban/client/schema-form',
 ] as const
 
-/** One platform module specifier (a seed-table key). */
-export type PlatformModule = (typeof PLATFORM_MODULES)[number]
+/**
+ * Compatibility words required by published DSH infrastructure bundles.
+ * They resolve to the same local singleton; owned iKanban bundles must use the
+ * canonical @isomoes word and therefore do not include these in externals.
+ */
+export const PLATFORM_COMPATIBILITY_ALIASES = {
+  '@deepseek-ai/dsh-client-ui-slots': '@isomoes/dsh-ikanban/client/ui-slots',
+} as const
+
+/** One canonical or compatibility platform module specifier. */
+export type PlatformModule =
+  | (typeof PLATFORM_MODULES)[number]
+  | keyof typeof PLATFORM_COMPATIBILITY_ALIASES

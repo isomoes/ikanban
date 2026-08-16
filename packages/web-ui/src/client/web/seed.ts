@@ -33,6 +33,9 @@ export function getStaticModules(): Record<string, unknown> {
     'react-dom/client': ReactDomClient,
     '@deepseek-ai/cordis': Cordis,
     '@isomoes/dsh-ikanban/client/ui-slots': UiSlots,
+    // Published dsh-client-runtime still requires its historical contract word.
+    // Both keys intentionally expose the exact same locally owned singleton.
+    '@deepseek-ai/dsh-client-ui-slots': UiSlots,
     '@isomoes/dsh-ikanban/client/web-react': WebReact,
     '@isomoes/dsh-ikanban/client/ui-primitives': UiPrimitives,
     '@isomoes/dsh-ikanban/client/ui-attachment': UiAttachment,

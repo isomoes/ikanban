@@ -42,6 +42,16 @@ test('owns the complete browser source surface', async () => {
   await Promise.all(sources.map(source => access(new URL(source, import.meta.url))))
 })
 
+test('bridges published runtime imports to the owned slots singleton', async () => {
+  const [platform, seed] = await Promise.all([
+    readFile(new URL('../src/client/web/platform.ts', import.meta.url), 'utf8'),
+    readFile(new URL('../src/client/web/seed.ts', import.meta.url), 'utf8'),
+  ])
+  assert.match(platform, /'@deepseek-ai\/dsh-client-ui-slots': '@isomoes\/dsh-ikanban\/client\/ui-slots'/)
+  assert.match(seed, /'@deepseek-ai\/dsh-client-ui-slots': UiSlots/)
+  assert.match(seed, /'@isomoes\/dsh-ikanban\/client\/ui-slots': UiSlots/)
+})
+
 test('loads theme styles from the owned source tree', async () => {
   const css = await readFile(new URL('../src/client/web/base.css', import.meta.url), 'utf8')
   assert.match(css, /@import '\.\.\/ui-theme\/styles\/base\.css'/)
