@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.4]
+
+- Added an archive-session command with a keyboard shortcut for faster session cleanup.
+- Preserved prompt focus when switching sessions.
+- Displayed the package version in the sidebar brand and clearly labeled development builds.
+- Excluded source maps from the published package and added package-content coverage.
+- Expanded installation and update documentation, including the v0.4.2 Bilibili walkthrough.
+
 ## [0.4.3]
 
 - Added workspace file mentions with fuzzy-search suggestions in the prompt composer.
