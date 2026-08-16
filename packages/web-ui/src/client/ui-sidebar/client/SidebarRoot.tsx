@@ -23,6 +23,7 @@ import {
   Tooltip,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { SidebarRootComponentProps } from './contract/slots.ts'
+import { buildBadge } from '../../../build-presentation.ts'
 import css from './SidebarRoot.module.css'
 
 /** Wide-content unmount delay; matches the 150ms wide-content fade-out. */
@@ -149,7 +150,9 @@ export function SidebarRoot({
             >
               iKanban
             </a>
-            <span className={css.versionBadge}>v{__IKANBAN_VERSION__}</span>
+            <span className={css.versionBadge}>
+              {buildBadge(__IKANBAN_VERSION__, __IKANBAN_DEV__)}
+            </span>
           </div>
         )}
         {/* Rail resting state is the iKanban mark; hovering swaps in the panel
