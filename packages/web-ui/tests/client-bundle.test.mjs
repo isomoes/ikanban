@@ -63,6 +63,11 @@ test('each forked client entry emits an isolated virtual package', async () => {
     if (stockId === '@deepseek-ai/dsh-client-ui-sidebar') {
       assert.match(bundle, /https:\/\/github\.com\/isomoes\/ikanban/)
     }
+    if (stockId === '@deepseek-ai/dsh-client-ui-theme') {
+      assert.match(bundle, /github-dark-colorblind/)
+      assert.match(bundle, /GitHub Dark Colorblind/)
+      assert.match(bundle, /--shiki-token-string/)
+    }
     for (const owner of bundle.matchAll(/tag\.dataset\.plugin = "([^"]+)"/g)) {
       assert.equal(owner[1], virtualId)
     }

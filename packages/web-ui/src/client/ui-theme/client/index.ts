@@ -18,6 +18,7 @@ import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type { AppearanceRowInjected } from './AppearanceRow.tsx'
 import { AppearanceRow } from './AppearanceRow.tsx'
 import { createAppearanceRowStore } from './settings-store.ts'
+import { BUNDLED_THEMES } from './bundled-themes.ts'
 import { en, zh, type ThemeKey } from './locales.ts'
 import {
   DEFAULT_PREFERENCE, isThemePreference, THEME_PREFERENCE_FIELD, THEME_SETTINGS_NAMESPACE,
@@ -57,17 +58,28 @@ export interface ThemeTokenModes {
 /** Override-layer dictionary: token names to per-mode value pairs. */
 export type ThemeTokenOverrides = Record<string, ThemeTokenModes>
 
+/** Optional light/dark token pair for themes that follow the OS scheme. */
+export interface ThemeVariants {
+  light: ThemeTokens
+  dark: ThemeTokens
+}
+
 /** One selectable theme: id, dark/light semantics, and alias-token overrides. */
 export interface ThemeDefinition {
   /** Theme id (the setTheme argument for concrete themes). */
   id: string
+  /** Human-readable picker label; ids remain the stable persistence key. */
+  label?: string
   /**
    * Which base palette this theme builds on. The presenter switches
-   * `body[data-ds-dark-theme]` from this field — never from the id.
+   * `body[data-ds-dark-theme]` from this field — never from the id. For a
+   * dual-mode theme this is its no-matchMedia fallback.
    */
   colorScheme: 'light' | 'dark'
   /** Alias-layer overrides applied as inline CSS variables over the base palette. */
   tokens: ThemeTokens
+  /** Optional OS-responsive pair used by portable desktop-theme documents. */
+  variants?: ThemeVariants
 }
 
 /** Immutable theme state published on every change. */
@@ -116,8 +128,9 @@ declare module '@deepseek-ai/cordis' {
 }
 
 const BUILTIN_THEMES: readonly ThemeDefinition[] = Object.freeze([
-  Object.freeze({ id: 'light', colorScheme: 'light' as const, tokens: Object.freeze({}) }),
-  Object.freeze({ id: 'dark', colorScheme: 'dark' as const, tokens: Object.freeze({}) }),
+  Object.freeze({ id: 'light', label: 'Light', colorScheme: 'light' as const, tokens: Object.freeze({}) }),
+  Object.freeze({ id: 'dark', label: 'Dark', colorScheme: 'dark' as const, tokens: Object.freeze({}) }),
+  ...BUNDLED_THEMES,
 ])
 
 const BUILTIN_INSPECT_TOKENS: readonly ThemeTokenInspection[] = Object.freeze([
@@ -174,7 +187,8 @@ export class ThemeRuntime {
     if (this.media !== undefined) {
       const media = this.media
       const onChange = (): void => {
-        if (this.preference !== 'system') return
+        const selected = this.themes.find(theme => theme.id === this.preference)
+        if (this.preference !== 'system' && selected?.variants === undefined) return
         this.publish()
       }
       ctx.effect(() => {
@@ -224,7 +238,7 @@ export class ThemeRuntime {
       throw new Error(`theme "${id}" is not registered`)
     }
     if (this.preference === id) return
-    this.preference = id as ThemePreference
+    this.preference = id
     if (isThemePreference(id)) void this.host.set(THEME_PREFERENCE_FIELD, id)
     this.publish()
   }
@@ -257,6 +271,7 @@ export class ThemeRuntime {
       this.themes = this.themes.filter(t => t.id !== definition.id)
       if (this.preference === definition.id) {
         this.preference = DEFAULT_PREFERENCE
+        void this.host.set(THEME_PREFERENCE_FIELD, DEFAULT_PREFERENCE)
       }
       this.publish()
     }
@@ -290,19 +305,32 @@ export class ThemeRuntime {
   }
 
   private buildSnapshot(): ThemeSnapshot {
-    const resolvedId = this.preference === 'system'
-      ? (this.media?.matches === true ? 'dark' : 'light')
-      : this.preference
-    // Both built-ins always exist; a registered preference id resolves or has
-    // been reset by its disposer, so the lookup cannot miss.
-    const active = this.themes.find(t => t.id === resolvedId)
+    const systemId = this.media?.matches === true ? 'dark' : 'light'
+    const resolvedId = this.preference === 'system' ? systemId : this.preference
+    // A persisted plugin theme may be unavailable early in boot (or after its
+    // provider disappears). Keep the preference so re-registration restores it,
+    // while rendering the safe system palette in the meantime.
+    const selected = this.themes.find(t => t.id === resolvedId)
+      ?? this.themes.find(t => t.id === systemId)
     /* v8 ignore next 2 -- needs a registry without light/dark, which register()/dispose() cannot produce */
-    if (active === undefined) throw new Error(`theme registry lost "${resolvedId}"`)
+    if (selected === undefined) throw new Error(`theme registry lost "${systemId}"`)
+    const active = this.resolveVariants(selected)
     return Object.freeze({
       preference: this.preference,
       active: this.composeActive(active),
       themes: Object.freeze([...this.themes]),
       revision: this.revision,
+    })
+  }
+
+  /** Resolve an optional portable light/dark pair through the OS preference. */
+  private resolveVariants(theme: ThemeDefinition): ThemeDefinition {
+    if (theme.variants === undefined) return theme
+    const colorScheme = this.media?.matches === true ? 'dark' : 'light'
+    return Object.freeze({
+      ...theme,
+      colorScheme,
+      tokens: theme.variants[colorScheme],
     })
   }
 
@@ -391,7 +419,11 @@ export function apply(ctx: ClientContext): void {
   const store = createAppearanceRowStore()
   let bound: BoundActions<typeof store> | undefined
   const sync = (snapshot: ThemeSnapshot): void => {
-    bound?.sync(snapshot.preference, snapshot.revision)
+    bound?.sync(
+      snapshot.preference,
+      snapshot.themes.map(theme => ({ id: theme.id, label: theme.label ?? theme.id })),
+      snapshot.revision,
+    )
   }
   ctx.on('theme/change', sync)
   const injected = (actions: BoundActions<typeof store>): AppearanceRowInjected => {

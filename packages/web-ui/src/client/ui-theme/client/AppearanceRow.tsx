@@ -5,9 +5,10 @@
  * surface. Selection follows the persisted preference, never the resolved
  * active theme.
  */
+import { useState } from 'react'
 import clsx from 'clsx'
 import {
-  IconDarkOutline16, IconFollowsystemOutline16, IconLightOutline16,
+  IconChevronDownOutline14, IconDarkOutline16, IconFollowsystemOutline16, IconLightOutline16, Menu,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsLocale, PropsRuntime, PropsStore } from '@deepseek-ai/dsh-client-ui-slots'
 import type { ThemePreference } from '../theme-settings.ts'
@@ -41,6 +42,10 @@ const CUBES: readonly { id: ThemePreference; labelKey: ThemeKey; Icon: typeof Ic
  */
 export function AppearanceRow({ t, setTheme, useStore }: AppearanceRowComponentProps) {
   const preference = useStore(s => s.preference)
+  const themes = useStore(s => s.themes)
+  const [open, setOpen] = useState(false)
+  const customThemes = themes.filter(theme => theme.id !== 'light' && theme.id !== 'dark')
+  const activeCustom = customThemes.find(theme => theme.id === preference)
   return (
     <div className={css.group}>
       <div className={css.title}>{t('appearance.title')}</div>
@@ -58,6 +63,35 @@ export function AppearanceRow({ t, setTheme, useStore }: AppearanceRowComponentP
           </button>
         ))}
       </div>
+      {customThemes.length > 0 && (
+        <div className={css.customRow}>
+          <span className={css.customLabel}>{t('appearance.themes')}</span>
+          <Menu
+            open={open}
+            onClose={() => { setOpen(false) }}
+            items={customThemes.map(theme => ({ id: theme.id, label: theme.label }))}
+            selectedId={activeCustom?.id}
+            onSelect={(id) => {
+              setTheme(id)
+              setOpen(false)
+            }}
+            align="end"
+            portal
+            anchor={(
+              <button
+                type="button"
+                className={css.selector}
+                aria-haspopup="menu"
+                aria-expanded={open}
+                onClick={() => { setOpen(value => !value) }}
+              >
+                {activeCustom?.label ?? t('appearance.chooseTheme')}
+                <IconChevronDownOutline14 />
+              </button>
+            )}
+          />
+        </div>
+      )}
     </div>
   )
 }
