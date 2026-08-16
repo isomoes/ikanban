@@ -33,6 +33,7 @@ const CLIENT_INJECTS = {
   'ui-skill': ['@deepseek-ai/dsh-client-runtime', local('locale'), local('ui-tool'), local('ui-input-trigger'), '@deepseek-ai/dsh-api-remotes'],
   'ui-subagent': [local('locale'), '@deepseek-ai/dsh-client-runtime', local('ui-conversation'), local('ui-primitives'), local('ui-input-trigger')],
   'ui-theme': ['@deepseek-ai/dsh-client-connection', '@deepseek-ai/dsh-client-runtime', local('locale'), local('ui-settings'), '@deepseek-ai/dsh-api-remotes'],
+  'ui-timeline': ['@deepseek-ai/dsh-client-runtime', local('locale'), local('ui-commands'), local('ui-conversation'), local('ui-workspace')],
   'ui-tool': ['@deepseek-ai/dsh-client-runtime', local('locale'), local('ui-conversation')],
   'ui-trajectory': [local('locale'), '@deepseek-ai/dsh-client-runtime', local('ui-conversation')],
   'ui-user-questions': [local('locale'), local('ui-conversation')],

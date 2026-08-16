@@ -12,10 +12,12 @@ const entries = await discoverClientEntries({
   packageRoot: fileURLToPath(new URL('../../web-ui/', import.meta.url)),
 })
 const manifest = JSON.parse(await readFile(new URL('package.json', packageRoot), 'utf8'))
+const composition = await readFile(new URL('cordis.patch.yml', packageRoot), 'utf8')
 
 test('publishes every local client as an isolated virtual package', async () => {
-  assert.equal(entries.length, 30)
+  assert.equal(entries.length, 31)
   assert.equal(manifest.dsh.client, undefined)
+  assert.match(composition, /name: '@isomoes\/dsh-ikanban\/client\/ui-timeline'/)
 
   for (const entry of entries) {
     const { id, virtualId } = entry

@@ -9,7 +9,7 @@ const entries = await discoverClientEntries({ packageRoot: fileURLToPath(package
 const packageManifest = JSON.parse(await readFile(new URL('package.json', packageRoot), 'utf8'))
 
 test('each forked client entry emits an isolated virtual package', async () => {
-  assert.equal(entries.length, 30)
+  assert.equal(entries.length, 31)
 
   for (const entry of entries) {
     const { id, stockId, virtualId } = entry
@@ -63,6 +63,11 @@ test('each forked client entry emits an isolated virtual package', async () => {
       assert.match(bundle, /github-dark-colorblind/)
       assert.match(bundle, /GitHub Dark Colorblind/)
       assert.match(bundle, /--shiki-token-string/)
+    }
+    if (id === 'ui-timeline') {
+      assert.match(bundle, /name: "timeline"/)
+      assert.match(bundle, /timeline-draft-landing/)
+      assert.match(bundle, /archiveSession/)
     }
     for (const owner of bundle.matchAll(/tag\.dataset\.plugin = "([^"]+)"/g)) {
       assert.equal(owner[1], virtualId)

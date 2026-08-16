@@ -226,6 +226,10 @@
     - id: ui-commands
       name: '@isomoes/dsh-ikanban/client/ui-commands'
 
+    # Browser-only branch-and-restart picker over Session fork/archive APIs.
+    - id: ui-timeline
+      name: '@isomoes/dsh-ikanban/client/ui-timeline'
+
     - id: ui-skill
       name: '@isomoes/dsh-ikanban/client/ui-skill'
 
