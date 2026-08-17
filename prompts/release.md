@@ -3,8 +3,8 @@
 Use this flow for a normal release:
 
 1. Update `CHANGELOG.md` with a new top section for the target version.
-2. Set the target version in `package.json`, `packages/ikanban/package.json`, and
-   `packages/web-ui/package.json`.
+2. Set the target version in the root `package.json` and every
+   `packages/**/package.json` workspace manifest.
 3. Verify the release:
    `pnpm typecheck && pnpm test && pnpm --filter @isomoes/dsh-ikanban pack`
 4. Stage the release files.
