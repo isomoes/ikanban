@@ -5,9 +5,17 @@ import {
   UiActionRegistry,
   filterUiActions,
   formatKeybind,
+  keybindFromEvent,
   matchKeybind,
   parseKeybind,
 } from '../src/client/ui-commands/client/actions.ts'
+import {
+  decodeStoredKeybinds,
+  readStoredKeybinds,
+  SHORTCUT_STORAGE_KEY,
+  writeStoredKeybinds,
+} from '../src/client/ui-commands/client/shortcut-storage.ts'
+
 test('filters enabled palette actions across title, description, and category', () => {
   const actions = [
     { id: 'sidebar.toggle', title: () => 'Toggle sidebar', category: () => 'View', run() {} },
@@ -27,6 +35,12 @@ test('parses mod aliases and formats the platform key', () => {
   ])
   assert.equal(formatKeybind('mod+comma', false), 'Ctrl+,')
   assert.equal(formatKeybind('mod+comma', true), '⌘,')
+})
+
+test('serializes captured shortcuts and ignores modifier-only keys', () => {
+  assert.equal(keybindFromEvent(keyboardEvent('K', { ctrlKey: true, shiftKey: true })), 'ctrl+shift+k')
+  assert.equal(keybindFromEvent(keyboardEvent(',', { metaKey: true })), 'meta+comma')
+  assert.equal(keybindFromEvent(keyboardEvent('Control', { ctrlKey: true })), undefined)
 })
 
 test('matches punctuation and exact modifiers', () => {
@@ -85,6 +99,57 @@ test('opens the palette and dispatches registered shortcuts', () => {
   const actionEvent = keyboardEvent('l', { ctrlKey: true })
   assert.equal(registry.handleKeyDown(actionEvent), true)
   assert.deepEqual(sources, ['keybind'])
+})
+
+test('applies profile overrides to actions and the palette shortcut', () => {
+  const registry = new UiActionRegistry(false)
+  let runs = 0
+  registry.register({ id: 'session.new', title: () => 'New session', keybind: 'ctrl+n', run() { runs += 1 } })
+  registry.setKeybindOverrides({ 'session.new': 'alt+n', 'command.palette': 'ctrl+k' })
+
+  assert.equal(registry.getSnapshot()[0]?.keybind, 'alt+n')
+  assert.equal(registry.getDefaultKeybind('session.new'), 'ctrl+n')
+  assert.equal(registry.getKeybind('command.palette'), 'ctrl+k')
+  assert.equal(registry.hasKeybindOverride('session.new'), true)
+  assert.equal(registry.handleKeyDown(keyboardEvent('n', { ctrlKey: true })), false)
+  assert.equal(registry.handleKeyDown(keyboardEvent('n', { altKey: true })), true)
+  assert.equal(runs, 1)
+  assert.equal(registry.handleKeyDown(keyboardEvent('p', { ctrlKey: true })), false)
+  assert.equal(registry.handleKeyDown(keyboardEvent('k', { ctrlKey: true })), true)
+  assert.equal(registry.getPaletteSnapshot(), true)
+
+  registry.setKeybindOverrides({})
+  assert.equal(registry.getSnapshot()[0]?.keybind, 'ctrl+n')
+  assert.equal(registry.hasKeybindOverride('session.new'), false)
+  assert.equal(registry.getKeybind('command.palette'), 'mod+p')
+})
+
+test('none disables profile-overridden action and palette shortcuts', () => {
+  const registry = new UiActionRegistry(false)
+  let runs = 0
+  registry.register({ id: 'session.new', title: () => 'New session', keybind: 'ctrl+n', run() { runs += 1 } })
+  registry.setKeybindOverrides({ 'session.new': 'none', 'command.palette': 'none' })
+
+  assert.equal(registry.getSnapshot()[0]?.keybind, 'none')
+  assert.equal(registry.handleKeyDown(keyboardEvent('n', { ctrlKey: true })), false)
+  assert.equal(registry.handleKeyDown(keyboardEvent('p', { ctrlKey: true })), false)
+  assert.equal(runs, 0)
+})
+
+test('persists valid shortcut maps in browser storage and rejects malformed entries', () => {
+  const values = new Map()
+  const storage = {
+    getItem(key) { return values.get(key) ?? null },
+    setItem(key, value) { values.set(key, value) },
+  }
+  const keybinds = { 'command.palette': 'ctrl+k', 'session.new': 'none' }
+
+  assert.equal(writeStoredKeybinds(keybinds, storage), true)
+  assert.equal(values.has(SHORTCUT_STORAGE_KEY), true)
+  assert.deepEqual(readStoredKeybinds(storage), keybinds)
+  assert.deepEqual(decodeStoredKeybinds('{"valid":"ctrl+v","invalid":2}'), { valid: 'ctrl+v' })
+  assert.deepEqual(decodeStoredKeybinds('{broken'), {})
+  assert.equal(writeStoredKeybinds(keybinds, { getItem() { return null }, setItem() { throw new Error('denied') } }), false)
 })
 
 test('leaves unmodified shortcuts alone in editable controls', () => {

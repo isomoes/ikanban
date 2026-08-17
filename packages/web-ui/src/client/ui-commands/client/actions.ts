@@ -1,4 +1,11 @@
+import type { CommandSettings } from '../shortcut-settings.ts'
+
 export type UiActionSource = 'palette' | 'keybind' | 'api'
+
+/** Settings dictionary key for the command-palette shortcut itself. */
+export const COMMAND_PALETTE_ACTION_ID = 'command.palette'
+
+const DEFAULT_PALETTE_KEYBIND = 'mod+p'
 
 export interface UiAction {
   readonly id: string
@@ -20,8 +27,6 @@ export interface ParsedKeybind {
 
 type KeyboardEventLike = Pick<KeyboardEvent, 'key' | 'ctrlKey' | 'metaKey' | 'shiftKey' | 'altKey' | 'target' | 'preventDefault'>
   & Partial<Pick<KeyboardEvent, 'defaultPrevented'>>
-
-const PALETTE_KEYBIND = 'mod+p'
 
 function normalizeKey(key: string): string {
   if (key === ',') return 'comma'
@@ -57,6 +62,20 @@ export function matchKeybind(keybinds: readonly ParsedKeybind[], event: Keyboard
     && binding.meta === Boolean(event.metaKey)
     && binding.shift === Boolean(event.shiftKey)
     && binding.alt === Boolean(event.altKey))
+}
+
+/** Convert a concrete keyboard gesture into a storable keybind string. */
+export function keybindFromEvent(event: Pick<KeyboardEvent, 'key' | 'ctrlKey' | 'metaKey' | 'shiftKey' | 'altKey'>): string | undefined {
+  const key = normalizeKey(event.key)
+  if (key === '' || key === 'control' || key === 'ctrl' || key === 'meta'
+    || key === 'shift' || key === 'alt' || key === 'option' || key === 'dead') return undefined
+  const parts: string[] = []
+  if (event.ctrlKey) parts.push('ctrl')
+  if (event.altKey) parts.push('alt')
+  if (event.shiftKey) parts.push('shift')
+  if (event.metaKey) parts.push('meta')
+  parts.push(key)
+  return parts.join('+')
 }
 
 export function formatKeybind(config: string, mac: boolean): string {
@@ -112,9 +131,34 @@ export class UiActionRegistry {
   private readonly paletteListeners = new Set<() => void>()
   private snapshot: readonly UiAction[] = []
   private paletteOpen = false
+  private keybindOverrides: CommandSettings['keybinds'] = {}
 
   constructor(mac = platformIsMac()) {
     this.mac = mac
+  }
+
+  /** Replace profile overrides and republish effective action shortcuts. */
+  setKeybindOverrides(overrides: CommandSettings['keybinds']): void {
+    this.keybindOverrides = { ...overrides }
+    this.publishActions()
+  }
+
+  /** Resolve one action's current effective shortcut, including the palette. */
+  getKeybind(id: string): string | undefined {
+    const override = this.keybindOverrides[id]
+    if (override !== undefined) return override
+    if (id === COMMAND_PALETTE_ACTION_ID) return DEFAULT_PALETTE_KEYBIND
+    return this.actions.get(id)?.keybind
+  }
+
+  /** Resolve the built-in shortcut used when no profile override exists. */
+  getDefaultKeybind(id: string): string | undefined {
+    return id === COMMAND_PALETTE_ACTION_ID ? DEFAULT_PALETTE_KEYBIND : this.actions.get(id)?.keybind
+  }
+
+  /** Whether the profile explicitly customizes or disables this shortcut. */
+  hasKeybindOverride(id: string): boolean {
+    return Object.hasOwn(this.keybindOverrides, id)
   }
 
   register(action: UiAction): () => void {
@@ -168,7 +212,8 @@ export class UiActionRegistry {
 
   handleKeyDown(event: KeyboardEventLike): boolean {
     if (event.defaultPrevented === true) return false
-    if (matchKeybind(parseKeybind(PALETTE_KEYBIND, this.mac), event)) {
+    const paletteKeybind = this.keybindOverrides[COMMAND_PALETTE_ACTION_ID] ?? DEFAULT_PALETTE_KEYBIND
+    if (matchKeybind(parseKeybind(paletteKeybind, this.mac), event)) {
       event.preventDefault()
       this.openPalette()
       return true
@@ -186,7 +231,10 @@ export class UiActionRegistry {
   }
 
   private publishActions(): void {
-    this.snapshot = [...this.actions.values()]
+    this.snapshot = [...this.actions.values()].map((action) => {
+      const override = this.keybindOverrides[action.id]
+      return override === undefined ? action : { ...action, keybind: override }
+    })
     for (const listener of this.actionListeners) listener()
   }
 }

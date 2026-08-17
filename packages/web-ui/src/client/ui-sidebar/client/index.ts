@@ -37,7 +37,7 @@ export function apply(ctx: ClientContext): void {
       id: 'session.new',
       title: () => t('session.new.label'),
       category: () => t('action.category.session'),
-      keybind: 'mod+shift+s',
+      keybind: 'ctrl+n',
       run: () => { ctx.workspaces.startSession() },
     })
     const disposeToggle = ctx.commandUi.registerAction({

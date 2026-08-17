@@ -1,0 +1,230 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+  padding: 4px 0 28px;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 4px 0 2px;
+}
+
+.heading {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 26px;
+  color: var(--dsw-alias-label-primary);
+}
+
+.description {
+  max-width: 560px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.search {
+  width: min(360px, 100%);
+}
+
+.persistence {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.statusDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--dsw-alias-label-success, #398a5a);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--dsw-alias-label-success, #398a5a) 14%, transparent);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 14px;
+  background: var(--dsw-alias-bg-layer-1, transparent);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(190px, 1fr) minmax(150px, 200px) minmax(120px, auto);
+  align-items: center;
+  gap: 18px;
+  min-height: 76px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--dsw-alias-border-l2);
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.row:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.actionCopy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 3px;
+}
+
+.actionHeading {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 8px;
+}
+
+.actionTitle {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 22px;
+  color: var(--dsw-alias-label-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.customBadge {
+  flex: none;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--dsw-alias-bg-module-platform);
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 16px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.actionMeta,
+.conflict,
+.recordHint {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.conflict {
+  color: var(--dsw-alias-label-error, #c83c3c);
+}
+
+.bindingColumn {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 3px;
+}
+
+.keyButton {
+  min-width: 0;
+  height: 38px;
+  padding: 0 14px;
+  overflow: hidden;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 10px;
+  background: var(--dsw-alias-bg-module-platform);
+  color: var(--dsw-alias-label-primary);
+  cursor: pointer;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: border-color 120ms ease, background 120ms ease, box-shadow 120ms ease;
+}
+
+.keyButton kbd {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.keyButton:hover,
+.keyButton:focus-visible {
+  border-color: var(--dsw-static-neutral-bluish-400);
+  outline: none;
+}
+
+.recording {
+  border-color: var(--dsw-alias-button-primary-bg, var(--dsw-static-neutral-bluish-400));
+  background: var(--dsw-alias-bg-module-platform);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--dsw-static-neutral-bluish-400) 22%, transparent);
+}
+
+.recordHint {
+  text-align: center;
+}
+
+.controls {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+  min-width: 120px;
+}
+
+.empty {
+  display: grid;
+  min-height: 160px;
+  place-items: center;
+  padding: 24px;
+  font-size: 13px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+@media (max-width: 760px) {
+  .header,
+  .toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .search {
+    width: 100%;
+  }
+
+  .row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px 12px;
+  }
+
+  .actionCopy {
+    grid-column: 1 / -1;
+  }
+
+  .bindingColumn {
+    min-width: 150px;
+  }
+
+  .controls {
+    min-width: 0;
+  }
+}

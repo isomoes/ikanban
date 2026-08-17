@@ -13,17 +13,21 @@ import type { Context } from '@deepseek-ai/cordis'
 // (`commands/change` rides the allowlist) into this program.
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import type { CommandResult } from '@deepseek-ai/dsh-commands/types'
-import type { ClientContext, ISessions, SessionId } from '@deepseek-ai/dsh-client-runtime/client'
+import type { ClientContext, ISessions, SessionId, SettingsScope } from '@deepseek-ai/dsh-client-runtime/client'
+import type {} from '@isomoes/dsh-ikanban/client/ui-settings/client'
 import type {
   CandidateRequest, ClientSessionContext, CommandClaim, PickOutcome, InputTriggerCandidate, InputTriggerPick,
   SubmitOutcome,
 } from '@isomoes/dsh-ikanban/client/ui-input-trigger/client'
+import type { CommandSettings } from '../shortcut-settings.ts'
+import { COMMAND_SETTINGS_NAMESPACE, KEYBIND_OVERRIDES_FIELD } from '../shortcut-settings.ts'
 import type { CommandContribution, CommandDecoration, CommandUiContract } from './contract.ts'
 import { UiActionRegistry, type UiAction, type UiActionSource } from './actions.ts'
 import type { CommandDescriptor } from './directory.ts'
 import { CommandDirectory } from './directory.ts'
 import { PopupSelectController } from './popup.ts'
 import type { TokenSegment } from './popup.ts'
+import { readStoredKeybinds, writeStoredKeybinds } from './shortcut-storage.ts'
 
 declare module '@deepseek-ai/cordis' {
   interface Events {
@@ -117,14 +121,23 @@ function fuzzyCandidates(candidates: readonly InputTriggerCandidate[], rawQuery:
   return ranked.map(match => match.candidate)
 }
 
+function settingsLayerHasKeybinds(layer: unknown): boolean {
+  return typeof layer === 'object' && layer !== null && Object.hasOwn(layer, KEYBIND_OVERRIDES_FIELD)
+}
+
 /** Command surface: session-keyed directory + '/' source + contribution registry + per-session popups. */
 export class CommandUiRuntime extends Service implements CommandUiContract {
-  static inject = ['inputTriggers', 'sessions', 'remote', 'remote.commands']
+  static inject = ['inputTriggers', 'sessions', 'remote', 'remote.commands', 'connection', 'settingsScope']
 
   private readonly directory: CommandDirectory
   private readonly live: LiveState = { contributions: new Map(), decorations: new Map(), popups: new Map() }
   /** Local application actions, separate from Host slash commands. */
-  readonly actions = new UiActionRegistry()
+  readonly actions: UiActionRegistry
+  /** Durable profile section observed by the keymap settings page. */
+  readonly shortcutSettings: SettingsScope<CommandSettings>
+  private keybindOverrides: CommandSettings['keybinds'] = {}
+  private browserPersistence = false
+  private profileMigrationAttempted = false
 
   /**
    * @param ctx - owning root context (plugin fiber; the service registers
@@ -132,6 +145,30 @@ export class CommandUiRuntime extends Service implements CommandUiContract {
    */
   constructor(ctx: Context) {
     super(ctx, 'commandUi')
+    this.actions = new UiActionRegistry()
+    this.keybindOverrides = readStoredKeybinds()
+    this.browserPersistence = writeStoredKeybinds(this.keybindOverrides)
+    this.actions.setKeybindOverrides(this.keybindOverrides)
+    const shortcutSettings = ctx.settingsScope.bind<CommandSettings>({ namespace: COMMAND_SETTINGS_NAMESPACE })
+    this.shortcutSettings = shortcutSettings
+    const adoptKeybinds = (): void => {
+      const snapshot = shortcutSettings.getSnapshot()
+      if (snapshot.status !== 'ready') return
+      const hostKeybinds = { ...(snapshot.value?.keybinds ?? {}) }
+      const userOwnsKeybinds = settingsLayerHasKeybinds(snapshot.user)
+      if (!userOwnsKeybinds && Object.keys(this.keybindOverrides).length > 0) {
+        if (snapshot.writable && !this.profileMigrationAttempted) {
+          this.profileMigrationAttempted = true
+          void shortcutSettings.set(KEYBIND_OVERRIDES_FIELD, this.keybindOverrides)
+        }
+        return
+      }
+      this.keybindOverrides = hostKeybinds
+      this.browserPersistence = writeStoredKeybinds(hostKeybinds)
+      this.actions.setKeybindOverrides(hostKeybinds)
+    }
+    ctx.effect(() => shortcutSettings.subscribe(adoptKeybinds), 'command: shortcut settings')
+    adoptKeybinds()
     this.directory = new CommandDirectory(async (sessionId) => {
       if (this.sessions().subagentAddress(sessionId) !== undefined) return []
       const result = await ctx.remote.commands.list(sessionId)
@@ -161,6 +198,36 @@ export class CommandUiRuntime extends Service implements CommandUiContract {
       document.addEventListener('keydown', onKeyDown)
       return () => { document.removeEventListener('keydown', onKeyDown) }
     }, 'command: local action keybinds')
+  }
+
+  /** Persist, reset, or disable one action shortcut from the keymap settings page. */
+  setKeybindOverride(id: string, keybind: string | undefined): void {
+    const next = { ...this.keybindOverrides }
+    if (keybind === undefined) delete next[id]
+    else next[id] = keybind
+    this.persistKeybinds(next)
+  }
+
+  /** Restore every action to its built-in shortcut. */
+  resetKeybindOverrides(): void {
+    this.persistKeybinds({})
+  }
+
+  /** Where edits currently survive reloads. */
+  shortcutPersistence(): 'profile' | 'browser' | 'memory' {
+    const snapshot = this.shortcutSettings.getSnapshot()
+    if (snapshot.status === 'ready' && snapshot.writable) return 'profile'
+    return this.browserPersistence ? 'browser' : 'memory'
+  }
+
+  private persistKeybinds(next: CommandSettings['keybinds']): void {
+    this.keybindOverrides = next
+    this.browserPersistence = writeStoredKeybinds(next)
+    this.actions.setKeybindOverrides(next)
+    const snapshot = this.shortcutSettings.getSnapshot()
+    if (snapshot.status === 'ready' && snapshot.writable) {
+      void this.shortcutSettings.set(KEYBIND_OVERRIDES_FIELD, next)
+    }
   }
 
   /** Register one local UI action for the calling plugin's lifetime. */
