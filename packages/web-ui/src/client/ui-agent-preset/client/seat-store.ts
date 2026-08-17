@@ -23,6 +23,8 @@ export interface AgentPresetSeatState {
   options: readonly AgentPresetOption[]
   /** The staged choice, empty until the roster loads. */
   current: string
+  /** Whether the new-session picker is open, including command-triggered opens. */
+  pickerOpen: boolean
   /** A rejected apply's message, cleared by the next attempt. */
   error: string | null
   busy: boolean
@@ -35,7 +37,7 @@ export interface AgentPresetSeatState {
 }
 
 const INITIAL: AgentPresetSeatState = {
-  options: [], current: '', error: null, busy: false, introduce: false,
+  options: [], current: '', pickerOpen: false, error: null, busy: false, introduce: false,
 }
 
 /** One session's identity and whether it has started. */
@@ -133,6 +135,12 @@ export class AgentPresetSeatController {
   stage(id: string, introduce = false): void {
     this.staged = id
     this.set({ current: id, error: null, introduce })
+  }
+
+  /** Open or close the picker from either its trigger or a UI command. */
+  setPickerOpen(open: boolean): void {
+    if (this.store.getSnapshot().pickerOpen === open) return
+    this.set({ pickerOpen: open })
   }
 
   /** Acknowledge the introduction cue once the chip has played it. */

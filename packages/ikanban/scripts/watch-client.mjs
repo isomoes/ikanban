@@ -39,6 +39,19 @@ export function createCoalescedRunner(run) {
   }
 }
 
+/** Serialize and coalesce work per output key while leaving other keys independent. */
+export function createKeyedCoalescedRunner(run) {
+  const runners = new Map()
+  return function requestRun(key) {
+    let runner = runners.get(key)
+    if (runner === undefined) {
+      runner = createCoalescedRunner(() => run(key))
+      runners.set(key, runner)
+    }
+    return runner()
+  }
+}
+
 export function watchFiles(paths, rebuild, options = {}) {
   const debounceMs = options.debounceMs ?? 75
   const onError = options.onError ?? ((error) => console.error(error))
@@ -120,6 +133,18 @@ export async function startWatchers(starters) {
 
 async function startClientWatcher() {
   const { build } = await import(pathToFileURL(webRequire.resolve('tsdown')).href)
+  // Some virtual packages have both a host and browser build writing the same
+  // outDir. tsdown may settle those configs together, so their build:done
+  // hooks must not concurrently force-copy (Node's cp overwrites by unlinking
+  // the destination first; two copies otherwise race on package.json).
+  const copyClient = createKeyedCoalescedRunner(async (id) => {
+    await copyWithEntryLast(
+      resolve(webRoot, 'lib/clients', id),
+      resolve(packageRoot, 'lib/clients', id),
+      'client.js',
+    )
+    console.log(`iKanban client rebuilt: @isomoes/dsh-ikanban/client/${id}`)
+  })
   return build({
     cwd: webRoot,
     watch: true,
@@ -128,8 +153,7 @@ async function startClientWatcher() {
         const source = resolve(webRoot, options.outDir)
         const id = basename(source)
         if (dirname(source) !== resolve(webRoot, 'lib/clients')) return
-        await copyWithEntryLast(source, resolve(packageRoot, 'lib/clients', id), 'client.js')
-        console.log(`iKanban client rebuilt: @isomoes/dsh-ikanban/client/${id}`)
+        await copyClient(id)
       },
     },
   })

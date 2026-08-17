@@ -3,7 +3,9 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { createCoalescedRunner, markDevelopmentBuild, startWatchers, watchFiles } from '../scripts/watch-client.mjs'
+import {
+  createCoalescedRunner, createKeyedCoalescedRunner, markDevelopmentBuild, startWatchers, watchFiles,
+} from '../scripts/watch-client.mjs'
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -131,6 +133,38 @@ test('serializes copies and coalesces events received during a copy', async () =
 
   assert.equal(copies, 2)
   assert.equal(maximumActive, 1)
+})
+
+test('serializes duplicate output copies without blocking other package ids', async () => {
+  const calls = []
+  let activeAlpha = 0
+  let maximumAlpha = 0
+  let unblockAlpha
+  const alphaBlocked = new Promise(resolve => { unblockAlpha = resolve })
+  let alphaStarted
+  const firstAlphaStarted = new Promise(resolve => { alphaStarted = resolve })
+  const copy = createKeyedCoalescedRunner(async (id) => {
+    calls.push(id)
+    if (id !== 'alpha') return
+    activeAlpha += 1
+    maximumAlpha = Math.max(maximumAlpha, activeAlpha)
+    if (calls.filter(value => value === 'alpha').length === 1) {
+      alphaStarted()
+      await alphaBlocked
+    }
+    activeAlpha -= 1
+  })
+
+  const firstAlpha = copy('alpha')
+  await firstAlphaStarted
+  const queuedAlpha = copy('alpha')
+  await copy('beta')
+  assert.deepEqual(calls, ['alpha', 'beta'])
+  unblockAlpha()
+  await Promise.all([firstAlpha, queuedAlpha])
+
+  assert.deepEqual(calls, ['alpha', 'beta', 'alpha'])
+  assert.equal(maximumAlpha, 1)
 })
 
 test('closes fulfilled watchers when another watcher fails to start', async () => {

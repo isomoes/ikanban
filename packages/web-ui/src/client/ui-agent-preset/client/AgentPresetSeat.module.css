@@ -95,25 +95,3 @@
   flex: none;
   color: var(--dsw-alias-label-caption);
 }
-
-/* Menu rows carry the name over its description: the id alone never said what
-   a preset does, which is why the metadata exists. */
-.item {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  max-width: 280px;
-}
-
-.itemName {
-  font-size: 13px;
-  line-height: 20px;
-  color: var(--dsw-alias-label-primary);
-}
-
-.itemDesc {
-  font-size: 12px;
-  line-height: 16px;
-  color: var(--dsw-alias-label-caption);
-  white-space: normal;
-}

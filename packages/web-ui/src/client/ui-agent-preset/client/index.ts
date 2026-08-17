@@ -19,6 +19,8 @@ import type {} from '@isomoes/dsh-ikanban/client/locale/client'
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 // Type-only: pulls the settings shell's SlotMap merge (the 'settings.section' entry).
 import type {} from '@isomoes/dsh-ikanban/client/ui-settings/client'
+// Type-only: pulls the local command and keybinding service onto ClientContext.
+import type {} from '@isomoes/dsh-ikanban/client/ui-commands/client'
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 import { AgentPresetLabel } from './AgentPresetLabel.tsx'
 import type { AgentPresetLabelInjected } from './AgentPresetLabel.tsx'
@@ -46,7 +48,7 @@ export type { AgentPresetOption, AgentPresetSettingsState } from './settings-sto
 export { AGENT_PRESET_SETTINGS_NS, writeDefaultPreset } from './settings-store.ts'
 
 /** Required services (cordis fiber inject). */
-export const inject = ['slots', 'locale', 'connection', 'remote']
+export const inject = ['slots', 'locale', 'connection', 'remote', 'commandUi']
 
 /**
  * Mount the General-settings row.
@@ -64,6 +66,7 @@ export function apply(ctx: ClientContext): void {
   })
 
   ctx.effect(() => ctx.locale.register('settings.agentPreset', { zh, en }), 'ui-agent-preset: settings row dictionaries')
+  const t = ctx.locale.bind('settings.agentPreset')
 
   const injected = (): AgentPresetRowInjected => ({
     hooks: { agentPreset: controller.store },
@@ -99,7 +102,7 @@ export function apply(ctx: ClientContext): void {
 
   // The new-session chip and the header label: one controller, because the
   // staged choice belongs to the flow rather than to any one session.
-  ctx.inject(['slots', 'conversation', 'sessions', 'workspaces'], (scope: ClientContext) => {
+  ctx.inject(['slots', 'conversation', 'sessions', 'workspaces', 'commandUi'], (scope: ClientContext) => {
     const api = (scope.get('connection') as ConnectionHandle).api
     const seat = new AgentPresetSeatController(api, (): SeatSessionSummary | undefined => {
       const state = scope.sessions.list.getSnapshot()
@@ -119,6 +122,7 @@ export function apply(ctx: ClientContext): void {
       hooks: { agentPresetSeat: seat.store },
       load: () => seat.load(),
       select: (id: string) => seat.select(id),
+      setOpen: (open: boolean) => { seat.setPickerOpen(open) },
       introduced: () => { seat.introduced() },
     })
 
@@ -162,6 +166,22 @@ export function apply(ctx: ClientContext): void {
         seat.stage('cordis', true)
         scope.workspaces.startSession()
       }
+      const chooseModeAction = scope.commandUi.registerAction({
+        id: 'session.choose-mode',
+        title: () => t('chooseModeCommand'),
+        description: () => t('chooseModeCommandDescription'),
+        category: () => t('sessionCategory'),
+        keybind: 'mod+shift+m',
+        run: () => {
+          const sessions = scope.sessions.list.getSnapshot()
+          const current = sessions.current === undefined ? undefined : sessions.byId[sessions.current]
+          // The picker belongs to the blank-session hero. From a running
+          // conversation, the same command first opens that destination; the
+          // mounted seat then loads against the new blank session.
+          if (current?.blank !== true) scope.workspaces.startSession()
+          seat.setPickerOpen(true)
+        },
+      })
       const chip = scope.slots.register({
         name: 'conversation.hero.agentPreset',
         locale: 'settings.agentPreset',
@@ -181,6 +201,7 @@ export function apply(ctx: ClientContext): void {
         presetSelected()
         rosterReaders.delete(readRoster)
         creatorDraft = undefined
+        chooseModeAction()
         chip()
         label()
       }
