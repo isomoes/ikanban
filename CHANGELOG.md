@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.8]
+
+- Added customizable keyboard shortcuts with a settings interface, local persistence, and conflict-aware action registration.
+
 ## [0.4.7]
 
 - Added a compact conversation view switcher for changing session modes with less visual clutter.

@@ -1,6 +1,6 @@
 {
   "name": "@isomoes/dsh-project-mcp",
-  "version": "0.4.7",
+  "version": "0.4.8",
   "private": true,
   "description": "Internal source package for iKanban project-level MCP loading",
   "keywords": [
