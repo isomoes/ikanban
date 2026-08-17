@@ -28,7 +28,7 @@
 .header {
   position: relative;
   flex: none;
-  padding: 12px 28px 0 20px;
+  padding: 10px 28px 9px 20px;
   border-bottom: 1px solid transparent;
 }
 
@@ -132,49 +132,48 @@
   display: none;
 }
 
-/* figma Tab_Group 34:11441: 35px strip, gap 36, pad-left 8, tabs bottom-aligned. */
-.tabs {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  gap: 36px;
-  margin-top: 4px;
-  padding-left: 8px;
+/* Compact view controls occupy one top-right icon rail. */
+.viewSwitcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 8px;
+  background: var(--dsw-alias-fill-l2);
 }
 
-/* figma .Tab 34:11442: 13/16 text (figma wt510, rendered 500), gap 8 to the 2px bar. */
-.tab {
-  position: relative;
-  padding: 0 0 11px;
-  border: none;
+.viewButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 6px;
   background: transparent;
-  font-size: 13px;
-  line-height: 16px;
-  font-weight: 500;
   color: var(--dsw-alias-label-tertiary);
   cursor: pointer;
 }
 
-.tab::after {
-  content: '';
-  position: absolute;
-  right: 0;
-  bottom: 1px;
-  left: 0;
-  height: 2px;
-  border-radius: 2px;
-  background: transparent;
+.viewButton:hover {
+  color: var(--dsw-alias-label-secondary);
+  background: var(--dsw-alias-interactive-bg-hover);
 }
 
-/* Selected tab is blue, not ink: brand-primary resolves to neutral black in
-   this token sheet, so the selected state rides the business blue — the
-   nearest semantic token that stays blue in both themes. */
-.tabActive {
+.viewButtonActive {
   color: var(--dsw-alias-state-business-primary);
+  background: var(--dsw-alias-bg-base);
+  box-shadow: var(--dsw-shadow-lv1);
 }
 
-.tabActive::after {
-  background: var(--dsw-alias-state-business-primary);
+.viewText {
+  max-width: 88px;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .viewArea {

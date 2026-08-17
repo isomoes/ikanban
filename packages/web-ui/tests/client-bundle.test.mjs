@@ -54,6 +54,7 @@ test('each forked client entry emits an isolated virtual package', async () => {
     assert.doesNotMatch(JSON.stringify(sourcemap.sources), /deepseek-harness/)
     if (id === 'ui-conversation') {
       assert.ok(bundle.includes(`buildBadge(${JSON.stringify(packageManifest.version)}, false)`))
+      assert.match(bundle, /Conversation views/)
       assert.doesNotMatch(bundle, /__IKANBAN_(?:DEV|VERSION)__/)
     }
     if (id === 'ui-sidebar') {

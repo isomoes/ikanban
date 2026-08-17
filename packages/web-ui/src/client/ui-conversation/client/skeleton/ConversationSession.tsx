@@ -1,8 +1,9 @@
 /** Strict per-session header/body content inserted into the resident conversation layout. */
 
-import { useEffect, useSyncExternalStore } from 'react'
+import { useEffect, useSyncExternalStore, type ReactNode } from 'react'
 import clsx from 'clsx'
 import type { SessionId, SessionListState, SessionSummary } from '@deepseek-ai/dsh-client-runtime/client'
+import { IconDataOutline16, IconNewChatOutline16 } from '@isomoes/dsh-ikanban/client/ui-primitives'
 import type {
   ConversationSessionHeaderSlotProps, ConversationSessionSlotProps,
 } from '../contract/slots.ts'
@@ -51,6 +52,13 @@ function equalBreadcrumbs(left: readonly Breadcrumb[], right: readonly Breadcrum
       const other = right.at(index)
       return other !== undefined && item.id === other.id && item.displayTitle === other.displayTitle
     })
+}
+
+/** Known conversation views use glyphs; third-party views retain their compact text label. */
+function viewGlyph(view: ViewTab): ReactNode {
+  if (view.id === 'chat') return <IconNewChatOutline16 size={16} />
+  if (view.id === 'trajectory') return <IconDataOutline16 size={16} />
+  return <span className={css.viewText}>{view.label}</span>
 }
 
 /**
@@ -104,25 +112,27 @@ export function ConversationSessionHeader({
               </div>
             </div>
             <div className={css.headerUtilities}>
+              {tabs.length > 0 && (
+                <div className={css.viewSwitcher} role="tablist" aria-label={t('view.switcher')}>
+                  {tabs.map(viewTab => (
+                    <button
+                      key={viewTab.id}
+                      type="button"
+                      role="tab"
+                      title={viewTab.label}
+                      aria-label={viewTab.label}
+                      aria-selected={viewTab.id === active?.id}
+                      className={clsx(css.viewButton, viewTab.id === active?.id && css.viewButtonActive)}
+                      onClick={() => { actions.setView(viewTab.id) }}
+                    >
+                      {viewGlyph(viewTab)}
+                    </button>
+                  ))}
+                </div>
+              )}
               {renderSlot('conversation.session.header.utilities', {})}
             </div>
           </div>
-          {tabs.length > 1 && (
-            <div className={css.tabs} role="tablist">
-              {tabs.map(viewTab => (
-                <button
-                  key={viewTab.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={viewTab.id === active?.id}
-                  className={clsx(css.tab, viewTab.id === active?.id && css.tabActive)}
-                  onClick={() => { actions.setView(viewTab.id) }}
-                >
-                  {viewTab.label}
-                </button>
-              ))}
-            </div>
-          )}
         </>
       )}
     </header>
