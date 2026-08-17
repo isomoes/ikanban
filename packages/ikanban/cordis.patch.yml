@@ -421,3 +421,8 @@
       name: '@deepseek-ai/dsh-agent-presets'
       config:
         default: standard
+
+    # Materialize one opt-in user preset from the deployment's current Standard
+    # preset. Existing copies are never overwritten, so local edits survive.
+    - id: ikanban-preset
+      name: '@isomoes/dsh-ikanban/ikanban-preset'

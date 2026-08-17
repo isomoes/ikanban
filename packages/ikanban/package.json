@@ -36,6 +36,15 @@
       "types": "./lib/types/directory-picker-auto.d.ts",
       "default": "./lib/directory-picker-auto.js"
     },
+    "./project-mcp": {
+      "types": "./lib/types/project-mcp.d.ts",
+      "default": "./lib/project-mcp.js"
+    },
+    "./ikanban-preset": {
+      "types": "./lib/types/ikanban-preset.d.ts",
+      "default": "./lib/ikanban-preset.js"
+    },
+    "./project-mcp.preset.yml": "./project-mcp.preset.yml",
     "./client/*/client": "./lib/clients/*/client.js",
     "./client/*/package.json": "./lib/clients/*/package.json",
     "./client/*": "./lib/clients/*/index.js",
@@ -53,7 +62,8 @@
     "lib/clients/**/package.json",
     "lib/web/**",
     "!lib/**/*.js.map",
-    "cordis.patch.yml"
+    "cordis.patch.yml",
+    "project-mcp.preset.yml"
   ],
   "engines": {
     "node": "^22.19.0 || >=24.0.0"
@@ -69,8 +79,8 @@
     }
   },
   "scripts": {
-    "build": "pnpm --filter @isomoes/dsh-ikanban-web-ui build:package && pnpm build:package",
-    "build:package": "node scripts/clean.mjs && tsc -p tsconfig.json && node scripts/build-client.mjs",
+    "build": "pnpm --filter @isomoes/dsh-project-mcp build:package && pnpm --filter @isomoes/dsh-ikanban-web-ui build:package && pnpm build:package",
+    "build:package": "node scripts/clean.mjs && tsc -p tsconfig.json && node scripts/build-client.mjs && node scripts/build-project-mcp.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "pnpm build && node --test tests/*.test.mjs",
     "prepare": "pnpm build"
@@ -93,6 +103,7 @@
     "@deepseek-ai/dsh-host-frontend-static": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-host-plugin-inventory": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-host-webserver": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-mcp-client": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-message-feedback": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-session-projection-cache": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-session-stats": "^0.1.0-rc.6",
@@ -119,6 +130,7 @@
     "@deepseek-ai/dsh-shell-env": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-system-prompt": "^0.1.0-rc.6",
     "@isomoes/dsh-ikanban-web-ui": "workspace:*",
+    "@isomoes/dsh-project-mcp": "workspace:*",
     "@types/node": "^22.0.0",
     "typescript": "^6.0.3"
   }

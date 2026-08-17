@@ -1,0 +1,5 @@
+# Project-level MCP row for a copied DeepSeek Harness agent preset.
+# Add beside the preset's `skill-filesystem` and `tool-skill` rows.
+
+- id: project-mcp
+  name: '@isomoes/dsh-ikanban/project-mcp'

@@ -1,0 +1,55 @@
+{
+  "name": "@isomoes/dsh-project-mcp",
+  "version": "0.4.6",
+  "private": true,
+  "description": "Internal source package for iKanban project-level MCP loading",
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "mcp",
+    "model-context-protocol"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/isomoes/ikanban.git",
+    "directory": "packages/project-mcp"
+  },
+  "scripts": {
+    "build": "pnpm build:package",
+    "build:package": "node scripts/clean.mjs && tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "pnpm build && node --test tests/*.test.mjs",
+    "prepare": "pnpm build"
+  },
+  "dependencies": {
+    "@deepseek-ai/dsh-agent": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-mcp-client": "^0.1.0-rc.6",
+    "@deepseek-ai/schemastery": "^3.18.1"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-system-prompt": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-tools": "^0.1.0-rc.6"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-system-prompt": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-tools": "^0.1.0-rc.6",
+    "@types/node": "^22.0.0",
+    "typescript": "^6.0.3"
+  }
+}

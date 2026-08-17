@@ -26,6 +26,16 @@ dsh --profile ikanban
 See the project [changelog](https://github.com/isomoes/ikanban/blob/main/CHANGELOG.md)
 for release history.
 
+### Opt-in project MCP
+
+The published package includes the agent-preset plugin
+`@isomoes/dsh-ikanban/project-mcp`. On first startup, iKanban copies the current
+shipped Standard preset to the user preset `ikanban`, appends the MCP row, and
+exposes it in the picker as **iKanban**. An existing copy
+is never overwritten, so local edits survive upgrades. Select it only for trusted
+projects. The plugin reads `.mcp.json` from each session's exact working directory;
+it is intentionally absent from the host capability layer.
+
 ## Structure
 
 ```text

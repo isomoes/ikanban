@@ -45,6 +45,8 @@ test('publishes every local client as an isolated virtual package', async () => 
 test('loads every host entry with public runtime dependencies', async () => {
   assert.equal(manifest.dependencies['@deepseek-ai/dsh-settings'], '^0.1.0-rc.6')
   assert.equal(manifest.dependencies['@deepseek-ai/schemastery'], '^3.18.1')
+  assert.equal(manifest.dependencies['@isomoes/dsh-project-mcp'], undefined)
+  await import(new URL('lib/project-mcp.js', packageRoot))
 
   await Promise.all(entries
     .filter(entry => entry.host !== undefined)
@@ -62,6 +64,9 @@ test('resolves virtual clients and their manifests from an install-like anchor',
   try {
     assert.equal(resolve('@isomoes/dsh-ikanban'), join(packagePath, 'lib', 'index.js'))
     assert.equal(resolve('@isomoes/dsh-ikanban/package.json'), join(packagePath, 'package.json'))
+    assert.equal(resolve('@isomoes/dsh-ikanban/project-mcp'), join(packagePath, 'lib', 'project-mcp.js'))
+    assert.equal(resolve('@isomoes/dsh-ikanban/ikanban-preset'), join(packagePath, 'lib', 'ikanban-preset.js'))
+    assert.equal(resolve('@isomoes/dsh-ikanban/project-mcp.preset.yml'), join(packagePath, 'project-mcp.preset.yml'))
     for (const { id, virtualId } of entries) {
       assert.equal(resolve(virtualId), join(packagePath, 'lib', 'clients', id, 'index.js'))
       assert.equal(resolve(`${virtualId}/client`), join(packagePath, 'lib', 'clients', id, 'client.js'))
