@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.7]
+
+- Added a compact conversation view switcher for changing session modes with less visual clutter.
+- Added a searchable session mode palette with keyboard-friendly navigation.
+- Added a project-level MCP agent preset and bundled loader for project-specific MCP configuration.
+
 ## [0.4.6]
 
 - Added a timeline branch command for starting a new session from an earlier conversation point.
