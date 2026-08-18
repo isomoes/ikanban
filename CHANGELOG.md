@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.10]
+
+- Added a workspace changes view for reviewing project diffs directly in the conversation interface.
+- Added configurable keyboard shortcuts for switching between conversation views.
+
 ## [0.4.9]
 
 - Added fuzzy-search workspace actions for quickly opening projects from the command palette.
