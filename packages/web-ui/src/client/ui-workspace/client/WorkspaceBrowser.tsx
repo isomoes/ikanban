@@ -751,6 +751,7 @@ export function WorkspaceBrowser({
   forkSession,
   renameWorkspace,
   deleteWorkspace,
+  registerDeleteAction,
   insertWorkspaceBefore,
   archiveSession,
   insertSessionBefore,
@@ -943,6 +944,10 @@ export function WorkspaceBrowser({
   const [deleting, setDeleting] = useState(false)
   const [deleteCommittedId, setDeleteCommittedId] = useState<WorkspaceId | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  useEffect(() => registerDeleteAction((target) => {
+    setDeleteTarget(target)
+    setDeleteError(null)
+  }), [registerDeleteAction])
   useEffect(() => {
     if (deleteCommittedId === null
       || workspaces.some(workspace => workspace.workspaceId === deleteCommittedId)) return

@@ -103,13 +103,32 @@ export function formatKeybind(config: string, mac: boolean): string {
   return mac ? parts.join('') : parts.join('+')
 }
 
+function fuzzyActionMatch(value: string, query: string): boolean {
+  const haystack = value.toLocaleLowerCase()
+  if (haystack.includes(query)) return true
+
+  const words = haystack.match(/[\p{L}\p{N}]+/gu) ?? []
+  const initials = words.map(word => word[0]).join('')
+  const compactNeedle = query.replace(/[^\p{L}\p{N}]/gu, '')
+  if (compactNeedle === '') return false
+  if (initials.includes(compactNeedle)) return true
+
+  const compactHaystack = words.join('')
+  let needleIndex = 0
+  for (const character of compactHaystack) {
+    if (character === compactNeedle[needleIndex]) needleIndex += 1
+    if (needleIndex === compactNeedle.length) return true
+  }
+  return false
+}
+
 export function filterUiActions(actions: readonly UiAction[], query: string): readonly UiAction[] {
   const needle = query.trim().toLocaleLowerCase()
   return actions.filter((action) => {
     if (action.disabled?.() === true) return false
     if (needle === '') return true
     return [action.title(), action.description?.() ?? '', action.category?.() ?? '']
-      .some(value => value.toLocaleLowerCase().includes(needle))
+      .some(value => fuzzyActionMatch(value, needle))
   })
 }
 

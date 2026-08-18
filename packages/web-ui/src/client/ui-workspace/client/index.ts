@@ -165,6 +165,21 @@ export function apply(ctx: ClientContext): void {
     if (!result.ok) throw new Error(result.error.message)
     return result.value
   }
+  const currentWorkspace = () => {
+    const current = ctx.sessions.list.getSnapshot().current
+    if (current === undefined) return undefined
+    return ctx.workspaces.list.getSnapshot().items.find(workspace => workspace.sessionIds.includes(current))
+  }
+  const registerDeleteAction: WorkspaceBrowserInjected['registerDeleteAction'] = open => ctx.commandUi.registerAction({
+    id: 'workspace.delete',
+    title: () => t('delete.workspace'),
+    category: () => t('section.workspaces'),
+    disabled: () => currentWorkspace() === undefined,
+    run: () => {
+      const workspace = currentWorkspace()
+      if (workspace !== undefined) open({ workspaceId: workspace.workspaceId, title: workspace.title })
+    },
+  })
 
   // Stable per-surface occupancy sources (the renderer's hook cache keys by
   // source identity): true while the surface's directory-flow hole is filled.
@@ -198,6 +213,7 @@ export function apply(ctx: ClientContext): void {
     },
     renameWorkspace: async (workspaceId, title) => { await ctx.workspaces.rename(workspaceId, title) },
     deleteWorkspace: async (workspaceId) => { await ctx.workspaces.delete(workspaceId) },
+    registerDeleteAction,
     insertWorkspaceBefore: async (workspaceId, beforeWorkspaceId) => {
       await ctx.workspaces.insertBefore(workspaceId, beforeWorkspaceId)
     },

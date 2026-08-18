@@ -6,6 +6,8 @@ iKanban 是一个面向键盘操作、基于 [DeepSeek Harness](https://github.c
 
 本 monorepo 包含公开发布的 DSH bundle，以及完整浏览器界面的私有可编辑 fork。
 
+<img alt="iKanban project UI" src="https://github.com/user-attachments/assets/9d5467e0-1963-474c-8d7c-57941a702064" />
+
 ## 介绍视频
 
 以下视频介绍了 iKanban 的工作流及其演进，包括当前基于 DSH 的 `v0.4.2`。`v0.3` 及更早的视频早于当前软件包，因此其中的安装步骤和部分界面可能有所不同。

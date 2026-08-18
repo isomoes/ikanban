@@ -117,6 +117,13 @@ export type WorkspaceBrowserInjected = DirectoryPickingInjected & {
   /** Delete only a Host Workspace registration; directory and Session logs remain. */
   deleteWorkspace: (workspaceId: WorkspaceId) => Promise<void>
   /**
+   * Register the command-palette action that opens the existing confirmation
+   * dialog for the current Session's Workspace. No default keybind is assigned.
+   */
+  registerDeleteAction: (
+    open: (target: { workspaceId: WorkspaceId; title: string }) => void,
+  ) => () => void
+  /**
    * Reorder a Workspace in the durable registry display order.
    * Omitted anchor appends to the end.
    */

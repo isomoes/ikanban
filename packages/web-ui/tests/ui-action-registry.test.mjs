@@ -20,12 +20,23 @@ test('filters enabled palette actions across title, description, and category', 
   const actions = [
     { id: 'sidebar.toggle', title: () => 'Toggle sidebar', category: () => 'View', run() {} },
     { id: 'session.new', title: () => 'New session', description: () => 'Start in a workspace', run() {} },
+    { id: 'workspace.delete', title: () => 'Delete Workspace', run() {} },
     { id: 'settings.open', title: () => 'Settings', disabled: () => true, run() {} },
   ]
 
   assert.deepEqual(filterUiActions(actions, 'view').map(action => action.id), ['sidebar.toggle'])
-  assert.deepEqual(filterUiActions(actions, 'workspace').map(action => action.id), ['session.new'])
-  assert.deepEqual(filterUiActions(actions, '').map(action => action.id), ['sidebar.toggle', 'session.new'])
+  assert.deepEqual(filterUiActions(actions, 'workspace').map(action => action.id), ['session.new', 'workspace.delete'])
+  assert.deepEqual(filterUiActions(actions, '').map(action => action.id), ['sidebar.toggle', 'session.new', 'workspace.delete'])
+})
+
+test('fuzzy matches action text and multi-word initials', () => {
+  const actions = [
+    { id: 'sidebar.toggle', title: () => 'Toggle sidebar', run() {} },
+    { id: 'workspace.delete', title: () => 'Delete Workspace', run() {} },
+  ]
+
+  assert.deepEqual(filterUiActions(actions, 'dw').map(action => action.id), ['workspace.delete'])
+  assert.deepEqual(filterUiActions(actions, 'tgsi').map(action => action.id), ['sidebar.toggle'])
 })
 
 test('parses mod aliases and formats the platform key', () => {
