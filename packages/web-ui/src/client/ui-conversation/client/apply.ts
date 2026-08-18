@@ -8,6 +8,7 @@ import {
 // goes through the service, never a value import (client bundle purity gate).
 import type {} from '@isomoes/dsh-ikanban/client/ui-settings/client'
 import type {} from '@isomoes/dsh-ikanban/client/ui-layout/client'
+import type {} from '@isomoes/dsh-ikanban/client/ui-commands/client'
 // Type-only: pulls the locale plugin's Context merge (ctx.locale).
 import type {} from '@isomoes/dsh-ikanban/client/locale/client'
 import type { ViewTab } from './contract/views.ts'
@@ -50,7 +51,7 @@ declare module '@isomoes/dsh-ikanban/client/ui-slots' {
 /** Services required by the conversation plugin. */
 export const inject = [
   'slots', 'layout', 'sessions', 'workspaces', 'locale', 'connection', 'remote', 'settingsScope',
-  'conversationEvents', 'conversationViews',
+  'conversationEvents', 'conversationViews', 'commandUi',
 ]
 
 // Static no-session sources for the composer-bar hooks compartment: module
@@ -130,6 +131,31 @@ export function apply(ctx: Context): void {
 
   // Apply-time construction keeps store identity bound to this fiber.
   const chatStore = createChatStore()
+  const sessionViewActions = new Map<SessionId, BoundActions<typeof chatStore>>()
+  const currentViewActions = (): BoundActions<typeof chatStore> | undefined => {
+    const current = sessions.list.getSnapshot().current
+    return current === undefined ? undefined : sessionViewActions.get(current)
+  }
+  const registerViewAction = (id: string, title: () => string, keybind: string, view: string) =>
+    ctx.commandUi.registerAction({
+      id,
+      title,
+      category: () => t('view.switcher'),
+      keybind,
+      disabled: () => currentViewActions() === undefined,
+      ignoreInEditable: true,
+      preserveTextSelection: view === 'chat',
+      run: () => { currentViewActions()?.setView(view) },
+    })
+  ctx.effect(() => {
+    const disposeChat = registerViewAction('view.chat', () => t('view.openChat'), 'ctrl+c', 'chat')
+    const disposeChanges = registerViewAction('view.changes', () => t('view.openChanges'), 'ctrl+d', 'changes')
+    return () => {
+      disposeChanges()
+      disposeChat()
+      sessionViewActions.clear()
+    }
+  }, 'ui-conversation: view actions')
   const submissionPolicy = new ComposerSubmissionPolicy(
     ctx.settingsScope.bind<ConversationSettings>({ namespace: CONVERSATION_SETTINGS_NAMESPACE }),
   )
@@ -242,7 +268,8 @@ export function apply(ctx: Context): void {
       'conversation.view': { kind: 'list', scope: 'session' },
     },
     store: chatStore,
-    inject: (sessionId: SessionId, _actions: BoundActions<typeof chatStore>): ConversationSessionInjected => {
+    inject: (sessionId: SessionId, actions: BoundActions<typeof chatStore>): ConversationSessionInjected => {
+      sessionViewActions.set(sessionId, actions)
       const conversation = concreteConversation(ctx)
       return {
         views,

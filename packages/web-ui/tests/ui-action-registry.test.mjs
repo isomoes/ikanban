@@ -163,6 +163,23 @@ test('persists valid shortcut maps in browser storage and rejects malformed entr
   assert.equal(writeStoredKeybinds(keybinds, { getItem() { return null }, setItem() { throw new Error('denied') } }), false)
 })
 
+test('lets actions preserve modified shortcuts in editable controls', () => {
+  const registry = new UiActionRegistry(false)
+  let runs = 0
+  registry.register({
+    id: 'view.chat',
+    title: () => 'Chat',
+    keybind: 'ctrl+c',
+    ignoreInEditable: true,
+    run() { runs += 1 },
+  })
+  const event = keyboardEvent('c', { ctrlKey: true, editable: true })
+
+  assert.equal(registry.handleKeyDown(event), false)
+  assert.equal(event.defaultPrevented, false)
+  assert.equal(runs, 0)
+})
+
 test('leaves unmodified shortcuts alone in editable controls', () => {
   const registry = new UiActionRegistry(false)
   let runs = 0

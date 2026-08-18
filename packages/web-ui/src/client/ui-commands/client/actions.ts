@@ -14,6 +14,10 @@ export interface UiAction {
   readonly category?: () => string
   readonly keybind?: string
   readonly disabled?: () => boolean
+  /** Keep native editor shortcuts when focus is in an editable control. */
+  readonly ignoreInEditable?: boolean
+  /** Keep native copy behavior while the page has selected text. */
+  readonly preserveTextSelection?: boolean
   readonly run: (source: UiActionSource) => void | Promise<void>
 }
 
@@ -143,6 +147,12 @@ function platformIsMac(): boolean {
   return typeof navigator === 'object' && /Mac|iPod|iPhone|iPad/u.test(navigator.platform)
 }
 
+function hasTextSelection(): boolean {
+  if (typeof window !== 'object') return false
+  const selection = window.getSelection()
+  return selection !== null && !selection.isCollapsed && selection.toString() !== ''
+}
+
 export class UiActionRegistry {
   readonly mac: boolean
   private readonly actions = new Map<string, UiAction>()
@@ -238,10 +248,13 @@ export class UiActionRegistry {
       return true
     }
     const modified = Boolean(event.ctrlKey || event.metaKey || event.altKey)
-    if (isEditableTarget(event.target) && !modified) return false
+    const editable = isEditableTarget(event.target)
+    if (editable && !modified) return false
     for (const action of this.snapshot) {
       if (action.keybind === undefined || action.disabled?.() === true) continue
       if (!matchKeybind(parseKeybind(action.keybind, this.mac), event)) continue
+      if (editable && action.ignoreInEditable === true) continue
+      if (action.preserveTextSelection === true && hasTextSelection()) continue
       event.preventDefault()
       this.trigger(action.id, 'keybind')
       return true
