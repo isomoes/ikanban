@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.9]
+
+- Added fuzzy-search workspace actions for quickly opening projects from the command palette.
+- Opened the next available session automatically after archiving the active session.
+
 ## [0.4.8]
 
 - Added customizable keyboard shortcuts with a settings interface, local persistence, and conflict-aware action registration.
