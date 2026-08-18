@@ -3,7 +3,7 @@
 import { useEffect, useSyncExternalStore, type ReactNode } from 'react'
 import clsx from 'clsx'
 import type { SessionId, SessionListState, SessionSummary } from '@deepseek-ai/dsh-client-runtime/client'
-import { IconDataOutline16, IconNewChatOutline16 } from '@isomoes/dsh-ikanban/client/ui-primitives'
+import { IconDataOutline16, IconListPenOutline16, IconNewChatOutline16 } from '@isomoes/dsh-ikanban/client/ui-primitives'
 import type {
   ConversationSessionHeaderSlotProps, ConversationSessionSlotProps,
 } from '../contract/slots.ts'
@@ -58,6 +58,7 @@ function equalBreadcrumbs(left: readonly Breadcrumb[], right: readonly Breadcrum
 function viewGlyph(view: ViewTab): ReactNode {
   if (view.id === 'chat') return <IconNewChatOutline16 size={16} />
   if (view.id === 'trajectory') return <IconDataOutline16 size={16} />
+  if (view.id === 'changes') return <IconListPenOutline16 size={16} />
   return <span className={css.viewText}>{view.label}</span>
 }
 

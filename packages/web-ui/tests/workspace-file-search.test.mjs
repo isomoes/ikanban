@@ -65,6 +65,46 @@ test('searches workspace files using relative paths and gitignore rules', async 
   }
 })
 
+test('reads tracked and untracked workspace changes as unified diffs', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'ikanban-workspace-changes-'))
+  try {
+    await exec('git', ['init', '--quiet'], { cwd: root })
+    await writeFile(join(root, 'tracked.txt'), 'before\n')
+    await exec('git', ['add', 'tracked.txt'], { cwd: root })
+    await exec('git', ['-c', 'user.name=Test', '-c', 'user.email=test@example.com', 'commit', '--quiet', '-m', 'initial'], { cwd: root })
+    await writeFile(join(root, 'tracked.txt'), 'after\n')
+    await writeFile(join(root, 'new.txt'), 'new file\n')
+
+    const { readWorkspaceChanges } = await import('../lib/clients/ui-workspace/index.js')
+    const changes = await readWorkspaceChanges(root, new AbortController().signal)
+
+    assert.equal(changes.repository, true)
+    assert.equal(changes.truncated, false)
+    assert.deepEqual(new Map(changes.files.map(file => [file.path, file.status])), new Map([
+      ['new.txt', 'untracked'],
+      ['tracked.txt', 'modified'],
+    ]))
+    assert.match(changes.files.find(file => file.path === 'new.txt').patch, /\+new file/)
+    assert.match(changes.files.find(file => file.path === 'tracked.txt').patch, /-before\n\+after/)
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+test('reports directories outside Git without failing', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'ikanban-workspace-changes-'))
+  try {
+    const { readWorkspaceChanges } = await import('../lib/clients/ui-workspace/index.js')
+    assert.deepEqual(await readWorkspaceChanges(root, new AbortController().signal), {
+      repository: false,
+      files: [],
+      truncated: false,
+    })
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
 test('fuzzy matches non-contiguous characters in workspace paths', async () => {
   const root = await mkdtemp(join(tmpdir(), 'ikanban-file-search-'))
   try {

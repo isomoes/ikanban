@@ -15,10 +15,13 @@ import type { InputTriggerServiceContract, InputTriggerSource } from '@isomoes/d
 // Type-only: pulls the locale and command plugin Context merges.
 import type {} from '@isomoes/dsh-ikanban/client/locale/client'
 import type {} from '@isomoes/dsh-ikanban/client/ui-commands/client'
+import type {} from '@isomoes/dsh-ikanban/client/ui-conversation/client'
+import type { WorkspaceChanges } from '../workspace-changes.ts'
 import type { WorkspaceBrowserInjected, WorkspacePickerInjected } from './contract/slots.ts'
 import { createWorkspaceViewStore } from './stores.ts'
 import { WorkspaceBrowser } from './WorkspaceBrowser.tsx'
 import { WorkspacePicker } from './WorkspacePicker.tsx'
+import { WorkspaceChangesView, type WorkspaceChangesViewInjected } from './WorkspaceChangesView.tsx'
 import { en, zh, type WorkspaceKey } from './locales.ts'
 import { fuzzyWorkspaceFiles } from '../file-fuzzy.ts'
 import { nextSessionAfterArchive } from '../session-navigation.ts'
@@ -105,6 +108,22 @@ export function apply(ctx: ClientContext): void {
   }), 'ui-workspace: archive action')
 
   const connection = ctx.get('connection') as ConnectionHandle
+  ctx.slots.inject('conversation.view', () => ctx.slots.register({
+    name: 'conversation.view',
+    id: 'changes',
+    order: 20,
+    locale: NS,
+    label: () => t('changes.view'),
+    inject: (sessionId: SessionId): WorkspaceChangesViewInjected => ({
+      loadChanges: async (signal) => {
+        const cwd = ctx.sessions.list.getSnapshot().byId[sessionId]?.cwd
+        if (cwd === undefined || cwd === '') throw new Error('Session has no workspace')
+        const result = await connection.rpc.call(WORKSPACE_FILE_CHANNEL, 'changes', { cwd }, signal)
+        if (!result.ok) throw new Error(result.error.message)
+        return result.value as WorkspaceChanges
+      },
+    }),
+  }, WorkspaceChangesView))
   const catalogs = new Map<string, FileCatalog>()
   const fetchCatalog = (cwd: string, refresh = false): FileCatalog => {
     const previous = catalogs.get(cwd)
