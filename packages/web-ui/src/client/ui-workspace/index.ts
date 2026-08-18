@@ -9,6 +9,7 @@ export const WORKSPACE_FILE_CHANNEL = '/ikanban.workspace-files'
 const CATALOG_LIMIT = 20_000
 
 export { fuzzyWorkspaceFiles } from './file-fuzzy.ts'
+export { nextSessionAfterArchive } from './session-navigation.ts'
 
 function gitFiles(cwd: string, signal: AbortSignal): Promise<string[]> {
   return new Promise((resolve, reject) => {

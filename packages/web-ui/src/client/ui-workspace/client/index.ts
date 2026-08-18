@@ -10,7 +10,7 @@
  */
 import type { HostObservable } from '@isomoes/dsh-ikanban/client/ui-slots'
 import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+import type { ClientContext, SessionId } from '@deepseek-ai/dsh-client-runtime/client'
 import type { InputTriggerServiceContract, InputTriggerSource } from '@isomoes/dsh-ikanban/client/ui-input-trigger/client'
 // Type-only: pulls the locale and command plugin Context merges.
 import type {} from '@isomoes/dsh-ikanban/client/locale/client'
@@ -21,6 +21,7 @@ import { WorkspaceBrowser } from './WorkspaceBrowser.tsx'
 import { WorkspacePicker } from './WorkspacePicker.tsx'
 import { en, zh, type WorkspaceKey } from './locales.ts'
 import { fuzzyWorkspaceFiles } from '../file-fuzzy.ts'
+import { nextSessionAfterArchive } from '../session-navigation.ts'
 
 export type {
   DirectoryFlowOwnerProps, DirectoryFlowSlotName, DirectoryPickingHooks, DirectoryPickingInjected,
@@ -66,6 +67,23 @@ export const inject = ['slots', 'sessions', 'workspaces', 'locale', 'connection'
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-workspace: dictionaries')
   const t = ctx.locale.bind(NS)
+  const archiveSession = async (sessionId: SessionId): Promise<void> => {
+    const before = ctx.sessions.list.getSnapshot()
+    const next = before.current === sessionId
+      ? nextSessionAfterArchive(before, ctx.workspaces.list.getSnapshot().archivedSessionIds, sessionId)
+      : undefined
+    await ctx.workspaces.archiveSession(sessionId)
+    if (next === undefined) return
+
+    // The archive projection normally clears the current selection before the
+    // request resolves. Do not override a Session the user opened meanwhile.
+    const after = ctx.sessions.list.getSnapshot()
+    if (after.current !== undefined && after.current !== sessionId) return
+    const candidate = after.byId[next]
+    const archived = ctx.workspaces.list.getSnapshot().archivedSessionIds
+    if (candidate === undefined || candidate.blank || candidate.origin === 'subagent' || archived.includes(next)) return
+    ctx.sessions.open(next)
+  }
   ctx.effect(() => ctx.commandUi.registerAction({
     id: 'session.archive',
     title: () => t('menu.archiveSession'),
@@ -82,7 +100,7 @@ export function apply(ctx: ClientContext): void {
       const current = sessions.current
       const session = current === undefined ? undefined : sessions.byId[current]
       if (current === undefined || session === undefined || session.blank || session.origin === 'subagent') return
-      await ctx.workspaces.archiveSession(current)
+      await archiveSession(current)
     },
   }), 'ui-workspace: archive action')
 
@@ -217,7 +235,7 @@ export function apply(ctx: ClientContext): void {
     insertWorkspaceBefore: async (workspaceId, beforeWorkspaceId) => {
       await ctx.workspaces.insertBefore(workspaceId, beforeWorkspaceId)
     },
-    archiveSession: async (sessionId) => { await ctx.workspaces.archiveSession(sessionId) },
+    archiveSession,
     insertSessionBefore: async (workspaceId, sessionId, beforeSessionId) => {
       await ctx.workspaces.insertSessionBefore(workspaceId, sessionId, beforeSessionId)
     },
