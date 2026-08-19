@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.11]
+
+- Updated DeepSeek Harness dependencies to `0.1.0-rc.7`.
+- Preserved development build labels across client bundle rebuilds.
+- Removed the redundant new-session button from the sidebar.
+
 ## [0.4.10]
 
 - Added a workspace changes view for reviewing project diffs directly in the conversation interface.
