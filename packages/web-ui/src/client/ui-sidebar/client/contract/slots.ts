@@ -65,7 +65,7 @@ export interface SidebarFooterActionOwnerProps {
 /**
  * Registrant-private injected share (arrives via the register inject
  * factory). The shell keeps only its own controls: starting a Session from
- * the New Session button and toggling the column.
+ * the brand mark and toggling the column.
  */
 export type SidebarRootInjected = {
   /**

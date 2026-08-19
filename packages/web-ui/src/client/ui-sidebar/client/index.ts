@@ -51,8 +51,8 @@ export function apply(ctx: ClientContext): void {
   }, 'ui-sidebar: local actions')
 
   const injectProps = (): SidebarRootInjected => ({
-    // The shell's New Session button rides the runtime's shared action
-    // (current Session Workspace, then recent Workspace).
+    // The shell's brand-mark shortcut rides the runtime's shared New Session
+    // action (current Session Workspace, then recent Workspace).
     startSession: (workspaceId) => { ctx.workspaces.startSession(workspaceId) },
     toggleSidebar: () => { ctx.layout.toggleSidebar() },
   })
