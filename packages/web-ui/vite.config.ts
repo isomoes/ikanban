@@ -65,8 +65,8 @@ function npmPackageOf(id: string): string | undefined {
   return first
 }
 
-export default defineConfig(() => {
-  const development = process.env.IKANBAN_DEV === '1'
+export default defineConfig(({ mode }) => {
+  const development = process.env.IKANBAN_DEV === '1' || mode === 'development'
   return {
     root: src('./'),
     plugins: [rejectStandaloneServe(), identifyDevelopmentBuild(development), react()],

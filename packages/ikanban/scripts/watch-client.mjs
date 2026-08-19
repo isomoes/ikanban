@@ -15,6 +15,19 @@ export function markDevelopmentBuild(environment) {
   environment.IKANBAN_DEV = '1'
 }
 
+// Keep the development marker in the programmatic build options as well as the
+// process environment. Watch-mode config reloads can otherwise resolve the
+// package config without the launch-time environment and replace `dev` with the
+// published version after the first source change.
+export const developmentDefines = Object.freeze({ __IKANBAN_DEV__: 'true' })
+
+export function asDevelopmentBuild(options) {
+  return {
+    ...options,
+    define: { ...options.define, ...developmentDefines },
+  }
+}
+
 export function createCoalescedRunner(run) {
   let running
   let pending = false
@@ -145,7 +158,7 @@ async function startClientWatcher() {
     )
     console.log(`iKanban client rebuilt: @isomoes/dsh-ikanban/client/${id}`)
   })
-  return build({
+  return build(asDevelopmentBuild({
     cwd: webRoot,
     watch: true,
     hooks: {
@@ -156,15 +169,16 @@ async function startClientWatcher() {
         await copyClient(id)
       },
     },
-  })
+  }))
 }
 
 async function startFrontendWatcher() {
   const { build } = await import(pathToFileURL(webRequire.resolve('vite')).href)
-  const watcher = await build({
+  const watcher = await build(asDevelopmentBuild({
     configFile: resolve(webRoot, 'vite.config.ts'),
+    mode: 'development',
     build: { watch: {} },
-  })
+  }))
   if (!('on' in watcher)) throw new Error('Vite did not return a build watcher')
   const copyFrontend = createCoalescedRunner(async () => {
     await copyWithEntryLast(resolve(webRoot, 'dist'), resolve(packageRoot, 'lib/web'), 'index.html')

@@ -4,15 +4,24 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import {
-  createCoalescedRunner, createKeyedCoalescedRunner, markDevelopmentBuild, startWatchers, watchFiles,
+  asDevelopmentBuild, createCoalescedRunner, createKeyedCoalescedRunner, developmentDefines,
+  markDevelopmentBuild, startWatchers, watchFiles,
 } from '../scripts/watch-client.mjs'
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
-test('marks watcher builds as development', () => {
+test('marks watcher builds and config reloads as development', () => {
   const environment = {}
   markDevelopmentBuild(environment)
   assert.equal(environment.IKANBAN_DEV, '1')
+  assert.deepEqual(developmentDefines, { __IKANBAN_DEV__: 'true' })
+  assert.deepEqual(asDevelopmentBuild({
+    watch: true,
+    define: { __IKANBAN_DEV__: 'false', OTHER: 'value' },
+  }), {
+    watch: true,
+    define: { __IKANBAN_DEV__: 'true', OTHER: 'value' },
+  })
 })
 
 async function waitFor(predicate, message) {
