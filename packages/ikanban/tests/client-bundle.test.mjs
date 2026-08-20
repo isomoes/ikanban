@@ -18,6 +18,7 @@ test('publishes every local client as an isolated virtual package', async () => 
   assert.equal(entries.length, 35)
   assert.equal(manifest.dsh.client, undefined)
   assert.match(composition, /name: '@isomoes\/dsh-ikanban\/client\/ui-timeline'/)
+  assert.match(composition, /id: typert-loader[\s\S]*packages:[\s\S]*'@deepseek-ai\/dsh-file-reference'[\s\S]*'@deepseek-ai\/dsh-session-reference'/)
 
   for (const entry of entries) {
     const { id, virtualId } = entry

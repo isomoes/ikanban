@@ -13,6 +13,17 @@
 
 # ── surface-specific values the base deliberately omits ─────────────────────
 
+# The two reference implementations are mounted through package-owned adapter
+# subpaths, so their contract packages are not visible as Loader entry names.
+# Register those nested Typert artifacts explicitly; otherwise a clean
+# published-profile startup has no /api/fileReferences or session-reference
+# endpoints even though the browser plugins are present.
+- id: typert-loader
+  config:
+    packages:
+      - '@deepseek-ai/dsh-file-reference'
+      - '@deepseek-ai/dsh-session-reference'
+
 - id: system-prompt
   config:
     persona: >-
