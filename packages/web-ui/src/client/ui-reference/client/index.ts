@@ -11,7 +11,7 @@ import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import type {} from '@isomoes/dsh-ikanban/client/locale/client'
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 import type {
-  ClientSessionContext, InputTriggerServiceContract, InputTriggerSource,
+  ClientSessionContext, InputTriggerCandidate, InputTriggerServiceContract, InputTriggerSource, PickOutcome,
 } from '@isomoes/dsh-ikanban/client/ui-input-trigger/client'
 import { formatFileMention } from '@deepseek-ai/dsh-file-reference/grammar'
 import type { FileReferenceCandidate } from '@deepseek-ai/dsh-file-reference/types'
@@ -23,70 +23,105 @@ export const inject = [
   'inputTriggers', 'locale', 'remote', 'remote.fileReferences', 'remote.sessionReferenceResolver',
 ]
 
+const FILE_SOURCE_NAME = 'reference'
+const SESSION_SOURCE_NAME = 'reference-sessions'
+
+/** Delay applied only to session lookup so fast typing does not issue one Host scan per key. */
+export const SESSION_REFERENCE_DEBOUNCE_MS = 150
+
+const referenceCodec = {
+  clipboardText: (ref: string) => ref,
+  serialize: (ref: string) => Promise.resolve(ref),
+}
+
 /**
- * Register the combined `@file` / `@session` source.
+ * Register independent file and session `@` sources. The menu settles each
+ * source separately, so fast filesystem results no longer wait for session
+ * title discovery.
  * @param ctx - client root context.
  */
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-reference: dictionaries')
   const t = ctx.locale.bind(NS)
-  const source: InputTriggerSource = {
+  const fileSource: InputTriggerSource = {
     trigger: '@',
-    name: 'reference',
+    name: FILE_SOURCE_NAME,
+    order: 0,
     showGroupTitle: false,
     async candidates(session: ClientSessionContext, { query, quoted, signal }) {
-      const files = ctx.remote.fileReferences.list(session.sessionId, query, signal).then(
-        result => result.ok ? result.value : [],
-        () => [],
-      )
-      const sessions = quoted === true
-        ? Promise.resolve([] as SessionReferenceMentionCandidate[])
-        : ctx.remote.sessionReferenceResolver.candidates(session.sessionId, query, signal).then(
-          result => result.ok ? result.value : [],
-          () => [],
-        )
-      const [fileItems, sessionItems] = await Promise.all([files, sessions])
-      if (signal.aborted) return []
-      return [
-        ...fileItems.flatMap(candidate => fileCandidate(candidate, quoted === true, t)),
-        ...sessionItems.map(candidate => sessionCandidate(candidate, t)),
-      ]
+      const result = await ctx.remote.fileReferences.list(session.sessionId, query, signal).catch(() => undefined)
+      if (result?.ok !== true || signal.aborted) return []
+      return result.value.flatMap(candidate => fileCandidate(candidate, quoted === true, t))
     },
-    onPick({ candidate }) {
-      const value = parseCandidate(candidate.value)
-      if (value?.kind === 'file') {
-        return value.fileKind === 'directory'
-          ? { text: value.mention, continue: true }
-          : {
-            insert: {
-              source: 'reference',
-              ref: value.mention,
-              label: value.label,
-              appearance: 'file',
-              clipboardText: value.mention,
-            },
-          }
-      }
-      if (value?.kind === 'session') {
-        return {
-          insert: {
-            source: 'reference',
-            ref: value.mention,
-            label: value.label,
-            appearance: 'session',
-            clipboardText: value.mention,
-          },
-        }
-      }
-      return undefined
+    onPick: ({ candidate }) => pickReference(candidate, FILE_SOURCE_NAME),
+    codec: referenceCodec,
+  }
+  const sessionSource: InputTriggerSource = {
+    trigger: '@',
+    name: SESSION_SOURCE_NAME,
+    order: 10,
+    showGroupTitle: false,
+    async candidates(session: ClientSessionContext, { query, quoted, signal }) {
+      if (quoted === true) return []
+      await waitForSessionDebounce(signal)
+      const result = await ctx.remote.sessionReferenceResolver.candidates(session.sessionId, query, signal).catch(() => undefined)
+      if (result?.ok !== true || signal.aborted) return []
+      return result.value.map(candidate => sessionCandidate(candidate, t))
     },
-    codec: {
-      clipboardText: ref => ref,
-      serialize: ref => Promise.resolve(ref),
-    },
+    onPick: ({ candidate }) => pickReference(candidate, SESSION_SOURCE_NAME),
+    codec: referenceCodec,
   }
   const inputTriggers = ctx.get('inputTriggers') as InputTriggerServiceContract
-  ctx.effect(() => inputTriggers.registerSource(source), 'ui-reference: @ source')
+  ctx.effect(() => inputTriggers.registerSource(fileSource), 'ui-reference: @ file source')
+  ctx.effect(() => inputTriggers.registerSource(sessionSource), 'ui-reference: @ session source')
+}
+
+function waitForSessionDebounce(signal: AbortSignal): Promise<void> {
+  signal.throwIfAborted()
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      signal.removeEventListener('abort', onAbort)
+      resolve()
+    }, SESSION_REFERENCE_DEBOUNCE_MS)
+    function onAbort(): void {
+      clearTimeout(timer)
+      try {
+        signal.throwIfAborted()
+      } catch (error) {
+        reject(error)
+      }
+    }
+    signal.addEventListener('abort', onAbort, { once: true })
+  })
+}
+
+function pickReference(candidate: InputTriggerCandidate, source: string): PickOutcome {
+  const value = parseCandidate(candidate.value)
+  if (value?.kind === 'file') {
+    return value.fileKind === 'directory'
+      ? { text: value.mention, continue: true }
+      : {
+        insert: {
+          source,
+          ref: value.mention,
+          label: value.label,
+          appearance: 'file',
+          clipboardText: value.mention,
+        },
+      }
+  }
+  if (value?.kind === 'session') {
+    return {
+      insert: {
+        source,
+        ref: value.mention,
+        label: value.label,
+        appearance: 'session',
+        clipboardText: value.mention,
+      },
+    }
+  }
+  return undefined
 }
 
 type Translate = (key: ReferenceKey) => string
