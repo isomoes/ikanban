@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.4.13]
+
+- Fixed file and session `@` references in clean published-profile startups by explicitly registering their remote API manifests.
+
 ## [0.4.12]
 
 - Migrated the complete owned browser surface and runtime dependency family to DeepSeek Harness `0.1.0-rc.8`.
