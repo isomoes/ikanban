@@ -2,10 +2,17 @@ packages:
   - packages/*
 
 allowBuilds:
+  # Required by DSH's local subprocess implementation and native PTY helper.
+  '@deepseek-ai/dsh-subprocess-local': true
+  node-pty: true
+  # This package's preinstall script is a no-op.
+  '@google/genai': false
   # Required by Vite to install its platform-specific build binary.
   esbuild: true
   # Required by DSH's native directory picker; koffi installs its N-API binary.
   koffi: true
+  # This postinstall script only emits dependency-version guidance.
+  protobufjs: false
 
 # This project intentionally tracks the newest DSH prerelease family.
 minimumReleaseAgeExclude:
