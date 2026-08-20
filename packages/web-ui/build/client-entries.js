@@ -10,6 +10,8 @@ const local = id => `${VIRTUAL_PREFIX}${id}`
 const CLIENT_INJECTS = {
   'locale': ['@deepseek-ai/dsh-client-connection', '@deepseek-ai/dsh-client-runtime', local('ui-settings'), '@deepseek-ai/dsh-api-remotes'],
   'ui-agent-preset': ['@deepseek-ai/dsh-client-connection', local('locale'), '@deepseek-ai/dsh-client-runtime', local('ui-conversation'), local('ui-settings'), '@deepseek-ai/dsh-api-remotes'],
+  'ui-attachment': [local('ui-conversation')],
+  'ui-brand-official': ['@deepseek-ai/dsh-client-runtime', local('ui-conversation'), local('ui-sidebar')],
   'ui-commands': ['@deepseek-ai/dsh-api-remotes', '@deepseek-ai/dsh-client-runtime', local('locale'), local('ui-input-trigger'), local('ui-conversation'), local('ui-layout')],
   'ui-conversation': ['@deepseek-ai/dsh-client-connection', local('locale'), '@deepseek-ai/dsh-client-runtime', local('ui-settings'), '@deepseek-ai/dsh-api-remotes', local('ui-layout')],
   'ui-cordis': ['@deepseek-ai/dsh-client-runtime', '@deepseek-ai/dsh-client-connection', '@deepseek-ai/dsh-cordis-client-runner', '@deepseek-ai/dsh-api-remotes', local('locale'), local('ui-input-trigger'), local('ui-tool'), local('ui-sidebar')],
@@ -24,6 +26,8 @@ const CLIENT_INJECTS = {
   'ui-model-selection': [local('locale'), '@deepseek-ai/dsh-client-runtime', local('ui-commands'), '@deepseek-ai/dsh-api-remotes'],
   'ui-permission-presets': ['@deepseek-ai/dsh-client-connection', local('locale'), '@deepseek-ai/dsh-client-runtime', local('ui-commands'), '@deepseek-ai/dsh-api-remotes', local('ui-settings')],
   'ui-plan': ['@deepseek-ai/dsh-api-remotes', local('locale'), local('ui-conversation')],
+  'ui-reference': ['@deepseek-ai/dsh-client-runtime', '@deepseek-ai/dsh-api-remotes', local('locale'), local('ui-input-trigger')],
+  'ui-renderer': ['@deepseek-ai/dsh-client-runtime'],
   'ui-settings': ['@deepseek-ai/dsh-client-connection', '@deepseek-ai/dsh-client-runtime', '@deepseek-ai/dsh-api-remotes'],
   'ui-settings-general': ['@deepseek-ai/dsh-client-runtime', local('ui-settings'), local('locale'), '@deepseek-ai/dsh-client-connection', '@deepseek-ai/dsh-api-remotes', local('ui-sidebar'), local('ui-commands')],
   'ui-settings-models': ['@deepseek-ai/dsh-client-runtime', local('ui-settings'), local('locale'), '@deepseek-ai/dsh-api-remotes'],
@@ -41,7 +45,7 @@ const CLIENT_INJECTS = {
   'ui-workspace': ['@deepseek-ai/dsh-client-connection', local('locale'), '@deepseek-ai/dsh-client-runtime', local('ui-conversation'), local('ui-input-trigger'), local('ui-sidebar')],
 }
 
-const IMMEDIATE_CLIENTS = new Set(['locale', 'ui-theme'])
+const IMMEDIATE_CLIENTS = new Set(['locale', 'ui-renderer', 'ui-theme'])
 
 async function exists(path) {
   try {

@@ -1,7 +1,8 @@
 /**
  * Web application entry: thin bootstrap over the shell library. Everything —
- * loader holding, module-table seeding, AppRoot gate, plugin assembly — lives
- * in @isomoes/dsh-ikanban/client/web; this file only finds the mount point.
+ * module-table seeding, the boot page, and the UI-renderer handoff — lives
+ * in @isomoes/dsh-ikanban/client/web; this file only remaps the fork graph and
+ * finds the mount point.
  */
 import { AppWebEntry } from '@isomoes/dsh-ikanban/client/web'
 import { remapForkedClientInjects } from './client-id-aliases.ts'

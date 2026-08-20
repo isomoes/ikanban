@@ -15,6 +15,7 @@ export const zh = {
   'palette.list.aria': '界面操作',
   'palette.empty': '无匹配操作',
   'palette.close': '关闭命令面板',
+  'notice.imagesUnsupported': '/{command} 不接受图片附件，请先移除图片',
 } satisfies Record<string, string>
 
 /** The command namespace key union. */
@@ -35,4 +36,5 @@ export const en = {
   'palette.list.aria': 'Interface actions',
   'palette.empty': 'No matching actions',
   'palette.close': 'Close command palette',
+  'notice.imagesUnsupported': '/{command} does not accept image attachments; remove them first',
 } satisfies Record<CommandKey, string>

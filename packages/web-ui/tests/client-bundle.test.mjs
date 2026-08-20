@@ -9,7 +9,7 @@ const entries = await discoverClientEntries({ packageRoot: fileURLToPath(package
 const packageManifest = JSON.parse(await readFile(new URL('package.json', packageRoot), 'utf8'))
 
 test('each forked client entry emits an isolated virtual package', async () => {
-  assert.equal(entries.length, 31)
+  assert.equal(entries.length, 35)
 
   for (const entry of entries) {
     const { id, stockId, virtualId } = entry
@@ -59,6 +59,10 @@ test('each forked client entry emits an isolated virtual package', async () => {
     }
     if (id === 'ui-sidebar') {
       assert.match(bundle, /https:\/\/github\.com\/isomoes\/ikanban/)
+    }
+    if (id === 'ui-renderer') {
+      assert.match(bundle, /iKanban/)
+      assert.doesNotMatch(bundle, /process\.env\.DSH_CLIENT_TITLE/)
     }
     if (id === 'ui-theme') {
       assert.match(bundle, /github-dark-colorblind/)

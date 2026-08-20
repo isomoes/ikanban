@@ -1,13 +1,20 @@
 import type { IconProps } from './icons/props.ts'
 
+/** Display options for the iKanban wordmark. */
+export interface BrandWordmarkProps extends IconProps {
+  /** Whether to include the leading iKanban mark; defaults to true. */
+  includeMark?: boolean | undefined
+}
+
 /** Render the iKanban mark and product name as a single wordmark. */
-export function BrandWordmark({ size = 24, className }: IconProps) {
+export function BrandWordmark({ size = 24, className, includeMark = true }: BrandWordmarkProps) {
+  const width = includeMark ? 116 : 84
   return (
     <svg
-      width={(size * 116) / 24}
+      width={(size * width) / 24}
       height={size}
       className={className}
-      viewBox="0 0 116 24"
+      viewBox={includeMark ? '0 0 116 24' : '32 0 84 24'}
       fill="none"
       aria-hidden="true"
     >

@@ -48,7 +48,7 @@ export type { AgentPresetOption, AgentPresetSettingsState } from './settings-sto
 export { AGENT_PRESET_SETTINGS_NS, writeDefaultPreset } from './settings-store.ts'
 
 /** Required services (cordis fiber inject). */
-export const inject = ['slots', 'locale', 'connection', 'remote', 'commandUi']
+export const inject = ['slots', 'locale', 'connection', 'remote', 'settingsScope', 'commandUi']
 
 /**
  * Mount the General-settings row.
@@ -56,7 +56,7 @@ export const inject = ['slots', 'locale', 'connection', 'remote', 'commandUi']
  */
 export function apply(ctx: ClientContext): void {
   const { api } = ctx.get('connection') as ConnectionHandle
-  const controller = new AgentPresetSettingsController(api)
+  const controller = new AgentPresetSettingsController(api, ctx.settingsScope.describe())
   // One roster, four surfaces. The chip is registered in a later scope, so it
   // subscribes here rather than being reached from this one.
   const rosterReaders = new Set<() => void>()

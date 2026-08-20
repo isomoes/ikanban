@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import type { JobView } from '@deepseek-ai/dsh-client-runtime/client'
-import { IconChevronDownOutline14, StateDot, type StateDotState } from '@isomoes/dsh-ikanban/client/ui-primitives'
+import {
+  IconChevronDownOutline14, StateDot, useDismissOnOutsidePointer, type StateDotState,
+} from '@isomoes/dsh-ikanban/client/ui-primitives'
 import type { PropsLocale, PropsRuntime, TranslateNS } from '@isomoes/dsh-ikanban/client/ui-slots'
 import { NS } from './locales.ts'
 import type {} from '@isomoes/dsh-ikanban/client/ui-conversation/client'
@@ -101,16 +103,7 @@ export function JobListAction({ sessionId, useSessions, t }: JobListActionProps)
   const rows = useMemo(() => ordered(jobs), [jobs])
   const liveCount = useMemo(() => jobs.filter(isLive).length, [jobs])
 
-  useEffect(() => {
-    if (!open) return
-    const closeOutside = (event: PointerEvent): void => {
-      if (event.target instanceof Node && !rootRef.current?.contains(event.target)) {
-        setOpen(false)
-      }
-    }
-    document.addEventListener('pointerdown', closeOutside)
-    return () => { document.removeEventListener('pointerdown', closeOutside) }
-  }, [open])
+  useDismissOnOutsidePointer(rootRef, open, setOpen)
 
   // The clock only runs while an open list is showing something that moves.
   useEffect(() => {

@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+- Migrated the complete owned browser surface and runtime dependency family to DeepSeek Harness `0.1.0-rc.8`.
+- Adopted the rc.8 module-loader facade and dynamic UI renderer, attachment, branding, and unified file/session reference plugins.
+- Added command error banners, file-open failure recovery, a floating feedback-note editor, user-controlled workflow disclosures, and model-picker bulk selection.
+- Preserved iKanban branding, keyboard shortcuts, timeline, workspace actions, custom themes, and release labels across the source refresh.
+
 ## [0.4.11]
 
 - Updated DeepSeek Harness dependencies to `0.1.0-rc.7`.

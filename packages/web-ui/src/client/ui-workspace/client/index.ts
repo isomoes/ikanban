@@ -11,8 +11,7 @@
 import type { HostObservable } from '@isomoes/dsh-ikanban/client/ui-slots'
 import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
 import type { ClientContext, SessionId } from '@deepseek-ai/dsh-client-runtime/client'
-import type { InputTriggerServiceContract, InputTriggerSource } from '@isomoes/dsh-ikanban/client/ui-input-trigger/client'
-// Type-only: pulls the locale and command plugin Context merges.
+// Type-only: pulls the owned locale, command, and conversation Context merges.
 import type {} from '@isomoes/dsh-ikanban/client/locale/client'
 import type {} from '@isomoes/dsh-ikanban/client/ui-commands/client'
 import type {} from '@isomoes/dsh-ikanban/client/ui-conversation/client'
@@ -23,7 +22,6 @@ import { WorkspaceBrowser } from './WorkspaceBrowser.tsx'
 import { WorkspacePicker } from './WorkspacePicker.tsx'
 import { WorkspaceChangesView, type WorkspaceChangesViewInjected } from './WorkspaceChangesView.tsx'
 import { en, zh, type WorkspaceKey } from './locales.ts'
-import { fuzzyWorkspaceFiles } from '../file-fuzzy.ts'
 import { nextSessionAfterArchive } from '../session-navigation.ts'
 
 export type {
@@ -42,14 +40,6 @@ declare module '@isomoes/dsh-ikanban/client/ui-slots' {
 /** Dictionary namespace owned by this plugin. */
 const NS = 'workspace'
 const WORKSPACE_FILE_CHANNEL = '/ikanban.workspace-files'
-const FILE_CATALOG_TTL_MS = 5_000
-
-interface FileCatalog {
-  readonly promise: Promise<readonly string[]>
-  readonly abort: AbortController
-  settled?: readonly string[]
-  refreshedAt?: number
-}
 
 /**
  * Required services (cordis fiber inject). The target slots are declared by
@@ -59,7 +49,7 @@ interface FileCatalog {
  * provides a waitable service. apply therefore depends on each slot
  * declaration through `slots.inject()` instead of assuming order.
  */
-export const inject = ['slots', 'sessions', 'workspaces', 'locale', 'connection', 'inputTriggers', 'commandUi']
+export const inject = ['slots', 'sessions', 'workspaces', 'locale', 'connection', 'commandUi']
 
 /**
  * Register the browser and picker once their slot declarations are on the
@@ -68,6 +58,8 @@ export const inject = ['slots', 'sessions', 'workspaces', 'locale', 'connection'
  * @param ctx - client root context.
  */
 export function apply(ctx: ClientContext): void {
+  const connection = ctx.get('connection') as ConnectionHandle
+  const hostDescription = connection.hostDescription
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-workspace: dictionaries')
   const t = ctx.locale.bind(NS)
   const archiveSession = async (sessionId: SessionId): Promise<void> => {
@@ -107,7 +99,6 @@ export function apply(ctx: ClientContext): void {
     },
   }), 'ui-workspace: archive action')
 
-  const connection = ctx.get('connection') as ConnectionHandle
   ctx.slots.inject('conversation.view', () => ctx.slots.register({
     name: 'conversation.view',
     id: 'changes',
@@ -124,78 +115,10 @@ export function apply(ctx: ClientContext): void {
       },
     }),
   }, WorkspaceChangesView))
-  const catalogs = new Map<string, FileCatalog>()
-  const fetchCatalog = (cwd: string, refresh = false): FileCatalog => {
-    const previous = catalogs.get(cwd)
-    if (previous !== undefined && (!refresh || previous.settled === undefined)) return previous
-    const abort = new AbortController()
-    const promise = connection.rpc.call(WORKSPACE_FILE_CHANNEL, 'search', { cwd, query: '' }, abort.signal).then((result) => {
-      if (!result.ok) throw new Error(result.error.message)
-      if (!Array.isArray(result.value) || !result.value.every(path => typeof path === 'string')) {
-        throw new Error('Invalid workspace file catalog')
-      }
-      return result.value
-    })
-    const entry: FileCatalog = { promise, abort }
-    catalogs.set(cwd, entry)
-    promise.then(
-      (files) => {
-        entry.settled = files
-        entry.refreshedAt = Date.now()
-      },
-      () => {
-        if (catalogs.get(cwd) !== entry) return
-        if (previous?.settled !== undefined) {
-          previous.refreshedAt = Date.now()
-          catalogs.set(cwd, previous)
-        } else {
-          catalogs.delete(cwd)
-        }
-      },
-    )
-    return entry
-  }
-  const clearCatalogs = (): void => {
-    for (const entry of catalogs.values()) entry.abort.abort()
-    catalogs.clear()
-  }
-  const fileSource: InputTriggerSource = {
-    trigger: '@',
-    name: 'file',
-    order: -10,
-    async candidates(session, { query, signal }) {
-      const cwd = ctx.sessions.list.getSnapshot().byId[session.sessionId]?.cwd
-      if (cwd === undefined || cwd === '') return []
-      const cached = catalogs.get(cwd)
-      let files: readonly string[]
-      if (cached?.settled !== undefined) {
-        files = cached.settled
-        if (Date.now() - (cached.refreshedAt ?? 0) >= FILE_CATALOG_TTL_MS) {
-          void fetchCatalog(cwd, true).promise.catch(() => {})
-        }
-      } else {
-        files = await fetchCatalog(cwd).promise
-      }
-      if (signal.aborted) return []
-      return fuzzyWorkspaceFiles(files, query).map(path => ({ name: path }))
-    },
-    warm(session) {
-      const cwd = ctx.sessions.list.getSnapshot().byId[session.sessionId]?.cwd
-      if (cwd !== undefined && cwd !== '') void fetchCatalog(cwd).promise.catch(() => {})
-    },
-    onPick({ candidate }) {
-      return { text: `@${candidate.name} ` }
-    },
-  }
-  const inputTriggers = ctx.get('inputTriggers') as InputTriggerServiceContract
-  ctx.on('connection/reset', clearCatalogs)
-  ctx.effect(() => {
-    const unregister = inputTriggers.registerSource(fileSource)
-    return () => {
-      unregister()
-      clearCatalogs()
-    }
-  }, 'ui-workspace: @ file source')
+  // rc.8's ui-reference owns the unified @ source (files and sessions).
+  // Keep this package from registering a second local file provider, which
+  // would duplicate candidates while preserving file autocomplete through
+  // that reference contract.
 
   const searchSessions: WorkspaceBrowserInjected['searchSessions'] = async (query, signal) => {
     const result = await ctx.sessions.search(query, signal)
@@ -259,7 +182,7 @@ export function apply(ctx: ClientContext): void {
       await ctx.workspaces.insertSessionBefore(workspaceId, sessionId, beforeSessionId)
     },
     createWorkspace: input => ctx.workspaces.create(input),
-    hooks: { directoryFlow: browserFlowSource },
+    hooks: { directoryFlow: browserFlowSource, hostDescription },
   })
   const pickerInjected = (): WorkspacePickerInjected => ({
     createWorkspace: input => ctx.workspaces.create(input),

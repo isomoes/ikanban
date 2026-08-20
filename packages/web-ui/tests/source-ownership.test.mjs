@@ -4,6 +4,12 @@ import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { discoverClientEntries } from '../build/client-entries.js'
 
+test('pins the reviewed rc.8 source baseline', async () => {
+  const provenance = await readFile(new URL('../UPSTREAM.md', import.meta.url), 'utf8')
+  assert.match(provenance, /dsh-v0\.1\.0-rc\.8/)
+  assert.match(provenance, /141eb6fef83422698aef7a981029e843e8161534/)
+})
+
 test('discovers owned client entries', async () => {
   const entries = await discoverClientEntries({
     packageRoot: fileURLToPath(new URL('../', import.meta.url)),
@@ -30,8 +36,9 @@ test('owns the complete browser source surface', async () => {
   const sources = [
     '../src/main.ts',
     '../src/client/modules/client/index.ts',
-    '../src/client/web/AppRoot.tsx',
-    '../src/client/web/AppRoot.module.css',
+    '../src/client/web/boot.ts',
+    '../src/client/web/boot-page.ts',
+    '../src/client/ui-renderer/client/app.tsx',
     '../src/client/ui-directory-picker-browse/client/DirectoryBrowser.tsx',
     '../src/client/ui-directory-picker-native/client/index.ts',
     '../src/extensions/ui-cordis/client/CordisPanel.tsx',
@@ -48,10 +55,7 @@ test('bridges every published infrastructure import to an owned singleton', asyn
   ])
   const aliases = [
     ['@deepseek-ai/dsh-client-ui-slots', '@isomoes/dsh-ikanban/client/ui-slots', 'UiSlots'],
-    ['@deepseek-ai/dsh-client-web-react', '@isomoes/dsh-ikanban/client/web-react', 'WebReact'],
     ['@deepseek-ai/dsh-client-ui-primitives', '@isomoes/dsh-ikanban/client/ui-primitives', 'UiPrimitives'],
-    ['@deepseek-ai/dsh-client-ui-attachment', '@isomoes/dsh-ikanban/client/ui-attachment', 'UiAttachment'],
-    ['@deepseek-ai/dsh-client-schema-form', '@isomoes/dsh-ikanban/client/schema-form', 'SchemaForm'],
   ]
   for (const [legacy, owned, binding] of aliases) {
     assert.ok(platform.includes(`'${legacy}': '${owned}'`), legacy)
@@ -61,10 +65,11 @@ test('bridges every published infrastructure import to an owned singleton', asyn
   }
 })
 
-test('loads theme styles from the owned source tree', async () => {
-  const css = await readFile(new URL('../src/client/web/base.css', import.meta.url), 'utf8')
-  assert.match(css, /@import '\.\.\/ui-theme\/styles\/base\.css'/)
-  assert.doesNotMatch(css, /@deepseek-ai\/dsh-client-ui-theme/)
+test('loads theme styles from the owned dynamic theme plugin', async () => {
+  const styles = await readFile(new URL('../src/client/ui-theme/client/styles.ts', import.meta.url), 'utf8')
+  assert.match(styles, /import base from '\.\.\/styles\/base\.css\?inline'/)
+  assert.match(styles, /@isomoes\/dsh-ikanban\/client\/ui-theme/)
+  assert.doesNotMatch(styles, /@deepseek-ai\/dsh-client-ui-theme/)
 })
 
 test('allows full-width trigger labels when no description is present', async () => {

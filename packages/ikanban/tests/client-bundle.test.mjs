@@ -15,7 +15,7 @@ const manifest = JSON.parse(await readFile(new URL('package.json', packageRoot),
 const composition = await readFile(new URL('cordis.patch.yml', packageRoot), 'utf8')
 
 test('publishes every local client as an isolated virtual package', async () => {
-  assert.equal(entries.length, 31)
+  assert.equal(entries.length, 35)
   assert.equal(manifest.dsh.client, undefined)
   assert.match(composition, /name: '@isomoes\/dsh-ikanban\/client\/ui-timeline'/)
 
@@ -43,7 +43,7 @@ test('publishes every local client as an isolated virtual package', async () => 
 })
 
 test('loads every host entry with public runtime dependencies', async () => {
-  assert.equal(manifest.dependencies['@deepseek-ai/dsh-settings'], '^0.1.0-rc.7')
+  assert.equal(manifest.dependencies['@deepseek-ai/dsh-settings'], '^0.1.0-rc.8')
   assert.equal(manifest.dependencies['@deepseek-ai/schemastery'], '^3.18.1')
   assert.equal(manifest.dependencies['@isomoes/dsh-project-mcp'], undefined)
   await import(new URL('lib/project-mcp.js', packageRoot))
@@ -65,6 +65,8 @@ test('resolves virtual clients and their manifests from an install-like anchor',
     assert.equal(resolve('@isomoes/dsh-ikanban'), join(packagePath, 'lib', 'index.js'))
     assert.equal(resolve('@isomoes/dsh-ikanban/package.json'), join(packagePath, 'package.json'))
     assert.equal(resolve('@isomoes/dsh-ikanban/project-mcp'), join(packagePath, 'lib', 'project-mcp.js'))
+    assert.equal(resolve('@isomoes/dsh-ikanban/file-reference-local'), join(packagePath, 'lib', 'file-reference-local.js'))
+    assert.equal(resolve('@isomoes/dsh-ikanban/session-reference'), join(packagePath, 'lib', 'session-reference.js'))
     assert.equal(resolve('@isomoes/dsh-ikanban/ikanban-preset'), join(packagePath, 'lib', 'ikanban-preset.js'))
     assert.equal(resolve('@isomoes/dsh-ikanban/project-mcp.preset.yml'), join(packagePath, 'project-mcp.preset.yml'))
     for (const { id, virtualId } of entries) {

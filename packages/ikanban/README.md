@@ -2,11 +2,7 @@
 
 Keyboard-oriented iKanban web application bundle for DeepSeek Harness.
 
-The host runtime uses the published DSH prerelease (`0.1.0-rc.6`) backends but
-owns its Web startup and runtime glue. The full browser surface is locally owned as TS/TSX/CSS in the private sibling
-`packages/web-ui` package. The public package ships its Vite shell and
-30 isolated virtual client bundles, so a DSH profile installs only
-`@isomoes/dsh-ikanban`.
+The host runtime uses the published DSH `0.1.0-rc.8` backends but owns its Web startup and runtime glue. The full browser surface is locally owned as TS/TSX/CSS in the private sibling `packages/web-ui` package. The public package ships its Vite shell and 35 isolated virtual client bundles, so a DSH profile installs only `@isomoes/dsh-ikanban`.
 
 ## Usage
 
@@ -118,8 +114,8 @@ copied to this package's `lib/clients/<id>` path; DSH detects that bundle write
 and emits HMR for `@isomoes/dsh-ikanban/client/<id>` only.
 
 The Vite app context lives at the `web-ui` package root. Shared browser platform
-code lives under `src/client`, including `web`, `web-react`, `ui-slots`,
-`ui-primitives`, `ui-attachment`, and `schema-form`. Vite rebuilds this code into
+code lives under `src/client`, including `web`, `ui-renderer`, `ui-slots`,
+`ui-primitives`, dynamic `ui-attachment`, `ui-reference`, and the settings schema service. Vite rebuilds this code into
 the local dist and copies it to `lib/web`; reload the browser after a shell build. A
 production `pnpm build` always rebuilds both artifact families.
 

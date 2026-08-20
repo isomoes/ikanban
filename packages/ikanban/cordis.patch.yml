@@ -75,6 +75,13 @@
         writeEveryEvents: 200
         writeIntervalMs: 5000
 
+    # Canonical @session and @file reference resolution for the composer.
+    - id: session-reference
+      name: '@isomoes/dsh-ikanban/session-reference'
+
+    - id: file-reference-local
+      name: '@isomoes/dsh-ikanban/file-reference-local'
+
     # Whole-log turn/step counts for the chat stats strip (the sessionStats
     # projection key); the projection registry itself is a base-layer row.
     - id: session-stats
@@ -175,6 +182,10 @@
     - id: ui-layout
       name: '@isomoes/dsh-ikanban/client/ui-layout'
 
+    # Dynamic React application owner introduced by the rc.8 boot protocol.
+    - id: ui-renderer
+      name: '@isomoes/dsh-ikanban/client/ui-renderer'
+
     - id: ui-sidebar
       name: '@isomoes/dsh-ikanban/client/ui-sidebar'
 
@@ -192,6 +203,14 @@
 
     - id: ui-conversation
       name: '@isomoes/dsh-ikanban/client/ui-conversation'
+
+    # iKanban-owned occupants for the generic sidebar and conversation brand slots.
+    - id: ui-brand-official
+      name: '@isomoes/dsh-ikanban/client/ui-brand-official'
+
+    # Composer attachment rail and historical message images are dynamic in rc.8.
+    - id: ui-attachment
+      name: '@isomoes/dsh-ikanban/client/ui-attachment'
 
     # Tool call tree, generic fallback, and keyed business Tool views.
     - id: ui-tool
@@ -231,6 +250,10 @@
 
     - id: ui-subagent
       name: '@isomoes/dsh-ikanban/client/ui-subagent'
+
+    # Unified file/session @ reference source; replaces duplicate plain-text sources.
+    - id: ui-reference
+      name: '@isomoes/dsh-ikanban/client/ui-reference'
 
     # Background jobs: the session-header list over the jobsBySession mirror.
     - id: ui-jobs

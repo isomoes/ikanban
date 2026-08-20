@@ -1,24 +1,22 @@
 /**
- * Package-owned invariant companion for `@isomoes/dsh-ikanban/client/schema-form`.
- * @module @isomoes/dsh-ikanban/client/schema-form/invariant
+ * Package-owned invariant companion for `@isomoes/dsh-ikanban/client/ui-brand-official`.
+ * @module @isomoes/dsh-ikanban/client/ui-brand-official/invariant
  */
 
 /* jscpd:ignore-start */
 import type { Context } from '@deepseek-ai/cordis'
 import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
 
-const PACKAGE_NAME = '@isomoes/dsh-ikanban/client/schema-form'
+const PACKAGE_NAME = '@isomoes/dsh-ikanban/client/ui-brand-official'
 
 /** Cordis companion plugin name. */
-export const name = 'client-schema-form-invariant'
+export const name = 'client-ui-brand-official-invariant'
 /** Service required before the companion can reserve package ownership. */
 export const inject = ['invariants']
 
 /**
- * No runtime invariant: a pure schema/draft helper library — it emits no
- * cordis events and owns no cross-plugin mutable relation; draft
- * immutability, schema rehydration, and path-edit round trips are asserted
- * directly by this package's model specs.
+ * No runtime invariant: the package retains no mutable state, and its three
+ * slot occupants install and leave through one transactional effect.
  */
 const install: InvariantInstaller = () => {}
 

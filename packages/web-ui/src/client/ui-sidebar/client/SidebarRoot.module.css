@@ -190,8 +190,14 @@
   display: inline;
 }
 
-.collapsed .toggle:hover .railFish {
+.collapsed .toggle:hover .railMark {
   display: none;
+}
+
+.railMark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Rail icons ride the primary ink (figma rail spec); expanded keeps the
@@ -199,6 +205,7 @@
 .collapsed .iconButton {
   color: var(--dsw-alias-label-primary);
 }
+
 
 /* Region seat: always mounted so the foot never moves. Its trailing margin
    cancels the wide shell inset so the nested scrollbar can sit at the sidebar

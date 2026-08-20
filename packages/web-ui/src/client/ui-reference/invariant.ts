@@ -1,24 +1,23 @@
 /**
- * Package-owned invariant companion for `@isomoes/dsh-ikanban/client/web-react`.
- * @module @isomoes/dsh-ikanban/client/web-react/invariant
+ * Package-owned invariant companion for `@isomoes/dsh-ikanban/client/ui-reference`.
+ * @module @isomoes/dsh-ikanban/client/ui-reference/invariant
  */
 
 /* jscpd:ignore-start */
 import type { Context } from '@deepseek-ai/cordis'
 import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
 
-const PACKAGE_NAME = '@isomoes/dsh-ikanban/client/web-react'
+const PACKAGE_NAME = '@isomoes/dsh-ikanban/client/ui-reference'
 
 /** Cordis companion plugin name. */
-export const name = 'client-web-react-invariant'
+export const name = 'client-ui-reference-invariant'
 /** Service required before the companion can reserve package ownership. */
 export const inject = ['invariants']
 
 /**
- * No runtime invariant: pure ctx-to-React glue — it emits no cordis events
- * and owns no cross-plugin mutable relation; store batching, selector
- * equality short-circuits, and inject-cache identity are asserted directly
- * by this package's behavior specs.
+ * No runtime invariant: a single slash-source registration whose disposal is
+ * proven by the HMR-safety spec — it emits no cordis events and owns no
+ * cross-plugin mutable state.
  */
 const install: InvariantInstaller = () => {}
 

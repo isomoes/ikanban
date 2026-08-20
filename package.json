@@ -24,5 +24,8 @@
     "dev:remove": "dsh plugin --profile ikanban-dev remove @isomoes/dsh-ikanban",
     "typecheck": "pnpm -r --if-present run typecheck",
     "test": "pnpm -r --if-present run test"
+  },
+  "devDependencies": {
+    "@deepseek-ai/dsh": "^0.1.0-rc.8"
   }
 }

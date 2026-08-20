@@ -4,27 +4,25 @@
  * @module @isomoes/dsh-ikanban/client/web/platform
  */
 
-/** The module specifiers the shell shares into the frozen module table. */
+/** Canonical module specifiers the shell shares into the module table. */
 export const PLATFORM_MODULES = [
   'react', 'react/jsx-runtime', 'react-dom', 'react-dom/client', '@deepseek-ai/cordis',
   '@isomoes/dsh-ikanban/client/ui-slots',
-  '@isomoes/dsh-ikanban/client/web-react',
   '@isomoes/dsh-ikanban/client/ui-primitives',
-  '@isomoes/dsh-ikanban/client/ui-attachment',
-  '@isomoes/dsh-ikanban/client/schema-form',
+] as const
+
+/** Client-bundle specifiers whose factories the parser preloads before the shell starts. */
+export const PRELOADED_CLIENT_EXTERNALS = [
+  '@deepseek-ai/dsh-client-runtime/client',
 ] as const
 
 /**
- * Compatibility words required by published DSH infrastructure bundles.
- * They resolve to the same local singleton; owned iKanban bundles must use the
- * canonical @isomoes word and therefore do not include these in externals.
+ * Compatibility words required by published DSH bundles. They expose the same
+ * local singleton while iKanban-owned bundles retain their canonical ids.
  */
 export const PLATFORM_COMPATIBILITY_ALIASES = {
   '@deepseek-ai/dsh-client-ui-slots': '@isomoes/dsh-ikanban/client/ui-slots',
-  '@deepseek-ai/dsh-client-web-react': '@isomoes/dsh-ikanban/client/web-react',
   '@deepseek-ai/dsh-client-ui-primitives': '@isomoes/dsh-ikanban/client/ui-primitives',
-  '@deepseek-ai/dsh-client-ui-attachment': '@isomoes/dsh-ikanban/client/ui-attachment',
-  '@deepseek-ai/dsh-client-schema-form': '@isomoes/dsh-ikanban/client/schema-form',
 } as const
 
 /** One canonical or compatibility platform module specifier. */
