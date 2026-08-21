@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.4.15]
+
 - Migrated the complete DSH dependency family and owned browser source to `0.1.1-rc.1`.
 - Adopted structured Web index injection, transport-aware boot loading, multiline questions, wide Markdown tables, improved reference editing, permission presentation, blank-session ordering, and exhausted-retry errors.
 - Replaced the subagent catalog header action with the rc.1 lineage switcher while preserving iKanban identities, custom themes, keyboard behavior, workspace actions, and reminder sounds.
