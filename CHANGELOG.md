@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.4.14]
+
+- Added iKanban as a built-in DeepSeek Harness preset with its complete agent and plugin composition.
+- Added configurable session reminder sounds for completed responses and permission requests.
+
 ## [0.4.13]
 
 - Fixed file and session `@` references in clean published-profile startups by explicitly registering their remote API manifests.
