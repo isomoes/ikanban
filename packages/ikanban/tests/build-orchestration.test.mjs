@@ -5,13 +5,14 @@ import { test } from 'node:test'
 const readManifest = async (url) => JSON.parse(await readFile(url, 'utf8'))
 
 test('build lifecycles produce private Web UI artifacts without recursive orchestration', async () => {
-  const [root, ikanban, webUi, projectMcp, composition, projectMcpPresetFragment] = await Promise.all([
+  const [root, ikanban, webUi, projectMcp, composition, projectMcpPresetFragment, shippedPreset] = await Promise.all([
     readManifest(new URL('../../../package.json', import.meta.url)),
     readManifest(new URL('../package.json', import.meta.url)),
     readManifest(new URL('../../web-ui/package.json', import.meta.url)),
     readManifest(new URL('../../project-mcp/package.json', import.meta.url)),
     readFile(new URL('../cordis.patch.yml', import.meta.url), 'utf8'),
     readFile(new URL('../project-mcp.preset.yml', import.meta.url), 'utf8'),
+    readFile(new URL('../preset/ikanban/agent.cordis.yml', import.meta.url), 'utf8'),
   ])
 
   assert.equal(root.scripts.build, 'pnpm -r --if-present run build:package')
@@ -37,5 +38,7 @@ test('build lifecycles produce private Web UI artifacts without recursive orches
   assert.doesNotMatch(composition, /name: '@isomoes\/dsh-project-mcp'/)
   assert.match(composition, /- id: ikanban-preset\n      name: '@isomoes\/dsh-ikanban\/ikanban-preset'/)
   assert.match(projectMcpPresetFragment, /- id: project-mcp\n  name: '@isomoes\/dsh-ikanban\/project-mcp'/)
+  assert.match(shippedPreset, /- id: project-mcp\n  name: '@isomoes\/dsh-ikanban\/project-mcp'/)
+  assert.ok(ikanban.files.includes('preset/ikanban/**'))
   assert.equal(ikanban.devDependencies['@deepseek-ai/dsh-web-app'], undefined)
 })

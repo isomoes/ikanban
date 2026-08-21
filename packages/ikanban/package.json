@@ -71,7 +71,8 @@
     "lib/web/**",
     "!lib/**/*.js.map",
     "cordis.patch.yml",
-    "project-mcp.preset.yml"
+    "project-mcp.preset.yml",
+    "preset/ikanban/**"
   ],
   "engines": {
     "node": "^22.19.0 || >=24.0.0"

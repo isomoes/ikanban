@@ -456,7 +456,7 @@
       config:
         default: standard
 
-    # Materialize one opt-in user preset from the deployment's current Standard
-    # preset. Existing copies are never overwritten, so local edits survive.
+    # Register the package-owned read-only root after the roster is constructed.
+    # Its `system` trust places iKanban in the Built-in group and prevents edits.
     - id: ikanban-preset
       name: '@isomoes/dsh-ikanban/ikanban-preset'
