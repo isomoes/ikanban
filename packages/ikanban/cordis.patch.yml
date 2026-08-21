@@ -193,7 +193,7 @@
     - id: ui-layout
       name: '@isomoes/dsh-ikanban/client/ui-layout'
 
-    # Dynamic React application owner introduced by the rc.8 boot protocol.
+    # Dynamic React application owner used by the rc.1 boot protocol.
     - id: ui-renderer
       name: '@isomoes/dsh-ikanban/client/ui-renderer'
 
@@ -224,7 +224,7 @@
     - id: ui-brand-official
       name: '@isomoes/dsh-ikanban/client/ui-brand-official'
 
-    # Composer attachment rail and historical message images are dynamic in rc.8.
+    # Composer attachment rail and historical message images remain dynamic in rc.1.
     - id: ui-attachment
       name: '@isomoes/dsh-ikanban/client/ui-attachment'
 

@@ -4,10 +4,10 @@ import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { discoverClientEntries } from '../build/client-entries.js'
 
-test('pins the reviewed rc.8 source baseline', async () => {
+test('pins the reviewed rc.1 source baseline', async () => {
   const provenance = await readFile(new URL('../UPSTREAM.md', import.meta.url), 'utf8')
-  assert.match(provenance, /dsh-v0\.1\.0-rc\.8/)
-  assert.match(provenance, /141eb6fef83422698aef7a981029e843e8161534/)
+  assert.match(provenance, /dsh-v0\.1\.1-rc\.1/)
+  assert.match(provenance, /528c682e061696f5a160f363f236ecbf53cbd006/)
 })
 
 test('discovers owned client entries', async () => {

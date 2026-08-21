@@ -16,7 +16,19 @@ test('build lifecycles produce private Web UI artifacts without recursive orches
   ])
 
   assert.equal(root.scripts.build, 'pnpm -r --if-present run build:package')
-  assert.equal(root.devDependencies['@deepseek-ai/dsh'], '^0.1.0-rc.8')
+  assert.equal(root.devDependencies['@deepseek-ai/dsh'], '^0.1.1-rc.1')
+  for (const peerAnchor of [
+    '@deepseek-ai/dsh-anonymous-user-id',
+    '@deepseek-ai/dsh-bash-local',
+    '@deepseek-ai/dsh-fs',
+    '@deepseek-ai/dsh-output-retention',
+    '@deepseek-ai/dsh-session-telemetry',
+    '@deepseek-ai/dsh-session-title-llm',
+    '@deepseek-ai/dsh-spill',
+    '@deepseek-ai/dsh-subagent-in-process-driver',
+  ]) {
+    assert.equal(root.devDependencies[peerAnchor], '^0.1.1-rc.1')
+  }
   assert.equal(webUi.scripts.build, 'pnpm build:package')
   assert.ok(webUi.scripts['build:package'])
   assert.equal(
@@ -27,14 +39,14 @@ test('build lifecycles produce private Web UI artifacts without recursive orches
   assert.doesNotMatch(ikanban.scripts['build:package'], /(?:^|\s)pnpm build(?:\s|$)/)
   assert.equal(ikanban.dependencies['@deepseek-ai/dsh-web-app'], undefined)
   assert.equal(ikanban.dependencies['@deepseek-ai/dsh-host-directory-picker-native'], undefined)
-  assert.equal(ikanban.dependencies['@deepseek-ai/dsh-agent-loop'], '^0.1.0-rc.8')
-  assert.equal(ikanban.dependencies['@deepseek-ai/dsh-tools'], '^0.1.0-rc.8')
+  assert.equal(ikanban.dependencies['@deepseek-ai/dsh-agent-loop'], '^0.1.1-rc.1')
+  assert.equal(ikanban.dependencies['@deepseek-ai/dsh-tools'], '^0.1.1-rc.1')
   assert.equal(ikanban.dependencies['@isomoes/dsh-project-mcp'], undefined)
   assert.equal(ikanban.devDependencies['@isomoes/dsh-project-mcp'], 'workspace:*')
-  assert.equal(ikanban.dependencies['@deepseek-ai/dsh-mcp-client'], '^0.1.0-rc.8')
-  assert.equal(ikanban.peerDependencies['@deepseek-ai/dsh-system-prompt'], '^0.1.0-rc.8')
+  assert.equal(ikanban.dependencies['@deepseek-ai/dsh-mcp-client'], '^0.1.1-rc.1')
+  assert.equal(ikanban.peerDependencies['@deepseek-ai/dsh-system-prompt'], '^0.1.1-rc.1')
   assert.equal(projectMcp.private, true)
-  assert.equal(projectMcp.dependencies['@deepseek-ai/dsh-mcp-client'], '^0.1.0-rc.8')
+  assert.equal(projectMcp.dependencies['@deepseek-ai/dsh-mcp-client'], '^0.1.1-rc.1')
   assert.doesNotMatch(composition, /name: '@isomoes\/dsh-project-mcp'/)
   assert.match(composition, /- id: ikanban-preset\n      name: '@isomoes\/dsh-ikanban\/ikanban-preset'/)
   assert.match(projectMcpPresetFragment, /- id: project-mcp\n  name: '@isomoes\/dsh-ikanban\/project-mcp'/)

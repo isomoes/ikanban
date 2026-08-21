@@ -45,7 +45,7 @@ test('publishes every local client as an isolated virtual package', async () => 
 })
 
 test('loads every host entry with public runtime dependencies', async () => {
-  assert.equal(manifest.dependencies['@deepseek-ai/dsh-settings'], '^0.1.0-rc.8')
+  assert.equal(manifest.dependencies['@deepseek-ai/dsh-settings'], '^0.1.1-rc.1')
   assert.equal(manifest.dependencies['@deepseek-ai/schemastery'], '^3.18.1')
   assert.equal(manifest.dependencies['@isomoes/dsh-project-mcp'], undefined)
   await import(new URL('lib/project-mcp.js', packageRoot))

@@ -2,7 +2,7 @@
 
 Keyboard-oriented iKanban web application bundle for DeepSeek Harness.
 
-The host runtime uses the published DSH `0.1.0-rc.8` backends but owns its Web startup and runtime glue. The full browser surface is locally owned as TS/TSX/CSS in the private sibling `packages/web-ui` package. The public package ships its Vite shell and 35 isolated virtual client bundles, so a DSH profile installs only `@isomoes/dsh-ikanban`.
+The host runtime uses the published DSH `0.1.1-rc.1` backends but owns its Web startup and runtime glue. The full browser surface is locally owned as TS/TSX/CSS in the private sibling `packages/web-ui` package. The public package ships its Vite shell and 35 isolated virtual client bundles, so a DSH profile installs only `@isomoes/dsh-ikanban`.
 
 ## Usage
 

@@ -36,19 +36,19 @@
     "prepare": "pnpm build"
   },
   "dependencies": {
-    "@deepseek-ai/dsh-agent": "^0.1.0-rc.8",
-    "@deepseek-ai/dsh-mcp-client": "^0.1.0-rc.8",
+    "@deepseek-ai/dsh-agent": "^0.1.1-rc.1",
+    "@deepseek-ai/dsh-mcp-client": "^0.1.1-rc.1",
     "@deepseek-ai/schemastery": "^3.18.1"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
-    "@deepseek-ai/dsh-system-prompt": "^0.1.0-rc.8",
-    "@deepseek-ai/dsh-tools": "^0.1.0-rc.8"
+    "@deepseek-ai/dsh-system-prompt": "^0.1.1-rc.1",
+    "@deepseek-ai/dsh-tools": "^0.1.1-rc.1"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
-    "@deepseek-ai/dsh-system-prompt": "^0.1.0-rc.8",
-    "@deepseek-ai/dsh-tools": "^0.1.0-rc.8",
+    "@deepseek-ai/dsh-system-prompt": "^0.1.1-rc.1",
+    "@deepseek-ai/dsh-tools": "^0.1.1-rc.1",
     "@types/node": "^22.0.0",
     "typescript": "^6.0.3"
   }
