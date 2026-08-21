@@ -9,7 +9,7 @@ const entries = await discoverClientEntries({ packageRoot: fileURLToPath(package
 const packageManifest = JSON.parse(await readFile(new URL('package.json', packageRoot), 'utf8'))
 
 test('each forked client entry emits an isolated virtual package', async () => {
-  assert.equal(entries.length, 35)
+  assert.equal(entries.length, 36)
 
   for (const entry of entries) {
     const { id, stockId, virtualId } = entry

@@ -27,6 +27,7 @@ const CLIENT_INJECTS = {
   'ui-permission-presets': ['@deepseek-ai/dsh-client-connection', local('locale'), '@deepseek-ai/dsh-client-runtime', local('ui-commands'), '@deepseek-ai/dsh-api-remotes', local('ui-settings')],
   'ui-plan': ['@deepseek-ai/dsh-api-remotes', local('locale'), local('ui-conversation')],
   'ui-reference': ['@deepseek-ai/dsh-client-runtime', '@deepseek-ai/dsh-api-remotes', local('locale'), local('ui-input-trigger')],
+  'ui-reminders': ['@deepseek-ai/dsh-client-runtime', local('ui-settings'), local('locale')],
   'ui-renderer': ['@deepseek-ai/dsh-client-runtime'],
   'ui-settings': ['@deepseek-ai/dsh-client-connection', '@deepseek-ai/dsh-client-runtime', '@deepseek-ai/dsh-api-remotes'],
   'ui-settings-general': ['@deepseek-ai/dsh-client-runtime', local('ui-settings'), local('locale'), '@deepseek-ai/dsh-client-connection', '@deepseek-ai/dsh-api-remotes', local('ui-sidebar'), local('ui-commands')],

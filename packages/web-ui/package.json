@@ -8,7 +8,7 @@
     "build:package": "pnpm typecheck && pnpm build:frontend && pnpm build:client",
     "build:client": "rm -rf lib/clients && tsdown",
     "build:frontend": "vite build",
-    "typecheck": "tsc -p tsconfig.json --noEmit && node --check tests/source-ownership.test.mjs && node --check tests/frontend-build.test.mjs && node --check tests/client-bundle.test.mjs && node --check tests/boot-graph.test.mjs && node --check tests/reference-performance.test.mjs && node --check tests/workspace-file-search.test.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit && node --check tests/source-ownership.test.mjs && node --check tests/frontend-build.test.mjs && node --check tests/client-bundle.test.mjs && node --check tests/boot-graph.test.mjs && node --check tests/reference-performance.test.mjs && node --check tests/reminder-sounds.test.mjs && node --check tests/workspace-file-search.test.mjs",
     "test": "pnpm build && node --test tests/*.test.mjs"
   },
   "dependencies": {

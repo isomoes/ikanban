@@ -215,6 +215,11 @@
     - id: ui-conversation
       name: '@isomoes/dsh-ikanban/client/ui-conversation'
 
+    # Session-list edge reminders: completion and interaction-wait sounds plus
+    # their feature-owned controls in General settings.
+    - id: ui-reminders
+      name: '@isomoes/dsh-ikanban/client/ui-reminders'
+
     # iKanban-owned occupants for the generic sidebar and conversation brand slots.
     - id: ui-brand-official
       name: '@isomoes/dsh-ikanban/client/ui-brand-official'
