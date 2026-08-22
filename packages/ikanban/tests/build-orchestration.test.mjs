@@ -16,6 +16,11 @@ test('build lifecycles produce private Web UI artifacts without recursive orches
   ])
 
   assert.equal(root.scripts.build, 'pnpm -r --if-present run build:package')
+  assert.equal(
+    root.scripts['dev:install'],
+    'IKANBAN_DEV=1 pnpm build && IKANBAN_DEV=1 dsh plugin --profile ikanban-dev add ./packages/ikanban',
+    'the profile install must preserve the dev marker when pnpm runs the linked package prepare script',
+  )
   assert.equal(root.devDependencies['@deepseek-ai/dsh'], '^0.1.1-rc.1')
   for (const peerAnchor of [
     '@deepseek-ai/dsh-anonymous-user-id',
