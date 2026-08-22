@@ -32,9 +32,6 @@ export function apply(ctx: Context): void {
   const program = webCommand()
   program.action(() => {
     const options = program.opts<WebOptions>()
-    if (options.host === '0.0.0.0') {
-      program.error('error: --host 0.0.0.0 is intentionally not supported yet for safety: use 127.0.0.1 instead')
-    }
     if (options.port !== undefined && !/^\d+$/.test(options.port)) {
       program.error(`error: --port must be a number, got ${JSON.stringify(options.port)}`)
     }

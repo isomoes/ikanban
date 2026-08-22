@@ -88,6 +88,19 @@ Pass Web application arguments after the script separator when needed:
 pnpm dev -- --port 8080
 ```
 
+To make the application available to other devices on the local network, bind
+all interfaces. The startup output prints a detected LAN URL to open from those
+devices:
+
+```bash
+pnpm dev -- --host 0.0.0.0
+```
+
+Binding `0.0.0.0` exposes the DSH session and its enabled tools to reachable
+network clients. Use it only on a trusted LAN and keep the port protected from
+the public Internet. The host webserver accepts only `127.0.0.1` and
+`0.0.0.0`; clients connect to the machine's LAN address, not to `0.0.0.0`.
+
 ### Edit Cycle
 
 The profile links this checkout, but DSH runs built `lib/` files. Changes to
