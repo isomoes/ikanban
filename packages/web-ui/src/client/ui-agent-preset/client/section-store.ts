@@ -16,7 +16,7 @@
 
 import type { IApiClient } from '@deepseek-ai/dsh-api-remotes/client'
 import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client-runtime/client'
-import { beginRosterRead, messageOf, writeDefaultPreset } from './settings-store.ts'
+import { beginRosterRead, isVisiblePreset, messageOf, writeDefaultPreset } from './settings-store.ts'
 
 /** Ids a preset directory may be named, mirroring the host's own rule. */
 const PRESET_ID = /^[a-z0-9][a-z0-9-]*$/
@@ -165,22 +165,23 @@ export class AgentPresetSectionController {
     const roster = await beginRosterRead(this.api, this.store)
     if (roster === undefined) return
     const { presets, authorable, hasDocument } = roster
-    if (presets.length === 0) {
-      // Nothing to manage leaves nothing to keep a dialog open over.
+    const visiblePresets = presets.filter(isVisiblePreset)
+    if (visiblePresets.length === 0) {
+      // Nothing visible to manage leaves nothing to keep a dialog open over.
       this.set({ status: 'unavailable', rows: [], authorable, hasDocument, copy: null, view: null })
       return
     }
-    // A reveal outlives a reload but not its preset: a path for a row the
-    // roster no longer lists would be a claim about a directory that is gone.
+    // A reveal outlives a reload but not its visible preset: a path for a row
+    // the UI no longer lists would be a claim about a directory that is gone.
     const revealed = this.store.getSnapshot().revealedPaths
     const kept = Object.fromEntries(
-      Object.entries(revealed).filter(([id]) => presets.some(preset => preset.id === id)))
+      Object.entries(revealed).filter(([id]) => visiblePresets.some(preset => preset.id === id)))
     this.set({
       status: 'ready',
       error: null,
       authorable,
       hasDocument,
-      rows: presets.map(preset => ({ ...preset })),
+      rows: visiblePresets.map(preset => ({ ...preset })),
       revealedPaths: kept,
     })
   }

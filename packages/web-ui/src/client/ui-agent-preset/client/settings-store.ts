@@ -136,13 +136,19 @@ export async function beginRosterRead<S extends { status: string; error: string 
   return undefined
 }
 
+/** Whether a roster entry belongs on iKanban's agent-preset surfaces. */
+export function isVisiblePreset(preset: { id: string }): boolean {
+  return preset.id !== 'standard'
+}
+
 /**
- * The roster entries as the pickers render them: healthy presets only.
+ * The roster entries as the pickers render them: visible, healthy presets only.
  *
  * The chip and the row exist to choose the NEXT session's composition, and a
  * broken preset cannot compose one — offering it would defer the discovery
- * of that fact to a failed session start. The management section renders the
- * full roster (broken rows included) from its own store instead.
+ * of that fact to a failed session start. Standard mode is intentionally
+ * omitted from iKanban's preset UI; the management section uses the same
+ * visibility rule while retaining broken visible rows.
  *
  * The chip, the row, and the management section all show the same facts, and
  * `exactOptionalPropertyTypes` makes "absent" and "present as undefined"
@@ -154,7 +160,7 @@ export async function beginRosterRead<S extends { status: string; error: string 
 export function presetOptions(
   presets: readonly { id: string; trust: 'system' | 'user'; name?: string; description?: string; broken?: string }[],
 ): AgentPresetOption[] {
-  return presets.filter(preset => preset.broken === undefined).map(preset => ({
+  return presets.filter(preset => isVisiblePreset(preset) && preset.broken === undefined).map(preset => ({
     id: preset.id,
     trust: preset.trust,
     ...preset.name === undefined ? {} : { name: preset.name },
