@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.4.16]
+
+- Added documented support for binding the iKanban Web interface to LAN-accessible hosts.
+- Hid the standard agent preset while preserving access to configured custom presets.
+
 ## [0.4.15]
 
 - Migrated the complete DSH dependency family and owned browser source to `0.1.1-rc.1`.

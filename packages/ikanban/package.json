@@ -1,6 +1,6 @@
 {
   "name": "@isomoes/dsh-ikanban",
-  "version": "0.4.15",
+  "version": "0.4.16",
   "description": "Keyboard-oriented iKanban web application bundle for DeepSeek Harness",
   "keywords": [
     "ikanban",
