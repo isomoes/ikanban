@@ -13,13 +13,14 @@
 // ChatNodeSeat subscribes to one Node key, so Assistant deltas and Tool
 // lifecycle updates replace only their own row without remounting it.
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import type { ConversationTimelineSnapshot } from '@deepseek-ai/dsh-client-runtime/client'
 import { Button, IconChevronDownOutline14, Modal } from '@isomoes/dsh-ikanban/client/ui-primitives'
 import type { ChatViewSlotProps, RenderMessageImages } from '../contract/slots.ts'
 import { PendingSteeringBubble } from './MessageItem.tsx'
 import { ChatNodeSeat } from './ChatNodeSeat.tsx'
 import { formatRunDuration } from './message-chrome.ts'
+import { historyScrollDelta, isHistoryNavigationKey } from './history-keyboard.ts'
 import css from './ChatView.module.css'
 
 const FOLLOW_THRESHOLD = 24
@@ -396,6 +397,50 @@ export function ChatView({
     if (!loadingOlder) anchorRef.current = null
   }, [loadingOlder])
 
+  const scrollHistoryByKey = useCallback((key: string): boolean => {
+    const local = listRef.current
+    if (local === null) return false
+    const scrollport = scrollerOf(local)
+    const delta = historyScrollDelta(key, scrollport.clientHeight)
+    if (delta === null) return false
+    // Leave observedTopRef untouched: the scroll listener must classify this
+    // explicit keyboard gesture as reader movement and release bottom-follow.
+    scrollport.scrollTop += delta
+    return true
+  }, [])
+
+  const onHistoryKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
+    // Buttons and links inside the transcript keep their own keyboard contract;
+    // all four keys move history while its scroll surface owns focus.
+    if (event.target !== event.currentTarget || event.altKey || event.ctrlKey || event.metaKey) return
+    if (scrollHistoryByKey(event.key)) event.preventDefault()
+  }
+
+  // Route navigation keys to the active conversation without requiring a
+  // preliminary click on the transcript. Editable fields retain native
+  // caret/input behavior, and descendants of the transcript keep their own
+  // control contracts.
+  useEffect(() => {
+    const onDocumentKeyDown = (event: globalThis.KeyboardEvent): void => {
+      if (
+        event.defaultPrevented ||
+        !isHistoryNavigationKey(event.key) ||
+        event.altKey ||
+        event.ctrlKey ||
+        event.metaKey
+      ) return
+      const local = listRef.current
+      const target = event.target
+      if (local === null || !(target instanceof Element) || local.contains(target)) return
+      if (
+        target.closest('input, textarea, select, [contenteditable="true"]') !== null
+      ) return
+      if (scrollHistoryByKey(event.key)) event.preventDefault()
+    }
+    document.addEventListener('keydown', onDocumentKeyDown)
+    return () => { document.removeEventListener('keydown', onDocumentKeyDown) }
+  }, [scrollHistoryByKey])
+
   const loadOlderAnchored = (): void => {
     const local = listRef.current
     /* v8 ignore next -- ref-null guard: the paging button renders inside the list tree. */
@@ -414,7 +459,14 @@ export function ChatView({
 
   return (
     <div className={css.root}>
-      <div ref={listRef} className={css.scroll}>
+      <div
+        ref={listRef}
+        className={css.scroll}
+        role="region"
+        aria-label={t('chat.history')}
+        tabIndex={0}
+        onKeyDown={onHistoryKeyDown}
+      >
         <div ref={columnRef} className={css.column} data-chat-flow="">
           {openState === 'loading' && <div className={css.hint}>{t('chat.loadingHistory')}</div>}
           {openState === 'error' && openError !== null && (

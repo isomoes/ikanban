@@ -25,6 +25,11 @@
   container-type: inline-size;
 }
 
+.scroll:focus-visible {
+  outline: 1px solid var(--dsw-alias-state-business-primary);
+  outline-offset: -1px;
+}
+
 :global([data-conversation-scroll]) .root {
   flex: 0 0 auto;
   min-height: auto;
