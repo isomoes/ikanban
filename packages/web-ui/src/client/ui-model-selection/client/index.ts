@@ -29,6 +29,8 @@ import { en, zh, type ModelKey } from './locales.ts'
 export { ModelDirectory } from './directory.ts'
 export type { ModelDirectoryState } from './directory.ts'
 export { ModelDirectoryResolver } from './service.ts'
+export { WorkspaceModelDefaults } from '../workspace-defaults.ts'
+export type { WorkspaceDefaultContext } from '../workspace-defaults.ts'
 export type { ModelSelectInjected } from './slots.ts'
 export type { ModelKey } from './locales.ts'
 
@@ -97,7 +99,9 @@ function selectionOf(state: ModelDirectoryState, id: string): ModelSelection | u
 const NS = 'model'
 
 /** Required services: the contribution registry, the seat's slot registry, locale, and the service's own faces. */
-export const inject = ['commandUi', 'connection', 'locale', 'sessions', 'slots', 'remote']
+export const inject = [
+  'commandUi', 'connection', 'locale', 'sessions', 'workspaces', 'slots', 'remote', 'settingsScope',
+]
 
 /**
  * Client plugin body: mount ModelDirectoryResolver, register the `model` dictionaries,
@@ -133,7 +137,7 @@ export function apply(ctx: ClientContext): void {
           if (sessions.subagentAddress(session.sessionId) !== undefined) {
             throw new Error('model selection is unavailable for addressed subagent sessions')
           }
-          return optionsOf(await models.directoryFor(session.sessionId).load(), t)
+          return optionsOf(await models.load(session.sessionId), t)
         },
         onSelect: async (option, session) => {
           if (sessions.subagentAddress(session.sessionId) !== undefined) {
@@ -144,7 +148,7 @@ export function apply(ctx: ClientContext): void {
           if (selection === undefined) {
             throw new Error('this provider\'s catalog failed to load — pick a model from a loaded group')
           }
-          await directory.select(selection)
+          await models.select(session.sessionId, selection)
         },
       },
     }), 'ui-model-selection: /model contribution')
@@ -164,10 +168,10 @@ export function apply(ctx: ClientContext): void {
           available,
           directory: directory.store,
           load: () => {
-            if (available) directory.load().catch(() => { /* surfaced on the store */ })
+            if (available) models.load(sessionId).catch(() => { /* surfaced on the store */ })
           },
           select: (selection: ModelSelection) => available
-            ? directory.select(selection).then(() => true, () => false)
+            ? models.select(sessionId, selection).then(() => true, () => false)
             : Promise.resolve(false),
         }
       },
