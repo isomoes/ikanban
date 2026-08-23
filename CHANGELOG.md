@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.4.17]
+
+- Added per-workspace persistence for model selection defaults.
+- Added keyboard navigation to conversation message history.
+
 ## [0.4.16]
 
 - Added documented support for binding the iKanban Web interface to LAN-accessible hosts.
