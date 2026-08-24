@@ -111,8 +111,8 @@ jobs:
           fi
 
           # Product packages pin this exact shared version, so publish it first.
-          npm publish "${web_ui[0]}" --provenance
-          npm publish "${ikanban[0]}" --provenance
+          npm publish "./${web_ui[0]}" --provenance
+          npm publish "./${ikanban[0]}" --provenance
 
   create-release:
     needs: publish
