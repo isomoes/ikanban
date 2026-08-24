@@ -8,7 +8,7 @@ All notable changes to this project will be documented in this file.
 
 - Fixed trusted publishing to publish the generated workspace tarballs through explicit local paths.
 - Kept the shared Web UI as a build-time workspace dependency instead of installing it at runtime with the iKanban bundle.
-- Added a documented overview of the product changes from v0.4.2 through v0.4.18.
+- Added a documented overview of the product changes from v0.4.2 through v0.5.0.
 
 ## [0.4.18]
 
