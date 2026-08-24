@@ -55,9 +55,14 @@ jobs:
               throw new Error(`${manifest.name} is ${manifest.version}; release tag requires ${expected}`)
             }
           }
-          const sharedRange = manifests[1].dependencies['@isomoes/dsh-web-ui']
-          if (sharedRange !== `workspace:${expected}`) {
-            throw new Error(`@isomoes/dsh-ikanban must pin workspace:${expected}, found ${sharedRange}`)
+          const product = manifests[1]
+          const runtimeSharedRange = product.dependencies?.['@isomoes/dsh-web-ui']
+          const buildSharedRange = product.devDependencies?.['@isomoes/dsh-web-ui']
+          if (runtimeSharedRange !== undefined || buildSharedRange !== 'workspace:*') {
+            throw new Error(
+              '@isomoes/dsh-ikanban must consume @isomoes/dsh-web-ui only as the workspace:* build dependency; '
+              + `found dependencies=${runtimeSharedRange}, devDependencies=${buildSharedRange}`,
+            )
           }
           NODE
 
@@ -110,7 +115,7 @@ jobs:
             exit 1
           fi
 
-          # Product packages pin this exact shared version, so publish it first.
+          # Publish the shared package before the product artifact for deterministic release ordering.
           npm publish "./${web_ui[0]}" --provenance
           npm publish "./${ikanban[0]}" --provenance
 
