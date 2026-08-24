@@ -6,17 +6,34 @@ The host runtime uses the published DSH `0.1.1-rc.1` backends and owns its Web s
 
 ## Usage
 
-Install the published plugin into an `ikanban` profile. The `dsh plugin`
-command creates the profile if it does not already exist:
+Install the published bundle and shared Web UI into an `ikanban` profile. The
+`dsh plugin` command creates the profile if it does not already exist:
 
 ```bash
-dsh plugin --profile ikanban add @isomoes/dsh-ikanban --registry=https://registry.npmjs.org
+dsh plugin --profile ikanban add @isomoes/dsh-ikanban @isomoes/dsh-web-ui --registry=https://registry.npmjs.org
+```
+
+The shared Web UI must be a direct profile dependency because Cordis resolves
+its browser loader entries from the profile root. It remains a plain dependency
+and must not be added to `dsh.profile.bundles`; only iKanban contributes the
+product composition patch.
+
+Stop iKanban before updating both published packages:
+
+```bash
+dsh plugin --profile ikanban update @isomoes/dsh-ikanban @isomoes/dsh-web-ui --latest --config.minimumReleaseAge=0 --registry=https://registry.npmjs.org
 ```
 
 Run iKanban through that profile:
 
 ```bash
 dsh --profile ikanban
+```
+
+Pass application options such as a custom port after the profile selection:
+
+```bash
+dsh --profile ikanban --port 9091
 ```
 
 See the project [changelog](https://github.com/isomoes/ikanban/blob/main/CHANGELOG.md)

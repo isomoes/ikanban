@@ -34,20 +34,20 @@ npm install -g @deepseek-ai/dsh --registry=https://registry.npmjs.org
 
 ### 2. 安装 iKanban
 
-将已发布的插件安装到 `ikanban` profile 中。如果该 profile 尚不存在，`dsh plugin` 命令会自动创建：
+将已发布的 iKanban bundle 和共享 Web UI 安装到 `ikanban` profile 中。如果该 profile 尚不存在，`dsh plugin` 命令会自动创建：
 
 ```bash
-dsh plugin --profile ikanban add @isomoes/dsh-ikanban --registry=https://registry.npmjs.org
+dsh plugin --profile ikanban add @isomoes/dsh-ikanban @isomoes/dsh-web-ui --registry=https://registry.npmjs.org
 ```
 
-这里的 `--registry` 同样可以替换为国内镜像；需要最新 iKanban 版本时请使用 npm 官方 registry。
+`@isomoes/dsh-web-ui` 必须是 profile 的直接依赖，因为 Cordis 从 profile 根目录解析浏览器 loader entry；它不会加入 `dsh.profile.bundles`，组合补丁仍然只由 `@isomoes/dsh-ikanban` 提供。这里的 `--registry` 同样可以替换为国内镜像；需要最新 iKanban 版本时请使用 npm 官方 registry。
 
 ### 3. 更新 iKanban
 
-停止正在运行的 iKanban，然后通过 DSH 将该 profile 中的插件更新到最新版本：
+停止正在运行的 iKanban，然后通过 DSH 将该 profile 中的 iKanban bundle 和共享 Web UI 一起更新到最新版本：
 
 ```bash
-dsh plugin --profile ikanban update @isomoes/dsh-ikanban --latest --config.minimumReleaseAge=0 --registry=https://registry.npmjs.org
+dsh plugin --profile ikanban update @isomoes/dsh-ikanban @isomoes/dsh-web-ui --latest --config.minimumReleaseAge=0 --registry=https://registry.npmjs.org
 ```
 
 `--config.minimumReleaseAge=0` 会在此次显式更新中绕过 pnpm 默认的 24 小时新版本等待期，否则刚发布的版本可能被报告为“Already up to date”。更新完成后，重新启动 iKanban 即可。国内镜像也可能存在同步延迟；若未获取到最新版本，请改用上述 npm 官方 registry。
@@ -58,6 +58,12 @@ dsh plugin --profile ikanban update @isomoes/dsh-ikanban --latest --config.minim
 
 ```bash
 dsh --profile ikanban
+```
+
+可以通过启动参数指定端口，例如：
+
+```bash
+dsh --profile ikanban --port 9091
 ```
 
 发布历史请参阅 [CHANGELOG.md](CHANGELOG.md)。当前架构与产品演进记录保留在以下文档中：

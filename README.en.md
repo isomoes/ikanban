@@ -40,23 +40,28 @@ you need the latest published version.
 
 ### 2. Install iKanban
 
-Install the published plugin into an `ikanban` profile. The `dsh plugin`
-command creates the profile if it does not already exist:
+Install the published iKanban bundle and shared Web UI into an `ikanban`
+profile. The `dsh plugin` command creates the profile if it does not already
+exist:
 
 ```bash
-dsh plugin --profile ikanban add @isomoes/dsh-ikanban --registry=https://registry.npmjs.org
+dsh plugin --profile ikanban add @isomoes/dsh-ikanban @isomoes/dsh-web-ui --registry=https://registry.npmjs.org
 ```
 
-The `--registry` value can also be replaced with a local mirror. Use the
-official npm registry when you need the latest iKanban version.
+`@isomoes/dsh-web-ui` must be a direct profile dependency because Cordis
+resolves browser loader entries from the profile root. It is not added to
+`dsh.profile.bundles`; `@isomoes/dsh-ikanban` remains the only package that
+contributes the product composition patch. The `--registry` value can also be
+replaced with a local mirror. Use the official npm registry when you need the
+latest iKanban version.
 
 ### 3. Update iKanban
 
-Stop the running iKanban instance, then use DSH to update the plugin in that
-profile to the latest published version:
+Stop the running iKanban instance, then use DSH to update both the iKanban
+bundle and shared Web UI in that profile to their latest published versions:
 
 ```bash
-dsh plugin --profile ikanban update @isomoes/dsh-ikanban --latest --config.minimumReleaseAge=0 --registry=https://registry.npmjs.org
+dsh plugin --profile ikanban update @isomoes/dsh-ikanban @isomoes/dsh-web-ui --latest --config.minimumReleaseAge=0 --registry=https://registry.npmjs.org
 ```
 
 `--config.minimumReleaseAge=0` bypasses pnpm's default 24-hour waiting period
@@ -71,6 +76,12 @@ Start iKanban through that profile:
 
 ```bash
 dsh --profile ikanban
+```
+
+Pass startup options to select a different port, for example:
+
+```bash
+dsh --profile ikanban --port 9091
 ```
 
 See [CHANGELOG.md](CHANGELOG.md) for the release history. The current
