@@ -36,7 +36,12 @@ test('build lifecycles consume the publishable shared Web UI without recursive o
   }
   assert.equal(webUi.name, '@isomoes/dsh-web-ui')
   assert.equal(webUi.private, false)
+  assert.ok(webUi.keywords.includes('web-ui'))
+  assert.ok(webUi.files.includes('README.md'))
+  assert.ok(webUi.files.includes('!lib/**/*.js.map'))
+  assert.ok(webUi.files.includes('!web/**/*.js.map'))
   assert.equal(webUi.scripts.build, 'pnpm build:package')
+  assert.equal(webUi.scripts.prepack, 'pnpm build:package')
   assert.ok(webUi.scripts['build:package'])
   assert.equal(
     ikanban.scripts.build,

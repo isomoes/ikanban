@@ -8,7 +8,7 @@ for driving, reviewing, and coordinating parallel agent work across projects,
 with session management, diff review, and project-aware navigation in one
 place.
 
-This monorepo contains the public DSH bundle and its private, editable browser-surface fork.
+This monorepo contains the iKanban DSH bundle and the public, product-neutral shared browser package used by iKanban and IPaper.
 
 ## Introduction Videos
 
@@ -20,8 +20,8 @@ package, so their installation steps and parts of the interface may differ.
 
 ## Packages
 
-- [`@isomoes/dsh-ikanban`](packages/ikanban) - the public DSH bundle, host adapters, generated composition, and packaged browser artifacts
-- [`packages/web-ui`](packages/web-ui) - the private editable TS/TSX/CSS fork of the full browser plugin surface and Vite shell
+- [`@isomoes/dsh-ikanban`](packages/ikanban) - the public iKanban DSH bundle, coding presets, product composition, and branding
+- [`@isomoes/dsh-web-ui`](packages/web-ui) - the public product-neutral browser plugin surface and Vite shell shared with IPaper
 
 ## Usage
 

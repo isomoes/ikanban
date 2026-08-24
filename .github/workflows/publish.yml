@@ -37,13 +37,40 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Pack npm artifact
+      - name: Validate release versions
+        env:
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+        run: |
+          VERSION="${RELEASE_TAG#v}"
+          node --input-type=module - "$VERSION" <<'NODE'
+          import { readFile } from 'node:fs/promises'
+
+          const expected = process.argv[2]
+          const manifests = await Promise.all([
+            readFile('packages/web-ui/package.json', 'utf8').then(JSON.parse),
+            readFile('packages/ikanban/package.json', 'utf8').then(JSON.parse),
+          ])
+          for (const manifest of manifests) {
+            if (manifest.version !== expected) {
+              throw new Error(`${manifest.name} is ${manifest.version}; release tag requires ${expected}`)
+            }
+          }
+          const sharedRange = manifests[1].dependencies['@isomoes/dsh-web-ui']
+          if (sharedRange !== `workspace:${expected}`) {
+            throw new Error(`@isomoes/dsh-ikanban must pin workspace:${expected}, found ${sharedRange}`)
+          }
+          NODE
+
+      - name: Pack shared Web UI artifact
+        run: pnpm --filter @isomoes/dsh-web-ui pack --pack-destination "$GITHUB_WORKSPACE/dist"
+
+      - name: Pack iKanban artifact
         run: pnpm --filter @isomoes/dsh-ikanban pack --pack-destination "$GITHUB_WORKSPACE/dist"
 
-      - name: Upload npm artifact
+      - name: Upload npm artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: npm-package
+          name: npm-packages
           path: dist/*.tgz
 
   publish:
@@ -57,7 +84,7 @@ jobs:
       - name: Download npm artifact
         uses: actions/download-artifact@v4
         with:
-          name: npm-package
+          name: npm-packages
           path: dist/
 
       - name: Setup Node.js
@@ -66,25 +93,26 @@ jobs:
           node-version: 24
           registry-url: "https://registry.npmjs.org"
 
-      - name: Publish package to npm
+      - name: Publish packages to npm
+        shell: bash
         run: |
           unset NODE_AUTH_TOKEN
           unset NPM_TOKEN
 
-          set -- dist/*.tgz
+          shopt -s nullglob
+          web_ui=(dist/isomoes-dsh-web-ui-*.tgz)
+          ikanban=(dist/isomoes-dsh-ikanban-*.tgz)
 
-          if [ "$1" = "dist/*.tgz" ]; then
-            echo "No npm tarball found in dist/"
+          if [ "${#web_ui[@]}" -ne 1 ] || [ "${#ikanban[@]}" -ne 1 ]; then
+            echo "Expected exactly one dsh-web-ui tarball and one dsh-ikanban tarball"
+            printf 'web-ui: %s\n' "${web_ui[@]:-<none>}"
+            printf 'ikanban: %s\n' "${ikanban[@]:-<none>}"
             exit 1
           fi
 
-          if [ -n "$2" ]; then
-            echo "Expected exactly one npm tarball in dist/, found multiple"
-            printf '%s\n' "$@"
-            exit 1
-          fi
-
-          npm publish "./$1" --provenance
+          # Product packages pin this exact shared version, so publish it first.
+          npm publish "${web_ui[0]}" --provenance
+          npm publish "${ikanban[0]}" --provenance
 
   create-release:
     needs: publish
@@ -100,7 +128,7 @@ jobs:
       - name: Download npm artifact
         uses: actions/download-artifact@v4
         with:
-          name: npm-package
+          name: npm-packages
           path: dist/
 
       - name: Extract tag name

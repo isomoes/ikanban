@@ -4,7 +4,7 @@
 
 iKanban 是一个面向键盘操作、基于 [DeepSeek Harness](https://github.com/deepseek-ai/DeepSeek-Harness) 的多智能体编码工作空间。它专为跨项目地驱动、审查和协调并行智能体工作而构建，将会话管理、差异审查和项目感知导航集于一处。
 
-本 monorepo 包含公开发布的 DSH bundle，以及完整浏览器界面的私有可编辑 fork。
+本 monorepo 包含 iKanban DSH bundle，以及由 iKanban 和 IPaper 共同使用、公开发布的产品中立浏览器软件包。
 
 <img alt="iKanban project UI" src="https://github.com/user-attachments/assets/9d5467e0-1963-474c-8d7c-57941a702064" />
 
@@ -16,8 +16,8 @@ iKanban 是一个面向键盘操作、基于 [DeepSeek Harness](https://github.c
 
 ## 软件包
 
-- [`@isomoes/dsh-ikanban`](packages/ikanban) - 公开发布的 DSH bundle、宿主适配器、生成的组合配置和浏览器构建产物
-- [`packages/web-ui`](packages/web-ui) - 完整浏览器插件界面和 Vite shell 的私有可编辑 TS/TSX/CSS fork
+- [`@isomoes/dsh-ikanban`](packages/ikanban) - 公开发布的 iKanban DSH bundle、编码预设、产品组合配置和品牌
+- [`@isomoes/dsh-web-ui`](packages/web-ui) - 与 IPaper 共用、公开发布的产品中立浏览器插件界面和 Vite shell
 
 ## 使用方法
 

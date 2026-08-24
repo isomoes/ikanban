@@ -2,7 +2,7 @@
 
 Keyboard-oriented iKanban web application bundle for DeepSeek Harness.
 
-The host runtime uses the published DSH `0.1.1-rc.1` backends but owns its Web startup and runtime glue. The full browser surface is locally owned as TS/TSX/CSS in the private sibling `packages/web-ui` package. The public package ships its Vite shell and 35 isolated virtual client bundles, so a DSH profile installs only `@isomoes/dsh-ikanban`.
+The host runtime uses the published DSH `0.1.1-rc.1` backends and owns its Web startup, coding presets, composition, and iKanban branding. The common browser surface is published separately as [`@isomoes/dsh-web-ui`](../web-ui), which this package pins as a tested production dependency.
 
 ## Usage
 
@@ -119,17 +119,18 @@ and every browser UI row while retaining published transport and backend rows.
 `scripts/sync-upstream.mjs` is only an explicit maintenance helper for a deliberate
 upstream re-import; running it overwrites the owned composition and requires review.
 
-`packages/web-ui` is the editable browser fork. Client plugin code under its
-`src/client` and `src/extensions` paths is built by tsdown
-as isolated virtual packages. During `pnpm dev`, a successful plugin build is
-copied to this package's `lib/clients/<id>` path; DSH detects that bundle write
-and emits HMR for `@isomoes/dsh-web-ui/client/<id>` only.
+`packages/web-ui` is the editable source of the published `@isomoes/dsh-web-ui`
+package. Client plugin code under its `src/client` and `src/extensions` paths is
+built by tsdown as isolated virtual packages. During `pnpm dev`, successful
+plugin builds keep their neutral `@isomoes/dsh-web-ui/client/<id>` identities so
+both iKanban and IPaper can compose the same package version.
 
 The Vite app context lives at the `web-ui` package root. Shared browser platform
 code lives under `src/client`, including `web`, `ui-renderer`, `ui-slots`,
-`ui-primitives`, dynamic `ui-attachment`, `ui-reference`, and the settings schema service. Vite rebuilds this code into
-the local dist and copies it to `lib/web`; reload the browser after a shell build. A
-production `pnpm build` always rebuilds both artifact families.
+`ui-primitives`, dynamic `ui-attachment`, `ui-reference`, and the settings schema
+service. Vite rebuilds this code into `packages/web-ui/web`; the iKanban build
+copies that tested shell into `lib/web`. Reload the browser after a shell build.
+A production `pnpm build` always rebuilds both artifact families.
 
 Upstream refreshes are explicit reviewed merges, never an automatic build
 step. The pinned commit and imported path inventory are recorded in
