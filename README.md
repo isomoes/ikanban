@@ -72,12 +72,12 @@ pnpm typecheck
 pnpm build
 ```
 
-构建项目，将当前 checkout 以链接方式安装到隔离的 `ikanban-dev` DSH profile，然后运行：
+构建项目，将 iKanban bundle 与共享 Web UI checkout 都以链接方式安装到隔离的 `ikanban-dev` DSH profile，然后运行：
 
 ```bash
 pnpm dev
 ```
 
-`pnpm dev` 会自动创建或刷新 profile。使用 `pnpm dev:config` 可以在不启动应用的情况下检查最终组合配置。该命令通过 tsdown 监视所有 fork 后的客户端 bundle，并通过 Vite 监视浏览器 shell。客户端变更会热重载对应的虚拟 DSH 软件包；shell 变更会复制到链接的软件包中，需要刷新浏览器。
+`pnpm dev` 会自动创建或刷新 profile，并显式链接 `@isomoes/dsh-web-ui`，使隔离 profile 可以解析组合配置中的 `@isomoes/dsh-web-ui/client/*` loader entry。Web UI 是普通运行时依赖，不会成为额外的 bundle layer；只有 iKanban 提供产品组合补丁。使用 `pnpm dev:config` 可以在不启动应用的情况下检查最终组合配置。该命令通过 tsdown 监视所有 fork 后的客户端 bundle，并通过 Vite 监视浏览器 shell。客户端变更会热重载对应的虚拟 DSH 软件包；shell 变更会复制到链接的软件包中，需要刷新浏览器。
 
 有关重新构建行为和 profile 清理方式，请参阅软件包的[开发指南](packages/ikanban/README.md#local-development)。

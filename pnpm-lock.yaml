@@ -179,6 +179,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: ^3.18.1
         version: 3.18.1
+      '@isomoes/dsh-web-ui':
+        specifier: workspace:*
+        version: link:../web-ui
       commander:
         specifier: ^15.0.0
         version: 15.0.0
@@ -201,9 +204,6 @@ importers:
       '@isomoes/dsh-project-mcp':
         specifier: workspace:*
         version: link:../project-mcp
-      '@isomoes/dsh-web-ui':
-        specifier: workspace:*
-        version: link:../web-ui
       '@types/node':
         specifier: ^22.0.0
         version: 22.20.1

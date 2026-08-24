@@ -20,7 +20,7 @@
     "build": "pnpm -r --if-present run build:package",
     "dev": "pnpm dev:install && node scripts/dev.mjs",
     "dev:config": "dsh --profile ikanban-dev --dump-config",
-    "dev:install": "IKANBAN_DEV=1 pnpm build && IKANBAN_DEV=1 dsh plugin --profile ikanban-dev add ./packages/ikanban",
+    "dev:install": "IKANBAN_DEV=1 pnpm build && IKANBAN_DEV=1 dsh plugin --profile ikanban-dev add ./packages/web-ui ./packages/ikanban",
     "dev:remove": "dsh plugin --profile ikanban-dev remove @isomoes/dsh-ikanban",
     "typecheck": "pnpm -r --if-present run typecheck",
     "test": "pnpm -r --if-present run test"

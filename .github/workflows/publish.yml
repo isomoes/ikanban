@@ -58,9 +58,9 @@ jobs:
           const product = manifests[1]
           const runtimeSharedRange = product.dependencies?.['@isomoes/dsh-web-ui']
           const buildSharedRange = product.devDependencies?.['@isomoes/dsh-web-ui']
-          if (runtimeSharedRange !== undefined || buildSharedRange !== 'workspace:*') {
+          if (runtimeSharedRange !== 'workspace:*' || buildSharedRange !== undefined) {
             throw new Error(
-              '@isomoes/dsh-ikanban must consume @isomoes/dsh-web-ui only as the workspace:* build dependency; '
+              '@isomoes/dsh-ikanban must consume @isomoes/dsh-web-ui as its workspace:* runtime dependency; '
               + `found dependencies=${runtimeSharedRange}, devDependencies=${buildSharedRange}`,
             )
           }

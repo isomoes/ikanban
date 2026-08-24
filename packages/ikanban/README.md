@@ -68,8 +68,9 @@ pnpm install
 pnpm dev
 ```
 
-The DSH plugin command used internally adds only this bundle to the profile and
-records it as a `link:` dependency.
+The DSH plugin command used internally links this bundle and the shared Web UI
+into the profile. The Web UI remains a plain dependency rather than a bundle
+layer; iKanban alone contributes its composition patch.
 
 To inspect the composition without booting, install or refresh the profile and
 then dump it. The output must contain an

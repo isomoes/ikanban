@@ -86,15 +86,19 @@ pnpm typecheck
 pnpm build
 ```
 
-Build, install the linked checkout into an isolated `ikanban-dev` DSH profile, and
-run it:
+Build, link both the iKanban bundle and shared Web UI checkouts into an isolated
+`ikanban-dev` DSH profile, and run it:
 
 ```bash
 pnpm dev
 ```
 
-`pnpm dev` creates or refreshes the profile automatically. Use
-`pnpm dev:config` to inspect the resulting composition without booting it.
+`pnpm dev` creates or refreshes the profile automatically and explicitly links
+`@isomoes/dsh-web-ui`, allowing the isolated profile to resolve the
+`@isomoes/dsh-web-ui/client/*` loader entries in the composition. The Web UI is
+a plain runtime dependency, not an additional bundle layer; only iKanban
+contributes the product composition patch. Use `pnpm dev:config` to inspect the
+resulting composition without booting it.
 It watches every forked client bundle with tsdown and the browser shell with
 Vite. Client changes hot-reload their own virtual DSH package; shell changes
 are copied into the linked package and require a browser reload.
