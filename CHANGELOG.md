@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.5.1]
+
+- Fixed clean production installs by declaring the shared Web UI as an iKanban runtime dependency while keeping it outside the DSH bundle layer list.
+- Strengthened trusted-publishing checks to validate shared Web UI resolution from the generated package artifacts.
+
 ## [0.5.0]
 
 - Fixed trusted publishing to publish the generated workspace tarballs through explicit local paths.
