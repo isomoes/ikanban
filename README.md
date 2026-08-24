@@ -10,9 +10,9 @@ iKanban 是一个面向键盘操作、基于 [DeepSeek Harness](https://github.c
 
 ## 介绍视频
 
-以下视频介绍了 iKanban 的工作流及其演进，包括当前基于 DSH 的 `v0.4.2`。`v0.3` 及更早的视频早于当前软件包，因此其中的安装步骤和部分界面可能有所不同。
+以下视频介绍了 iKanban 的工作流及其演进，包括当前基于 DSH 的 `v0.5.0`。`v0.3` 及更早的视频早于当前软件包，因此其中的安装步骤和部分界面可能有所不同。
 
-**Bilibili 视频：** [为什么做它](https://www.bilibili.com/video/BV1t9AhztEjX/) · [v0.1](https://www.bilibili.com/video/BV1W3Pgz8ExJ/) · [v0.2](https://www.bilibili.com/video/BV1ZNP1znEn5/) · [v0.2.11 如何使用](https://www.bilibili.com/video/BV1Y9wMzKE2b/) · [v0.3](https://www.bilibili.com/video/BV1n9QEBSEch/) · [v0.3.14](https://www.bilibili.com/video/BV1zy3F6aEb2/) · [v0.4.2](https://www.bilibili.com/video/BV156b26eEbn/)
+**Bilibili 视频：** [为什么做它](https://www.bilibili.com/video/BV1t9AhztEjX/) · [v0.1](https://www.bilibili.com/video/BV1W3Pgz8ExJ/) · [v0.2](https://www.bilibili.com/video/BV1ZNP1znEn5/) · [v0.2.11 如何使用](https://www.bilibili.com/video/BV1Y9wMzKE2b/) · [v0.3](https://www.bilibili.com/video/BV1n9QEBSEch/) · [v0.3.14](https://www.bilibili.com/video/BV1zy3F6aEb2/) · [v0.4.2](https://www.bilibili.com/video/BV156b26eEbn/) · [v0.5.0](https://www.bilibili.com/video/BV1QC886JEts/)
 
 ## 软件包
 
