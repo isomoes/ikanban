@@ -53,7 +53,7 @@ test('build lifecycles consume the publishable shared Web UI without recursive o
   assert.equal(ikanban.dependencies['@deepseek-ai/dsh-host-directory-picker-native'], undefined)
   assert.equal(ikanban.dependencies['@deepseek-ai/dsh-agent-loop'], '^0.1.1-rc.1')
   assert.equal(ikanban.dependencies['@deepseek-ai/dsh-tools'], '^0.1.1-rc.1')
-  assert.equal(ikanban.dependencies['@isomoes/dsh-web-ui'], 'workspace:0.4.17')
+  assert.equal(ikanban.dependencies['@isomoes/dsh-web-ui'], 'workspace:0.4.18')
   assert.equal(ikanban.dependencies['@isomoes/dsh-project-mcp'], undefined)
   assert.equal(ikanban.devDependencies['@isomoes/dsh-project-mcp'], 'workspace:*')
   assert.equal(ikanban.dependencies['@deepseek-ai/dsh-mcp-client'], '^0.1.1-rc.1')

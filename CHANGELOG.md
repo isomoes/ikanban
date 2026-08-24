@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.4.18]
+
+- Extracted the product-neutral browser surface into the publishable `@isomoes/dsh-web-ui` package while preserving iKanban branding in the bundle.
+- Added trusted publishing and release artifacts for the shared Web UI package.
+
 ## [0.4.17]
 
 - Added per-workspace persistence for model selection defaults.
