@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.5.0]
+
+- Fixed trusted publishing to publish the generated workspace tarballs through explicit local paths.
+- Kept the shared Web UI as a build-time workspace dependency instead of installing it at runtime with the iKanban bundle.
+- Added a documented overview of the product changes from v0.4.2 through v0.4.18.
+
 ## [0.4.18]
 
 - Extracted the product-neutral browser surface into the publishable `@isomoes/dsh-web-ui` package while preserving iKanban branding in the bundle.
