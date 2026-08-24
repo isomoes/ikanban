@@ -5,8 +5,8 @@ import {
 import {
   DisclosureRow, IconChevronRightOutline14, StateDot,
   type DisclosureRowProps, type StateDotState,
-} from '@isomoes/dsh-ikanban/client/ui-primitives'
-import type { PropsLocale, PropsRuntime } from '@isomoes/dsh-ikanban/client/ui-slots'
+} from '@isomoes/dsh-web-ui/client/ui-primitives'
+import type { PropsLocale, PropsRuntime } from '@isomoes/dsh-web-ui/client/ui-slots'
 import { shallowEqual, type SessionId, type SessionListState } from '@deepseek-ai/dsh-client-runtime/client'
 import type { WorkflowRunKey } from './locales.ts'
 import type {

@@ -8,7 +8,7 @@
  * details open/close from ui-conversation) — writes stay inside the store's
  * declared action set, delivered as the registration's bound actions.
  */
-import type { BoundActions } from '@isomoes/dsh-ikanban/client/ui-slots'
+import type { BoundActions } from '@isomoes/dsh-web-ui/client/ui-slots'
 import type { createLayoutStore } from './stores.ts'
 
 /** The layout store's bound action set (framework-baked, draft params peeled). */

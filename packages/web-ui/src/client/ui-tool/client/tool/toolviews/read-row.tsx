@@ -8,8 +8,8 @@
 // result-side only, so there is no running-state read card to draw.
 
 import type { Context } from '@deepseek-ai/cordis'
-import { IconBrowseOutline16 } from '@isomoes/dsh-ikanban/client/ui-primitives'
-import type { PropsLocale } from '@isomoes/dsh-ikanban/client/ui-slots'
+import { IconBrowseOutline16 } from '@isomoes/dsh-web-ui/client/ui-primitives'
+import type { PropsLocale } from '@isomoes/dsh-web-ui/client/ui-slots'
 import type { ToolCallViewProps } from '../../contract/slots.ts'
 import { readCardModel } from '../models/read-card-model.ts'
 import { toolRowModel } from '../models/tool-call-model.ts'

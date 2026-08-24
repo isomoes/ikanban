@@ -9,8 +9,8 @@
  * real host entity, so the sink is one unconditional prompt path.
  */
 import type { ClientContext, ISessions, SessionBinding, SessionFace, SessionId } from '@deepseek-ai/dsh-client-runtime/client'
-import type { InputTriggerController, SubmitImageAttachment, SubmitOutcome } from '@isomoes/dsh-ikanban/client/ui-input-trigger/client'
-import type { TranslateNS } from '@isomoes/dsh-ikanban/client/locale/client'
+import type { InputTriggerController, SubmitImageAttachment, SubmitOutcome } from '@isomoes/dsh-web-ui/client/ui-input-trigger/client'
+import type { TranslateNS } from '@isomoes/dsh-web-ui/client/locale/client'
 import { queueReadFaceOf } from '../queue/store.ts'
 import type { ComposerKeyboard, DraftAttachmentId, SessionInputResolver, SessionInput } from './contract.ts'
 import type { InputSubmitMode } from '../contract/composer-submission.ts'

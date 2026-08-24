@@ -5,9 +5,9 @@ import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import {
   IconCheckOutline16, IconCloseOutline16, IconCordisPluginOutline14, IconPlayOutline16,
   IconStopFill16, IconTrashOutline16, Tooltip, useDismissOnOutsidePointer,
-} from '@isomoes/dsh-ikanban/client/ui-primitives'
-import type { InjectFace, PropsLocale, PropsRuntime } from '@isomoes/dsh-ikanban/client/ui-slots'
-import type {} from '@isomoes/dsh-ikanban/client/ui-sidebar/client'
+} from '@isomoes/dsh-web-ui/client/ui-primitives'
+import type { InjectFace, PropsLocale, PropsRuntime } from '@isomoes/dsh-web-ui/client/ui-slots'
+import type {} from '@isomoes/dsh-web-ui/client/ui-sidebar/client'
 import type { CordisRunActivity } from '@deepseek-ai/dsh-cordis-client-runner/client'
 import type { SessionId } from '@deepseek-ai/dsh-client-connection/client'
 import type { CordisInventoryRow } from './dynamic-port.ts'

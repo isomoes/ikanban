@@ -9,8 +9,8 @@
 // section, its first line in the collapsed summary.
 
 import type { Context } from '@deepseek-ai/cordis'
-import { IconEditOutline16 } from '@isomoes/dsh-ikanban/client/ui-primitives'
-import type { PropsLocale } from '@isomoes/dsh-ikanban/client/ui-slots'
+import { IconEditOutline16 } from '@isomoes/dsh-web-ui/client/ui-primitives'
+import type { PropsLocale } from '@isomoes/dsh-web-ui/client/ui-slots'
 import type { ToolCallViewProps } from '../../contract/slots.ts'
 import { diffCardModel } from '../models/diff-card-model.ts'
 import { toolRowModel } from '../models/tool-call-model.ts'

@@ -4,7 +4,7 @@
  * reuse that row's chrome and sit between copy and branch. The note editor is
  * a body-portaled popover anchored to the note trigger, avoiding row squeeze
  * and conversation-column clipping.
- * @module @isomoes/dsh-ikanban/client/ui-message-feedback/client/MessageFeedbackActions
+ * @module @isomoes/dsh-web-ui/client/ui-message-feedback/client/MessageFeedbackActions
  */
 
 import {
@@ -14,7 +14,7 @@ import {
 import { createPortal } from 'react-dom'
 import {
   IconDislikeOutline16, IconLikeOutline16, Tooltip, useAnchoredPosition,
-} from '@isomoes/dsh-ikanban/client/ui-primitives'
+} from '@isomoes/dsh-web-ui/client/ui-primitives'
 import type { MessageFeedbackRating } from '@deepseek-ai/dsh-message-feedback/types'
 import type { MessageFeedbackActionProps } from './slots.ts'
 import css from './MessageFeedbackActions.module.css'

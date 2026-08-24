@@ -13,14 +13,14 @@
 
 import type { ConnectionHandle } from '@deepseek-ai/dsh-api-remotes/client'
 // Type-only: pulls the locale plugin's Context merge (ctx.locale).
-import type {} from '@isomoes/dsh-ikanban/client/locale/client'
+import type {} from '@isomoes/dsh-web-ui/client/locale/client'
 // Type-only: pulls the ctx.remote merge and the forwarded-event key face
 // (the settings invalidation rides the allowlist) into this program.
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 // Type-only: pulls the settings shell's SlotMap merge (the 'settings.section' entry).
-import type {} from '@isomoes/dsh-ikanban/client/ui-settings/client'
+import type {} from '@isomoes/dsh-web-ui/client/ui-settings/client'
 // Type-only: pulls the local command and keybinding service onto ClientContext.
-import type {} from '@isomoes/dsh-ikanban/client/ui-commands/client'
+import type {} from '@isomoes/dsh-web-ui/client/ui-commands/client'
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 import { AgentPresetLabel } from './AgentPresetLabel.tsx'
 import type { AgentPresetLabelInjected } from './AgentPresetLabel.tsx'

@@ -2,8 +2,8 @@
 
 import { useEffect } from 'react'
 import type { ReactNode } from 'react'
-import { Button } from '@isomoes/dsh-ikanban/client/ui-primitives'
-import type { InjectFace, PropsLocale, PropsRuntime } from '@isomoes/dsh-ikanban/client/ui-slots'
+import { Button } from '@isomoes/dsh-web-ui/client/ui-primitives'
+import type { InjectFace, PropsLocale, PropsRuntime } from '@isomoes/dsh-web-ui/client/ui-slots'
 import type { SettingsDocumentStore } from './settings-document-store.ts'
 import css from './SettingsDocumentAction.module.css'
 

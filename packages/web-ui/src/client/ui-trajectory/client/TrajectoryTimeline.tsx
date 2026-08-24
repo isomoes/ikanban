@@ -4,7 +4,7 @@ import {
   memo, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent,
   type PointerEvent,
 } from 'react'
-import { Tooltip } from '@isomoes/dsh-ikanban/client/ui-primitives'
+import { Tooltip } from '@isomoes/dsh-web-ui/client/ui-primitives'
 import type { TrajectoryTurnModel } from './layout.ts'
 import type { AssistantMetricDetail, TrajectoryCellKind, TrajectoryCellProps } from './trajectory-record.ts'
 import {

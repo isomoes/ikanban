@@ -12,12 +12,12 @@
 import type { Context } from '@deepseek-ai/cordis'
 import {
   type BoundActions, type LocaleDictOf, type LocaleNamespaceMap, type Translate, type TranslateNS,
-} from '@isomoes/dsh-ikanban/client/ui-slots'
+} from '@isomoes/dsh-web-ui/client/ui-slots'
 import type { ClientContext, SettingsScope } from '@deepseek-ai/dsh-client-runtime/client'
 // Type-only: the ctx.settingsScope Context merge and the settings slot types.
 // Cross-plugin collaboration goes through the service, never a value import
 // (client bundle purity gate).
-import type {} from '@isomoes/dsh-ikanban/client/ui-settings/client'
+import type {} from '@isomoes/dsh-web-ui/client/ui-settings/client'
 import {
   LOCALE_PREFERENCE_FIELD, LOCALE_SETTINGS_NAMESPACE, type LocaleId, type LocaleSettings,
 } from '../locale-settings.ts'
@@ -37,9 +37,9 @@ export type { LocaleId, LocaleSettings } from '../locale-settings.ts'
 // The translate currency lives in ui-slots (the render machinery synthesizes
 // the seat); re-exported here so dictionary owners import one package.
 // TranslateNS<'model'> is the namespace-addressed developer-facing form.
-export type { Translate, TranslateNS } from '@isomoes/dsh-ikanban/client/ui-slots'
+export type { Translate, TranslateNS } from '@isomoes/dsh-web-ui/client/ui-slots'
 
-declare module '@isomoes/dsh-ikanban/client/ui-slots' {
+declare module '@isomoes/dsh-web-ui/client/ui-slots' {
   interface LocaleNamespaceMap {
     /** Shared cross-feature vocabulary, consulted by the lookup chain after the entry's own namespace misses. */
     common: CommonKey

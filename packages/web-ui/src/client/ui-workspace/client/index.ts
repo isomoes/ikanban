@@ -8,13 +8,13 @@
  * client half (see the contract module doc). Export discipline:
  * packages/client/AGENTS.md.
  */
-import type { HostObservable } from '@isomoes/dsh-ikanban/client/ui-slots'
+import type { HostObservable } from '@isomoes/dsh-web-ui/client/ui-slots'
 import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
 import type { ClientContext, SessionId } from '@deepseek-ai/dsh-client-runtime/client'
 // Type-only: pulls the owned locale, command, and conversation Context merges.
-import type {} from '@isomoes/dsh-ikanban/client/locale/client'
-import type {} from '@isomoes/dsh-ikanban/client/ui-commands/client'
-import type {} from '@isomoes/dsh-ikanban/client/ui-conversation/client'
+import type {} from '@isomoes/dsh-web-ui/client/locale/client'
+import type {} from '@isomoes/dsh-web-ui/client/ui-commands/client'
+import type {} from '@isomoes/dsh-web-ui/client/ui-conversation/client'
 import type { WorkspaceChanges } from '../workspace-changes.ts'
 import type { WorkspaceBrowserInjected, WorkspacePickerInjected } from './contract/slots.ts'
 import { createWorkspaceViewStore } from './stores.ts'
@@ -30,7 +30,7 @@ export type {
 } from './contract/slots.ts'
 export type { WorkspaceKey } from './locales.ts'
 
-declare module '@isomoes/dsh-ikanban/client/ui-slots' {
+declare module '@isomoes/dsh-web-ui/client/ui-slots' {
   interface LocaleNamespaceMap {
     /** The workspace browsing region and pick/create flow copy. */
     workspace: WorkspaceKey

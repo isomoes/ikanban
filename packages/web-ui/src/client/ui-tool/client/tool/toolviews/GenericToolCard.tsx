@@ -7,7 +7,7 @@
 import type { ReactNode } from 'react'
 import {
   IconApiOutline14, IconBrowseOutline16, IconCodeOutline16, IconEditOutline16, IconSearchOutline16, IconSparkle16,
-} from '@isomoes/dsh-ikanban/client/ui-primitives'
+} from '@isomoes/dsh-web-ui/client/ui-primitives'
 import type { ToolCallOwnerProps, ToolTreeProps } from '../../contract/slots.ts'
 import { readCardModel } from '../models/read-card-model.ts'
 import { diffCardModel } from '../models/diff-card-model.ts'

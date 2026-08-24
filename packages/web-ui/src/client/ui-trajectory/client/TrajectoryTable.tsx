@@ -11,7 +11,7 @@ import {
   JsonTree,
   MarkdownText,
   Tooltip,
-} from '@isomoes/dsh-ikanban/client/ui-primitives'
+} from '@isomoes/dsh-web-ui/client/ui-primitives'
 import { structuredPatch } from 'diff'
 import type {
   AssistantRequestConfig, ConversationPromptSnapshot,

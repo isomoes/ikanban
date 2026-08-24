@@ -14,12 +14,12 @@ import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import type { CommandResult } from '@deepseek-ai/dsh-commands/types'
 import type { ClientContext, ISessions, SessionId, SettingsScope } from '@deepseek-ai/dsh-client-runtime/client'
-import type { TranslateNS } from '@isomoes/dsh-ikanban/client/locale/client'
-import type {} from '@isomoes/dsh-ikanban/client/ui-settings/client'
+import type { TranslateNS } from '@isomoes/dsh-web-ui/client/locale/client'
+import type {} from '@isomoes/dsh-web-ui/client/ui-settings/client'
 import type {
   CandidateRequest, ClientSessionContext, CommandClaim, PickOutcome, InputTriggerCandidate, InputTriggerPick,
   SubmitEnvelope, SubmitImageAttachment, SubmitOutcome,
-} from '@isomoes/dsh-ikanban/client/ui-input-trigger/client'
+} from '@isomoes/dsh-web-ui/client/ui-input-trigger/client'
 import type { CommandSettings } from '../shortcut-settings.ts'
 import { COMMAND_SETTINGS_NAMESPACE, KEYBIND_OVERRIDES_FIELD } from '../shortcut-settings.ts'
 import type { CommandContribution, CommandDecoration, CommandUiContract } from './contract.ts'

@@ -4,7 +4,7 @@ import {
   Button, IconCheckOutline14, IconChevronDownOutline14, IconChevronLeftOutline14,
   IconChevronRightOutline14, IconChevronUpOutline14, IconCloseOutline16,
   IconEditOutline16, MarkdownText,
-} from '@isomoes/dsh-ikanban/client/ui-primitives'
+} from '@isomoes/dsh-web-ui/client/ui-primitives'
 import {
   PendingQuestion, planReviewOf,
   type QuestionAnswer, type QuestionComposerProps,

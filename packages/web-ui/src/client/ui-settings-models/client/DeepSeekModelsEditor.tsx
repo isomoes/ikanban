@@ -9,7 +9,7 @@ import { useState } from 'react'
 import type { ReactNode } from 'react'
 import {
   IconChevronDownOutline14, IconChevronRightOutline14, IconPlusOutline16, IconTrashOutline16,
-} from '@isomoes/dsh-ikanban/client/ui-primitives'
+} from '@isomoes/dsh-web-ui/client/ui-primitives'
 import type { en } from './locales.ts'
 import styles from './ModelsSection.module.css'
 

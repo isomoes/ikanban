@@ -9,15 +9,15 @@
  */
 import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
-import type { ChatFileMentions } from '@isomoes/dsh-ikanban/client/ui-conversation/client'
-import type {} from '@isomoes/dsh-ikanban/client/locale/client'
+import type { ChatFileMentions } from '@isomoes/dsh-web-ui/client/ui-conversation/client'
+import type {} from '@isomoes/dsh-web-ui/client/locale/client'
 import { ProducedFiles } from './ProducedFiles.tsx'
 import { en, NS, zh, type DeliverablesKey } from './locales.ts'
 import {
   deliverablesDefinition, producedFileMentions, selectProducedFiles,
 } from './turn-deliverables.ts'
 
-declare module '@isomoes/dsh-ikanban/client/ui-slots' {
+declare module '@isomoes/dsh-web-ui/client/ui-slots' {
   interface LocaleNamespaceMap {
     /** Produced-files row copy. */
     'deliverables': DeliverablesKey

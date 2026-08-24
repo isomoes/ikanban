@@ -5,12 +5,12 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import type { SnapshotStore } from '@deepseek-ai/dsh-client-runtime/client'
-import type { InjectFace, PropsLocale, PropsRuntime } from '@isomoes/dsh-ikanban/client/ui-slots'
+import type { InjectFace, PropsLocale, PropsRuntime } from '@isomoes/dsh-web-ui/client/ui-slots'
 import {
   IconAgentPresetOutline16, IconChevronDownOutline14, SearchPalette,
-} from '@isomoes/dsh-ikanban/client/ui-primitives'
+} from '@isomoes/dsh-web-ui/client/ui-primitives'
 // Type-only: pulls the ui-conversation SlotMap merge (the hero seat).
-import type {} from '@isomoes/dsh-ikanban/client/ui-conversation/client'
+import type {} from '@isomoes/dsh-web-ui/client/ui-conversation/client'
 import type { AgentPresetSeatState } from './seat-store.ts'
 import { presetDisplayText } from './locales.ts'
 import css from './AgentPresetSeat.module.css'

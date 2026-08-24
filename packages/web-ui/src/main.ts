@@ -1,10 +1,10 @@
 /**
  * Web application entry: thin bootstrap over the shell library. Everything —
  * module-table seeding, the boot page, and the UI-renderer handoff — lives
- * in @isomoes/dsh-ikanban/client/web; this file only remaps the fork graph and
+ * in @isomoes/dsh-web-ui/client/web; this file only remaps the fork graph and
  * finds the mount point.
  */
-import { AppWebEntry } from '@isomoes/dsh-ikanban/client/web'
+import { AppWebEntry } from '@isomoes/dsh-web-ui/client/web'
 import { remapForkedClientInjects } from './client-id-aliases.ts'
 
 const el = document.getElementById('root')

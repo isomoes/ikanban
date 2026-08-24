@@ -1,6 +1,6 @@
 import type {
   SettingsSchemaService,
-} from '@isomoes/dsh-ikanban/client/ui-settings/client'
+} from '@isomoes/dsh-web-ui/client/ui-settings/client'
 
 /** Plain schema callbacks exposed to Models stores and presentation components. */
 export type SettingsSchemaOperations = Pick<

@@ -1,13 +1,13 @@
 /**
- * Package-owned invariant companion for `@isomoes/dsh-ikanban/client/ui-permission-presets`.
- * @module @isomoes/dsh-ikanban/client/ui-permission-presets/invariant
+ * Package-owned invariant companion for `@isomoes/dsh-web-ui/client/ui-permission-presets`.
+ * @module @isomoes/dsh-web-ui/client/ui-permission-presets/invariant
  */
 
 /* jscpd:ignore-start */
 import type { Context } from '@deepseek-ai/cordis'
 import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
 
-const PACKAGE_NAME = '@isomoes/dsh-ikanban/client/ui-permission-presets'
+const PACKAGE_NAME = '@isomoes/dsh-web-ui/client/ui-permission-presets'
 
 /** Cordis companion plugin name. */
 export const name = 'client-ui-permission-presets-invariant'

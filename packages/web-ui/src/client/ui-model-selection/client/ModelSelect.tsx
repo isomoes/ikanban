@@ -20,8 +20,8 @@ import type { ModelReasoningEffort, ModelSelection } from '@deepseek-ai/dsh-api-
 import {
   IconCheckOutline16, IconChevronDownOutline14, IconChevronRightOutline14,
   IconWarningOutline16, Toast,
-} from '@isomoes/dsh-ikanban/client/ui-primitives'
-import type { PropsLocale } from '@isomoes/dsh-ikanban/client/ui-slots'
+} from '@isomoes/dsh-web-ui/client/ui-primitives'
+import type { PropsLocale } from '@isomoes/dsh-web-ui/client/ui-slots'
 import type { ModelSelectInjected } from './slots.ts'
 import css from './ModelSelect.module.css'
 

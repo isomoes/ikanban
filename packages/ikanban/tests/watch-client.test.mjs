@@ -13,14 +13,14 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 test('marks watcher builds and config reloads as development', () => {
   const environment = {}
   markDevelopmentBuild(environment)
-  assert.equal(environment.IKANBAN_DEV, '1')
-  assert.deepEqual(developmentDefines, { __IKANBAN_DEV__: 'true' })
+  assert.equal(environment.DSH_WEB_UI_DEV, '1')
+  assert.deepEqual(developmentDefines, { __DSH_WEB_UI_DEV__: 'true' })
   assert.deepEqual(asDevelopmentBuild({
     watch: true,
-    define: { __IKANBAN_DEV__: 'false', OTHER: 'value' },
+    define: { __DSH_WEB_UI_DEV__: 'false', OTHER: 'value' },
   }), {
     watch: true,
-    define: { __IKANBAN_DEV__: 'true', OTHER: 'value' },
+    define: { __DSH_WEB_UI_DEV__: 'true', OTHER: 'value' },
   })
 })
 

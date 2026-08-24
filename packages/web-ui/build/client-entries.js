@@ -2,16 +2,15 @@ import { access, readFile, readdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
 const STOCK_PREFIX = '@deepseek-ai/dsh-client-'
-const VIRTUAL_PREFIX = '@isomoes/dsh-ikanban/client/'
+const VIRTUAL_PREFIX = '@isomoes/dsh-web-ui/client/'
 const local = id => `${VIRTUAL_PREFIX}${id}`
 
-// Package-owned Loader graph. Local UI edges always point at iKanban virtual
+// Package-owned Loader graph. Local UI edges always point at neutral shared
 // packages; only shared DSH infrastructure retains its published package id.
 const CLIENT_INJECTS = {
   'locale': ['@deepseek-ai/dsh-client-connection', '@deepseek-ai/dsh-client-runtime', local('ui-settings'), '@deepseek-ai/dsh-api-remotes'],
   'ui-agent-preset': ['@deepseek-ai/dsh-client-connection', local('locale'), '@deepseek-ai/dsh-client-runtime', local('ui-conversation'), local('ui-settings'), '@deepseek-ai/dsh-api-remotes'],
   'ui-attachment': [local('ui-conversation')],
-  'ui-brand-official': ['@deepseek-ai/dsh-client-runtime', local('ui-conversation'), local('ui-sidebar')],
   'ui-commands': ['@deepseek-ai/dsh-api-remotes', '@deepseek-ai/dsh-client-runtime', local('locale'), local('ui-input-trigger'), local('ui-conversation'), local('ui-layout')],
   'ui-conversation': ['@deepseek-ai/dsh-client-connection', local('locale'), '@deepseek-ai/dsh-client-runtime', local('ui-settings'), '@deepseek-ai/dsh-api-remotes', local('ui-layout')],
   'ui-cordis': ['@deepseek-ai/dsh-client-runtime', '@deepseek-ai/dsh-client-connection', '@deepseek-ai/dsh-cordis-client-runner', '@deepseek-ai/dsh-api-remotes', local('locale'), local('ui-input-trigger'), local('ui-tool'), local('ui-sidebar')],

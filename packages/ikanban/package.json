@@ -88,9 +88,10 @@
     }
   },
   "scripts": {
-    "build": "pnpm --filter @isomoes/dsh-project-mcp build:package && pnpm --filter @isomoes/dsh-ikanban-web-ui build:package && pnpm build:package",
-    "build:package": "node scripts/clean.mjs && tsc -p tsconfig.json && node scripts/build-client.mjs && node scripts/build-project-mcp.mjs",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "pnpm --filter @isomoes/dsh-project-mcp build:package && pnpm --filter @isomoes/dsh-web-ui build:package && pnpm build:package",
+    "build:package": "node scripts/clean.mjs && tsc -p tsconfig.json && pnpm build:brand && node scripts/build-client.mjs && node scripts/build-project-mcp.mjs",
+    "build:brand": "tsdown",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.client.json",
     "test": "pnpm build && node --test tests/*.test.mjs",
     "prepare": "pnpm build"
   },
@@ -142,6 +143,7 @@
     "@deepseek-ai/dsh-typert-registry": "^0.1.1-rc.1",
     "@deepseek-ai/dsh-workspace": "^0.1.1-rc.1",
     "@deepseek-ai/schemastery": "^3.18.1",
+    "@isomoes/dsh-web-ui": "workspace:0.4.17",
     "commander": "^15.0.0"
   },
   "peerDependencies": {
@@ -157,9 +159,10 @@
     "@deepseek-ai/dsh-invariants": "^0.1.1-rc.1",
     "@deepseek-ai/dsh-shell-env": "^0.1.1-rc.1",
     "@deepseek-ai/dsh-system-prompt": "^0.1.1-rc.1",
-    "@isomoes/dsh-ikanban-web-ui": "workspace:*",
     "@isomoes/dsh-project-mcp": "workspace:*",
     "@types/node": "^22.0.0",
+    "@types/react": "~18.3.1",
+    "tsdown": "^0.22.2",
     "typescript": "^6.0.3"
   }
 }

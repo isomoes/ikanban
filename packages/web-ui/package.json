@@ -1,8 +1,34 @@
 {
-  "name": "@isomoes/dsh-ikanban-web-ui",
+  "name": "@isomoes/dsh-web-ui",
   "version": "0.4.17",
-  "private": true,
+  "description": "Product-neutral shared Web UI for DeepSeek Harness bundles",
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "MIT",
   "type": "module",
+  "exports": {
+    "./client/*/client": "./lib/clients/*/client.js",
+    "./client/*/package.json": "./lib/clients/*/package.json",
+    "./client/*": "./lib/clients/*/index.js",
+    "./web/*": "./web/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/clients/**/*.js",
+    "lib/clients/**/package.json",
+    "web/**",
+    "UPSTREAM.md"
+  ],
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/isomoes/ikanban.git",
+    "directory": "packages/web-ui"
+  },
   "scripts": {
     "build": "pnpm build:package",
     "build:package": "pnpm typecheck && pnpm build:frontend && pnpm build:client",

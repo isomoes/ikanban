@@ -14,7 +14,7 @@
  * @module
  */
 import { abbreviateHomePath } from '@deepseek-ai/dsh-client-runtime/client'
-import type { ReadBlockLine, ReadBlockProps } from '@isomoes/dsh-ikanban/client/ui-primitives'
+import type { ReadBlockLine, ReadBlockProps } from '@isomoes/dsh-web-ui/client/ui-primitives'
 import { relativizeToCwd, type ToolCallBlock } from './tool-call-model.ts'
 
 /**

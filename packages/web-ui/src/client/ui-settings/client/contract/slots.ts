@@ -10,7 +10,7 @@
  */
 
 
-declare module '@isomoes/dsh-ikanban/client/ui-slots' {
+declare module '@isomoes/dsh-web-ui/client/ui-slots' {
   interface SlotMap {
     /**
      * The sidebar-foot trigger row content: icon + label, supplied as slot

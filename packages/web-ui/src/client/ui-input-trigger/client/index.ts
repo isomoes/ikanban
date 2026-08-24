@@ -5,7 +5,7 @@
  * contract in ./contract.ts; sources register through ctx.inputTriggers alone.
  */
 // Type-only: pulls the locale plugin's Context merge (ctx.locale).
-import type {} from '@isomoes/dsh-ikanban/client/locale/client'
+import type {} from '@isomoes/dsh-web-ui/client/locale/client'
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 import { InputTriggerService } from './service.ts'
 import type { MenuViewInjected } from './slots.ts'
@@ -34,7 +34,7 @@ declare module '@deepseek-ai/cordis' {
   }
 }
 
-declare module '@isomoes/dsh-ikanban/client/ui-slots' {
+declare module '@isomoes/dsh-web-ui/client/ui-slots' {
   interface LocaleNamespaceMap {
     /** The candidate menu's copy: group titles keyed by source name, the pending row, and the listbox aria. */
     'slash.menu': MenuKey

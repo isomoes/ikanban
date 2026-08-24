@@ -8,73 +8,62 @@ import { test } from 'node:test'
 import { discoverClientEntries } from '../../web-ui/build/client-entries.js'
 
 const packageRoot = new URL('../', import.meta.url)
-const entries = await discoverClientEntries({
-  packageRoot: fileURLToPath(new URL('../../web-ui/', import.meta.url)),
-})
+const sharedRoot = new URL('../../web-ui/', import.meta.url)
+const entries = await discoverClientEntries({ packageRoot: fileURLToPath(sharedRoot) })
 const manifest = JSON.parse(await readFile(new URL('package.json', packageRoot), 'utf8'))
 const composition = await readFile(new URL('cordis.patch.yml', packageRoot), 'utf8')
+const brandId = '@isomoes/dsh-ikanban/client/ui-brand-ikanban'
 
-test('publishes every local client as an isolated virtual package', async () => {
-  assert.equal(entries.length, 36)
-  assert.equal(manifest.dsh.client, undefined)
-  assert.match(composition, /name: '@isomoes\/dsh-ikanban\/client\/ui-timeline'/)
-  assert.match(composition, /name: '@isomoes\/dsh-ikanban\/client\/ui-reminders'/)
-  assert.match(composition, /id: typert-loader[\s\S]*packages:[\s\S]*'@deepseek-ai\/dsh-file-reference'[\s\S]*'@deepseek-ai\/dsh-session-reference'/)
+test('consumes neutral shared clients and publishes only product branding', async () => {
+  assert.equal(entries.length, 35)
+  assert.equal(manifest.dependencies['@isomoes/dsh-web-ui'], 'workspace:0.4.17')
+  assert.match(composition, /name: '@isomoes\/dsh-web-ui\/client\/ui-timeline'/)
+  assert.match(composition, /name: '@isomoes\/dsh-web-ui\/client\/ui-reminders'/)
+  assert.match(composition, /name: '@isomoes\/dsh-ikanban\/client\/ui-brand-ikanban'/)
+  assert.doesNotMatch(composition, /ui-brand-official/)
 
-  for (const entry of entries) {
-    const { id, virtualId } = entry
-    const output = new URL(`lib/clients/${id}/`, packageRoot)
-    const [bundle, sourcemap, manifest, index] = await Promise.all([
-      readFile(new URL('client.js', output), 'utf8'),
-      JSON.parse(await readFile(new URL('client.js.map', output), 'utf8')),
-      JSON.parse(await readFile(new URL('package.json', output), 'utf8')),
-      readFile(new URL('index.js', output), 'utf8'),
-    ])
-
-    assert.match(bundle, new RegExp(`id: ${JSON.stringify(virtualId).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`))
-    assert.equal(manifest.name, virtualId)
-    assert.deepEqual(manifest.dsh.client, entry.client)
-    if (entry.host === undefined) {
-      assert.match(index, /^export function apply\(\) \{\}\s*$/)
-    } else {
-      assert.doesNotMatch(index, /^export function apply\(\) \{\}\s*$/)
-      assert.match(index, /function apply\(ctx\)/)
-    }
-    assert.equal(sourcemap.sources.length, sourcemap.sourcesContent.length)
-  }
+  const output = new URL('lib/clients/ui-brand-ikanban/', packageRoot)
+  const [bundle, productManifest, index] = await Promise.all([
+    readFile(new URL('client.js', output), 'utf8'),
+    JSON.parse(await readFile(new URL('package.json', output), 'utf8')),
+    readFile(new URL('index.js', output), 'utf8'),
+  ])
+  assert.match(bundle, /iKanban/)
+  assert.ok(bundle.includes(`id: ${JSON.stringify(brandId)}`))
+  assert.equal(productManifest.name, brandId)
+  assert.deepEqual(productManifest.dsh.client.inject, [
+    '@deepseek-ai/dsh-client-runtime',
+    '@isomoes/dsh-web-ui/client/ui-conversation',
+    '@isomoes/dsh-web-ui/client/ui-sidebar',
+  ])
+  assert.match(index, /^export function apply\(\) \{\}\s*$/)
 })
 
-test('loads every host entry with public runtime dependencies', async () => {
-  assert.equal(manifest.dependencies['@deepseek-ai/dsh-settings'], '^0.1.1-rc.1')
-  assert.equal(manifest.dependencies['@deepseek-ai/schemastery'], '^3.18.1')
-  assert.equal(manifest.dependencies['@isomoes/dsh-project-mcp'], undefined)
-  await import(new URL('lib/project-mcp.js', packageRoot))
-
+test('loads shared host entries from the shared package', async () => {
   await Promise.all(entries
     .filter(entry => entry.host !== undefined)
-    .map(entry => import(new URL(`lib/clients/${entry.id}/index.js`, packageRoot))))
+    .map(entry => import(new URL(`lib/clients/${entry.id}/index.js`, sharedRoot))))
 })
 
-test('resolves virtual clients and their manifests from an install-like anchor', async () => {
+test('resolves product and shared virtual clients from an install-like anchor', async () => {
   const root = await mkdtemp(join(tmpdir(), 'ikanban-install-'))
-  const packagePath = fileURLToPath(packageRoot)
-  const installedPath = join(root, 'node_modules', '@isomoes', 'dsh-ikanban')
-  await mkdir(dirname(installedPath), { recursive: true })
-  await symlink(packagePath, installedPath, 'dir')
+  const productPath = fileURLToPath(packageRoot)
+  const sharedPath = fileURLToPath(sharedRoot)
+  const installedProduct = join(root, 'node_modules', '@isomoes', 'dsh-ikanban')
+  const installedShared = join(root, 'node_modules', '@isomoes', 'dsh-web-ui')
+  await mkdir(dirname(installedProduct), { recursive: true })
+  await symlink(productPath, installedProduct, 'dir')
+  await symlink(sharedPath, installedShared, 'dir')
   const resolve = createRequire(join(root, 'anchor.cjs')).resolve
 
   try {
-    assert.equal(resolve('@isomoes/dsh-ikanban'), join(packagePath, 'lib', 'index.js'))
-    assert.equal(resolve('@isomoes/dsh-ikanban/package.json'), join(packagePath, 'package.json'))
-    assert.equal(resolve('@isomoes/dsh-ikanban/project-mcp'), join(packagePath, 'lib', 'project-mcp.js'))
-    assert.equal(resolve('@isomoes/dsh-ikanban/file-reference-local'), join(packagePath, 'lib', 'file-reference-local.js'))
-    assert.equal(resolve('@isomoes/dsh-ikanban/session-reference'), join(packagePath, 'lib', 'session-reference.js'))
-    assert.equal(resolve('@isomoes/dsh-ikanban/ikanban-preset'), join(packagePath, 'lib', 'ikanban-preset.js'))
-    assert.equal(resolve('@isomoes/dsh-ikanban/project-mcp.preset.yml'), join(packagePath, 'project-mcp.preset.yml'))
+    assert.equal(resolve('@isomoes/dsh-ikanban'), join(productPath, 'lib', 'index.js'))
+    assert.equal(resolve(brandId), join(productPath, 'lib', 'clients', 'ui-brand-ikanban', 'index.js'))
+    assert.equal(resolve(`${brandId}/client`), join(productPath, 'lib', 'clients', 'ui-brand-ikanban', 'client.js'))
     for (const { id, virtualId } of entries) {
-      assert.equal(resolve(virtualId), join(packagePath, 'lib', 'clients', id, 'index.js'))
-      assert.equal(resolve(`${virtualId}/client`), join(packagePath, 'lib', 'clients', id, 'client.js'))
-      assert.equal(resolve(`${virtualId}/package.json`), join(packagePath, 'lib', 'clients', id, 'package.json'))
+      assert.equal(resolve(virtualId), join(sharedPath, 'lib', 'clients', id, 'index.js'))
+      assert.equal(resolve(`${virtualId}/client`), join(sharedPath, 'lib', 'clients', id, 'client.js'))
+      assert.equal(resolve(`${virtualId}/package.json`), join(sharedPath, 'lib', 'clients', id, 'package.json'))
     }
   } finally {
     await rm(root, { recursive: true, force: true })

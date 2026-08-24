@@ -22,13 +22,13 @@ test('remaps stock inject edges only when the local client is present', () => {
         ],
       },
       {
-        id: '@isomoes/dsh-ikanban/client/ui-theme',
+        id: '@isomoes/dsh-web-ui/client/ui-theme',
         inject: [
-          '@isomoes/dsh-ikanban/client/locale',
-          '@isomoes/dsh-ikanban/client/ui-primitives',
+          '@isomoes/dsh-web-ui/client/locale',
+          '@isomoes/dsh-web-ui/client/ui-primitives',
         ],
       },
-      { id: '@isomoes/dsh-ikanban/client/locale', inject: [] },
+      { id: '@isomoes/dsh-web-ui/client/locale', inject: [] },
     ],
   }
 
@@ -36,10 +36,10 @@ test('remaps stock inject edges only when the local client is present', () => {
 
   assert.deepEqual(graph.entries[0].inject, [
     '@deepseek-ai/dsh-client-runtime',
-    '@isomoes/dsh-ikanban/client/ui-theme',
+    '@isomoes/dsh-web-ui/client/ui-theme',
   ])
   assert.deepEqual(graph.entries[1].inject, [
-    '@isomoes/dsh-ikanban/client/locale',
-    '@isomoes/dsh-ikanban/client/ui-primitives',
+    '@isomoes/dsh-web-ui/client/locale',
+    '@isomoes/dsh-web-ui/client/ui-primitives',
   ])
 })

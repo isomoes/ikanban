@@ -9,7 +9,7 @@ import Loader from '@deepseek-ai/cordis-plugin-loader'
 import type {
   BootManifest, ClientModuleCreateOptions, ClientModuleSystem, DshWindow,
 } from '@deepseek-ai/dsh-client-modules/client'
-import type {} from '@isomoes/dsh-ikanban/client/ui-renderer/client'
+import type {} from '@isomoes/dsh-web-ui/client/ui-renderer/client'
 import { BootPage } from './boot-page.ts'
 import { getStaticModules } from './seed.ts'
 import { STATE_LABELS } from './loader-status.ts'

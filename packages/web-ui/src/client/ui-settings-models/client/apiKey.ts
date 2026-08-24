@@ -1,6 +1,6 @@
 /**
  * Browser-side judgement of a typed API key.
- * @module @isomoes/dsh-ikanban/client/ui-settings-models/apiKey
+ * @module @isomoes/dsh-web-ui/client/ui-settings-models/apiKey
  */
 
 /**

@@ -6,8 +6,8 @@
 
 import { useLayoutEffect, useRef, useState } from 'react'
 import type { HostDescriptionSource } from '@deepseek-ai/dsh-client-connection/client'
-import type { InjectFace, PropsLocale } from '@isomoes/dsh-ikanban/client/ui-slots'
-import type { TurnTailOwnerProps } from '@isomoes/dsh-ikanban/client/ui-conversation/client'
+import type { InjectFace, PropsLocale } from '@isomoes/dsh-web-ui/client/ui-slots'
+import type { TurnTailOwnerProps } from '@isomoes/dsh-web-ui/client/ui-conversation/client'
 import { basename } from './turn-deliverables.ts'
 import type { NS } from './locales.ts'
 import css from './ProducedFiles.module.css'

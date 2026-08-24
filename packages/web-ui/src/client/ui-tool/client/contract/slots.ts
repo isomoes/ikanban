@@ -2,12 +2,12 @@
 import type { HostDescriptionSource } from '@deepseek-ai/dsh-client-connection/client'
 import type {
   InjectFace, PropsLocale, PropsRenderSlots, PropsRuntime,
-} from '@isomoes/dsh-ikanban/client/ui-slots'
+} from '@isomoes/dsh-web-ui/client/ui-slots'
 import type { ToolCallBlock } from '@deepseek-ai/dsh-client-runtime/client'
-import type {} from '@isomoes/dsh-ikanban/client/ui-conversation/client'
-import type {} from '@isomoes/dsh-ikanban/client/locale/client'
+import type {} from '@isomoes/dsh-web-ui/client/ui-conversation/client'
+import type {} from '@isomoes/dsh-web-ui/client/locale/client'
 
-declare module '@isomoes/dsh-ikanban/client/ui-slots' {
+declare module '@isomoes/dsh-web-ui/client/ui-slots' {
   interface SlotMap {
     /**
      * Keyed atomic Tool call view, dispatched by the wire Tool name. Register

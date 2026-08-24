@@ -1,5 +1,5 @@
 /** Card-aware output body for the selected Tool call in details. */
-import { DiffBlock, ReadBlock, SearchBlock, TerminalBlock, WebBlock } from '@isomoes/dsh-ikanban/client/ui-primitives'
+import { DiffBlock, ReadBlock, SearchBlock, TerminalBlock, WebBlock } from '@isomoes/dsh-web-ui/client/ui-primitives'
 import type { ToolDetailsProps } from '../contract/slots.ts'
 import { diffCardModel } from './models/diff-card-model.ts'
 import { readCardModel } from './models/read-card-model.ts'

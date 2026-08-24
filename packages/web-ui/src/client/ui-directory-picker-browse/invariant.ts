@@ -1,13 +1,13 @@
 /**
- * Package-owned invariant companion for `@isomoes/dsh-ikanban/client/ui-directory-picker-browse`.
- * @module @isomoes/dsh-ikanban/client/ui-directory-picker-browse/invariant
+ * Package-owned invariant companion for `@isomoes/dsh-web-ui/client/ui-directory-picker-browse`.
+ * @module @isomoes/dsh-web-ui/client/ui-directory-picker-browse/invariant
  */
 
 /* jscpd:ignore-start */
 import type { Context } from '@deepseek-ai/cordis'
 import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
 
-const PACKAGE_NAME = '@isomoes/dsh-ikanban/client/ui-directory-picker-browse'
+const PACKAGE_NAME = '@isomoes/dsh-web-ui/client/ui-directory-picker-browse'
 
 /** Cordis companion plugin name. */
 export const name = 'client-ui-directory-picker-browse-invariant'

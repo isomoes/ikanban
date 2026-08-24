@@ -8,10 +8,10 @@ import {
 } from '@deepseek-ai/dsh-client-runtime/client'
 import {
   IconChevronDownOutline14, IconChevronRightOutline14, IconRefreshOutline14, StateDot,
-} from '@isomoes/dsh-ikanban/client/ui-primitives'
-import type { PropsLocale, PropsRuntime, TranslateNS } from '@isomoes/dsh-ikanban/client/ui-slots'
+} from '@isomoes/dsh-web-ui/client/ui-primitives'
+import type { PropsLocale, PropsRuntime, TranslateNS } from '@isomoes/dsh-web-ui/client/ui-slots'
 import { NS } from './locales.ts'
-import type {} from '@isomoes/dsh-ikanban/client/ui-conversation/client'
+import type {} from '@isomoes/dsh-web-ui/client/ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-subagent/client'
 import type {} from '@deepseek-ai/dsh-token-meter/client'
 import css from './SubagentHeaderLineage.module.css'

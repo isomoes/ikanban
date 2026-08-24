@@ -10,7 +10,7 @@ import type { Branded } from '@deepseek-ai/dsh-brand'
 import type {
   ArbitrateKey, ArbitrateOutcome, CommandClaim, ConsumeTokenRequest, PickOutcome,
   ReferenceInsert, SubmitOutcome, TokenSpan,
-} from '@isomoes/dsh-ikanban/client/ui-input-trigger/client'
+} from '@isomoes/dsh-web-ui/client/ui-input-trigger/client'
 import type { QueueRow } from '../contract/queue.ts'
 import type { InputSubmitMode } from '../contract/composer-submission.ts'
 

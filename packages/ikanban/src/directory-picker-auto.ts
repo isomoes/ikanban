@@ -27,7 +27,7 @@ export const BACKEND_PACKAGES: Record<DirectoryPickerBackendKind, string> = {
 }
 
 export const SURFACE_PACKAGES: Record<DirectoryPickerBackendKind, string> = {
-  browse: '@isomoes/dsh-ikanban/client/ui-directory-picker-browse',
+  browse: '@isomoes/dsh-web-ui/client/ui-directory-picker-browse',
 }
 
 export async function apply(ctx: Context): Promise<void> {

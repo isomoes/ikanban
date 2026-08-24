@@ -14,7 +14,7 @@ import {
 } from '@deepseek-ai/dsh-client-runtime/client'
 import type {
   SchemaNode, SettingsDescribeFace, SettingsSchemaService,
-} from '@isomoes/dsh-ikanban/client/ui-settings/client'
+} from '@isomoes/dsh-web-ui/client/ui-settings/client'
 import { displayPermissionPreset } from './presentation.ts'
 
 /** Permission's settings namespace on the host wire. */

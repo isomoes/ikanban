@@ -10,7 +10,7 @@ import type {} from '@deepseek-ai/dsh-commands/types'
 import type { ManualCompactionChatData } from '../contract/chat-nodes.ts'
 import { chatNode } from './common.ts'
 
-declare module '@isomoes/dsh-ikanban/client/ui-conversation/client' {
+declare module '@isomoes/dsh-web-ui/client/ui-conversation/client' {
   interface ChatNodeDataMap {
     /** Ordinary slash-command lifecycle. */
     command: CommandNode

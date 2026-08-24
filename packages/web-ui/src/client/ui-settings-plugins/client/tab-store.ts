@@ -10,8 +10,8 @@
  * trace and does not count toward the empty line.
  */
 
-import type { SettingsDescribeFace } from '@isomoes/dsh-ikanban/client/ui-settings/client'
-import type { StoredEntry } from '@isomoes/dsh-ikanban/client/ui-slots'
+import type { SettingsDescribeFace } from '@isomoes/dsh-web-ui/client/ui-settings/client'
+import type { StoredEntry } from '@isomoes/dsh-web-ui/client/ui-slots'
 import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client-runtime/client'
 
 /** What the section renders. */

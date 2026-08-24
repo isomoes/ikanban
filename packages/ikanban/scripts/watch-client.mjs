@@ -12,14 +12,14 @@ const editableSource = /\.(?:[cm]?[jt]sx?|css|html)$/
 const generatedSegment = new RegExp(`(?:^|\\${sep})(?:lib|dist)(?:\\${sep}|$)`)
 
 export function markDevelopmentBuild(environment) {
-  environment.IKANBAN_DEV = '1'
+  environment.DSH_WEB_UI_DEV = '1'
 }
 
 // Keep the development marker in the programmatic build options as well as the
 // process environment. Watch-mode config reloads can otherwise resolve the
 // package config without the launch-time environment and replace `dev` with the
 // published version after the first source change.
-export const developmentDefines = Object.freeze({ __IKANBAN_DEV__: 'true' })
+export const developmentDefines = Object.freeze({ __DSH_WEB_UI_DEV__: 'true' })
 
 export function asDevelopmentBuild(options) {
   return {
@@ -146,30 +146,32 @@ export async function startWatchers(starters) {
 
 async function startClientWatcher() {
   const { build } = await import(pathToFileURL(webRequire.resolve('tsdown')).href)
-  // Some virtual packages have both a host and browser build writing the same
-  // outDir. tsdown may settle those configs together, so their build:done
-  // hooks must not concurrently force-copy (Node's cp overwrites by unlinking
-  // the destination first; two copies otherwise race on package.json).
-  const copyClient = createKeyedCoalescedRunner(async (id) => {
-    await copyWithEntryLast(
-      resolve(webRoot, 'lib/clients', id),
-      resolve(packageRoot, 'lib/clients', id),
-      'client.js',
-    )
-    console.log(`iKanban client rebuilt: @isomoes/dsh-ikanban/client/${id}`)
-  })
   return build(asDevelopmentBuild({
     cwd: webRoot,
     watch: true,
     hooks: {
-      'build:done': async ({ options }) => {
+      'build:done': ({ options }) => {
         const source = resolve(webRoot, options.outDir)
         const id = basename(source)
-        if (dirname(source) !== resolve(webRoot, 'lib/clients')) return
-        await copyClient(id)
+        if (dirname(source) === resolve(webRoot, 'lib/clients')) {
+          console.log(`shared client rebuilt: @isomoes/dsh-web-ui/client/${id}`)
+        }
       },
     },
   }))
+}
+
+async function startBrandWatcher() {
+  const { build } = await import(pathToFileURL(webRequire.resolve('tsdown')).href)
+  return build({
+    cwd: packageRoot,
+    watch: true,
+    hooks: {
+      'build:done': () => {
+        console.log('iKanban brand rebuilt: @isomoes/dsh-ikanban/client/ui-brand-ikanban')
+      },
+    },
+  })
 }
 
 async function startFrontendWatcher() {
@@ -181,7 +183,7 @@ async function startFrontendWatcher() {
   }))
   if (!('on' in watcher)) throw new Error('Vite did not return a build watcher')
   const copyFrontend = createCoalescedRunner(async () => {
-    await copyWithEntryLast(resolve(webRoot, 'dist'), resolve(packageRoot, 'lib/web'), 'index.html')
+    await copyWithEntryLast(resolve(webRoot, 'web'), resolve(packageRoot, 'lib/web'), 'index.html')
     console.log('iKanban frontend rebuilt; reload the browser to use the new shell')
   })
   watcher.on('event', event => {
@@ -194,7 +196,7 @@ async function startFrontendWatcher() {
 
 async function main() {
   markDevelopmentBuild(process.env)
-  const watchers = await startWatchers([startClientWatcher, startFrontendWatcher])
+  const watchers = await startWatchers([startClientWatcher, startBrandWatcher, startFrontendWatcher])
   console.log('Watching iKanban TS, TSX, CSS, and frontend shell sources...')
 
   await new Promise(resolveSignal => {

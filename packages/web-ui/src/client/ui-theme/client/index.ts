@@ -8,13 +8,13 @@
  * settings General section — the theme feature owns its own settings surface.
  */
 import type { Context } from '@deepseek-ai/cordis'
-import type { BoundActions } from '@isomoes/dsh-ikanban/client/ui-slots'
+import type { BoundActions } from '@isomoes/dsh-web-ui/client/ui-slots'
 import type { ClientContext, SettingsScope } from '@deepseek-ai/dsh-client-runtime/client'
 // Type-only: the ctx.settingsScope Context merge. Cross-plugin collaboration
 // goes through the service, never a value import (client bundle purity gate).
-import type {} from '@isomoes/dsh-ikanban/client/ui-settings/client'
+import type {} from '@isomoes/dsh-web-ui/client/ui-settings/client'
 // Type-only: pulls the locale plugin's Context merge (ctx.locale).
-import type {} from '@isomoes/dsh-ikanban/client/locale/client'
+import type {} from '@isomoes/dsh-web-ui/client/locale/client'
 import type { AppearanceRowInjected } from './AppearanceRow.tsx'
 import { AppearanceRow } from './AppearanceRow.tsx'
 import { createAppearanceRowStore } from './settings-store.ts'
@@ -34,7 +34,7 @@ export type { ThemePreference, ThemeSettings } from '../theme-settings.ts'
 /** Namespace owning this feature's settings-row copy. */
 export const SETTINGS_NS = 'settings.theme'
 
-declare module '@isomoes/dsh-ikanban/client/ui-slots' {
+declare module '@isomoes/dsh-web-ui/client/ui-slots' {
   interface LocaleNamespaceMap {
     /** The Appearance settings row's copy. */
     'settings.theme': ThemeKey

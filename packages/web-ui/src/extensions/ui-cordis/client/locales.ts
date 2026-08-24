@@ -58,7 +58,7 @@ export const zh = {
 /** Translation keys owned by the Cordis UI namespace. */
 export type CordisKey = keyof typeof zh
 
-declare module '@isomoes/dsh-ikanban/client/ui-slots' {
+declare module '@isomoes/dsh-web-ui/client/ui-slots' {
   interface LocaleNamespaceMap {
     /** Dynamic Cordis UI copy. */
     cordis: CordisKey

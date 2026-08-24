@@ -5,13 +5,13 @@
  * merge lives here. Live per-message state arrives through the `feedback`
  * hook (the framework standard kit binds it into `useFeedback`); inject
  * carries the two mutation verbs plus the lazy loader.
- * @module @isomoes/dsh-ikanban/client/ui-message-feedback/client/slots
+ * @module @isomoes/dsh-web-ui/client/ui-message-feedback/client/slots
  */
 
 import type {
   HostObservable, InjectFace, PropsLocale, PropsRuntime,
-} from '@isomoes/dsh-ikanban/client/ui-slots'
-import type {} from '@isomoes/dsh-ikanban/client/ui-conversation/client'
+} from '@isomoes/dsh-web-ui/client/ui-slots'
+import type {} from '@isomoes/dsh-web-ui/client/ui-conversation/client'
 import type { MessageId } from '@deepseek-ai/dsh-client-connection/client'
 import type { MessageFeedbackRating } from '@deepseek-ai/dsh-message-feedback/types'
 // Type-only: pulls this package's LocaleNamespaceMap merge (the 'feedback' seat).

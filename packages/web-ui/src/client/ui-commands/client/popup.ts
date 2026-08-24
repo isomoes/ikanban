@@ -11,7 +11,7 @@
  */
 import { createSnapshotStore } from '@deepseek-ai/dsh-client-runtime/client'
 import type { SnapshotStore } from '@deepseek-ai/dsh-client-runtime/client'
-import type { TokenSpan } from '@isomoes/dsh-ikanban/client/ui-input-trigger/client'
+import type { TokenSpan } from '@isomoes/dsh-web-ui/client/ui-input-trigger/client'
 import type { SelectOption } from './contract.ts'
 
 /**

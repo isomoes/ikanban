@@ -3,9 +3,9 @@
 // active conversation scrollport (see ConversationRoot data-conversation-scroll).
 
 import { Fragment, memo, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { Tooltip } from '@isomoes/dsh-ikanban/client/ui-primitives'
+import { Tooltip } from '@isomoes/dsh-web-ui/client/ui-primitives'
 import type { ConversationSnapshot, UseProjection } from '@deepseek-ai/dsh-client-runtime/client'
-import type { SnapshotSelectorHook } from '@isomoes/dsh-ikanban/client/ui-slots'
+import type { SnapshotSelectorHook } from '@isomoes/dsh-web-ui/client/ui-slots'
 // Type-only: merges the sessionStats key into SessionProjectionMap for useProjection.
 import type {} from '@deepseek-ai/dsh-session-stats/client'
 import type { ContextPressureProjection, TokenUsageProjection } from '@deepseek-ai/dsh-token-meter/client'

@@ -1,9 +1,9 @@
-/** Package-owned invariant companion for `@isomoes/dsh-ikanban/client/ui-timeline`. */
+/** Package-owned invariant companion for `@isomoes/dsh-web-ui/client/ui-timeline`. */
 /* jscpd:ignore-start */
 import type { Context } from '@deepseek-ai/cordis'
 import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
 
-const PACKAGE_NAME = '@isomoes/dsh-ikanban/client/ui-timeline'
+const PACKAGE_NAME = '@isomoes/dsh-web-ui/client/ui-timeline'
 export const name = 'client-ui-timeline-invariant'
 export const inject = ['invariants']
 const install: InvariantInstaller = () => {}

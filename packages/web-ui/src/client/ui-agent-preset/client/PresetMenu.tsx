@@ -9,7 +9,7 @@
  * label marks it rather than presenting every preset as shipped and vetted.
  */
 
-import { IconChevronDownOutline14, Menu } from '@isomoes/dsh-ikanban/client/ui-primitives'
+import { IconChevronDownOutline14, Menu } from '@isomoes/dsh-web-ui/client/ui-primitives'
 import type { AgentPresetOption } from './settings-store.ts'
 import { presetDisplayText, type AgentPresetSettingsKey } from './locales.ts'
 

@@ -7,8 +7,8 @@
 import { useId } from 'react'
 import type { ReactNode, RefObject } from 'react'
 import {
-  FishLogo, IconChevronDownOutline14, IconFolderClose16, IconFolderOpen16,
-} from '@isomoes/dsh-ikanban/client/ui-primitives'
+  IconChevronDownOutline14, IconFolderClose16, IconFolderOpen16,
+} from '@isomoes/dsh-web-ui/client/ui-primitives'
 import { workspaceTitleOf } from '@deepseek-ai/dsh-client-runtime/client'
 import type { ConversationSlotProps } from '../contract/slots.ts'
 import { buildBadge } from '../../../../build-presentation.ts'
@@ -120,14 +120,12 @@ export function HeroShell({ t, renderSlot, children }: HeroShellProps) {
     <div className={css.root}>
       <div className={css.stack}>
         <div className={css.headline}>
-          {/* The 34px iKanban mark leads the headline. */}
+          {/* The product-provided 34px mark leads the headline. */}
           <span className={css.fishHitbox}>
-            {renderSlot('conversation.hero.brand.mark', { size: 34, className: css.fish }, {
-              fallback: <FishLogo size={34} className={css.fish} />,
-            })}
+            {renderSlot('conversation.hero.brand.mark', { size: 34, className: css.fish })}
           </span>
           <span className={css.headlineText}>{t('hero.headline')}</span>
-          <span className={css.previewBadge}>{buildBadge(__IKANBAN_VERSION__, __IKANBAN_DEV__)}</span>
+          <span className={css.previewBadge}>{buildBadge(__DSH_WEB_UI_VERSION__, __DSH_WEB_UI_DEV__)}</span>
         </div>
         <div className={css.body}>
           {/* The resident composer (ConversationRoot's root-owned scrollport;

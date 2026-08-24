@@ -10,8 +10,8 @@
 // summary line alone.
 
 import type { Context } from '@deepseek-ai/cordis'
-import { IconBrowseOutline16, IconGlobeOutline14 } from '@isomoes/dsh-ikanban/client/ui-primitives'
-import type { PropsLocale } from '@isomoes/dsh-ikanban/client/ui-slots'
+import { IconBrowseOutline16, IconGlobeOutline14 } from '@isomoes/dsh-web-ui/client/ui-primitives'
+import type { PropsLocale } from '@isomoes/dsh-web-ui/client/ui-slots'
 import type { ToolCallViewProps } from '../../contract/slots.ts'
 import { webCardModel } from '../models/web-card-model.ts'
 import { toolRowModel } from '../models/tool-call-model.ts'

@@ -1,6 +1,6 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
-import { SearchPalette } from '@isomoes/dsh-ikanban/client/ui-primitives'
-import type { PropsLocale } from '@isomoes/dsh-ikanban/client/ui-slots'
+import { SearchPalette } from '@isomoes/dsh-web-ui/client/ui-primitives'
+import type { PropsLocale } from '@isomoes/dsh-web-ui/client/ui-slots'
 import { filterUiActions, formatKeybind, type UiActionRegistry } from './actions.ts'
 
 export type CommandPaletteViewProps = {

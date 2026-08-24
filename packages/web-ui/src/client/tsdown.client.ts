@@ -79,7 +79,7 @@ const GENERATED_REMOTE = /^@deepseek-ai\/dsh-[a-z0-9]+(?:-[a-z0-9]+)*\/remote$/
  */
 const SKIP_WORKSPACE_BUILD: UserConfig = { entry: '' }
 
-const LOCAL_CLIENT_PREFIX = '@isomoes/dsh-ikanban/client/'
+const LOCAL_CLIENT_PREFIX = '@isomoes/dsh-web-ui/client/'
 
 /** Baseline module-table requests shared by every dynamic client bundle. */
 export const CLIENT_EXTERNALS: readonly string[] = [
@@ -494,10 +494,10 @@ function clientConfig(id: string, entry: string, outDir = 'lib'): UserConfig {
     // key: zustand probes `import.meta.env ? import.meta.env.MODE : ...`, and
     // the truthiness probe would otherwise survive as an empty import.meta.
     define: {
-      __IKANBAN_DEV__: JSON.stringify(process.env.IKANBAN_DEV === '1'),
-      __IKANBAN_VERSION__: JSON.stringify(packageJson.version),
+      __DSH_WEB_UI_DEV__: JSON.stringify(process.env.DSH_WEB_UI_DEV === '1'),
+      __DSH_WEB_UI_VERSION__: JSON.stringify(packageJson.version),
       'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV ?? 'production'),
-      'process.env.DSH_CLIENT_TITLE': JSON.stringify(process.env.IKANBAN_DEV === '1' ? 'iKanban dev' : 'iKanban'),
+      'process.env.DSH_CLIENT_TITLE': JSON.stringify(process.env.DSH_WEB_UI_DEV === '1' ? 'DeepSeek Harness dev' : 'DeepSeek Harness'),
       'import.meta.env.MODE': JSON.stringify(process.env.NODE_ENV ?? 'production'),
       'import.meta.env': JSON.stringify({ MODE: process.env.NODE_ENV ?? 'production' }),
     },

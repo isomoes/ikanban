@@ -2,9 +2,9 @@
 import { useMemo, useState, useSyncExternalStore, type KeyboardEvent } from 'react'
 import {
   Button, IconSearchOutline16, Input,
-} from '@isomoes/dsh-ikanban/client/ui-primitives'
-import type { PropsLocale, PropsRuntime } from '@isomoes/dsh-ikanban/client/ui-slots'
-import type {} from '@isomoes/dsh-ikanban/client/ui-settings/client'
+} from '@isomoes/dsh-web-ui/client/ui-primitives'
+import type { PropsLocale, PropsRuntime } from '@isomoes/dsh-web-ui/client/ui-slots'
+import type {} from '@isomoes/dsh-web-ui/client/ui-settings/client'
 import type { CommandUiRuntime } from './service.ts'
 import {
   COMMAND_PALETTE_ACTION_ID, formatKeybind, keybindFromEvent, parseKeybind,

@@ -9,8 +9,8 @@
  * @module
  */
 import { resolveWorkspacePath } from '@deepseek-ai/dsh-client-runtime/client'
-import type { TerminalBlockLabels, TerminalBlockProps } from '@isomoes/dsh-ikanban/client/ui-primitives'
-import type { TranslateNS } from '@isomoes/dsh-ikanban/client/ui-slots'
+import type { TerminalBlockLabels, TerminalBlockProps } from '@isomoes/dsh-web-ui/client/ui-primitives'
+import type { TranslateNS } from '@isomoes/dsh-web-ui/client/ui-slots'
 import type { ToolCallBlock } from './tool-call-model.ts'
 
 /**

@@ -11,7 +11,7 @@ import type {
 } from '@deepseek-ai/dsh-api-remotes/client'
 import type { SnapshotStore } from '@deepseek-ai/dsh-client-runtime/client'
 import { createSnapshotStore } from '@deepseek-ai/dsh-client-runtime/client'
-import type { SettingsDescribeFace } from '@isomoes/dsh-ikanban/client/ui-settings/client'
+import type { SettingsDescribeFace } from '@isomoes/dsh-web-ui/client/ui-settings/client'
 import type { SettingsSchemaOperations } from './schema-operations.ts'
 
 /**

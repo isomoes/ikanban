@@ -1,7 +1,7 @@
 /** Injected faces and the Package-owned `tool.view.cordis` slot declaration. */
 
 import type { SessionId } from '@deepseek-ai/dsh-client-connection/client'
-import type { HostObservable } from '@isomoes/dsh-ikanban/client/ui-slots'
+import type { HostObservable } from '@isomoes/dsh-web-ui/client/ui-slots'
 import type {
   CordisRunActivity, CordisRunFailure, CordisUserRunRequest, DynamicCordisLivePackage,
   DynamicCordisRenderFailure,
@@ -20,7 +20,7 @@ export interface CordisToolViewOwnerProps {
   readonly pluginRunId: CordisDynamicPluginRunId
 }
 
-declare module '@isomoes/dsh-ikanban/client/ui-slots' {
+declare module '@isomoes/dsh-web-ui/client/ui-slots' {
   interface SlotMap {
     /**
      * Interactive Package-owned region rendered inside the latest eligible

@@ -4,10 +4,10 @@
  * draft in the opened child, then cancels and archives the source.
  */
 import type { ClientContext, SessionFace, SessionId } from '@deepseek-ai/dsh-client-runtime/client'
-import type { ClientSessionContext } from '@isomoes/dsh-ikanban/client/ui-input-trigger/client'
-import type { CommandUiContract, SelectOption } from '@isomoes/dsh-ikanban/client/ui-commands/client'
-import type { IConversation } from '@isomoes/dsh-ikanban/client/ui-conversation/client'
-import type {} from '@isomoes/dsh-ikanban/client/locale/client'
+import type { ClientSessionContext } from '@isomoes/dsh-web-ui/client/ui-input-trigger/client'
+import type { CommandUiContract, SelectOption } from '@isomoes/dsh-web-ui/client/ui-commands/client'
+import type { IConversation } from '@isomoes/dsh-web-ui/client/ui-conversation/client'
+import type {} from '@isomoes/dsh-web-ui/client/locale/client'
 import {
   restartTimelineChoice, timelineChoices, timelineLabel,
   type TimelineChoice, type TimelineSnapshot,
@@ -17,7 +17,7 @@ import { en, zh, type TimelineKey } from './locales.ts'
 
 export type { TimelineKey } from './locales.ts'
 
-declare module '@isomoes/dsh-ikanban/client/ui-slots' {
+declare module '@isomoes/dsh-web-ui/client/ui-slots' {
   interface LocaleNamespaceMap {
     /** Copy owned by the /timeline branch-and-restart command. */
     timeline: TimelineKey

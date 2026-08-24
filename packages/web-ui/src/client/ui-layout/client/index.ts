@@ -8,7 +8,7 @@
  * presenter, which projects ctx.theme snapshots onto document.body.
  */
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
-import type {} from '@isomoes/dsh-ikanban/client/ui-theme/client'
+import type {} from '@isomoes/dsh-web-ui/client/ui-theme/client'
 import type { PanelActions } from './service.ts'
 import { AppFrame } from './AppFrame.tsx'
 import { createLayoutStore } from './stores.ts'
@@ -30,7 +30,7 @@ declare module '@deepseek-ai/cordis' {
   }
 }
 
-declare module '@isomoes/dsh-ikanban/client/ui-slots' {
+declare module '@isomoes/dsh-web-ui/client/ui-slots' {
   interface SlotMap {
     // The 'root' entry itself is the runtime's built-in slot (declared
     // there); these four are the frame's children, declared by the same

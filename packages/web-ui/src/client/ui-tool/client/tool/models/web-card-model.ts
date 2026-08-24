@@ -12,7 +12,7 @@
  * a running call always takes the generic path.
  * @module
  */
-import type { WebBlockProps } from '@isomoes/dsh-ikanban/client/ui-primitives'
+import type { WebBlockProps } from '@isomoes/dsh-web-ui/client/ui-primitives'
 import type { ToolCallBlock } from './tool-call-model.ts'
 
 /**

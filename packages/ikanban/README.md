@@ -123,7 +123,7 @@ upstream re-import; running it overwrites the owned composition and requires rev
 `src/client` and `src/extensions` paths is built by tsdown
 as isolated virtual packages. During `pnpm dev`, a successful plugin build is
 copied to this package's `lib/clients/<id>` path; DSH detects that bundle write
-and emits HMR for `@isomoes/dsh-ikanban/client/<id>` only.
+and emits HMR for `@isomoes/dsh-web-ui/client/<id>` only.
 
 The Vite app context lives at the `web-ui` package root. Shared browser platform
 code lives under `src/client`, including `web`, `ui-renderer`, `ui-slots`,

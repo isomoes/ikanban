@@ -10,7 +10,7 @@ import type {
 import { deriveTurnMetrics } from '../chat/turn-metrics.ts'
 import { CHAT_SYNTHETIC_SEQ_OFFSETS, chatNode } from './common.ts'
 
-declare module '@isomoes/dsh-ikanban/client/ui-conversation/client' {
+declare module '@isomoes/dsh-web-ui/client/ui-conversation/client' {
   interface ChatNodeDataMap {
     /** Completed-turn actions and extension tail. */
     'turn-tail': TurnTailChatData

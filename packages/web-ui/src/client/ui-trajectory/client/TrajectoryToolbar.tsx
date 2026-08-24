@@ -1,7 +1,7 @@
 /** Trajectory toolbar: timeline and ledger fold controls. */
 
-import type { TranslateNS } from '@isomoes/dsh-ikanban/client/ui-slots'
-import { IconSearchOutline16 } from '@isomoes/dsh-ikanban/client/ui-primitives'
+import type { TranslateNS } from '@isomoes/dsh-web-ui/client/ui-slots'
+import { IconSearchOutline16 } from '@isomoes/dsh-web-ui/client/ui-primitives'
 import type { NS } from './locales.ts'
 import css from './TrajectoryToolbar.module.css'
 

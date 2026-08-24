@@ -23,11 +23,11 @@
  * contract and the same occupant.
  */
 import type { HostDescriptionSource } from '@deepseek-ai/dsh-client-connection/client'
-import type { HostObservable, PropsHooks, PropsLocale, PropsRenderSlots, PropsRuntime, PropsStore } from '@isomoes/dsh-ikanban/client/ui-slots'
+import type { HostObservable, PropsHooks, PropsLocale, PropsRenderSlots, PropsRuntime, PropsStore } from '@isomoes/dsh-web-ui/client/ui-slots'
 // Type-only: pull the owner SlotMap merges into programs that resolve the
 // runtime shares below.
-import type {} from '@isomoes/dsh-ikanban/client/ui-sidebar/client'
-import type {} from '@isomoes/dsh-ikanban/client/ui-conversation/client'
+import type {} from '@isomoes/dsh-web-ui/client/ui-sidebar/client'
+import type {} from '@isomoes/dsh-web-ui/client/ui-conversation/client'
 import type {
   SessionId, SessionSearchResultItem, WorkspaceId, WorkspaceView,
 } from '@deepseek-ai/dsh-client-runtime/client'
@@ -51,7 +51,7 @@ export interface DirectoryFlowOwnerProps {
   onError: (message: string) => void
 }
 
-declare module '@isomoes/dsh-ikanban/client/ui-slots' {
+declare module '@isomoes/dsh-web-ui/client/ui-slots' {
   interface SlotMap {
     /** Directory-flow hole under the conversation empty-state picker (declared by the WorkspacePicker entry). */
     'conversation.hero.workspace.directoryFlow': { kind: 'single'; scope: 'root'; owner: DirectoryFlowOwnerProps }

@@ -1,7 +1,7 @@
 /** Attachment error and limit copy owned by the conversation input flow. */
 
 import type { ImageAttachmentLimits } from '@deepseek-ai/dsh-attachment'
-import type { Translate } from '@isomoes/dsh-ikanban/client/ui-slots'
+import type { Translate } from '@isomoes/dsh-web-ui/client/ui-slots'
 import type { ConversationKey } from './locales.ts'
 
 /**

@@ -1,4 +1,4 @@
-import type { MessageImagesProps } from '@isomoes/dsh-ikanban/client/ui-conversation/client'
+import type { MessageImagesProps } from '@isomoes/dsh-web-ui/client/ui-conversation/client'
 import { ImageGallery } from '../MessageImage.tsx'
 import { messageImageLabels } from './labels.ts'
 

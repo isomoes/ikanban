@@ -17,7 +17,7 @@
  * call or has the old host's rows published on top of it.
  */
 
-import type { HostObservable } from '@isomoes/dsh-ikanban/client/ui-slots'
+import type { HostObservable } from '@isomoes/dsh-web-ui/client/ui-slots'
 import type { CordisDynamicPort, CordisInventoryRow } from './dynamic-port.ts'
 import type { CordisDynamicPluginId } from './events.ts'
 

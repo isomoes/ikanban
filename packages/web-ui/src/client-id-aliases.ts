@@ -1,5 +1,5 @@
 const stockPrefix = '@deepseek-ai/dsh-client-'
-const localPrefix = '@isomoes/dsh-ikanban/client/'
+const localPrefix = '@isomoes/dsh-web-ui/client/'
 
 /** Point dependency edges at forked clients without aliasing published infrastructure. */
 export function remapForkedClientInjects(graph: unknown): void {

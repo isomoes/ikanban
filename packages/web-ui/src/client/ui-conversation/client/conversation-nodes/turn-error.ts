@@ -5,7 +5,7 @@ import type {
 import { displayFailureMessage } from '@deepseek-ai/dsh-client-runtime/client'
 import { chatNode } from './common.ts'
 
-declare module '@isomoes/dsh-ikanban/client/ui-conversation/client' {
+declare module '@isomoes/dsh-web-ui/client/ui-conversation/client' {
   interface ChatNodeDataMap {
     /** Terminal turn failure recorded on the turn's end reason. */
     'turn-error': TurnErrorNode

@@ -9,14 +9,14 @@
  */
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 import type { ConnectionHandle } from '@deepseek-ai/dsh-api-remotes/client'
-import { resolveSlotLabel } from '@isomoes/dsh-ikanban/client/ui-slots'
+import { resolveSlotLabel } from '@isomoes/dsh-web-ui/client/ui-slots'
 // Type-only: the settings slot declarations plus the ctx.settingsScope Context
 // merge. Cross-plugin collaboration goes through the service, never a value
 // import (client bundle purity gate).
-import type {} from '@isomoes/dsh-ikanban/client/ui-settings/client'
+import type {} from '@isomoes/dsh-web-ui/client/ui-settings/client'
 // Type-only: pulls ctx.locale into this program.
-import type {} from '@isomoes/dsh-ikanban/client/locale/client'
-import type {} from '@isomoes/dsh-ikanban/client/ui-commands/client'
+import type {} from '@isomoes/dsh-web-ui/client/locale/client'
+import type {} from '@isomoes/dsh-web-ui/client/ui-commands/client'
 import type {
   SettingsOnboardingStep, SettingsRootInjected, SettingsSectionRow,
 } from './shell-contract.ts'
@@ -39,7 +39,7 @@ export type { SettingsDocumentState } from './settings-document-store.ts'
 export { SettingsDocumentStore } from './settings-document-store.ts'
 export type { SettingsKey } from './locales.ts'
 
-declare module '@isomoes/dsh-ikanban/client/ui-slots' {
+declare module '@isomoes/dsh-web-ui/client/ui-slots' {
   interface LocaleNamespaceMap {
     /** Shell chrome + shell-owned General section copy. */
     settings: SettingsKey

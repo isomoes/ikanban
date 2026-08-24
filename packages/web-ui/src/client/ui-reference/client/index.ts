@@ -8,11 +8,11 @@
 // Type-only: pulls the generated Remote API and ctx.remote merge through the Client assembly boundary.
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 // Type-only: pulls the locale plugin's Context merge (ctx.locale).
-import type {} from '@isomoes/dsh-ikanban/client/locale/client'
+import type {} from '@isomoes/dsh-web-ui/client/locale/client'
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 import type {
   ClientSessionContext, InputTriggerCandidate, InputTriggerServiceContract, InputTriggerSource, PickOutcome,
-} from '@isomoes/dsh-ikanban/client/ui-input-trigger/client'
+} from '@isomoes/dsh-web-ui/client/ui-input-trigger/client'
 import { formatFileMention } from '@deepseek-ai/dsh-file-reference/grammar'
 import type { FileReferenceCandidate } from '@deepseek-ai/dsh-file-reference/types'
 import type { SessionReferenceMentionCandidate } from '@deepseek-ai/dsh-session-reference/types'

@@ -6,7 +6,7 @@ import type {} from '@deepseek-ai/dsh-compaction/types'
 import { chatNode } from './common.ts'
 import { compactSource, compactSummary, updateCompactionState } from './command.ts'
 
-declare module '@isomoes/dsh-ikanban/client/ui-conversation/client' {
+declare module '@isomoes/dsh-web-ui/client/ui-conversation/client' {
   interface ChatNodeDataMap {
     /** Automatic compaction checkpoint marker. */
     compaction: CompactionSummaryNode

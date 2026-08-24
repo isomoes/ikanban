@@ -5,9 +5,9 @@
  */
 
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
-import type {} from '@isomoes/dsh-ikanban/client/ui-settings/client'
-import type {} from '@isomoes/dsh-ikanban/client/locale/client'
-import type {} from '@isomoes/dsh-ikanban/client/ui-slots'
+import type {} from '@isomoes/dsh-web-ui/client/ui-settings/client'
+import type {} from '@isomoes/dsh-web-ui/client/locale/client'
+import type {} from '@isomoes/dsh-web-ui/client/ui-slots'
 import { REMINDER_SETTINGS_NAMESPACE, type ReminderSettings } from '../reminder-settings.ts'
 import { en, zh, type ReminderKey } from './locales.ts'
 import { SessionReminderObserver } from './observer.ts'
@@ -18,7 +18,7 @@ import { ReminderSoundsRow, type ReminderSoundsRowInjected } from './ReminderSou
 /** Locale namespace owned by this feature's Settings row. */
 const NS = 'settings.reminders'
 
-declare module '@isomoes/dsh-ikanban/client/ui-slots' {
+declare module '@isomoes/dsh-web-ui/client/ui-slots' {
   interface LocaleNamespaceMap {
     /** Reminder sound controls in General settings. */
     'settings.reminders': ReminderKey

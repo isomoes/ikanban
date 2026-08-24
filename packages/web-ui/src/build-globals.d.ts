@@ -1,2 +1,2 @@
-declare const __IKANBAN_DEV__: boolean
-declare const __IKANBAN_VERSION__: string
+declare const __DSH_WEB_UI_DEV__: boolean
+declare const __DSH_WEB_UI_VERSION__: string

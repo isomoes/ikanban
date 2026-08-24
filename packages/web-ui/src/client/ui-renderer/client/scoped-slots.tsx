@@ -8,7 +8,7 @@ import {
   type ChainRenderOpts, type HostObservable, type LocaleFace, type RenderOpts,
   type SessionMaybeProvideInfo, type SessionProvideInfo, type SlotRenderer, type SlotRendererHost,
   type SlotScope, type StoredEntry, type Translate,
-} from '@isomoes/dsh-ikanban/client/ui-slots'
+} from '@isomoes/dsh-web-ui/client/ui-slots'
 import {
   HostContext, SessionMaybeProvider, SessionProvider, SlotAssemblyError, maybeObservableHook,
   observableHook, projectionHook, useHost, useSessionMaybeProvideInfo,

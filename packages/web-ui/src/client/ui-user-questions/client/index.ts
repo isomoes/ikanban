@@ -13,9 +13,9 @@
  * choice lives inside this entry — see QuestionComposer.
  */
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
-import type { ComposerChainProps } from '@isomoes/dsh-ikanban/client/ui-conversation/client'
+import type { ComposerChainProps } from '@isomoes/dsh-web-ui/client/ui-conversation/client'
 // Type-only: pulls the locale plugin's Context merge (ctx.locale).
-import type {} from '@isomoes/dsh-ikanban/client/locale/client'
+import type {} from '@isomoes/dsh-web-ui/client/locale/client'
 import type { QuestionWait } from './contract/slots.ts'
 import { QuestionComposer } from './QuestionComposer.tsx'
 import { en, zh, type QuestionKey } from './locales.ts'
@@ -26,7 +26,7 @@ export type {
 } from './contract/slots.ts'
 export type { QuestionKey } from './locales.ts'
 
-declare module '@isomoes/dsh-ikanban/client/ui-slots' {
+declare module '@isomoes/dsh-web-ui/client/ui-slots' {
   interface LocaleNamespaceMap {
     /** The question composer's copy. */
     question: QuestionKey

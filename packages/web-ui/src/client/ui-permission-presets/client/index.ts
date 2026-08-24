@@ -15,15 +15,15 @@
  */
 import type { ConnectionHandle } from '@deepseek-ai/dsh-api-remotes/client'
 // Type-only: pulls the locale plugin's Context merge (ctx.locale).
-import type {} from '@isomoes/dsh-ikanban/client/locale/client'
+import type {} from '@isomoes/dsh-web-ui/client/locale/client'
 // Type-only: the settings slot types (this package registers a General row).
-import type {} from '@isomoes/dsh-ikanban/client/ui-settings/client'
+import type {} from '@isomoes/dsh-web-ui/client/ui-settings/client'
 // Type-only: pulls the ctx.remote merge and the forwarded-event key face
 // (the settings invalidation rides the allowlist) into this program.
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import type { ClientContext, SessionFace } from '@deepseek-ai/dsh-client-runtime/client'
-import type { CommandUiContract, SelectOption } from '@isomoes/dsh-ikanban/client/ui-commands/client'
-import type { ClientSessionContext } from '@isomoes/dsh-ikanban/client/ui-input-trigger/client'
+import type { CommandUiContract, SelectOption } from '@isomoes/dsh-web-ui/client/ui-commands/client'
+import type { ClientSessionContext } from '@isomoes/dsh-web-ui/client/ui-input-trigger/client'
 import type { PermissionSelect } from '@deepseek-ai/dsh-permission-presets/client'
 import { PermissionRow } from './PermissionRow.tsx'
 import type { PermissionRowInjected } from './PermissionRow.tsx'

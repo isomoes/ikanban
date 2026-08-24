@@ -21,7 +21,7 @@
  * lost.
  * @module
  */
-import type { SearchBlockProps, SearchFileGroup } from '@isomoes/dsh-ikanban/client/ui-primitives'
+import type { SearchBlockProps, SearchFileGroup } from '@isomoes/dsh-web-ui/client/ui-primitives'
 import type { ToolCallBlock } from './tool-call-model.ts'
 
 /**

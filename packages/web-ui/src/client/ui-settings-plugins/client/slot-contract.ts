@@ -13,7 +13,7 @@
  * registering its own card already depends on this package for the slot's
  * declaration. The type therefore lives with its declarer.
  */
-declare module '@isomoes/dsh-ikanban/client/ui-slots' {
+declare module '@isomoes/dsh-web-ui/client/ui-slots' {
   interface SlotMap {
     /** One plugin's card inside the plugin configuration section (see module JSDoc). */
     'settings.plugin.item': { kind: 'keyed'; scope: 'root'; owner: SettingsPluginItemOwnerProps }

@@ -1,13 +1,13 @@
 /**
- * Package-owned invariant companion for `@isomoes/dsh-ikanban/client/ui-agent-preset`.
- * @module @isomoes/dsh-ikanban/client/ui-agent-preset/invariant
+ * Package-owned invariant companion for `@isomoes/dsh-web-ui/client/ui-agent-preset`.
+ * @module @isomoes/dsh-web-ui/client/ui-agent-preset/invariant
  */
 
 /* jscpd:ignore-start */
 import type { Context } from '@deepseek-ai/cordis'
 import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
 
-const PACKAGE_NAME = '@isomoes/dsh-ikanban/client/ui-agent-preset'
+const PACKAGE_NAME = '@isomoes/dsh-web-ui/client/ui-agent-preset'
 
 /** Cordis companion plugin name. */
 export const name = 'client-ui-agent-preset-invariant'

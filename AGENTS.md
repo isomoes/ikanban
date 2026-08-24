@@ -11,7 +11,7 @@
 
 - Required toolchain: Node `^22.19.0 || >=24`, pnpm `11.7.0`, and a published `dsh` CLI. `pnpm install` intentionally permits `koffi`'s native install script.
 - Full checks: `pnpm typecheck && pnpm test`. Tests build their package first; the main build refreshes upstream composition and packages the Web UI artifacts.
-- Focus one package with `pnpm --filter @isomoes/dsh-ikanban test` or `pnpm --filter @isomoes/dsh-ikanban-web-ui test`.
+- Focus one package with `pnpm --filter @isomoes/dsh-ikanban test` or `pnpm --filter @isomoes/dsh-web-ui test`.
 - Focus one main-package test with `pnpm --filter @isomoes/dsh-ikanban build && node --test packages/ikanban/tests/client-bundle.test.mjs`; tests read generated `lib/`, so do not omit the build.
 - Before publishing, additionally run `pnpm --filter @isomoes/dsh-ikanban pack`.
 

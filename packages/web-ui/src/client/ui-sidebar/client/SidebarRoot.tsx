@@ -18,10 +18,9 @@
 import { useEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
 import {
-  FishLogo,
   IconPanelLeftOutline16,
   Tooltip,
-} from '@isomoes/dsh-ikanban/client/ui-primitives'
+} from '@isomoes/dsh-web-ui/client/ui-primitives'
 import type { SidebarRootComponentProps } from './contract/slots.ts'
 import { buildBadge } from '../../../build-presentation.ts'
 import css from './SidebarRoot.module.css'
@@ -36,7 +35,6 @@ const COLLAPSE_SETTLE_MS = 150
  * edge — on the way to the conversation, or around a portalled menu.
  */
 const SCROLLBAR_LINGER_MS = 2000
-const PROJECT_HOMEPAGE = 'https://github.com/isomoes/ikanban'
 
 /**
  * Render the sidebar column shell.
@@ -130,8 +128,7 @@ export function SidebarRoot({
       onPointerLeave={() => { armLinger() }}
     >
       <div className={css.logoRow}>
-        {/* Expanded, the mark remains a New Session shortcut while only the
-            product name links away to the project homepage. */}
+        {/* Expanded, the product-provided mark remains a New Session shortcut. */}
         {wide && (
           <div className={clsx(css.brand, css.wide)}>
             <button
@@ -140,22 +137,17 @@ export function SidebarRoot({
               aria-label={t('session.new.label')}
               onClick={() => { startSession() }}
             >
-              {renderSlot('sidebar.brand.mark', { size: 24 }, { fallback: <FishLogo size={24} /> })}
+              {renderSlot('sidebar.brand.mark', { size: 24 }, { fallback: <span aria-hidden="true">DSH</span> })}
             </button>
-            <a
-              className={css.brandLink}
-              href={PROJECT_HOMEPAGE}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              iKanban
-            </a>
+            <span className={css.brandLink}>
+              {renderSlot('sidebar.brand.name', {}, { fallback: 'DeepSeek Harness' })}
+            </span>
             <span className={css.versionBadge}>
-              {buildBadge(__IKANBAN_VERSION__, __IKANBAN_DEV__)}
+              {buildBadge(__DSH_WEB_UI_VERSION__, __DSH_WEB_UI_DEV__)}
             </span>
           </div>
         )}
-        {/* Rail resting state is the iKanban mark; hovering swaps in the panel
+        {/* Rail resting state is the product mark; hovering swaps in the panel
             icon (the expand affordance, figma sidebar-hover flow). */}
         <Tooltip label={collapsed ? t('toggle.open') : t('toggle.collapse')} delayMs={500}>
           <button
@@ -166,7 +158,7 @@ export function SidebarRoot({
           >
             {!wide && (
               <span className={css.railMark} aria-hidden="true">
-                {renderSlot('sidebar.brand.mark', { size: 24 }, { fallback: <FishLogo size={24} /> })}
+                {renderSlot('sidebar.brand.mark', { size: 24 }, { fallback: <span aria-hidden="true">DSH</span> })}
               </span>
             )}
             {/* Rail icons render at 18 (figma rail spec); expanded keeps the glyph-native sizes. */}

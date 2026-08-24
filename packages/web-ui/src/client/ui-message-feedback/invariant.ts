@@ -1,13 +1,13 @@
 /**
- * Package-owned invariant companion for `@isomoes/dsh-ikanban/client/ui-message-feedback`.
- * @module @isomoes/dsh-ikanban/client/ui-message-feedback/invariant
+ * Package-owned invariant companion for `@isomoes/dsh-web-ui/client/ui-message-feedback`.
+ * @module @isomoes/dsh-web-ui/client/ui-message-feedback/invariant
  */
 
 /* jscpd:ignore-start */
 import type { Context } from '@deepseek-ai/cordis'
 import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
 
-const PACKAGE_NAME = '@isomoes/dsh-ikanban/client/ui-message-feedback'
+const PACKAGE_NAME = '@isomoes/dsh-web-ui/client/ui-message-feedback'
 
 /** Cordis companion plugin name. */
 export const name = 'client-ui-feedback-invariant'

@@ -17,4 +17,4 @@ Imported source roots are flattened into this package:
 - `packages/client/tsdown.client.ts`
 - `packages/extensions/ui-cordis/src/`
 
-The source is MIT licensed under the upstream repository's license. Builds never refresh this fork. Future upstream updates must be explicit, reviewed three-way merges that preserve iKanban package identities, branding, keyboard behavior, workspace actions, themes, and release presentation.
+The source is MIT licensed under the upstream repository's license. Builds never refresh this fork. This neutral package is the only product layer that tracks DSH Web upstream; future updates must be explicit, reviewed three-way merges. Product branding and composition live in each consuming product package, so iKanban and IPaper can independently pin and release a tested `@isomoes/dsh-web-ui` version.

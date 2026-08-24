@@ -7,7 +7,7 @@ import { createElement, useLayoutEffect, useState, type ReactNode } from 'react'
 import { flushSync } from 'react-dom'
 import { createRoot, hydrateRoot, type Root } from 'react-dom/client'
 import type { Context } from '@deepseek-ai/cordis'
-import type { SnapshotSelectorHook } from '@isomoes/dsh-ikanban/client/ui-slots'
+import type { SnapshotSelectorHook } from '@isomoes/dsh-web-ui/client/ui-slots'
 import { createSlotRenderer } from './scoped-slots.tsx'
 import { buildRenderApp } from './app.tsx'
 
@@ -17,7 +17,7 @@ export type UseSession<Snap extends object = object> = SnapshotSelectorHook<Snap
 export type {
   ChainRenderOpts, HostObservable, RenderOpts, SessionProvideInfo, SnapshotSelectorHook,
   SlotRenderer, SlotRendererHost, StoreInstanceLike,
-} from '@isomoes/dsh-ikanban/client/ui-slots'
+} from '@isomoes/dsh-web-ui/client/ui-slots'
 export type { SessionProviderProps } from './session-provider.tsx'
 
 /** Mount operation exposed to the framework-free boot kernel. */

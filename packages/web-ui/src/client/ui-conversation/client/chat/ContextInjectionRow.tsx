@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { ContextMessageNode } from '@deepseek-ai/dsh-client-runtime/client'
 import type { ChatViewSlotProps } from '../contract/slots.ts'
-import { DisclosureRow, IconBrowseOutline16 } from '@isomoes/dsh-ikanban/client/ui-primitives'
+import { DisclosureRow, IconBrowseOutline16 } from '@isomoes/dsh-web-ui/client/ui-primitives'
 import { ReferenceIcon } from '../reference/ReferenceIcon.tsx'
 import { contextBody } from './ContextBody.tsx'
 import css from './ContextInjectionRow.module.css'

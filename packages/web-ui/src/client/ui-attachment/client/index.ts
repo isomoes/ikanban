@@ -1,6 +1,6 @@
 /** Browser attachment plugin: fills conversation's composer and message-image slots. */
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
-import type {} from '@isomoes/dsh-ikanban/client/ui-conversation/client'
+import type {} from '@isomoes/dsh-web-ui/client/ui-conversation/client'
 import { ComposerAttachments } from './ComposerAttachments.tsx'
 import { MessageImages } from './MessageImages.tsx'
 

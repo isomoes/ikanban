@@ -1,9 +1,9 @@
 /** Git workspace changes view, opened from the conversation's compact view switcher. */
 
 import { useCallback, useEffect, useState } from 'react'
-import type { ConvViewProps } from '@isomoes/dsh-ikanban/client/ui-conversation/client'
-import type { InjectFace, PropsLocale } from '@isomoes/dsh-ikanban/client/ui-slots'
-import { IconRefreshOutline16 } from '@isomoes/dsh-ikanban/client/ui-primitives'
+import type { ConvViewProps } from '@isomoes/dsh-web-ui/client/ui-conversation/client'
+import type { InjectFace, PropsLocale } from '@isomoes/dsh-web-ui/client/ui-slots'
+import { IconRefreshOutline16 } from '@isomoes/dsh-web-ui/client/ui-primitives'
 import type { WorkspaceChange, WorkspaceChanges } from '../workspace-changes.ts'
 import css from './WorkspaceChangesView.module.css'
 

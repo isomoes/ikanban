@@ -4,7 +4,7 @@ import { test } from 'node:test'
 
 const readManifest = async (url) => JSON.parse(await readFile(url, 'utf8'))
 
-test('build lifecycles produce private Web UI artifacts without recursive orchestration', async () => {
+test('build lifecycles consume the publishable shared Web UI without recursive orchestration', async () => {
   const [root, ikanban, webUi, projectMcp, composition, projectMcpPresetFragment, shippedPreset] = await Promise.all([
     readManifest(new URL('../../../package.json', import.meta.url)),
     readManifest(new URL('../package.json', import.meta.url)),
@@ -34,11 +34,13 @@ test('build lifecycles produce private Web UI artifacts without recursive orches
   ]) {
     assert.equal(root.devDependencies[peerAnchor], '^0.1.1-rc.1')
   }
+  assert.equal(webUi.name, '@isomoes/dsh-web-ui')
+  assert.equal(webUi.private, false)
   assert.equal(webUi.scripts.build, 'pnpm build:package')
   assert.ok(webUi.scripts['build:package'])
   assert.equal(
     ikanban.scripts.build,
-    'pnpm --filter @isomoes/dsh-project-mcp build:package && pnpm --filter @isomoes/dsh-ikanban-web-ui build:package && pnpm build:package',
+    'pnpm --filter @isomoes/dsh-project-mcp build:package && pnpm --filter @isomoes/dsh-web-ui build:package && pnpm build:package',
   )
   assert.ok(ikanban.scripts['build:package'])
   assert.doesNotMatch(ikanban.scripts['build:package'], /(?:^|\s)pnpm build(?:\s|$)/)
@@ -46,6 +48,7 @@ test('build lifecycles produce private Web UI artifacts without recursive orches
   assert.equal(ikanban.dependencies['@deepseek-ai/dsh-host-directory-picker-native'], undefined)
   assert.equal(ikanban.dependencies['@deepseek-ai/dsh-agent-loop'], '^0.1.1-rc.1')
   assert.equal(ikanban.dependencies['@deepseek-ai/dsh-tools'], '^0.1.1-rc.1')
+  assert.equal(ikanban.dependencies['@isomoes/dsh-web-ui'], 'workspace:0.4.17')
   assert.equal(ikanban.dependencies['@isomoes/dsh-project-mcp'], undefined)
   assert.equal(ikanban.devDependencies['@isomoes/dsh-project-mcp'], 'workspace:*')
   assert.equal(ikanban.dependencies['@deepseek-ai/dsh-mcp-client'], '^0.1.1-rc.1')

@@ -1,6 +1,6 @@
 /** The agent loop's card: how many tool calls one step may run at once. */
 
-import type { InjectFace, PropsLocale, PropsRuntime } from '@isomoes/dsh-ikanban/client/ui-slots'
+import type { InjectFace, PropsLocale, PropsRuntime } from '@isomoes/dsh-web-ui/client/ui-slots'
 import { ValueField } from './fields.tsx'
 import { PluginCard } from './PluginCard.tsx'
 import type { AgentLoopCardFace } from './agent-loop-card-controller.ts'

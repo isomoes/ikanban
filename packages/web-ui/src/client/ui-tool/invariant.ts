@@ -1,13 +1,13 @@
 /**
- * Package-owned invariant companion for `@isomoes/dsh-ikanban/client/ui-tool`.
- * @module @isomoes/dsh-ikanban/client/ui-tool/invariant
+ * Package-owned invariant companion for `@isomoes/dsh-web-ui/client/ui-tool`.
+ * @module @isomoes/dsh-web-ui/client/ui-tool/invariant
  */
 
 /* jscpd:ignore-start */
 import type { Context } from '@deepseek-ai/cordis'
 import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
 
-const PACKAGE_NAME = '@isomoes/dsh-ikanban/client/ui-tool'
+const PACKAGE_NAME = '@isomoes/dsh-web-ui/client/ui-tool'
 
 /** Cordis companion plugin name. */
 export const name = 'client-ui-tool-invariant'

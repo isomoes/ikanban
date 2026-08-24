@@ -9,7 +9,7 @@ const entries = await discoverClientEntries({ packageRoot: fileURLToPath(package
 const packageManifest = JSON.parse(await readFile(new URL('package.json', packageRoot), 'utf8'))
 
 test('each forked client entry emits an isolated virtual package', async () => {
-  assert.equal(entries.length, 36)
+  assert.equal(entries.length, 35)
 
   for (const entry of entries) {
     const { id, stockId, virtualId } = entry
@@ -55,13 +55,14 @@ test('each forked client entry emits an isolated virtual package', async () => {
     if (id === 'ui-conversation') {
       assert.ok(bundle.includes(`buildBadge(${JSON.stringify(packageManifest.version)}, false)`))
       assert.match(bundle, /Conversation views/)
-      assert.doesNotMatch(bundle, /__IKANBAN_(?:DEV|VERSION)__/)
+      assert.doesNotMatch(bundle, /__DSH_WEB_UI_(?:DEV|VERSION)__/)
     }
     if (id === 'ui-sidebar') {
-      assert.match(bundle, /https:\/\/github\.com\/isomoes\/ikanban/)
+      assert.match(bundle, /DeepSeek Harness/)
+      assert.doesNotMatch(bundle, /iKanban/)
     }
     if (id === 'ui-renderer') {
-      assert.match(bundle, /iKanban/)
+      assert.match(bundle, /DeepSeek Harness/)
       assert.doesNotMatch(bundle, /process\.env\.DSH_CLIENT_TITLE/)
     }
     if (id === 'ui-theme') {

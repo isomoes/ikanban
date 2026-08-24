@@ -3,7 +3,7 @@
 import { useEffect, useSyncExternalStore, type ReactNode } from 'react'
 import clsx from 'clsx'
 import type { SessionId, SessionListState, SessionSummary } from '@deepseek-ai/dsh-client-runtime/client'
-import { IconDataOutline16, IconListPenOutline16, IconNewChatOutline16 } from '@isomoes/dsh-ikanban/client/ui-primitives'
+import { IconDataOutline16, IconListPenOutline16, IconNewChatOutline16 } from '@isomoes/dsh-web-ui/client/ui-primitives'
 import type {
   ConversationSessionHeaderSlotProps, ConversationSessionSlotProps,
 } from '../contract/slots.ts'

@@ -5,7 +5,7 @@ import scrollbar from '../styles/scrollbar.css?inline'
 import gradientShadowText from '../styles/gradient-shadow-text.css?inline'
 import shiki from '../styles/shiki.css?inline'
 
-const PLUGIN_ID = '@isomoes/dsh-ikanban/client/ui-theme'
+const PLUGIN_ID = '@isomoes/dsh-web-ui/client/ui-theme'
 
 const STYLES = [
   ['base.css', base],

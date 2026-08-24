@@ -1,4 +1,4 @@
-import type { PropsLocale, PropsRuntime } from '@isomoes/dsh-ikanban/client/ui-slots'
+import type { PropsLocale, PropsRuntime } from '@isomoes/dsh-web-ui/client/ui-slots'
 import { NS } from './locales.ts'
 import css from './SubagentReadOnlyComposer.module.css'
 

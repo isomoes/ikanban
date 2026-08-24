@@ -14,12 +14,12 @@
 // Type-only: the carrier types, the forwarded Host-event face and the ctx.remote merge.
 import type { ModelSelection, SessionModels } from '@deepseek-ai/dsh-api-remotes/client'
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
-import type { CommandUiContract, SelectOption } from '@isomoes/dsh-ikanban/client/ui-commands/client'
+import type { CommandUiContract, SelectOption } from '@isomoes/dsh-web-ui/client/ui-commands/client'
 // Type-only: pulls the ui-conversation SlotMap merge (the input.model seat).
-import type {} from '@isomoes/dsh-ikanban/client/ui-conversation/client'
+import type {} from '@isomoes/dsh-web-ui/client/ui-conversation/client'
 // Type-only: pulls the locale plugin's Context merge (ctx.locale).
-import type {} from '@isomoes/dsh-ikanban/client/locale/client'
-import type { TranslateNS } from '@isomoes/dsh-ikanban/client/ui-slots'
+import type {} from '@isomoes/dsh-web-ui/client/locale/client'
+import type { TranslateNS } from '@isomoes/dsh-web-ui/client/ui-slots'
 import type { ModelDirectoryState } from './directory.ts'
 import { ModelDirectoryResolver } from './service.ts'
 import type { ModelSelectInjected } from './slots.ts'
@@ -34,7 +34,7 @@ export type { WorkspaceDefaultContext } from '../workspace-defaults.ts'
 export type { ModelSelectInjected } from './slots.ts'
 export type { ModelKey } from './locales.ts'
 
-declare module '@isomoes/dsh-ikanban/client/ui-slots' {
+declare module '@isomoes/dsh-web-ui/client/ui-slots' {
   interface LocaleNamespaceMap {
     /** The model selection surfaces' copy (/model popup + composer seat). */
     model: ModelKey

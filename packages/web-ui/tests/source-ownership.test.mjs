@@ -20,14 +20,14 @@ test('discovers owned client entries', async () => {
   assert.match(byId.get('ui-workspace').source, /client\/ui-workspace\/client\/index\.ts$/)
 })
 
-test('uses iKanban identities for every owned invariant package', async () => {
+test('uses neutral identities for every owned invariant package', async () => {
   const sourceRoot = new URL('../src/', import.meta.url)
   const invariantPaths = (await readdir(sourceRoot, { recursive: true }))
     .filter(path => path.endsWith('/invariant.ts'))
   assert.ok(invariantPaths.length > 0)
   for (const path of invariantPaths) {
     const source = await readFile(new URL(path, sourceRoot), 'utf8')
-    assert.match(source, /const PACKAGE_NAME = '@isomoes\/dsh-ikanban\/client\//, path)
+    assert.match(source, /const PACKAGE_NAME = '@isomoes\/dsh-web-ui\/client\//, path)
     assert.doesNotMatch(source, /const PACKAGE_NAME = '@deepseek-ai\//, path)
   }
 })
@@ -54,8 +54,8 @@ test('bridges every published infrastructure import to an owned singleton', asyn
     readFile(new URL('../package.json', import.meta.url), 'utf8').then(JSON.parse),
   ])
   const aliases = [
-    ['@deepseek-ai/dsh-client-ui-slots', '@isomoes/dsh-ikanban/client/ui-slots', 'UiSlots'],
-    ['@deepseek-ai/dsh-client-ui-primitives', '@isomoes/dsh-ikanban/client/ui-primitives', 'UiPrimitives'],
+    ['@deepseek-ai/dsh-client-ui-slots', '@isomoes/dsh-web-ui/client/ui-slots', 'UiSlots'],
+    ['@deepseek-ai/dsh-client-ui-primitives', '@isomoes/dsh-web-ui/client/ui-primitives', 'UiPrimitives'],
   ]
   for (const [legacy, owned, binding] of aliases) {
     assert.ok(platform.includes(`'${legacy}': '${owned}'`), legacy)
@@ -68,7 +68,7 @@ test('bridges every published infrastructure import to an owned singleton', asyn
 test('loads theme styles from the owned dynamic theme plugin', async () => {
   const styles = await readFile(new URL('../src/client/ui-theme/client/styles.ts', import.meta.url), 'utf8')
   assert.match(styles, /import base from '\.\.\/styles\/base\.css\?inline'/)
-  assert.match(styles, /@isomoes\/dsh-ikanban\/client\/ui-theme/)
+  assert.match(styles, /@isomoes\/dsh-web-ui\/client\/ui-theme/)
   assert.doesNotMatch(styles, /@deepseek-ai\/dsh-client-ui-theme/)
 })
 

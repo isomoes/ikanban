@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import {
   IconBrowseOutline16, IconFolderClose16,
-} from '@isomoes/dsh-ikanban/client/ui-primitives'
+} from '@isomoes/dsh-web-ui/client/ui-primitives'
 
 /** Reference domains with distinct composer and transcript glyphs. */
 export type ReferenceIconKind = 'session' | 'file' | 'folder'

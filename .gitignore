@@ -2,8 +2,10 @@ node_modules/
 .pnpm-store/
 lib/
 dist/
+/packages/web-ui/web/
 *.tsbuildinfo
 .env*
 !.env.example
 .DS_Store
 *.tgz
+/.xdg

@@ -9,7 +9,7 @@
 
 import type { IApiClient } from '@deepseek-ai/dsh-api-remotes/client'
 import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client-runtime/client'
-import type { SettingsDescribeFace } from '@isomoes/dsh-ikanban/client/ui-settings/client'
+import type { SettingsDescribeFace } from '@isomoes/dsh-web-ui/client/ui-settings/client'
 
 /** The agent-preset settings namespace on the host wire. */
 export const AGENT_PRESET_SETTINGS_NS = 'agent-presets'

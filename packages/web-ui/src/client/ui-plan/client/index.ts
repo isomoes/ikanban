@@ -10,9 +10,9 @@
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import type { ClientContext, SessionId } from '@deepseek-ai/dsh-client-runtime/client'
 // Type-only: pulls the ui-conversation SlotMap merge (the input.plan seat).
-import type {} from '@isomoes/dsh-ikanban/client/ui-conversation/client'
+import type {} from '@isomoes/dsh-web-ui/client/ui-conversation/client'
 // Type-only: pulls the locale plugin's Context merge (ctx.locale).
-import type {} from '@isomoes/dsh-ikanban/client/locale/client'
+import type {} from '@isomoes/dsh-web-ui/client/locale/client'
 // Type-only: pulls the `plan` SessionProjectionMap merge for useProjection.
 import type {} from '@deepseek-ai/dsh-plan-mode/client'
 import { PlanChip } from './PlanModeControl.tsx'
@@ -20,7 +20,7 @@ import { en, zh, type PlanKey } from './locales.ts'
 
 export type { PlanKey } from './locales.ts'
 
-declare module '@isomoes/dsh-ikanban/client/ui-slots' {
+declare module '@isomoes/dsh-web-ui/client/ui-slots' {
   interface LocaleNamespaceMap {
     /** The composer plan chip's copy. */
     plan: PlanKey

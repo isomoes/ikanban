@@ -8,7 +8,7 @@ import { productTitle } from './src/build-presentation.ts'
 const src = (rel: string): string => fileURLToPath(new URL(rel, import.meta.url))
 const packageVersion = (createRequire(import.meta.url)('./package.json') as { version: string }).version
 const STANDALONE_ERROR = 'packages/web-ui is not a standalone application: bare Vite cannot inject window.__DSH_BOOT__. '
-  + 'Build it through the iKanban package scripts and serve it through DSH.'
+  + 'Build it through a consuming product package and serve it through DSH.'
 
 function rejectStandaloneServe(): Plugin {
   return {
@@ -21,10 +21,10 @@ function rejectStandaloneServe(): Plugin {
 
 function identifyDevelopmentBuild(development: boolean): Plugin {
   return {
-    name: 'ikanban-development-title',
+    name: 'dsh-web-ui-development-title',
     transformIndexHtml(html) {
       if (!development) return html
-      return html.replace('<title>iKanban</title>', `<title>${productTitle('iKanban', true)}</title>`)
+      return html.replace('<title>DeepSeek Harness</title>', `<title>${productTitle('DeepSeek Harness', true)}</title>`)
     },
   }
 }
@@ -66,12 +66,12 @@ function npmPackageOf(id: string): string | undefined {
 }
 
 export default defineConfig(({ mode }) => {
-  const development = process.env.IKANBAN_DEV === '1' || mode === 'development'
+  const development = process.env.DSH_WEB_UI_DEV === '1' || mode === 'development'
   return {
     root: src('./'),
     plugins: [rejectStandaloneServe(), identifyDevelopmentBuild(development), react()],
     build: {
-      outDir: src('./dist'),
+      outDir: src('./web'),
       emptyOutDir: true,
       sourcemap: true,
       rollupOptions: {
@@ -100,14 +100,14 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: [
         { find: /^node:module$/, replacement: src('./src/node-module-stub.ts') },
-        { find: /^@isomoes\/dsh-ikanban\/client\/web$/, replacement: src('./src/client/web/boot.ts') },
-        { find: /^@isomoes\/dsh-ikanban\/client\/ui-slots$/, replacement: src('./src/client/ui-slots/index.ts') },
-        { find: /^@isomoes\/dsh-ikanban\/client\/ui-primitives$/, replacement: src('./src/client/ui-primitives/index.ts') },
+        { find: /^@isomoes\/dsh-web-ui\/client\/web$/, replacement: src('./src/client/web/boot.ts') },
+        { find: /^@isomoes\/dsh-web-ui\/client\/ui-slots$/, replacement: src('./src/client/ui-slots/index.ts') },
+        { find: /^@isomoes\/dsh-web-ui\/client\/ui-primitives$/, replacement: src('./src/client/ui-primitives/index.ts') },
       ],
     },
     define: {
-      __IKANBAN_DEV__: JSON.stringify(development),
-      __IKANBAN_VERSION__: JSON.stringify(packageVersion),
+      __DSH_WEB_UI_DEV__: JSON.stringify(development),
+      __DSH_WEB_UI_VERSION__: JSON.stringify(packageVersion),
       'process.versions.node': '"0.0.0"',
       'process.execArgv': '[]',
       'process.env.CORDIS_SHARED': 'undefined',

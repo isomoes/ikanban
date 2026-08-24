@@ -10,7 +10,7 @@ import type {} from '@deepseek-ai/dsh-llm-retry/types'
 import type { AssistantChatData } from '../contract/chat-nodes.ts'
 import { CHAT_SYNTHETIC_SEQ_OFFSETS, chatNode } from './common.ts'
 
-declare module '@isomoes/dsh-ikanban/client/ui-conversation/client' {
+declare module '@isomoes/dsh-web-ui/client/ui-conversation/client' {
   interface ChatNodeDataMap {
     /** Streaming, settled, or interrupted Assistant step. */
     'assistant-step': AssistantChatData

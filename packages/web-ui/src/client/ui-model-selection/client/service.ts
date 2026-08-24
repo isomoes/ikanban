@@ -20,7 +20,7 @@ import type {
 import type {
   SessionRuntime, SettingsScope, WorkspaceRuntime,
 } from '@deepseek-ai/dsh-client-runtime/client'
-import type {} from '@isomoes/dsh-ikanban/client/ui-settings/client'
+import type {} from '@isomoes/dsh-web-ui/client/ui-settings/client'
 import {
   WORKSPACE_MODEL_SETTINGS_NAMESPACE, type WorkspaceModelSettings,
 } from '../workspace-model-settings.ts'

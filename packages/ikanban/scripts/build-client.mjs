@@ -1,12 +1,8 @@
 import { cp } from 'node:fs/promises'
 
-await Promise.all([
-  cp(new URL('../../web-ui/lib/clients/', import.meta.url), new URL('../lib/clients/', import.meta.url), {
-    recursive: true,
-    force: true,
-  }),
-  cp(new URL('../../web-ui/dist/', import.meta.url), new URL('../lib/web/', import.meta.url), {
-    recursive: true,
-    force: true,
-  }),
-])
+// Product bundles serve the tested shared shell verbatim. Shared dynamic clients
+// remain in @isomoes/dsh-web-ui and resolve through that production dependency.
+await cp(new URL('../../web-ui/web/', import.meta.url), new URL('../lib/web/', import.meta.url), {
+  recursive: true,
+  force: true,
+})

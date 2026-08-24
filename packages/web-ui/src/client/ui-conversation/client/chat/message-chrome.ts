@@ -1,6 +1,6 @@
 // Shared time-label helpers for user/assistant IconActions rows.
 
-import type { Translate } from '@isomoes/dsh-ikanban/client/ui-slots'
+import type { Translate } from '@isomoes/dsh-web-ui/client/ui-slots'
 
 /** The date-template share of the conversation dictionary the clock consumes. */
 export type ClockTranslate = Translate<'clock.md' | 'clock.ymd'>

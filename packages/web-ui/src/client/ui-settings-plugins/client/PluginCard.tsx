@@ -16,7 +16,7 @@
 
 import { useState, type ReactNode } from 'react'
 import clsx from 'clsx'
-import { IconChevronDownOutline14 } from '@isomoes/dsh-ikanban/client/ui-primitives'
+import { IconChevronDownOutline14 } from '@isomoes/dsh-web-ui/client/ui-primitives'
 import type { CardShell } from './card-form.ts'
 import type { PluginsSettingsLocaleKey } from './locales.ts'
 import css from './PluginCard.module.css'

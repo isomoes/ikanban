@@ -1,16 +1,16 @@
 /** Registers the conversation components, shared store, and service callbacks. */
 import type { Context } from '@deepseek-ai/cordis'
-import { resolveSlotLabel, type BoundActions } from '@isomoes/dsh-ikanban/client/ui-slots'
+import { resolveSlotLabel, type BoundActions } from '@isomoes/dsh-web-ui/client/ui-slots'
 import {
   resolveWorkspacePath, type ISessions, type SessionId,
 } from '@deepseek-ai/dsh-client-runtime/client'
 // Type-only: the ctx.settingsScope Context merge. Cross-plugin collaboration
 // goes through the service, never a value import (client bundle purity gate).
-import type {} from '@isomoes/dsh-ikanban/client/ui-settings/client'
-import type {} from '@isomoes/dsh-ikanban/client/ui-layout/client'
-import type {} from '@isomoes/dsh-ikanban/client/ui-commands/client'
+import type {} from '@isomoes/dsh-web-ui/client/ui-settings/client'
+import type {} from '@isomoes/dsh-web-ui/client/ui-layout/client'
+import type {} from '@isomoes/dsh-web-ui/client/ui-commands/client'
 // Type-only: pulls the locale plugin's Context merge (ctx.locale).
-import type {} from '@isomoes/dsh-ikanban/client/locale/client'
+import type {} from '@isomoes/dsh-web-ui/client/locale/client'
 import type { ViewTab } from './contract/views.ts'
 import type {
   ApprovalWait, ChatNodeTurnDataInjected, ChatScrollPosition, ChatViewInjected, ComposerBarInjected,
@@ -41,7 +41,7 @@ import { registerConversationNodes } from './conversation-nodes/register.ts'
 import { registerChatNodeRenderers } from './chat/register-node-renderers.ts'
 import { CONVERSATION_SETTINGS_NAMESPACE, type ConversationSettings } from '../submission-settings.ts'
 
-declare module '@isomoes/dsh-ikanban/client/ui-slots' {
+declare module '@isomoes/dsh-web-ui/client/ui-slots' {
   interface LocaleNamespaceMap {
     /** The conversation skeleton, chat flow, commands, details, and docks copy. */
     conversation: ConversationKey

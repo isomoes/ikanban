@@ -6,15 +6,15 @@ import test from 'node:test'
 const packageRoot = fileURLToPath(new URL('..', import.meta.url))
 
 test('frontend build emits local hashed assets', async () => {
-  const index = await readFile(new URL('../dist/index.html', import.meta.url), 'utf8')
+  const index = await readFile(new URL('../web/index.html', import.meta.url), 'utf8')
   assert.match(index, /\/assets\//)
 
-  const assets = await readdir(new URL('../dist/assets', import.meta.url), { recursive: true })
+  const assets = await readdir(new URL('../web/assets', import.meta.url), { recursive: true })
   const scripts = assets.filter(file => file.endsWith('.js'))
   assert.ok(scripts.length > 0, 'expected emitted JavaScript assets')
 
   for (const script of scripts) {
-    const source = await readFile(`${packageRoot}/dist/assets/${script}`, 'utf8')
+    const source = await readFile(`${packageRoot}/web/assets/${script}`, 'utf8')
     assert.doesNotMatch(source, /\.\.\/deepseek-harness/)
     assert.doesNotMatch(
       source,
