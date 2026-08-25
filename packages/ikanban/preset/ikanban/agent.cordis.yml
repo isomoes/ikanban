@@ -43,6 +43,9 @@
 - id: tool-goal
   name: '@deepseek-ai/dsh-tool-goal'
 
+- id: command-commit-message
+  name: '@isomoes/dsh-ikanban/markdown-command'
+
 - id: planning
   name: cordis:group
   group: true
