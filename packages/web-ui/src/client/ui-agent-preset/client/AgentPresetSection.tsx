@@ -209,7 +209,7 @@ export function AgentPresetSection(props: AgentPresetSectionProps): ReactNode {
      Offered only where that preset is actually on the roster and a
      session can be landed; without a writable root the draft could
      never be discovered, so the reason rides the disabled button. */
-  const creatorButton = props.startCreatorDraft !== undefined && state.rows.some(row => row.id === 'cordis')
+  const creatorButton = props.startCreatorDraft !== undefined && state.rows.some(row => row.id === 'cordis' && row.trust === 'system' && row.broken === undefined)
     ? (
       <button
         type="button"

@@ -82,3 +82,8 @@ test('keeps the trigger menu width stable while filtering', async () => {
   assert.match(css, /\.menu\s*\{[^}]*\n\s{2}width:\s*min\(537px,\s*100%\)/s)
   assert.match(css, /\.menu\s*\{[^}]*\n\s{2}height:\s*320px/s)
 })
+
+test('offers Creator drafting only for a healthy shipped Creator preset', async () => {
+  const source = await readFile(new URL('../src/client/ui-agent-preset/client/AgentPresetSection.tsx', import.meta.url), 'utf8')
+  assert.match(source, /row\.id === 'cordis' && row\.trust === 'system' && row\.broken === undefined/)
+})

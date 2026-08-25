@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.5.2]
+
+- Added a built-in commit-message command for generating concise Conventional Commit messages from staged changes.
+- Bounded large workspace diffs to keep project change reviews responsive while clearly reporting omitted content.
+- Fixed browser titles so product bundles preserve their configured branding.
+- Limited Creator preset drafting to the healthy, shipped system preset.
+- Refreshed production setup documentation and added the v0.5.0 introduction video.
+
 ## [0.5.1]
 
 - Fixed clean production installs by declaring the shared Web UI as an iKanban runtime dependency while keeping it outside the DSH bundle layer list.
