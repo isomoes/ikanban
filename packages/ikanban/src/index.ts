@@ -2,12 +2,10 @@ import { networkInterfaces } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { addHarnessSourceSection } from '@deepseek-ai/dsh-app-boot'
 import * as FrontendStatic from '@deepseek-ai/dsh-host-frontend-static'
 import type {} from '@deepseek-ai/cordis-plugin-loader'
 import type {} from '@deepseek-ai/dsh-host-webserver'
 import type {} from '@deepseek-ai/dsh-shell-env'
-import type {} from '@deepseek-ai/dsh-system-prompt'
 
 export const name = 'web-app'
 export const inject = ['webServer']
@@ -29,7 +27,6 @@ export interface WebRuntimeValues {
   trustedHosts: string[]
 }
 
-const SOURCE_ROOT = fileURLToPath(new URL('../../../..', import.meta.url))
 const LOOPBACK_HOST = '127.0.0.1'
 const ALL_INTERFACES_HOST = '0.0.0.0'
 
@@ -48,19 +45,6 @@ function localWebUrl(ctx: Context): string {
   return `http://${LOOPBACK_HOST}:${String(port)}`
 }
 
-function webSurfacePrompt(webUrl: string): string {
-  const updateContract = 'The client-plugin HMR receiver is active, but client-plugin changes reload without a refresh only while '
-    + '`pnpm run dev:web` is also running from this same checkout to rebuild their bundles; verify that watcher before promising automatic updates. '
-    + 'Every other change - the apps/web shell and plain packages - requires rebuilding the affected Web artifacts and verifying this existing URL after a page refresh. '
-  return `You are interacting with the user through the DeepSeek Harness Web GUI at ${webUrl}. `
-    + 'When the user refers to "this page", "this GUI", or "this app" without naming another target, they mean this GUI. '
-    + 'The browser provides no implicit DOM, route, or screenshot context. '
-    + updateContract
-    + 'Starting another server does not update this GUI. '
-    + 'The apps/web Vite entry builds the shell but is not a standalone application because only dsh web injects window.__DSH_BOOT__. '
-    + 'Do not start a replacement server unless the user asks; if one is needed, use a managed background job and verify its exact URL.'
-}
-
 function resolveDistIndex(): string {
   return fileURLToPath(new URL('./web/index.html', import.meta.url))
 }
@@ -75,14 +59,6 @@ export function apply(ctx: Context, config: Config): void {
   })
 
   if (config.surfaceContext) {
-    ctx.inject(['systemPrompt'], (promptCtx) => {
-      addHarnessSourceSection(promptCtx, SOURCE_ROOT)
-      promptCtx.systemPrompt.section({
-        name: 'app:web-surface',
-        order: -98,
-        text: () => webSurfacePrompt(localWebUrl(promptCtx)),
-      })
-    })
     ctx.inject(['shellEnv'], (runtimeCtx) => {
       runtimeCtx.shellEnv.register({
         name: 'web-runtime',
