@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.5.3]
+
+- Removed iKanban-specific Web runtime context from the system prompt while preserving the runtime environment registration.
+
 ## [0.5.2]
 
 - Added a built-in commit-message command for generating concise Conventional Commit messages from staged changes.
