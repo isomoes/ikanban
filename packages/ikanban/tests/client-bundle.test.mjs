@@ -24,12 +24,15 @@ test('consumes neutral shared clients and publishes only product branding', asyn
   assert.doesNotMatch(composition, /ui-brand-official/)
 
   const output = new URL('lib/clients/ui-brand-ikanban/', packageRoot)
-  const [bundle, productManifest, index] = await Promise.all([
+  const [bundle, productManifest, index, productShell] = await Promise.all([
     readFile(new URL('client.js', output), 'utf8'),
     JSON.parse(await readFile(new URL('package.json', output), 'utf8')),
     readFile(new URL('index.js', output), 'utf8'),
+    readFile(new URL('lib/web/index.html', packageRoot), 'utf8'),
   ])
   assert.match(bundle, /iKanban/)
+  assert.match(productShell, /<title>iKanban<\/title>/)
+  assert.doesNotMatch(productShell, /<title>DeepSeek Harness<\/title>/)
   assert.ok(bundle.includes(`id: ${JSON.stringify(brandId)}`))
   assert.equal(productManifest.name, brandId)
   assert.deepEqual(productManifest.dsh.client.inject, [

@@ -1,6 +1,11 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 const DEFAULT_CLIENT_TITLE = 'DSH Local Build'
+
+function initialProductTitle(): string {
+  const shellTitle = document.title.trim()
+  return shellTitle || process.env.DSH_CLIENT_TITLE || DEFAULT_CLIENT_TITLE
+}
 
 /** Props for the browser title projection. */
 export interface DocumentTitleProps {
@@ -15,7 +20,7 @@ export interface DocumentTitleProps {
  * @returns No rendered content.
  */
 export function DocumentTitle({ title }: DocumentTitleProps): null {
-  const productTitle = process.env.DSH_CLIENT_TITLE ?? DEFAULT_CLIENT_TITLE
+  const [productTitle] = useState(initialProductTitle)
   useEffect(() => {
     document.title = title === undefined ? productTitle : `${title} — ${productTitle}`
     return () => { document.title = productTitle }
