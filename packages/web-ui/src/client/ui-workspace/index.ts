@@ -11,7 +11,10 @@ import type {
 export const WORKSPACE_FILE_CHANNEL = '/ikanban.workspace-files'
 const CATALOG_LIMIT = 20_000
 const CHANGES_RESPONSE_LIMIT = 8 * 1024 * 1024
-const UNTRACKED_FILE_LIMIT = 512 * 1024
+// Keep one rewritten file from monopolizing the response or making execFile
+// buffer the complete Git output before later changed files can be inspected.
+const FILE_PATCH_LIMIT = 512 * 1024
+const UNTRACKED_FILE_LIMIT = FILE_PATCH_LIMIT
 
 export { fuzzyWorkspaceFiles } from './file-fuzzy.ts'
 export type { WorkspaceChange, WorkspaceChanges, WorkspaceChangeStatus } from './workspace-changes.ts'
@@ -68,6 +71,29 @@ function gitOutput(cwd: string, args: readonly string[], signal: AbortSignal): P
   })
 }
 
+interface BoundedGitOutput {
+  readonly output: string
+  readonly truncated: boolean
+}
+
+/** Stop Git once a single patch reaches its budget while retaining its prefix. */
+function boundedGitOutput(
+  cwd: string, args: readonly string[], signal: AbortSignal, limit: number,
+): Promise<BoundedGitOutput> {
+  if (limit <= 0) return Promise.resolve({ output: '', truncated: true })
+  return new Promise((resolve, reject) => {
+    execFile('git', [...args], { cwd, encoding: 'buffer', maxBuffer: limit, signal }, (error, stdout) => {
+      if (error === null) {
+        resolve({ output: stdout.toString(), truncated: false })
+      } else if ((error as NodeJS.ErrnoException).code === 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER') {
+        resolve({ output: stdout.subarray(0, limit).toString(), truncated: true })
+      } else {
+        reject(error)
+      }
+    })
+  })
+}
+
 interface StatusEntry {
   readonly code: string
   readonly path: string
@@ -102,7 +128,7 @@ function changeStatus(code: string): WorkspaceChangeStatus {
   return 'modified'
 }
 
-async function untrackedPatch(cwd: string, path: string, signal: AbortSignal): Promise<string> {
+async function untrackedPatch(cwd: string, path: string, signal: AbortSignal): Promise<BoundedGitOutput> {
   signal.throwIfAborted()
   const absolutePath = join(cwd, path)
   const stat = await lstat(absolutePath)
@@ -121,33 +147,48 @@ async function untrackedPatch(cwd: string, path: string, signal: AbortSignal): P
       await handle.close()
     }
   }
-  if (content.includes(0)) return `diff --git a/${path} b/${path}\nnew file mode 100644\nBinary file ${path} added\n`
+  if (content.includes(0)) {
+    return {
+      output: `diff --git a/${path} b/${path}\nnew file mode 100644\nBinary file ${path} added\n`,
+      truncated: false,
+    }
+  }
   const text = content.subarray(0, UNTRACKED_FILE_LIMIT).toString('utf8')
   const lines = text === '' ? [] : (text.endsWith('\n') ? text.slice(0, -1) : text).split('\n')
   const body = lines.map(line => `+${line}`).join('\n')
-  return [
-    `diff --git a/${path} b/${path}`,
-    'new file mode 100644',
-    '--- /dev/null',
-    `+++ b/${path}`,
-    `@@ -0,0 +1,${lines.length} @@`,
-    body,
-    ...(truncated ? ['+… diff truncated …'] : []),
-    '',
-  ].join('\n')
+  return {
+    output: [
+      `diff --git a/${path} b/${path}`,
+      'new file mode 100644',
+      '--- /dev/null',
+      `+++ b/${path}`,
+      `@@ -0,0 +1,${lines.length} @@`,
+      body,
+      ...(truncated ? ['+… diff truncated …'] : []),
+      '',
+    ].join('\n'),
+    truncated,
+  }
 }
 
-async function trackedPatch(cwd: string, entry: StatusEntry, signal: AbortSignal): Promise<string> {
+async function trackedPatch(
+  cwd: string, entry: StatusEntry, signal: AbortSignal, limit: number,
+): Promise<BoundedGitOutput> {
   const paths = entry.previousPath === undefined ? [entry.path] : [entry.previousPath, entry.path]
+  const args = ['diff', '--no-ext-diff', '--no-color', '--no-textconv', '--unified=3']
   try {
-    return await gitOutput(cwd, ['diff', '--no-ext-diff', '--no-color', '--unified=3', 'HEAD', '--', ...paths], signal)
+    return await boundedGitOutput(cwd, [...args, 'HEAD', '--', ...paths], signal, limit)
   } catch (error) {
     if (signal.aborted) throw error
-    const [staged, unstaged] = await Promise.all([
-      gitOutput(cwd, ['diff', '--no-ext-diff', '--no-color', '--unified=3', '--cached', '--', ...paths], signal),
-      gitOutput(cwd, ['diff', '--no-ext-diff', '--no-color', '--unified=3', '--', ...paths], signal),
-    ])
-    return `${staged}${staged !== '' && unstaged !== '' ? '\n' : ''}${unstaged}`
+    const staged = await boundedGitOutput(cwd, [...args, '--cached', '--', ...paths], signal, limit)
+    if (staged.truncated) return staged
+    const separator = staged.output === '' ? '' : '\n'
+    const remaining = limit - Buffer.byteLength(staged.output) - Buffer.byteLength(separator)
+    const unstaged = await boundedGitOutput(cwd, [...args, '--', ...paths], signal, remaining)
+    return {
+      output: `${staged.output}${staged.output !== '' && unstaged.output !== '' ? separator : ''}${unstaged.output}`,
+      truncated: unstaged.truncated,
+    }
   }
 }
 
@@ -169,21 +210,26 @@ export async function readWorkspaceChanges(cwd: string, signal: AbortSignal): Pr
   let truncated = false
   for (const entry of entries) {
     signal.throwIfAborted()
-    let patch = entry.code === '??'
-      ? await untrackedPatch(cwd, entry.path, signal)
-      : await trackedPatch(cwd, entry, signal)
     const available = CHANGES_RESPONSE_LIMIT - retainedBytes
+    const budget = Math.min(FILE_PATCH_LIMIT, available)
+    const generated = entry.code === '??'
+      ? await untrackedPatch(cwd, entry.path, signal)
+      : await trackedPatch(cwd, entry, signal, budget)
+    let patch = generated.output
+    let patchTruncated = generated.truncated
     const bytes = Buffer.from(patch)
-    if (bytes.byteLength > available) {
-      patch = available > 0 ? bytes.subarray(0, available).toString('utf8') : ''
-      truncated = true
+    if (bytes.byteLength > budget) {
+      patch = budget > 0 ? bytes.subarray(0, budget).toString('utf8') : ''
+      patchTruncated = true
     }
+    truncated = truncated || patchTruncated
     retainedBytes += Buffer.byteLength(patch)
     files.push({
       path: entry.path,
       ...(entry.previousPath === undefined ? {} : { previousPath: entry.previousPath }),
       status: changeStatus(entry.code),
       patch,
+      ...(patchTruncated ? { patchTruncated: true } : {}),
     })
     if (retainedBytes >= CHANGES_RESPONSE_LIMIT) {
       truncated = truncated || files.length < entries.length

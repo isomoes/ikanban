@@ -10,6 +10,8 @@ export interface WorkspaceChange {
   readonly status: WorkspaceChangeStatus
   /** Unified diff for this file, bounded by the host. */
   readonly patch: string
+  /** The host stopped generating this file's patch after its per-file budget. */
+  readonly patchTruncated?: boolean
 }
 
 export interface WorkspaceChanges {

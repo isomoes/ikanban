@@ -1,6 +1,6 @@
 /** Git workspace changes view, opened from the conversation's compact view switcher. */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ConvViewProps } from '@isomoes/dsh-web-ui/client/ui-conversation/client'
 import type { InjectFace, PropsLocale } from '@isomoes/dsh-web-ui/client/ui-slots'
 import { IconRefreshOutline16 } from '@isomoes/dsh-web-ui/client/ui-primitives'
@@ -79,12 +79,33 @@ function wordDiff(before: string, after: string): readonly [readonly WordSegment
   return [removed, added]
 }
 
-function patchLines(patch: string): PatchLine[] {
-  const result: PatchLine[] = patch === '' ? [] : patch.replace(/\n$/, '').split('\n')
-    // The file card already names the path; Git's transport headers only repeat it.
-    .filter(text => !text.startsWith('diff --git') && !text.startsWith('index ')
-      && !text.startsWith('--- ') && !text.startsWith('+++ '))
-    .map(text => ({ text, kind: lineKind(text) }))
+const MAX_RENDERED_PATCH_LINES = 2_000
+const AUTO_EXPAND_PATCH_BYTES = 64 * 1024
+
+interface ParsedPatch {
+  readonly lines: PatchLine[]
+  readonly truncated: boolean
+}
+
+function patchLines(patch: string): ParsedPatch {
+  const result: PatchLine[] = []
+  let offset = 0
+  let truncated = false
+  // Parse only the visible prefix. String.split() would allocate an entry for
+  // every line in a huge patch before React gets a chance to collapse it.
+  while (offset < patch.length) {
+    const newline = patch.indexOf('\n', offset)
+    const end = newline === -1 ? patch.length : newline
+    const text = patch.slice(offset, end)
+    offset = newline === -1 ? patch.length : newline + 1
+    if (text.startsWith('diff --git') || text.startsWith('index ')
+      || text.startsWith('--- ') || text.startsWith('+++ ')) continue
+    if (result.length >= MAX_RENDERED_PATCH_LINES) {
+      truncated = true
+      break
+    }
+    result.push({ text, kind: lineKind(text) })
+  }
   for (let index = 0; index < result.length;) {
     if (result[index]?.kind !== 'del') {
       index++
@@ -104,7 +125,7 @@ function patchLines(patch: string): PatchLine[] {
       added.segments = addedSegments
     }
   }
-  return result
+  return { lines: result, truncated }
 }
 
 const LINE_CLASS: Record<PatchLineKind, string | undefined> = {
@@ -115,10 +136,14 @@ const LINE_CLASS: Record<PatchLineKind, string | undefined> = {
   plain: undefined,
 }
 
-function ChangeFile({ change, label, noTextDiff }: { change: WorkspaceChange; label: string; noTextDiff: string }) {
-  const lines = patchLines(change.patch)
+function ChangeFile({
+  change, label, noTextDiff, truncatedText,
+}: { change: WorkspaceChange; label: string; noTextDiff: string; truncatedText: string }) {
+  const [open, setOpen] = useState(() => change.patchTruncated !== true && change.patch.length <= AUTO_EXPAND_PATCH_BYTES)
+  const parsed = useMemo(() => open ? patchLines(change.patch) : null, [change.patch, open])
+  const lines = parsed?.lines ?? []
   return (
-    <details className={css.file} open>
+    <details className={css.file} open={open} onToggle={event => { setOpen(event.currentTarget.open) }}>
       <summary className={css.fileHeader}>
         <span className={css.path} title={change.path}>
           {change.previousPath === undefined ? change.path : `${change.previousPath} → ${change.path}`}
@@ -137,6 +162,9 @@ function ChangeFile({ change, label, noTextDiff }: { change: WorkspaceChange; la
                     ))}</>}
               </div>
             ))}
+        {(change.patchTruncated === true || parsed?.truncated === true) && (
+          <div className={css.fileTruncated}>{truncatedText}</div>
+        )}
       </div>
     </details>
   )
@@ -202,6 +230,7 @@ export function WorkspaceChangesView({
               change={change}
               label={t(`changes.status.${change.status}`)}
               noTextDiff={t('changes.noTextDiff')}
+              truncatedText={t('changes.fileTruncated')}
             />
           ))}
           {changes?.truncated === true && <div className={css.truncated}>{t('changes.truncated')}</div>}

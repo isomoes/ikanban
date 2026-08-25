@@ -91,6 +91,31 @@ test('reads tracked and untracked workspace changes as unified diffs', async () 
   }
 })
 
+test('bounds one heavily changed file without hiding later files', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'ikanban-workspace-changes-'))
+  try {
+    await exec('git', ['init', '--quiet'], { cwd: root })
+    await writeFile(join(root, 'a-huge.txt'), 'before\n'.repeat(100_000))
+    await writeFile(join(root, 'z-small.txt'), 'before\n')
+    await exec('git', ['add', '.'], { cwd: root })
+    await exec('git', ['-c', 'user.name=Test', '-c', 'user.email=test@example.com', 'commit', '--quiet', '-m', 'initial'], { cwd: root })
+    await writeFile(join(root, 'a-huge.txt'), 'after\n'.repeat(100_000))
+    await writeFile(join(root, 'z-small.txt'), 'after\n')
+
+    const { readWorkspaceChanges } = await import('../lib/clients/ui-workspace/index.js')
+    const changes = await readWorkspaceChanges(root, new AbortController().signal)
+    const huge = changes.files.find(file => file.path === 'a-huge.txt')
+    const small = changes.files.find(file => file.path === 'z-small.txt')
+
+    assert.equal(changes.truncated, true)
+    assert.equal(huge.patchTruncated, true)
+    assert.ok(Buffer.byteLength(huge.patch) <= 512 * 1024)
+    assert.match(small.patch, /-before\n\+after/)
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
 test('reports directories outside Git without failing', async () => {
   const root = await mkdtemp(join(tmpdir(), 'ikanban-workspace-changes-'))
   try {

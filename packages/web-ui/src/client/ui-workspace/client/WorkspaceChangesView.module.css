@@ -160,12 +160,19 @@
 }
 
 .meta,
-.noPatch {
+.noPatch,
+.fileTruncated {
   color: var(--dsw-alias-label-tertiary);
 }
 
-.noPatch {
+.noPatch,
+.fileTruncated {
   padding: 4px 12px;
+}
+
+.fileTruncated {
+  border-top: 1px solid var(--dsw-alias-border-l2);
+  font-size: 12px;
 }
 
 .state {
