@@ -239,15 +239,52 @@ export async function readWorkspaceChanges(cwd: string, signal: AbortSignal): Pr
   return { repository: true, files, truncated }
 }
 
+interface WorkspaceRegistryBridge {
+  readonly archivedSessionIds: readonly string[]
+  list(): readonly { path: string }[]
+  // rc.1 does not expose unarchiveSession yet. These runtime-private methods
+  // are the same serialized durability path used by archiveSession.
+  enqueueOperation(operation: () => Promise<void>): Promise<void>
+  requireState(): { archivedSessionIds: readonly string[]; [key: string]: unknown }
+  setState(state: { archivedSessionIds: readonly string[]; [key: string]: unknown }): Promise<void>
+}
+
+/** Remove one session from the durable archive set without disturbing its order. */
+export async function unarchiveSession(registry: WorkspaceRegistryBridge, sessionId: string): Promise<void> {
+  await registry.enqueueOperation(async () => {
+    const state = registry.requireState()
+    if (!state.archivedSessionIds.includes(sessionId)) return
+    await registry.setState({
+      ...state,
+      archivedSessionIds: state.archivedSessionIds.filter(id => id !== sessionId),
+    })
+  })
+}
+
 export const inject = ['connection', 'workspaceRegistry']
 
 export function apply(ctx: Context): void {
-  const workspaceRegistry = ctx.get('workspaceRegistry') as { list(): readonly { path: string }[] }
+  const workspaceRegistry = ctx.get('workspaceRegistry') as unknown as WorkspaceRegistryBridge
   ctx.effect(() => ctx.connection.rpc.handle(WORKSPACE_FILE_CHANNEL, async (endpoint, payload, signal) => {
-    if ((endpoint !== 'search' && endpoint !== 'changes') || typeof payload !== 'object' || payload === null) {
+    if ((endpoint !== 'search' && endpoint !== 'changes' && endpoint !== 'unarchive')
+      || typeof payload !== 'object' || payload === null) {
       return { ok: false, error: { code: 'internal', message: 'Invalid workspace request', details: {} } }
     }
-    const { cwd, query } = payload as Record<string, unknown>
+    const { cwd, query, sessionId } = payload as Record<string, unknown>
+    if (endpoint === 'unarchive') {
+      if (typeof sessionId !== 'string' || sessionId === '') {
+        return { ok: false, error: { code: 'internal', message: 'Invalid workspace request', details: {} } }
+      }
+      try {
+        await unarchiveSession(workspaceRegistry, sessionId)
+        return { ok: true, value: { archivedSessionIds: workspaceRegistry.archivedSessionIds } }
+      } catch (error) {
+        return {
+          ok: false,
+          error: { code: 'internal', message: error instanceof Error ? error.message : 'Workspace request failed', details: {} },
+        }
+      }
+    }
     if (typeof cwd !== 'string' || cwd === '' || (endpoint === 'search' && query !== '')) {
       return { ok: false, error: { code: 'internal', message: 'Invalid workspace request', details: {} } }
     }

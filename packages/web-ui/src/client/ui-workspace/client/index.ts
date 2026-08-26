@@ -98,6 +98,22 @@ export function apply(ctx: ClientContext): void {
       await archiveSession(current)
     },
   }), 'ui-workspace: archive action')
+  ctx.effect(() => ctx.commandUi.registerAction({
+    id: 'session.unarchive',
+    title: () => t('menu.unarchiveSession'),
+    category: () => t('section.sessions'),
+    disabled: () => ctx.workspaces.list.getSnapshot().archivedSessionIds.length === 0,
+    run: async () => {
+      const archived = ctx.workspaces.list.getSnapshot().archivedSessionIds
+      const sessionId = archived.at(-1)
+      if (sessionId === undefined) return
+      const result = await connection.rpc.call(WORKSPACE_FILE_CHANNEL, 'unarchive', { sessionId })
+      if (!result.ok) throw new Error(result.error.message)
+      // The concrete rc.1 WorkspaceRuntime owns refresh, although the shared
+      // IWorkspaces service contract has not exposed it yet.
+      await (ctx.workspaces as typeof ctx.workspaces & { refresh(): Promise<void> }).refresh()
+    },
+  }), 'ui-workspace: unarchive action')
 
   ctx.slots.inject('conversation.view', () => ctx.slots.register({
     name: 'conversation.view',

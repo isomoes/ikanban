@@ -75,6 +75,11 @@ test('each forked client entry emits an isolated virtual package', async () => {
       assert.match(bundle, /timeline-draft-landing/)
       assert.match(bundle, /archiveSession/)
     }
+    if (id === 'ui-workspace') {
+      assert.match(bundle, /session\.archive/)
+      assert.match(bundle, /session\.unarchive/)
+      assert.match(bundle, /unarchiveSession/)
+    }
     for (const owner of bundle.matchAll(/tag\.dataset\.plugin = "([^"]+)"/g)) {
       assert.equal(owner[1], virtualId)
     }

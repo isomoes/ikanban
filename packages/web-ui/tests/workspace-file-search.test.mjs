@@ -14,6 +14,24 @@ test('uses a valid connection RPC channel', async () => {
   assert.notEqual(WORKSPACE_FILE_CHANNEL, '/api')
 })
 
+test('unarchives one session through the registry durability queue', async () => {
+  const { unarchiveSession } = await import('../lib/clients/ui-workspace/index.js')
+  let state = { workspaceIds: ['workspace-1'], archivedSessionIds: ['session-1', 'session-2'] }
+  let queued = 0
+  const registry = {
+    get archivedSessionIds() { return state.archivedSessionIds },
+    list: () => [],
+    enqueueOperation: async (operation) => { queued += 1; await operation() },
+    requireState: () => state,
+    setState: async (next) => { state = next },
+  }
+
+  await unarchiveSession(registry, 'session-2')
+
+  assert.equal(queued, 1)
+  assert.deepEqual(state, { workspaceIds: ['workspace-1'], archivedSessionIds: ['session-1'] })
+})
+
 test('keeps the search endpoint compatible with a live host', async () => {
   const plugin = await import('../lib/clients/ui-workspace/index.js')
   let handler
