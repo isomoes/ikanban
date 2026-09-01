@@ -9,6 +9,7 @@
  * ui-settings-general too.
  */
 
+import type {} from '@isomoes/dsh-web-ui/client/ui-slots'
 
 declare module '@isomoes/dsh-web-ui/client/ui-slots' {
   interface SlotMap {

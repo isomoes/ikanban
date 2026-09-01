@@ -13,13 +13,16 @@ function installSources({ fileList, sessionList }) {
       bind: () => key => key,
     },
     remote: {
+      $host: {},
       fileReferences: { list: fileList },
       sessionReferenceResolver: { candidates: sessionList },
     },
+    sessions: { list: { getSnapshot: () => ({ byId: {} }) } },
     effect(setup) {
       setup()
     },
     get(name) {
+      if (name === 'sessions') return this.sessions
       assert.equal(name, 'inputTriggers')
       return {
         registerSource(source) {

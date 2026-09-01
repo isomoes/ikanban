@@ -1,6 +1,9 @@
 /** Pure session-list edge detector for reminder sounds. */
 
-import type { PendingInteractionStatus, SessionSummary } from '@deepseek-ai/dsh-client-runtime/client'
+import type { SessionSummary } from '@deepseek-ai/dsh-api-session-controller/client'
+
+/** Human-facing interaction kinds contributed through ui-session. */
+type PendingInteractionStatus = 'approval' | 'plan-review' | 'question'
 
 /** Sound events emitted from authoritative session-list state transitions. */
 export type ReminderEvent = {
@@ -9,7 +12,12 @@ export type ReminderEvent = {
 }
 
 /** Minimal row accepted by the edge detector (keeps fixtures independent of UI state). */
-export type ReminderSessionRow = Pick<SessionSummary, 'id' | 'running' | 'pendingInteraction' | 'origin'>
+export interface ReminderSessionRow {
+  readonly id: SessionSummary['id']
+  readonly running: SessionSummary['running']
+  readonly pendingInteraction?: PendingInteractionStatus
+  readonly origin?: SessionSummary['origin']
+}
 
 type PreviousState = {
   running: boolean

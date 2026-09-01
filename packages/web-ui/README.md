@@ -29,7 +29,11 @@ The package exposes isolated DSH client packages under `client/*`, including:
 ├── client/locale
 ├── client/ui-layout
 ├── client/ui-sidebar
+├── client/ui-session
 ├── client/ui-conversation
+├── client/ui-chat
+├── client/ui-approval
+├── client/ui-schedule
 ├── client/ui-settings
 ├── client/ui-slots
 ├── client/ui-primitives

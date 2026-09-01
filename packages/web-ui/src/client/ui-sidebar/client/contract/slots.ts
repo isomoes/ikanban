@@ -8,10 +8,10 @@
  * actions in `sidebar.footer.action`.
  */
 import type { PropsLocale, PropsRenderSlots, PropsRuntime } from '@isomoes/dsh-web-ui/client/ui-slots'
+import type { WorkspaceId } from '@deepseek-ai/dsh-api-workspace-controller/client'
 // Type-only: pulls ui-layout's SlotMap merge (the 'sidebar' entry) into every
 // program that sees this contract, so PropsRuntime<'sidebar'> resolves.
 import type {} from '@isomoes/dsh-web-ui/client/ui-layout/client'
-import type { WorkspaceId } from '@deepseek-ai/dsh-client-runtime/client'
 
 declare module '@isomoes/dsh-web-ui/client/ui-slots' {
   interface SlotMap {
@@ -88,7 +88,7 @@ export interface SidebarFooterActionOwnerProps {
 /**
  * Registrant-private injected share (arrives via the register inject
  * factory). The shell keeps only its own controls: starting a Session from
- * the brand mark and toggling the column.
+ * the New Session button and toggling the column.
  */
 export type SidebarRootInjected = {
   /**

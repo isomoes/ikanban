@@ -3,9 +3,13 @@
  * immediately before that user prompt, restores the prompt as an editable
  * draft in the opened child, then cancels and archives the source.
  */
-import type { ClientContext, SessionFace, SessionId } from '@deepseek-ai/dsh-client-runtime/client'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import type { SessionFace } from '@deepseek-ai/dsh-api-session-controller/client'
+import type {} from '@deepseek-ai/dsh-api-workspace-controller/client'
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { ClientSessionContext } from '@isomoes/dsh-web-ui/client/ui-input-trigger/client'
 import type { CommandUiContract, SelectOption } from '@isomoes/dsh-web-ui/client/ui-commands/client'
+import type { ChatSnapshot } from '@isomoes/dsh-web-ui/client/ui-chat/client'
 import type { IConversation } from '@isomoes/dsh-web-ui/client/ui-conversation/client'
 import type {} from '@isomoes/dsh-web-ui/client/locale/client'
 import {
@@ -26,33 +30,42 @@ declare module '@isomoes/dsh-web-ui/client/ui-slots' {
 
 const NS = 'timeline'
 
-export const inject = ['commandUi', 'sessions', 'workspaces', 'locale', 'conversation', 'slots']
+export const inject = ['commandUi', 'sessions', 'workspaces', 'locale', 'uiConversation', 'slots']
 
-function sessionFace(ctx: ClientContext, session: ClientSessionContext): SessionFace {
-  const face = ctx.sessions.binding(session.sessionId)?.session
-  if (face === undefined) throw new Error('timeline requires a materialized session')
-  return face
+type TimelineSession = {
+  readonly face: SessionFace
+  readonly chat: { getSnapshot(): ChatSnapshot | undefined }
 }
 
-async function completeHistory(face: SessionFace, signal: AbortSignal): Promise<void> {
-  while (face.getSnapshot().hasMore) {
+function timelineSession(ctx: ClientContext, session: ClientSessionContext): TimelineSession {
+  const binding = ctx.sessions.binding(session.sessionId)
+  if (binding === undefined) throw new Error('timeline requires a materialized session')
+  return {
+    face: binding.session,
+    chat: ctx.uiConversation.binding(binding).target('chat'),
+  }
+}
+
+async function completeHistory(session: TimelineSession, signal: AbortSignal): Promise<void> {
+  while (session.face.getSnapshot().hasMore) {
     signal.throwIfAborted()
-    const before = face.getSnapshot().chat.order.length
-    await face.loadOlder()
+    const before = session.chat.getSnapshot()?.order.length ?? 0
+    await session.face.loadOlder()
     signal.throwIfAborted()
-    const after = face.getSnapshot()
-    if (after.hasMore && after.chat.order.length <= before) {
+    const after = session.face.getSnapshot()
+    if (after.hasMore && (session.chat.getSnapshot()?.order.length ?? 0) <= before) {
       throw new Error(after.openError?.message ?? 'timeline could not load older messages')
     }
   }
 }
 
-function choicesOf(face: SessionFace): TimelineChoice[] {
-  return timelineChoices(face.getSnapshot() as unknown as TimelineSnapshot)
+function choicesOf(session: TimelineSession): TimelineChoice[] {
+  const chat = session.chat.getSnapshot()
+  return chat === undefined ? [] : timelineChoices({ chat } as TimelineSnapshot)
 }
 
-function selectedChoice(face: SessionFace, option: SelectOption): TimelineChoice {
-  const choice = choicesOf(face).find(candidate => candidate.id === option.id)
+function selectedChoice(session: TimelineSession, option: SelectOption): TimelineChoice {
+  const choice = choicesOf(session).find(candidate => candidate.id === option.id)
   if (choice === undefined) throw new Error('the selected timeline message is no longer available')
   return choice
 }
@@ -161,17 +174,17 @@ export function apply(ctx: ClientContext): void {
     ui: {
       kind: 'popupSelect',
       options: async (session, signal) => {
-        const face = sessionFace(ctx, session)
-        await completeHistory(face, signal)
-        return choicesOf(face).map(choice => ({
+        const source = timelineSession(ctx, session)
+        await completeHistory(source, signal)
+        return choicesOf(source).map(choice => ({
           id: choice.id,
           label: timelineLabel(choice.text),
           detail: t('option.turn', { turn: choice.turn }),
         }))
       },
       onSelect: async (option, session) => {
-        const source = sessionFace(ctx, session)
-        if (source.getSnapshot().queue.some(item => item.placement !== 'context')) {
+        const source = timelineSession(ctx, session)
+        if (source.face.getSnapshot().queue.some(item => item.placement !== 'context')) {
           throw new Error('timeline requires the pending message queue to be empty')
         }
         const choice = selectedChoice(source, option)
@@ -185,15 +198,15 @@ export function apply(ctx: ClientContext): void {
             await activateChild(childId as SessionId, session.sessionId, text)
           },
           quiesceSource: async () => {
-            if (source.getSnapshot().queue.some(item => item.placement !== 'context')) {
+            if (source.face.getSnapshot().queue.some(item => item.placement !== 'context')) {
               throw new Error('timeline stopped because pending input arrived on the original session')
             }
-            if (!source.getSnapshot().running) return
-            const stopped = await source.cancel()
+            if (!source.face.getSnapshot().running) return
+            const stopped = await source.face.cancel()
             if (!stopped.ok) {
               throw new Error(`timeline could not stop the original session: ${stopped.error.message}`)
             }
-            await waitForQuiescence(source)
+            await waitForQuiescence(source.face)
           },
           archiveSource: async (sourceId) => {
             await ctx.workspaces.archiveSession(sourceId as SessionId)

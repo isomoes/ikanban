@@ -1,7 +1,7 @@
 /**
  * CommandUiRuntime (`ctx.commandUi`): the '/' command source over the
- * session-keyed directory, the local UI action registry, the client command
- * contribution registry, and the per-session popupSelect controllers. Candidate synthesis merges the host
+ * session-keyed directory, the client-contribution registry, and the
+ * per-session popupSelect controllers. Candidate synthesis merges the host
  * catalog with contributions by availability, then fuzzy query/position
  * filtering; a host/contribution name collision fails loud. Every execute
  * addresses the session's agent by sessionId — sessions are always
@@ -13,9 +13,11 @@ import type { Context } from '@deepseek-ai/cordis'
 // (`commands/change` rides the allowlist) into this program.
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import type { CommandResult } from '@deepseek-ai/dsh-commands/types'
-import type { ClientContext, ISessions, SessionId, SettingsScope } from '@deepseek-ai/dsh-client-runtime/client'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import type { ISessions } from '@deepseek-ai/dsh-api-session-controller/client'
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { TranslateNS } from '@isomoes/dsh-web-ui/client/locale/client'
-import type {} from '@isomoes/dsh-web-ui/client/ui-settings/client'
+import type { SettingsScope } from '@isomoes/dsh-web-ui/client/ui-settings/client'
 import type {
   CandidateRequest, ClientSessionContext, CommandClaim, PickOutcome, InputTriggerCandidate, InputTriggerPick,
   SubmitEnvelope, SubmitImageAttachment, SubmitOutcome,
@@ -126,9 +128,9 @@ function settingsLayerHasKeybinds(layer: unknown): boolean {
   return typeof layer === 'object' && layer !== null && Object.hasOwn(layer, KEYBIND_OVERRIDES_FIELD)
 }
 
-/** Command surface: session-keyed directory + '/' source + contribution registry + per-session popups. */
+/** Command surface: session-keyed directory + '/' source + local actions + per-session popups. */
 export class CommandUiRuntime extends Service implements CommandUiContract {
-  static inject = ['inputTriggers', 'sessions', 'remote', 'remote.commands', 'connection', 'settingsScope']
+  static inject = ['inputTriggers', 'sessions', 'remote', 'remote.commands', 'settingsScope']
 
   private readonly directory: CommandDirectory
   private readonly live: LiveState = { contributions: new Map(), decorations: new Map(), popups: new Map() }
@@ -194,10 +196,9 @@ export class CommandUiRuntime extends Service implements CommandUiContract {
     }), 'command: slash source')
     ctx.remote.$on('commands/change', () => { this.directory.invalidateAll() })
     // A preset switch changes which commands one session's agent resolves and
-    // registers nothing globally, so the registry-wide signal above never
-    // fires for it: repull that key alone, soft, so the old snapshot serves
-    // the menu until the new one lands.
-    ctx.remote.$on('agent-preset/selected', (sessionId) => { void this.directory.refresh(sessionId) })
+    // registers nothing globally. Drop that key's old composition before
+    // prewarming so a newly opened menu waits for the replacement catalog.
+    ctx.remote.$on('agent-preset/selected', (sessionId) => { this.directory.resetSession(sessionId) })
     ctx.on('connection/reset', () => { this.directory.resetConnected() })
     ctx.effect(() => {
       const onKeyDown = (event: KeyboardEvent): void => { this.actions.handleKeyDown(event) }
@@ -480,7 +481,7 @@ export class CommandUiRuntime extends Service implements CommandUiContract {
    * the outcome renders as a persistent flow node — the composer never
    * echoes it. A handler error result reports an error outcome so the
    * composer keeps the submission (draft and images) for correction.
-   * Transport failures throw.
+   * A refused call throws.
    */
   private async execute(
     session: ClientSessionContext,
@@ -526,9 +527,9 @@ export class CommandUiRuntime extends Service implements CommandUiContract {
    * Fire-and-forget execute for the internal ('handled') paths. Outcomes are
    * NOT surfaced here: the host executor durably logs the command lifecycle
    * (`command/run`/`command/done`), and the mux-broadcast events render as a
-   * persistent flow node on every tab. Only a transport/admission failure —
-   * which never entered a handler and therefore never logged — falls back to
-   * the composer notice as immediate feedback.
+   * persistent flow node on every tab. Only an admission failure — which never
+   * entered a handler and therefore never logged — falls back to the composer
+   * notice as immediate feedback.
    */
   private runDetached(desc: CommandDescriptor, session: ClientSessionContext, line: string): void {
     void this.execute(session, line).then(
@@ -553,7 +554,7 @@ export class CommandUiRuntime extends Service implements CommandUiContract {
     })
   }
 
-  /** Route an admission/transport failure to the session's composer notice channel (scope gone = attempt died with it). */
+  /** Route an admission failure to the session's composer notice channel (scope gone = attempt died with it). */
   private noticeFor(id: SessionId, level: 'info' | 'error', text: string): void {
     const actx = this.scopeFor(id)
     if (actx === undefined) return

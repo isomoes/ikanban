@@ -18,8 +18,8 @@ writeFileSync(resolve(outDir, 'package.json'), `${JSON.stringify({
   dsh: {
     client: {
       inject: [
-        '@deepseek-ai/dsh-client-runtime',
         '@isomoes/dsh-web-ui/client/ui-conversation',
+        '@isomoes/dsh-web-ui/client/ui-renderer',
         '@isomoes/dsh-web-ui/client/ui-sidebar',
       ],
       platform: 'web',

@@ -131,11 +131,7 @@ export function desktopThemeDefinition(theme: DesktopTheme): ThemeDefinition {
     id: theme.id,
     label: theme.name,
     colorScheme: 'dark',
-    tokens: Object.freeze({}),
-    variants: Object.freeze({
-      light: variantTokens(theme.light),
-      dark: variantTokens(theme.dark),
-    }),
+    tokens: variantTokens(theme.dark),
   })
 }
 

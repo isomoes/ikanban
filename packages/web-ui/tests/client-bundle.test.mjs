@@ -9,7 +9,7 @@ const entries = await discoverClientEntries({ packageRoot: fileURLToPath(package
 const packageManifest = JSON.parse(await readFile(new URL('package.json', packageRoot), 'utf8'))
 
 test('each forked client entry emits an isolated virtual package', async () => {
-  assert.equal(entries.length, 35)
+  assert.equal(entries.length, 40)
 
   for (const entry of entries) {
     const { id, stockId, virtualId } = entry
@@ -46,24 +46,20 @@ test('each forked client entry emits an isolated virtual package', async () => {
     })
     if (entry.host !== undefined) {
       assert.doesNotMatch(index, /^export function apply\(\) \{\}\s*$/)
-      assert.match(index, /function apply\(ctx\)/)
+      if (id === 'modules') assert.match(index, /ClientModuleRegistry/)
+      else assert.match(index, /function apply\(ctx\)/)
     } else {
       assert.match(index, /^export function apply\(\) \{\}\s*$/)
     }
     assert.equal(sourcemap.sources.length, sourcemap.sourcesContent.length)
     assert.doesNotMatch(JSON.stringify(sourcemap.sources), /deepseek-harness/)
     if (id === 'ui-conversation') {
-      assert.ok(bundle.includes(`buildBadge(${JSON.stringify(packageManifest.version)}, false)`))
-      assert.match(bundle, /Conversation views/)
+      assert.match(bundle, /ConversationLocationIndex/)
       assert.doesNotMatch(bundle, /__DSH_WEB_UI_(?:DEV|VERSION)__/)
     }
     if (id === 'ui-sidebar') {
-      assert.match(bundle, /DeepSeek Harness/)
+      assert.match(bundle, new RegExp(packageManifest.version.replaceAll('.', '\\.')))
       assert.doesNotMatch(bundle, /iKanban/)
-    }
-    if (id === 'ui-renderer') {
-      assert.match(bundle, /DeepSeek Harness/)
-      assert.doesNotMatch(bundle, /process\.env\.DSH_CLIENT_TITLE/)
     }
     if (id === 'ui-theme') {
       assert.match(bundle, /github-dark-colorblind/)
@@ -78,7 +74,7 @@ test('each forked client entry emits an isolated virtual package', async () => {
     if (id === 'ui-workspace') {
       assert.match(bundle, /session\.archive/)
       assert.match(bundle, /session\.unarchive/)
-      assert.match(bundle, /unarchiveSession/)
+      assert.match(bundle, /ikanban\.workspace-files/)
     }
     for (const owner of bundle.matchAll(/tag\.dataset\.plugin = "([^"]+)"/g)) {
       assert.equal(owner[1], virtualId)

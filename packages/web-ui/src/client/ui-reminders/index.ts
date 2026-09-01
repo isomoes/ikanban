@@ -1,7 +1,6 @@
 /** Host registration for browser reminder-sound preferences. */
 
 import type { Context } from '@deepseek-ai/cordis'
-import { settingsNamespace } from '@deepseek-ai/dsh-settings'
 import { REMINDER_SETTINGS_NAMESPACE, ReminderSettingsSchema } from './reminder-settings.ts'
 
 export {
@@ -14,9 +13,6 @@ export type { ReminderEvent, ReminderSessionRow } from './client/observer.ts'
 /** Register the durable reminder section when the settings service is present. */
 export function apply(ctx: Context): void {
   ctx.inject(['settings'], (settingsCtx) => {
-    settingsCtx.settings.register(
-      settingsNamespace(REMINDER_SETTINGS_NAMESPACE),
-      ReminderSettingsSchema,
-    )
+    settingsCtx.settings.register(REMINDER_SETTINGS_NAMESPACE, ReminderSettingsSchema)
   })
 }

@@ -2,7 +2,7 @@
 
 Keyboard-oriented iKanban web application bundle for DeepSeek Harness.
 
-The host runtime uses the published DSH `0.1.1-rc.1` backends and owns its Web startup, coding presets, composition, and iKanban branding. The common browser surface is published separately as [`@isomoes/dsh-web-ui`](../web-ui), which this package pins as a tested production dependency.
+The host runtime uses the published DSH `0.1.2-alpha.2` backends and owns its Web startup, coding presets, composition, and iKanban branding. The common browser surface is published separately as [`@isomoes/dsh-web-ui`](../web-ui), which this package pins as a tested production dependency.
 
 ## Usage
 
@@ -17,6 +17,12 @@ The shared Web UI must be a direct profile dependency because Cordis resolves
 its browser loader entries from the profile root. It remains a plain dependency
 and must not be added to `dsh.profile.bundles`; only iKanban contributes the
 product composition patch.
+
+`dsh-codex-auth` through `0.3.1` targets the older rc.1 Settings and Client Runtime APIs and cannot be composed with DSH alpha.2. Remove it from an upgraded profile before booting:
+
+```bash
+dsh plugin --profile ikanban remove dsh-codex-auth
+```
 
 Stop iKanban before updating both published packages:
 

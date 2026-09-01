@@ -2,13 +2,13 @@
  * Web boot kernel. It owns only the module system, Cordis loader, and a
  * framework-free boot page. The dynamic UI renderer receives the mount
  * point after every client entry activates.
- * @module @deepseek-ai/dsh-client-web/src/boot
+ * @module @isomoes/dsh-web-ui/client/web/src/boot
  */
 import { Context } from '@deepseek-ai/cordis'
 import Loader from '@deepseek-ai/cordis-plugin-loader'
 import type {
   BootManifest, ClientModuleCreateOptions, ClientModuleSystem, DshWindow,
-} from '@deepseek-ai/dsh-client-modules/client'
+} from '@isomoes/dsh-web-ui/client/modules/client'
 import type {} from '@isomoes/dsh-web-ui/client/ui-renderer/client'
 import { BootPage } from './boot-page.ts'
 import { getStaticModules } from './seed.ts'
@@ -45,6 +45,13 @@ export class AppWebEntry {
    */
   async run(): Promise<void> {
     try {
+      // Boot-readiness gate: whichever bootstrap applies the injection table
+      // settles this deferred once every row has taken effect — the served
+      // index resolves it in the rendered tail, so the await returns on the
+      // next microtask; an asynchronous bootstrap resolves it after its last
+      // row, or rejects it into the failure rendering below. An absent global
+      // means no bootstrap owns the document and there is nothing to wait for.
+      await (globalThis as { __DSH_BOOT_READY__?: { promise: Promise<void> } }).__DSH_BOOT_READY__?.promise
       const win = globalThis as DshWindow
       const moduleLoader = win.__ModuleLoader__
       if (moduleLoader === undefined) {
@@ -93,15 +100,8 @@ export class AppWebEntry {
     await mounted
   }
 
-  /** Prefetch stage-one bundles; their import path owns any eventual failure. */
+  /** Prefetch stage-one bundles and their dynamic requests before concurrent plugin imports. */
   private async prefetchImmediateTier(): Promise<void> {
-    // A transport carrying loadBundle owns the bundle bytes; HTTP prefetch
-    // against its static deployment answers nothing. A transport without
-    // loadBundle leaves bundles on HTTP, prefetch included.
-    const transport = (globalThis as {
-      __DSH_TRANSPORT__?: { loadBundle?: unknown }
-    }).__DSH_TRANSPORT__
-    if (transport?.loadBundle !== undefined) return
     await Promise.all(this.manifest.plugins
       .filter(row => row.immediately)
       .map(row => this.modules.prefetch(row.id).catch((_prefetchError: unknown) => {

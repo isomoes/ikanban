@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "iKanban",
-  "short_name": "iKanban",
+  "name": "DeepSeek Harness",
+  "short_name": "DSH",
   "start_url": "/",
   "scope": "/",
   "display": "fullscreen",

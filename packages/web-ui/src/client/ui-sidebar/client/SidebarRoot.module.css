@@ -24,7 +24,7 @@
 
 /* Rail geometry (figma rail spec): 36x36 control boxes centered in the 56px
    rail (10px side padding), 12px vertical rhythm, 18px from the rail top to
-   the brand mark's box. */
+   the whale's box (24px to the 24-wide whale glyph itself). */
 .root.collapsed {
   padding: 18px 10px 6px;
 }
@@ -33,7 +33,7 @@
    class whenever the pointer is not inside (SidebarRoot.tsx owns the linger),
    and rebinding ui-theme's indirection pair to `transparent` takes the thumb
    out of every scroll region nested under it — the workspace browser's
-   session list today. `transparent` rather than `display: none` on the bar:
+   session list. `transparent` rather than `display: none` on the bar:
    the reservation (`scrollbar-gutter: stable` on the list) stays in force, so
    revealing the thumb never reflows a row. Rebinding contract and the two
    rendering paths it reaches: ui-theme's README. */
@@ -58,12 +58,13 @@
   from { opacity: 0; }
 }
 
-/* At the 150ms rail settle, the upper controls enter from the former rail
-   right edge over the remaining 150ms of the AppFrame track transition.
+/* At the 150ms rail settle, the four upper controls enter from the former
+   rail right edge over the remaining 150ms of the AppFrame track transition.
    The bottom-pinned settings seat shares their opacity timeline but stays
    horizontally fixed. Only a live collapse gets .railIn; a cold collapsed
    render stays static. */
 .railIn .iconButton,
+.railIn .newSession,
 .railIn .regionArea {
   animation: rail-in 150ms var(--ds-ease-in-out) backwards;
 }
@@ -106,8 +107,10 @@
   justify-content: flex-start;
 }
 
-/* Brand group (figma I133:7632): the mark keeps the New Session shortcut;
-   the product-name text is the project-homepage link. */
+/* Brand group (figma I133:7632): the full wordmark rides the text ink
+   (figma flows: the main-screen instance is black; blue is brand
+   emphasis only). A button only in behavior (New Session shortcut): the
+   pointer cursor is the sole affordance — no hover chrome on the mark. */
 .brand {
   flex: 1;
   min-width: 0;
@@ -115,12 +118,28 @@
   align-items: center;
   gap: 8px;
   overflow: hidden;
+  padding: 0;
+  border: none;
+  background: transparent;
   color: inherit;
+  cursor: pointer;
+}
+
+/* Mark and name are independent slots; the shell owns their shared baseline,
+   spacing, and height so either occupant can vary in width. */
+.brandIdentity {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 24px;
+  min-width: 0;
 }
 
 .brandMark {
   flex: none;
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 0;
   border: none;
   background: transparent;
@@ -141,18 +160,39 @@
   text-decoration: underline;
 }
 
-.versionBadge {
-  flex: none;
-  padding: 0 6px;
-  border: 1px solid var(--dsw-alias-interactive-bg-hover);
-  border-radius: 999px;
-  background: var(--dsw-alias-state-business-tertiary);
-  color: var(--dsw-alias-label-primary-bluish);
-  font-family: var(--ds-font-family-code);
-  font-size: 10px;
-  font-weight: 500;
-  line-height: 17px;
+.brandName {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 24px;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 24px;
+  letter-spacing: 0.04em;
+}
+
+.fallbackBrandName {
+  font-size: 17px;
+  letter-spacing: 0px;
   white-space: nowrap;
+}
+
+.localBuildBrand {
+  flex: none;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 1px;
+  height: 24px;
+  white-space: nowrap;
+}
+
+.localBuildTitle {
+  font-size: 12px;
+  line-height: 13px;
+  letter-spacing: 0;
 }
 
 .iconButton {
@@ -179,7 +219,7 @@
   height: 36px;
 }
 
-/* Rail logo swap: collapsed, the toggle rests as the iKanban mark,
+/* Rail logo swap: collapsed, the toggle rests as the whale mark (brand ink,
    no hover circle) and hovering reveals the panel icon — the expand
    affordance (figma sidebar-hover flow). Expanded it is a plain panel icon. */
 .collapsed .toggle .panelIcon {
@@ -206,6 +246,87 @@
   color: var(--dsw-alias-label-primary);
 }
 
+.versionBadge {
+  flex: none;
+  padding: 0 6px;
+  border: 1px solid var(--dsw-alias-interactive-bg-hover);
+  border-radius: 999px;
+  background: var(--dsw-alias-state-business-tertiary);
+  color: var(--dsw-alias-label-primary-bluish);
+  font-family: var(--ds-font-family-code);
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 17px;
+  white-space: nowrap;
+}
+
+.buildVersion {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 10px;
+  padding: 0 3px;
+  border-radius: 2px;
+  color: var(--dsw-alias-label-primary-inverted);
+  background: var(--dsw-alias-label-primary);
+  font-family: var(--ds-font-family-code);
+  font-size: 6px;
+  font-weight: 500;
+  line-height: 10px;
+  white-space: nowrap;
+}
+
+/* New Session: 38px bar, 12px radius (figma 133:7634 geometry, squared-off
+   corners); collapsed it renders as the rail's plain icon control. */
+.newSession {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 38px;
+  padding: 8px 16px;
+  margin: 0 2px 8px;
+  box-sizing: border-box;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 12px;
+  background: var(--dsw-alias-button-elevated-fill);
+  color: var(--dsw-alias-label-primary);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 22px;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.newSession:hover {
+  background: var(--dsw-alias-button-floating-hover);
+}
+
+.collapsed .newSession {
+  align-self: flex-start;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  margin: 0 0 12px;
+  gap: 0;
+  border-color: transparent;
+  background: transparent;
+}
+
+.collapsed .newSession:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.newSessionLabel {
+  max-width: 200px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.collapsed .newSessionLabel {
+  max-width: 0;
+}
 
 /* Region seat: always mounted so the foot never moves. Its trailing margin
    cancels the wide shell inset so the nested scrollbar can sit at the sidebar
@@ -261,6 +382,7 @@
   .wide,
   .fading > *,
   .railIn .iconButton,
+  .railIn .newSession,
   .railIn .footArea,
   .railIn .regionArea {
     transition: none;

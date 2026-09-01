@@ -1,7 +1,9 @@
 /** Workspace-scoped model defaults used only while a session is blank. */
 
-import type { ModelSelection, SessionId, WorkspaceId } from '@deepseek-ai/dsh-api-remotes/client'
-import type { SettingsScope } from '@deepseek-ai/dsh-client-runtime/client'
+import type { ModelSelection } from '@deepseek-ai/dsh-api-session-controller/types'
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import type { WorkspaceId } from '@deepseek-ai/dsh-workspace/types'
+import type { SettingsScope } from '@isomoes/dsh-web-ui/client/ui-settings/client'
 import type {
   WorkspaceModelDefault, WorkspaceModelSettings,
 } from './workspace-model-settings.ts'

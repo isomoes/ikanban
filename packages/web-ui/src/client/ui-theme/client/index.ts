@@ -7,27 +7,32 @@
  * document. The plugin also registers the Appearance preference row into the
  * settings General section — the theme feature owns its own settings surface.
  */
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import type { BoundActions } from '@isomoes/dsh-web-ui/client/ui-slots'
-import type { ClientContext, SettingsScope } from '@deepseek-ai/dsh-client-runtime/client'
 // Type-only: the ctx.settingsScope Context merge. Cross-plugin collaboration
 // goes through the service, never a value import (client bundle purity gate).
-import type {} from '@isomoes/dsh-web-ui/client/ui-settings/client'
+import type { SettingsScope } from '@isomoes/dsh-web-ui/client/ui-settings/client'
 // Type-only: pulls the locale plugin's Context merge (ctx.locale).
 import type {} from '@isomoes/dsh-web-ui/client/locale/client'
+// Type-only: pulls the SlotRegistry service merge (ctx.slots).
+import type {} from '@isomoes/dsh-web-ui/client/ui-renderer/client'
 import type { AppearanceRowInjected } from './AppearanceRow.tsx'
 import { AppearanceRow } from './AppearanceRow.tsx'
-import { createAppearanceRowStore } from './settings-store.ts'
+import type { FontSizeRowInjected } from './FontSizeRow.tsx'
+import { FontSizeRow } from './FontSizeRow.tsx'
+import { createAppearanceRowStore, createFontSizeRowStore } from './settings-store.ts'
 import { BUNDLED_THEMES } from './bundled-themes.ts'
 import { installThemeStyles } from './styles.ts'
 import { en, zh, type ThemeKey } from './locales.ts'
 import {
-  DEFAULT_PREFERENCE, isThemePreference, THEME_PREFERENCE_FIELD, THEME_SETTINGS_NAMESPACE,
+  DEFAULT_FONT_SIZE, DEFAULT_PREFERENCE, FONT_SIZE_FIELD, FONT_SIZE_MAX, FONT_SIZE_MIN,
+  THEME_PREFERENCE_FIELD, THEME_SETTINGS_NAMESPACE,
   type ThemePreference, type ThemeSettings,
 } from '../theme-settings.ts'
 
 export type { AppearanceRowComponentProps, AppearanceRowInjected } from './AppearanceRow.tsx'
-export type { AppearanceRowState } from './settings-store.ts'
+export type { FontSizeRowComponentProps, FontSizeRowInjected } from './FontSizeRow.tsx'
+export type { AppearanceRowState, FontSizeRowState } from './settings-store.ts'
 export type { ThemeKey } from './locales.ts'
 export type { ThemePreference, ThemeSettings } from '../theme-settings.ts'
 
@@ -59,34 +64,27 @@ export interface ThemeTokenModes {
 /** Override-layer dictionary: token names to per-mode value pairs. */
 export type ThemeTokenOverrides = Record<string, ThemeTokenModes>
 
-/** Optional light/dark token pair for themes that follow the OS scheme. */
-export interface ThemeVariants {
-  light: ThemeTokens
-  dark: ThemeTokens
-}
-
 /** One selectable theme: id, dark/light semantics, and alias-token overrides. */
 export interface ThemeDefinition {
   /** Theme id (the setTheme argument for concrete themes). */
   id: string
-  /** Human-readable picker label; ids remain the stable persistence key. */
+  /** Human-facing name for contributed themes. */
   label?: string
   /**
    * Which base palette this theme builds on. The presenter switches
-   * `body[data-ds-dark-theme]` from this field — never from the id. For a
-   * dual-mode theme this is its no-matchMedia fallback.
+   * `body[data-ds-dark-theme]` from this field — never from the id.
    */
   colorScheme: 'light' | 'dark'
   /** Alias-layer overrides applied as inline CSS variables over the base palette. */
   tokens: ThemeTokens
-  /** Optional OS-responsive pair used by portable desktop-theme documents. */
-  variants?: ThemeVariants
 }
 
 /** Immutable theme state published on every change. */
 export interface ThemeSnapshot {
   /** The persisted preference (may be `system`). */
   preference: ThemePreference
+  /** Conversation content font size in px (integer within FONT_SIZE_MIN..FONT_SIZE_MAX). */
+  fontSize: number
   /**
    * The resolved active theme (`system` resolved via prefers-color-scheme)
    * with override layers folded into its tokens (seq order, later layers win
@@ -129,9 +127,8 @@ declare module '@deepseek-ai/cordis' {
 }
 
 const BUILTIN_THEMES: readonly ThemeDefinition[] = Object.freeze([
-  Object.freeze({ id: 'light', label: 'Light', colorScheme: 'light' as const, tokens: Object.freeze({}) }),
-  Object.freeze({ id: 'dark', label: 'Dark', colorScheme: 'dark' as const, tokens: Object.freeze({}) }),
-  ...BUNDLED_THEMES,
+  Object.freeze({ id: 'light', colorScheme: 'light' as const, tokens: Object.freeze({}) }),
+  Object.freeze({ id: 'dark', colorScheme: 'dark' as const, tokens: Object.freeze({}) }),
 ])
 
 const BUILTIN_INSPECT_TOKENS: readonly ThemeTokenInspection[] = Object.freeze([
@@ -162,10 +159,11 @@ const BUILTIN_INSPECT_TOKENS: readonly ThemeTokenInspection[] = Object.freeze([
  * preference is `system`.
  */
 export class ThemeRuntime {
-  private readonly ctx: Context
+  private readonly ctx: ClientContext
   private readonly host: SettingsScope<ThemeSettings>
-  private themes: ThemeDefinition[] = [...BUILTIN_THEMES]
+  private themes: ThemeDefinition[]
   private preference: ThemePreference
+  private fontSize: number = bootstrapFontSize()
   private revision = 0
   private snapshot: ThemeSnapshot
   private readonly media: MediaQueryList | undefined
@@ -178,9 +176,14 @@ export class ThemeRuntime {
    * media-query and scope listeners are released through ctx.effect on dispose).
    * @param host - durable preference scope owned by the same plugin.
    */
-  constructor(ctx: Context, host: SettingsScope<ThemeSettings>) {
+  constructor(
+    ctx: ClientContext,
+    host: SettingsScope<ThemeSettings>,
+    initialThemes: readonly ThemeDefinition[] = [],
+  ) {
     this.ctx = ctx
     this.host = host
+    this.themes = [...BUILTIN_THEMES, ...initialThemes]
     this.preference = DEFAULT_PREFERENCE
     // Non-browser runs (node e2e booting the client tree) have no matchMedia.
     this.media = typeof matchMedia === 'undefined' ? undefined : matchMedia('(prefers-color-scheme: dark)')
@@ -188,8 +191,7 @@ export class ThemeRuntime {
     if (this.media !== undefined) {
       const media = this.media
       const onChange = (): void => {
-        const selected = this.themes.find(theme => theme.id === this.preference)
-        if (this.preference !== 'system' && selected?.variants === undefined) return
+        if (this.preference !== 'system') return
         this.publish()
       }
       ctx.effect(() => {
@@ -239,16 +241,36 @@ export class ThemeRuntime {
       throw new Error(`theme "${id}" is not registered`)
     }
     if (this.preference === id) return
-    this.preference = id
-    if (isThemePreference(id)) void this.host.set(THEME_PREFERENCE_FIELD, id)
+    this.preference = id as ThemePreference
+    // Registered theme ids are durable too; otherwise contributed themes
+    // appear selectable but silently revert after reload.
+    void this.host.set(THEME_PREFERENCE_FIELD, id)
+    this.publish()
+  }
+
+  /**
+   * Change the conversation content font size — the only font-size write
+   * entry. Accepted values are written through the settings scope and emit
+   * `theme/change`.
+   * @param px - integer px within FONT_SIZE_MIN..FONT_SIZE_MAX; out-of-range or fractional values throw.
+   */
+  setFontSize(px: number): void {
+    if (!Number.isInteger(px) || px < FONT_SIZE_MIN || px > FONT_SIZE_MAX) {
+      throw new Error(`font size ${px} is outside ${FONT_SIZE_MIN}..${FONT_SIZE_MAX}`)
+    }
+    if (this.fontSize === px) return
+    this.fontSize = px
+    void this.host.set(FONT_SIZE_FIELD, px)
     this.publish()
   }
 
   /** Adopt the scope's accepted durable preference without writing it back. */
   private adopt(): void {
     const section = this.host.getSnapshot().value
-    if (section === undefined || this.preference === section.preference) return
+    if (section === undefined) return
+    if (this.preference === section.preference && this.fontSize === section.fontSize) return
     this.preference = section.preference
+    this.fontSize = section.fontSize
     this.publish()
   }
 
@@ -272,7 +294,6 @@ export class ThemeRuntime {
       this.themes = this.themes.filter(t => t.id !== definition.id)
       if (this.preference === definition.id) {
         this.preference = DEFAULT_PREFERENCE
-        void this.host.set(THEME_PREFERENCE_FIELD, DEFAULT_PREFERENCE)
       }
       this.publish()
     }
@@ -306,32 +327,20 @@ export class ThemeRuntime {
   }
 
   private buildSnapshot(): ThemeSnapshot {
-    const systemId = this.media?.matches === true ? 'dark' : 'light'
-    const resolvedId = this.preference === 'system' ? systemId : this.preference
-    // A persisted plugin theme may be unavailable early in boot (or after its
-    // provider disappears). Keep the preference so re-registration restores it,
-    // while rendering the safe system palette in the meantime.
-    const selected = this.themes.find(t => t.id === resolvedId)
-      ?? this.themes.find(t => t.id === systemId)
+    const resolvedId = this.preference === 'system'
+      ? (this.media?.matches === true ? 'dark' : 'light')
+      : this.preference
+    // Both built-ins always exist; a registered preference id resolves or has
+    // been reset by its disposer, so the lookup cannot miss.
+    const active = this.themes.find(t => t.id === resolvedId)
     /* v8 ignore next 2 -- needs a registry without light/dark, which register()/dispose() cannot produce */
-    if (selected === undefined) throw new Error(`theme registry lost "${systemId}"`)
-    const active = this.resolveVariants(selected)
+    if (active === undefined) throw new Error(`theme registry lost "${resolvedId}"`)
     return Object.freeze({
       preference: this.preference,
+      fontSize: this.fontSize,
       active: this.composeActive(active),
       themes: Object.freeze([...this.themes]),
       revision: this.revision,
-    })
-  }
-
-  /** Resolve an optional portable light/dark pair through the OS preference. */
-  private resolveVariants(theme: ThemeDefinition): ThemeDefinition {
-    if (theme.variants === undefined) return theme
-    const colorScheme = this.media?.matches === true ? 'dark' : 'light'
-    return Object.freeze({
-      ...theme,
-      colorScheme,
-      tokens: theme.variants[colorScheme],
     })
   }
 
@@ -360,12 +369,28 @@ export class ThemeRuntime {
 }
 
 /**
+ * Read the font size the Host boot script wrote on `body` before any plugin
+ * ran, so the initial snapshot matches first paint and ui-layout's presenter
+ * does not flash the schema default while the settings read is in flight.
+ * Non-browser runs and mounts without the boot script fall back to the
+ * schema default; the durable settings adoption still lands afterwards.
+ */
+function bootstrapFontSize(): number {
+  /* v8 ignore next -- needs a documentless run (node e2e booting the client tree), not constructible under jsdom */
+  if (typeof document === 'undefined') return DEFAULT_FONT_SIZE
+  const raw = document.body.style.getPropertyValue('--dsh-content-font-size')
+  const parsed = Number.parseInt(raw, 10)
+  return Number.isInteger(parsed) && parsed >= FONT_SIZE_MIN && parsed <= FONT_SIZE_MAX
+    ? parsed
+    : DEFAULT_FONT_SIZE
+}
+
+/**
  * Runtime shape check for one override layer (model-authored callers pass
  * untyped JS through the dynamic-package façade, so the static type cannot
  * enforce the pair shape there). Returns a defensive per-token copy so later
  * caller mutation cannot reach the stored layer.
- */
-function validateOverrides(source: string, tokens: ThemeTokenOverrides): ThemeTokenOverrides {
+ */function validateOverrides(source: string, tokens: ThemeTokenOverrides): ThemeTokenOverrides {
   const validated: ThemeTokenOverrides = {}
   for (const [name, value] of Object.entries<unknown>(tokens)) {
     if (typeof value === 'string') {
@@ -402,7 +427,7 @@ function dynamicToken(name: string): ThemeTokenInspection {
  * row. `remote` carries the forwarded settings invalidation that
  * `ctx.settingsScope.bind(spec)` subscribes to on this context.
  */
-export const inject = ['slots', 'locale', 'connection', 'remote', 'settingsScope']
+export const inject = ['slots', 'locale', 'remote', 'settingsScope']
 
 /**
  * Client plugin body: provide the theme service and register the
@@ -413,19 +438,24 @@ export const inject = ['slots', 'locale', 'connection', 'remote', 'settingsScope
 export function apply(ctx: ClientContext): void {
   installThemeStyles(ctx)
   const host = ctx.settingsScope.bind<ThemeSettings>({ namespace: THEME_SETTINGS_NAMESPACE })
-  const theme = new ThemeRuntime(ctx, host)
+  // Seed bundled themes before adopting settings so a persisted contributed
+  // theme can be resolved during the initial snapshot.
+  const theme = new ThemeRuntime(ctx, host, BUNDLED_THEMES)
   ctx.provide('theme', theme)
 
   ctx.effect(() => ctx.locale.register(SETTINGS_NS, { zh, en }), 'ui-theme: settings row dictionaries')
 
   const store = createAppearanceRowStore()
   let bound: BoundActions<typeof store> | undefined
+  const fontSizeStore = createFontSizeRowStore()
+  let fontSizeBound: BoundActions<typeof fontSizeStore> | undefined
   const sync = (snapshot: ThemeSnapshot): void => {
     bound?.sync(
       snapshot.preference,
-      snapshot.themes.map(theme => ({ id: theme.id, label: theme.label ?? theme.id })),
+      snapshot.themes.map(item => ({ id: item.id, label: item.label ?? item.id })),
       snapshot.revision,
     )
+    fontSizeBound?.sync(snapshot.fontSize, snapshot.revision)
   }
   ctx.on('theme/change', sync)
   const injected = (actions: BoundActions<typeof store>): AppearanceRowInjected => {
@@ -445,4 +475,20 @@ export function apply(ctx: ClientContext): void {
     locale: SETTINGS_NS,
     inject: injected,
   }, AppearanceRow))
+
+  const fontSizeInjected = (actions: BoundActions<typeof fontSizeStore>): FontSizeRowInjected => {
+    fontSizeBound = actions
+    sync(theme.getTheme())
+    return {
+      setFontSize: (px) => { theme.setFontSize(px) },
+    }
+  }
+  ctx.slots.inject('settings.general.item', () => ctx.slots.register({
+    name: 'settings.general.item',
+    id: 'font-size',
+    order: 11,
+    store: fontSizeStore,
+    locale: SETTINGS_NS,
+    inject: fontSizeInjected,
+  }, FontSizeRow))
 }

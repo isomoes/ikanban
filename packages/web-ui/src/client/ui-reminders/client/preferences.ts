@@ -1,8 +1,7 @@
 /** Live reminder preference mirror over the Host settings scope. */
 
-import {
-  createSnapshotStore, type SettingsScope, type SnapshotStore,
-} from '@deepseek-ai/dsh-client-runtime/client'
+import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client-store'
+import type { SettingsScope } from '@isomoes/dsh-web-ui/client/ui-settings/client'
 import {
   ATTENTION_SOUND_FIELD, COMPLETION_SOUND_FIELD, DEFAULT_REMINDER_SETTINGS,
   type ReminderSettings,

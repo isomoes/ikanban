@@ -15,7 +15,7 @@ const composition = await readFile(new URL('cordis.patch.yml', packageRoot), 'ut
 const brandId = '@isomoes/dsh-ikanban/client/ui-brand-ikanban'
 
 test('consumes neutral shared clients and publishes only product branding', async () => {
-  assert.equal(entries.length, 35)
+  assert.equal(entries.length, 40)
   assert.equal(manifest.dependencies['@isomoes/dsh-web-ui'], 'workspace:*')
   assert.equal(manifest.devDependencies['@isomoes/dsh-web-ui'], undefined)
   assert.match(composition, /name: '@isomoes\/dsh-web-ui\/client\/ui-timeline'/)
@@ -36,8 +36,8 @@ test('consumes neutral shared clients and publishes only product branding', asyn
   assert.ok(bundle.includes(`id: ${JSON.stringify(brandId)}`))
   assert.equal(productManifest.name, brandId)
   assert.deepEqual(productManifest.dsh.client.inject, [
-    '@deepseek-ai/dsh-client-runtime',
     '@isomoes/dsh-web-ui/client/ui-conversation',
+    '@isomoes/dsh-web-ui/client/ui-renderer',
     '@isomoes/dsh-web-ui/client/ui-sidebar',
   ])
   assert.match(index, /^export function apply\(\) \{\}\s*$/)

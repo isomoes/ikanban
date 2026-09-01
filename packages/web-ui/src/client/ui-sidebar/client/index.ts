@@ -1,7 +1,11 @@
 /** Registers the sidebar shell into the layout-owned slot. */
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
 // Type-only: pulls the locale plugin's Context merge (ctx.locale).
 import type {} from '@isomoes/dsh-web-ui/client/locale/client'
+// Type-only: pulls the SlotRegistry service merge (ctx.slots).
+import type {} from '@isomoes/dsh-web-ui/client/ui-renderer/client'
+// Type-only: pulls the Session root standard-props merge.
+import type {} from '@isomoes/dsh-web-ui/client/ui-session/client'
 import type {} from '@isomoes/dsh-web-ui/client/ui-commands/client'
 import type { SidebarRootInjected } from './contract/slots.ts'
 import { SidebarRoot } from './SidebarRoot.tsx'
@@ -23,37 +27,41 @@ declare module '@isomoes/dsh-web-ui/client/ui-slots' {
 /** Dictionary namespace owned by this plugin (shell controls copy). */
 const NS = 'sidebar'
 
+interface WorkspaceNavigation {
+  startSession(workspaceId?: Parameters<SidebarRootInjected['startSession']>[0]): void
+}
+
 /** Services required by the sidebar plugin. */
-export const inject = ['slots', 'layout', 'sessions', 'workspaces', 'locale', 'commandUi']
+export const inject = ['slots', 'layout', 'uiWorkspace', 'commandUi', 'locale']
 
 /** Registers the sidebar shell and its service callbacks.
  * @param ctx - Client root context.
  */
 export function apply(ctx: ClientContext): void {
+  const workspaceNavigation = ctx.get('uiWorkspace') as unknown as WorkspaceNavigation
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-sidebar: dictionaries')
   const t = ctx.locale.bind(NS)
-  ctx.effect(() => {
-    const disposeNew = ctx.commandUi.registerAction({
-      id: 'session.new',
-      title: () => t('session.new.label'),
-      category: () => t('action.category.session'),
-      keybind: 'ctrl+n',
-      run: () => { ctx.workspaces.startSession() },
-    })
-    const disposeToggle = ctx.commandUi.registerAction({
-      id: 'sidebar.toggle',
-      title: () => t('action.toggle'),
-      category: () => t('action.category.view'),
-      keybind: 'mod+l',
-      run: () => { ctx.layout.toggleSidebar() },
-    })
-    return () => { disposeToggle(); disposeNew() }
-  }, 'ui-sidebar: local actions')
+  ctx.effect(() => ctx.commandUi.registerAction({
+    id: 'session.new',
+    title: () => t('session.new'),
+    category: () => 'Sessions',
+    keybind: 'ctrl+n',
+    ignoreInEditable: true,
+    run: () => { workspaceNavigation.startSession() },
+  }), 'ui-sidebar: new session shortcut')
+  ctx.effect(() => ctx.commandUi.registerAction({
+    id: 'sidebar.toggle',
+    title: () => t('toggle.collapse'),
+    category: () => 'View',
+    keybind: 'mod+l',
+    ignoreInEditable: true,
+    run: () => { ctx.layout.toggleSidebar() },
+  }), 'ui-sidebar: toggle shortcut')
 
   const injectProps = (): SidebarRootInjected => ({
-    // The shell's brand-mark shortcut rides the runtime's shared New Session
-    // action (current Session Workspace, then recent Workspace).
-    startSession: (workspaceId) => { ctx.workspaces.startSession(workspaceId) },
+    // The shell's New Session button rides the Workspace UI's shared action
+    // (current Session Workspace, then recent Workspace).
+    startSession: (workspaceId) => { workspaceNavigation.startSession(workspaceId) },
     toggleSidebar: () => { ctx.layout.toggleSidebar() },
   })
   ctx.effect(

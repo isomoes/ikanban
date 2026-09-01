@@ -3,9 +3,9 @@
 The editable browser source in this package is a reviewed fork of DeepSeek Harness.
 
 - Repository: https://github.com/deepseek-ai/deepseek-harness
-- Current source baseline: `dsh-v0.1.1-rc.1`
-- Commit: `528c682e061696f5a160f363f236ecbf53cbd006`
-- Previous fork baseline: `141eb6fef83422698aef7a981029e843e8161534`
+- Current source baseline: `dsh-v0.1.2-alpha.2`
+- Commit: `0a53fb55bea101816fa226bb964ae2bed71c343b`
+- Previous fork baseline: `528c682e061696f5a160f363f236ecbf53cbd006`
 
 Imported source roots are flattened into this package:
 

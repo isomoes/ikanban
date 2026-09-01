@@ -8,31 +8,51 @@ export const THEME_PREFERENCES = ['light', 'dark', 'system'] as const
 /** Settings namespace owned by the theme plugin. */
 export const THEME_SETTINGS_NAMESPACE = 'ui-theme'
 
-/** Field carrying the selected built-in or registered theme preference. */
+/** Field carrying the selected theme preference (built-in or registered theme id). */
 export const THEME_PREFERENCE_FIELD = 'preference'
 
-/** Theme preference persisted by the product Appearance row (built-in or registered id). */
-export type ThemePreference = string
+/** Field carrying the conversation content font size. */
+export const FONT_SIZE_FIELD = 'fontSize'
+
+/** Theme preference persisted in the Host settings document. */
+export type BuiltinThemePreference = typeof THEME_PREFERENCES[number]
+
+/** Appearance selection, including browser-registered concrete themes. */
+export type ThemePreference = BuiltinThemePreference | (string & {})
 
 /** Default preference when the user-settings document has no override. */
-export const DEFAULT_PREFERENCE: ThemePreference = 'system'
+export const DEFAULT_PREFERENCE: BuiltinThemePreference = 'system'
+
+/** Smallest accepted content font size (px). */
+export const FONT_SIZE_MIN = 12
+
+/** Largest accepted content font size (px). */
+export const FONT_SIZE_MAX = 17
+
+/** Content font size when the user-settings document has no override (px). */
+export const DEFAULT_FONT_SIZE = 14
 
 /** Durable theme section shared by the Host schema and the browser scope. */
 export interface ThemeSettings {
-  /** Selected built-in or registered theme id. */
+  /** Selected built-in preference or registered concrete theme id. */
   preference: ThemePreference
+  /** Conversation content font size in px (integer within {@link FONT_SIZE_MIN}..{@link FONT_SIZE_MAX}). */
+  fontSize: number
 }
 
 /** Durable theme schema; also the wire envelope the browser scope validates against. */
 export const ThemeSettingsSchema: z<ThemeSettings> = z.object({
+  // Concrete themes are registered by browser plugins, so the durable schema
+  // must accept their ids before the client registry is assembled.
   [THEME_PREFERENCE_FIELD]: z.string().default(DEFAULT_PREFERENCE),
+  [FONT_SIZE_FIELD]: z.number().step(1).min(FONT_SIZE_MIN).max(FONT_SIZE_MAX).default(DEFAULT_FONT_SIZE),
 })
 
 /**
- * Narrow one wire or registry value to a persistable theme id.
+ * Narrow one wire or registry value to a persistable preference.
  * @param value - value crossing the settings or registry boundary.
- * @returns whether the value is a non-empty theme id.
+ * @returns whether the value is a built-in preference.
  */
-export function isThemePreference(value: unknown): value is ThemePreference {
-  return typeof value === 'string' && value.length > 0
+export function isThemePreference(value: unknown): value is BuiltinThemePreference {
+  return THEME_PREFERENCES.some(preference => preference === value)
 }

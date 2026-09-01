@@ -1,6 +1,6 @@
 /** General Settings row for session reminder sounds. */
 
-import type { SnapshotStore } from '@deepseek-ai/dsh-client-runtime/client'
+import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@isomoes/dsh-web-ui/client/ui-slots'
 import type { ReminderKey } from './locales.ts'
 import css from './ReminderSoundsRow.module.css'

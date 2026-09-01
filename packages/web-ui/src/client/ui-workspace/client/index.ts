@@ -8,22 +8,34 @@
  * client half (see the contract module doc). Export discipline:
  * packages/client/AGENTS.md.
  */
-import type { HostObservable } from '@isomoes/dsh-web-ui/client/ui-slots'
+import type { Context } from '@deepseek-ai/cordis'
 import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
-import type { ClientContext, SessionId } from '@deepseek-ai/dsh-client-runtime/client'
-// Type-only: pulls the owned locale, command, and conversation Context merges.
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import type { RemoteHostFacts } from '@deepseek-ai/dsh-api-remotes/client'
+import type { ISessions } from '@deepseek-ai/dsh-api-session-controller/client'
+import type { IWorkspaces, WorkspaceSnapshot } from '@deepseek-ai/dsh-api-workspace-controller/client'
+import type { HostObservable, SnapshotSelectorHook } from '@isomoes/dsh-web-ui/client/ui-slots'
+// Type-only: pulls the Controller service merges.
+import type {} from '@deepseek-ai/dsh-api-session-controller/client'
+import type {} from '@deepseek-ai/dsh-api-workspace-controller/client'
+// Type-only: pulls the locale plugin's Context merge (ctx.locale).
 import type {} from '@isomoes/dsh-web-ui/client/locale/client'
+// Type-only: pulls the SlotRegistry service merge (ctx.slots).
+import type {} from '@isomoes/dsh-web-ui/client/ui-renderer/client'
+// Type-only: pulls the Session root standard-hook merge.
+import type {} from '@isomoes/dsh-web-ui/client/ui-session/client'
 import type {} from '@isomoes/dsh-web-ui/client/ui-commands/client'
-import type {} from '@isomoes/dsh-web-ui/client/ui-conversation/client'
 import type { WorkspaceChanges } from '../workspace-changes.ts'
-import type { WorkspaceBrowserInjected, WorkspacePickerInjected } from './contract/slots.ts'
-import { createWorkspaceViewStore } from './stores.ts'
-import { WorkspaceBrowser } from './WorkspaceBrowser.tsx'
-import { WorkspacePicker } from './WorkspacePicker.tsx'
-import { WorkspaceChangesView, type WorkspaceChangesViewInjected } from './WorkspaceChangesView.tsx'
-import { en, zh, type WorkspaceKey } from './locales.ts'
 import { nextSessionAfterArchive } from '../session-navigation.ts'
+import type { WorkspaceBrowserInjected, WorkspacePickerInjected } from './contract/slots.ts'
+import { WorkspaceChangesView, type WorkspaceChangesViewInjected } from './WorkspaceChangesView.tsx'
+import { UiWorkspaceService } from './navigation.ts'
+import { createWorkspaceViewStore } from './stores.ts'
+import { WorkspaceBrowser } from './rows/WorkspaceBrowser.tsx'
+import { WorkspacePicker } from './WorkspacePicker.tsx'
+import { en, zh, type WorkspaceKey } from './locales.ts'
 
+export type { UiWorkspace } from './navigation.ts'
 export type {
   DirectoryFlowOwnerProps, DirectoryFlowSlotName, DirectoryPickingHooks, DirectoryPickingInjected,
   WorkspaceBrowserInjected, WorkspaceBrowserProps, WorkspacePickerInjected, WorkspacePickerProps,
@@ -31,6 +43,11 @@ export type {
 export type { WorkspaceKey } from './locales.ts'
 
 declare module '@isomoes/dsh-web-ui/client/ui-slots' {
+  interface GlobalStandardProps {
+    /** Selector hook over the pure Workspace Controller snapshot. */
+    useWorkspaces: SnapshotSelectorHook<WorkspaceSnapshot>
+  }
+
   interface LocaleNamespaceMap {
     /** The workspace browsing region and pick/create flow copy. */
     workspace: WorkspaceKey
@@ -49,7 +66,9 @@ const WORKSPACE_FILE_CHANNEL = '/ikanban.workspace-files'
  * provides a waitable service. apply therefore depends on each slot
  * declaration through `slots.inject()` instead of assuming order.
  */
-export const inject = ['slots', 'sessions', 'workspaces', 'locale', 'connection', 'commandUi']
+export const inject = [
+  'slots', 'sessions', 'workspaces', 'locale', 'remote', 'remote.directoryPicker', 'connection', 'commandUi',
+]
 
 /**
  * Register the browser and picker once their slot declarations are on the
@@ -57,61 +76,61 @@ export const inject = ['slots', 'sessions', 'workspaces', 'locale', 'connection'
  * framework's global hooks.
  * @param ctx - client root context.
  */
-export function apply(ctx: ClientContext): void {
-  const connection = ctx.get('connection') as ConnectionHandle
-  const hostDescription = connection.hostDescription
+export function apply(ctx: Context): void {
+  const sessions = ctx.get('sessions') as ISessions
+  const workspaces = ctx.get('workspaces') as IWorkspaces
+  const uiWorkspace = new UiWorkspaceService(
+    ctx, ctx.remote.directoryPicker, workspaces, sessions)
+  ctx.slots.provideRoot({ hooks: { workspaces: workspaces.list } })
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-workspace: dictionaries')
   const t = ctx.locale.bind(NS)
-  const archiveSession = async (sessionId: SessionId): Promise<void> => {
-    const before = ctx.sessions.list.getSnapshot()
-    const next = before.current === sessionId
-      ? nextSessionAfterArchive(before, ctx.workspaces.list.getSnapshot().archivedSessionIds, sessionId)
-      : undefined
-    await ctx.workspaces.archiveSession(sessionId)
-    if (next === undefined) return
+  const connection = ctx.get('connection') as ConnectionHandle
 
-    // The archive projection normally clears the current selection before the
-    // request resolves. Do not override a Session the user opened meanwhile.
-    const after = ctx.sessions.list.getSnapshot()
+  const archiveSession = async (sessionId: SessionId): Promise<void> => {
+    const before = sessions.list.getSnapshot()
+    const next = before.current === sessionId
+      ? nextSessionAfterArchive(before, workspaces.list.getSnapshot().archivedSessionIds, sessionId)
+      : undefined
+    await uiWorkspace.archiveSession(sessionId)
+    if (next === undefined) return
+    const after = sessions.list.getSnapshot()
     if (after.current !== undefined && after.current !== sessionId) return
     const candidate = after.byId[next]
-    const archived = ctx.workspaces.list.getSnapshot().archivedSessionIds
+    const archived = workspaces.list.getSnapshot().archivedSessionIds
     if (candidate === undefined || candidate.blank || candidate.origin === 'subagent' || archived.includes(next)) return
-    ctx.sessions.open(next)
+    sessions.open(next)
   }
+
   ctx.effect(() => ctx.commandUi.registerAction({
     id: 'session.archive',
     title: () => t('menu.archiveSession'),
     category: () => t('section.sessions'),
     keybind: 'ctrl+a',
     disabled: () => {
-      const sessions = ctx.sessions.list.getSnapshot()
-      const current = sessions.current
-      const session = current === undefined ? undefined : sessions.byId[current]
+      const state = sessions.list.getSnapshot()
+      const current = state.current
+      const session = current === undefined ? undefined : state.byId[current]
       return session === undefined || session.blank || session.origin === 'subagent'
     },
     run: async () => {
-      const sessions = ctx.sessions.list.getSnapshot()
-      const current = sessions.current
-      const session = current === undefined ? undefined : sessions.byId[current]
+      const state = sessions.list.getSnapshot()
+      const current = state.current
+      const session = current === undefined ? undefined : state.byId[current]
       if (current === undefined || session === undefined || session.blank || session.origin === 'subagent') return
       await archiveSession(current)
     },
   }), 'ui-workspace: archive action')
+
   ctx.effect(() => ctx.commandUi.registerAction({
     id: 'session.unarchive',
     title: () => t('menu.unarchiveSession'),
     category: () => t('section.sessions'),
-    disabled: () => ctx.workspaces.list.getSnapshot().archivedSessionIds.length === 0,
+    disabled: () => workspaces.list.getSnapshot().archivedSessionIds.length === 0,
     run: async () => {
-      const archived = ctx.workspaces.list.getSnapshot().archivedSessionIds
-      const sessionId = archived.at(-1)
+      const sessionId = workspaces.list.getSnapshot().archivedSessionIds.at(-1)
       if (sessionId === undefined) return
       const result = await connection.rpc.call(WORKSPACE_FILE_CHANNEL, 'unarchive', { sessionId })
       if (!result.ok) throw new Error(result.error.message)
-      // The concrete rc.1 WorkspaceRuntime owns refresh, although the shared
-      // IWorkspaces service contract has not exposed it yet.
-      await (ctx.workspaces as typeof ctx.workspaces & { refresh(): Promise<void> }).refresh()
     },
   }), 'ui-workspace: unarchive action')
 
@@ -123,7 +142,7 @@ export function apply(ctx: ClientContext): void {
     label: () => t('changes.view'),
     inject: (sessionId: SessionId): WorkspaceChangesViewInjected => ({
       loadChanges: async (signal) => {
-        const cwd = ctx.sessions.list.getSnapshot().byId[sessionId]?.cwd
+        const cwd = sessions.list.getSnapshot().byId[sessionId]?.cwd
         if (cwd === undefined || cwd === '') throw new Error('Session has no workspace')
         const result = await connection.rpc.call(WORKSPACE_FILE_CHANNEL, 'changes', { cwd }, signal)
         if (!result.ok) throw new Error(result.error.message)
@@ -131,31 +150,12 @@ export function apply(ctx: ClientContext): void {
       },
     }),
   }, WorkspaceChangesView))
-  // rc.8's ui-reference owns the unified @ source (files and sessions).
-  // Keep this package from registering a second local file provider, which
-  // would duplicate candidates while preserving file autocomplete through
-  // that reference contract.
 
   const searchSessions: WorkspaceBrowserInjected['searchSessions'] = async (query, signal) => {
-    const result = await ctx.sessions.search(query, signal)
+    const result = await sessions.search(query, signal)
     if (!result.ok) throw new Error(result.error.message)
     return result.value
   }
-  const currentWorkspace = () => {
-    const current = ctx.sessions.list.getSnapshot().current
-    if (current === undefined) return undefined
-    return ctx.workspaces.list.getSnapshot().items.find(workspace => workspace.sessionIds.includes(current))
-  }
-  const registerDeleteAction: WorkspaceBrowserInjected['registerDeleteAction'] = open => ctx.commandUi.registerAction({
-    id: 'workspace.delete',
-    title: () => t('delete.workspace'),
-    category: () => t('section.workspaces'),
-    disabled: () => currentWorkspace() === undefined,
-    run: () => {
-      const workspace = currentWorkspace()
-      if (workspace !== undefined) open({ workspaceId: workspace.workspaceId, title: workspace.title })
-    },
-  })
 
   // Stable per-surface occupancy sources (the renderer's hook cache keys by
   // source identity): true while the surface's directory-flow hole is filled.
@@ -164,44 +164,47 @@ export function apply(ctx: ClientContext): void {
     subscribe: listener => ctx.slots.subscribe(hole, listener),
   })
   const browserFlowSource = flowSource('sidebar.workspaces.directoryFlow')
+  const hostInfo: HostObservable<RemoteHostFacts> = {
+    getSnapshot: () => ctx.remote.$host,
+    subscribe: listener => ctx.on('connection/reset', listener),
+  }
   const pickerFlowSource = flowSource('conversation.hero.workspace.directoryFlow')
   const browserInjected = (): WorkspaceBrowserInjected => ({
     // Explicit group actions keep their target; unscoped New Session inherits
     // the current Session Workspace before the recent-Workspace fallback.
-    startSession: (workspaceId) => { ctx.workspaces.startSession(workspaceId) },
-    open: (sessionId) => { ctx.sessions.open(sessionId) },
+    startSession: (workspaceId) => { uiWorkspace.startSession(workspaceId) },
+    open: (sessionId) => { sessions.open(sessionId) },
     searchSessions,
-    searchResultLimit: ctx.sessions.searchResultLimit,
+    searchResultLimit: sessions.searchResultLimit,
     renameSession: async (sessionId, title) => {
       // Row → session-face hop: rename is a per-session verb (ISession), not
       // a list-service verb; the binding resolves any listed session.
-      const session = ctx.sessions.binding(sessionId)?.session
+      const session = sessions.binding(sessionId)?.session
       if (session === undefined) throw new Error(`unknown session "${sessionId}"`)
       const result = await session.rename(title)
       if (!result.ok) throw new Error(result.error.message)
     },
     forkSession: (sessionId) => {
-      ctx.sessions.fork({ sessionId, increaseTitle: true })
-        .then((childId) => { ctx.sessions.open(childId) })
+      sessions.fork({ sessionId, increaseTitle: true })
+        .then((childId) => { sessions.open(childId) })
         .catch(() => {
           // Fork or child-rename failure keeps the current selection.
         })
     },
-    renameWorkspace: async (workspaceId, title) => { await ctx.workspaces.rename(workspaceId, title) },
-    deleteWorkspace: async (workspaceId) => { await ctx.workspaces.delete(workspaceId) },
-    registerDeleteAction,
+    renameWorkspace: async (workspaceId, title) => { await workspaces.rename(workspaceId, title) },
+    deleteWorkspace: async (workspaceId) => { await workspaces.delete(workspaceId) },
     insertWorkspaceBefore: async (workspaceId, beforeWorkspaceId) => {
-      await ctx.workspaces.insertBefore(workspaceId, beforeWorkspaceId)
+      await workspaces.insertBefore(workspaceId, beforeWorkspaceId)
     },
     archiveSession,
     insertSessionBefore: async (workspaceId, sessionId, beforeSessionId) => {
-      await ctx.workspaces.insertSessionBefore(workspaceId, sessionId, beforeSessionId)
+      await workspaces.insertSessionBefore(workspaceId, sessionId, beforeSessionId)
     },
-    createWorkspace: input => ctx.workspaces.create(input),
-    hooks: { directoryFlow: browserFlowSource, hostDescription },
+    createWorkspace: input => workspaces.create(input),
+    hooks: { directoryFlow: browserFlowSource, hostInfo },
   })
   const pickerInjected = (): WorkspacePickerInjected => ({
-    createWorkspace: input => ctx.workspaces.create(input),
+    createWorkspace: input => workspaces.create(input),
     hooks: { directoryFlow: pickerFlowSource },
   })
   // Each registration declares its directory-flow child in the same call;

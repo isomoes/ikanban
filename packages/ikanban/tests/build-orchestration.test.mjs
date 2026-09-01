@@ -21,7 +21,7 @@ test('build lifecycles consume the publishable shared Web UI without recursive o
     'IKANBAN_DEV=1 pnpm build && IKANBAN_DEV=1 dsh plugin --profile ikanban-dev add ./packages/web-ui ./packages/ikanban',
     'the profile install must link both runtime packages and preserve the dev marker for prepare scripts',
   )
-  assert.equal(root.devDependencies['@deepseek-ai/dsh'], '^0.1.1-rc.1')
+  assert.equal(root.devDependencies['@deepseek-ai/dsh'], '^0.1.2-alpha.2')
   for (const peerAnchor of [
     '@deepseek-ai/dsh-anonymous-user-id',
     '@deepseek-ai/dsh-bash-local',
@@ -32,7 +32,7 @@ test('build lifecycles consume the publishable shared Web UI without recursive o
     '@deepseek-ai/dsh-spill',
     '@deepseek-ai/dsh-subagent-in-process-driver',
   ]) {
-    assert.equal(root.devDependencies[peerAnchor], '^0.1.1-rc.1')
+    assert.equal(root.devDependencies[peerAnchor], '^0.1.2-alpha.2')
   }
   assert.equal(webUi.name, '@isomoes/dsh-web-ui')
   assert.equal(webUi.private, false)
@@ -49,18 +49,18 @@ test('build lifecycles consume the publishable shared Web UI without recursive o
   )
   assert.ok(ikanban.scripts['build:package'])
   assert.doesNotMatch(ikanban.scripts['build:package'], /(?:^|\s)pnpm build(?:\s|$)/)
-  assert.equal(ikanban.dependencies['@deepseek-ai/dsh-web-app'], undefined)
-  assert.equal(ikanban.dependencies['@deepseek-ai/dsh-host-directory-picker-native'], undefined)
-  assert.equal(ikanban.dependencies['@deepseek-ai/dsh-agent-loop'], '^0.1.1-rc.1')
-  assert.equal(ikanban.dependencies['@deepseek-ai/dsh-tools'], '^0.1.1-rc.1')
+  assert.equal(ikanban.dependencies['@deepseek-ai/dsh-web-app'], '^0.1.2-alpha.2')
+  assert.equal(ikanban.dependencies['@deepseek-ai/dsh-host-directory-picker-native'], '^0.1.2-alpha.2')
+  assert.equal(ikanban.dependencies['@deepseek-ai/dsh-agent-loop'], '^0.1.2-alpha.2')
+  assert.equal(ikanban.dependencies['@deepseek-ai/dsh-tools'], '^0.1.2-alpha.2')
   assert.equal(ikanban.dependencies['@isomoes/dsh-web-ui'], 'workspace:*')
   assert.equal(ikanban.dependencies['@isomoes/dsh-project-mcp'], undefined)
   assert.equal(ikanban.devDependencies['@isomoes/dsh-project-mcp'], 'workspace:*')
   assert.equal(ikanban.devDependencies['@isomoes/dsh-web-ui'], undefined)
-  assert.equal(ikanban.dependencies['@deepseek-ai/dsh-mcp-client'], '^0.1.1-rc.1')
-  assert.equal(ikanban.peerDependencies['@deepseek-ai/dsh-system-prompt'], '^0.1.1-rc.1')
+  assert.equal(ikanban.dependencies['@deepseek-ai/dsh-mcp-client'], '^0.1.2-alpha.2')
+  assert.equal(ikanban.peerDependencies['@deepseek-ai/dsh-system-prompt'], '^0.1.2-alpha.2')
   assert.equal(projectMcp.private, true)
-  assert.equal(projectMcp.dependencies['@deepseek-ai/dsh-mcp-client'], '^0.1.1-rc.1')
+  assert.equal(projectMcp.dependencies['@deepseek-ai/dsh-mcp-client'], '^0.1.2-alpha.2')
   assert.doesNotMatch(composition, /name: '@isomoes\/dsh-project-mcp'/)
   assert.match(composition, /- id: ikanban-preset\n      name: '@isomoes\/dsh-ikanban\/ikanban-preset'/)
   assert.match(projectMcpPresetFragment, /- id: project-mcp\n  name: '@isomoes\/dsh-ikanban\/project-mcp'/)

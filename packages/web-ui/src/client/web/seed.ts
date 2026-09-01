@@ -1,12 +1,10 @@
-/**
- * Platform-singleton module-table. Fetch bundles resolve their platform
- * externals against this table through the module loader's require.
- */
+/** Build the platform-singleton module table used by dynamic client bundles. */
 import * as React from 'react'
 import * as ReactJsxRuntime from 'react/jsx-runtime'
 import * as ReactDom from 'react-dom'
 import * as ReactDomClient from 'react-dom/client'
 import * as Cordis from '@deepseek-ai/cordis'
+import * as ClientStore from '@deepseek-ai/dsh-client-store'
 import * as UiSlots from '@isomoes/dsh-web-ui/client/ui-slots'
 import * as UiPrimitives from '@isomoes/dsh-web-ui/client/ui-primitives'
 import type { PlatformModule } from './platform.ts'
@@ -19,6 +17,7 @@ export function getStaticModules(): Record<string, unknown> {
     'react-dom': ReactDom,
     'react-dom/client': ReactDomClient,
     '@deepseek-ai/cordis': Cordis,
+    '@deepseek-ai/dsh-client-store': ClientStore,
     '@isomoes/dsh-web-ui/client/ui-slots': UiSlots,
     '@deepseek-ai/dsh-client-ui-slots': UiSlots,
     '@isomoes/dsh-web-ui/client/ui-primitives': UiPrimitives,

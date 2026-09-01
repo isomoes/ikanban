@@ -14,18 +14,19 @@
  */
 import { Service } from '@deepseek-ai/cordis'
 import type { Context } from '@deepseek-ai/cordis'
-import type {
-  ConnectionHandle, ModelSelection, SessionId, SessionModels, WorkspaceId,
-} from '@deepseek-ai/dsh-api-remotes/client'
-import type {
-  SessionRuntime, SettingsScope, WorkspaceRuntime,
-} from '@deepseek-ai/dsh-client-runtime/client'
-import type {} from '@isomoes/dsh-web-ui/client/ui-settings/client'
+import type {} from '@deepseek-ai/dsh-api-session-controller/client'
+import type { ModelSelection } from '@deepseek-ai/dsh-api-session-controller/types'
+import type {} from '@deepseek-ai/dsh-api-workspace-controller/client'
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import type { WorkspaceId } from '@deepseek-ai/dsh-workspace/types'
+import type { SettingsScope } from '@isomoes/dsh-web-ui/client/ui-settings/client'
 import {
   WORKSPACE_MODEL_SETTINGS_NAMESPACE, type WorkspaceModelSettings,
 } from '../workspace-model-settings.ts'
-import { ModelDirectory } from './directory.ts'
 import { WorkspaceModelDefaults } from '../workspace-defaults.ts'
+import { ModelCatalogDirectory } from './catalog.ts'
+import { ModelDirectory } from './directory.ts'
+import type { ModelDirectoryState } from './directory.ts'
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
@@ -41,16 +42,16 @@ interface LiveState {
   readonly appliedDefaults: Map<SessionId, string>
 }
 
-/** Stable comparison key for one inherited route. */
 function selectionKey(selection: Pick<ModelSelection, 'provider' | 'model'>): string {
   return JSON.stringify([selection.provider, selection.model])
 }
 
 /** The `ctx.modelDirectories` session model-selection service. */
 export class ModelDirectoryResolver extends Service {
-  static inject = ['connection', 'sessions', 'workspaces', 'remote', 'settingsScope']
+  static inject = ['sessions', 'workspaces', 'remote', 'remote.session', 'settingsScope']
 
   private readonly live: LiveState = { directories: new Map(), appliedDefaults: new Map() }
+  private readonly catalog: ModelCatalogDirectory
   private readonly defaults: WorkspaceModelDefaults
 
   /** Localized composer-block copy; this plugin owns the string it raises. */
@@ -63,49 +64,36 @@ export class ModelDirectoryResolver extends Service {
   constructor(ctx: Context, config: { blockReason: () => string }) {
     super(ctx, 'modelDirectories')
     this.blockReason = config.blockReason
-    const sessions = ctx.get('sessions') as SessionRuntime
-    const workspaces = ctx.get('workspaces') as WorkspaceRuntime
     const settings = ctx.settingsScope.bind<WorkspaceModelSettings>({
       namespace: WORKSPACE_MODEL_SETTINGS_NAMESPACE,
     }) as SettingsScope<WorkspaceModelSettings>
     this.defaults = new WorkspaceModelDefaults(settings, {
       workspaceForSession: (sessionId): WorkspaceId | undefined =>
-        workspaces.list.getSnapshot().items.find(workspace => workspace.sessionIds.includes(sessionId))?.workspaceId,
-      sessionIsBlank: sessionId => sessions.list.getSnapshot().byId[sessionId]?.blank === true,
+        ctx.workspaces.list.getSnapshot().items.find(workspace => workspace.sessionIds.includes(sessionId))?.workspaceId,
+      sessionIsBlank: sessionId => ctx.sessions.list.getSnapshot().byId[sessionId]?.blank === true,
     })
     ctx.effect(() => this.defaults.subscribe(() => {
       for (const [sessionId, directory] of this.live.directories) {
         void this.applyWorkspaceDefault(sessionId, directory)
       }
     }), 'ui-model-selection: workspace defaults')
+    this.catalog = new ModelCatalogDirectory(ctx)
+    void this.catalog.load().catch(() => { /* selectors expose the shared error */ })
     ctx.on('connection/reset', () => {
+      this.catalog.resetGeneration()
       for (const directory of this.live.directories.values()) directory.resetConnected()
     })
-    // Either source can change the directory: registry topology commits and
-    // settings documents that carry provider catalogs or default selection.
-    const refresh = (): void => {
-      for (const directory of this.live.directories.values()) {
-        directory.load().catch(() => undefined)
-      }
-    }
-    ctx.remote.$on('llm/adapters-updated', refresh)
-    ctx.remote.$on('settings/document-updated', refresh)
+    ctx.remote.$on('llm/adapters-updated', () => { this.catalog.refresh() })
+    ctx.remote.$on('settings/document-updated', () => { this.catalog.refresh() })
+    ctx.remote.$on('credentials/reference-updated', () => { this.catalog.refresh() })
   }
 
   /** Load a session directory, then inherit its workspace route while it is blank. */
-  async load(sessionId: SessionId): Promise<SessionModels> {
+  async load(sessionId: SessionId): Promise<ModelDirectoryState> {
     const directory = this.directoryFor(sessionId)
-    const loaded = await directory.load()
+    await directory.load()
     await this.applyWorkspaceDefault(sessionId, directory).catch(() => undefined)
-    const state = directory.store.getSnapshot()
-    return state.current === null
-      ? loaded
-      : {
-          current: state.current,
-          routable: state.routable ?? loaded.routable,
-          groups: [...state.groups],
-          failures: [...state.failures],
-        }
+    return directory.store.getSnapshot()
   }
 
   /** Select for one session; a blank session also establishes its workspace's future default. */
@@ -122,12 +110,8 @@ export class ModelDirectoryResolver extends Service {
     if (preferred === undefined) return
     const key = selectionKey(preferred)
     if (this.live.appliedDefaults.get(sessionId) === key) return
-    // A settings update can arrive while the first catalog request is still in
-    // flight. Let load() finish first so its catalog is not invalidated by the
-    // inherited selection's newer generation.
     const current = directory.store.getSnapshot().current
-    if (current === null) return
-    if (current.provider === preferred.provider && current.model === preferred.model) {
+    if (current?.provider === preferred.provider && current.model === preferred.model) {
       this.live.appliedDefaults.set(sessionId, key)
       return
     }
@@ -150,14 +134,17 @@ export class ModelDirectoryResolver extends Service {
     const { live } = this
     const existing = live.directories.get(sessionId)
     if (existing !== undefined) return existing
-    const sessions = this.ctx.get('sessions') as SessionRuntime
+    const sessions = this.ctx.sessions
     const actx = sessions.scope(sessionId)
     if (actx === undefined) throw new Error(`ui-model-selection: session "${String(sessionId)}" resolved no scope`)
-    const connection = this.ctx.get('connection') as ConnectionHandle
+    const binding = sessions.binding(sessionId)
+    if (binding === undefined) throw new Error(`ui-model-selection: session "${String(sessionId)}" resolved no binding`)
     const directory = new ModelDirectory(
-      connection.api.sessions,
+      this.ctx.remote.session,
       sessionId,
       () => sessions.subagentAddress(sessionId) === undefined,
+      this.catalog,
+      binding.session.projections.faceOf('modelSelection'),
     )
     live.directories.set(sessionId, directory)
     // The composer cannot read this plugin (the dependency runs one way), so

@@ -17,7 +17,7 @@ test('remaps stock inject edges only when the local client is present', () => {
       {
         id: '@deepseek-ai/dsh-cordis-client-runner',
         inject: [
-          '@deepseek-ai/dsh-client-runtime',
+          '@deepseek-ai/dsh-api-session-controller',
           '@deepseek-ai/dsh-client-ui-theme',
         ],
       },
@@ -35,7 +35,7 @@ test('remaps stock inject edges only when the local client is present', () => {
   remapForkedClientInjects(graph)
 
   assert.deepEqual(graph.entries[0].inject, [
-    '@deepseek-ai/dsh-client-runtime',
+    '@deepseek-ai/dsh-api-session-controller',
     '@isomoes/dsh-web-ui/client/ui-theme',
   ])
   assert.deepEqual(graph.entries[1].inject, [

@@ -1,8 +1,7 @@
 /**
- * Web application entry: thin bootstrap over the shell library. Everything —
- * module-table seeding, the boot page, and the UI-renderer handoff — lives
- * in @isomoes/dsh-web-ui/client/web; this file only remaps the fork graph and
- * finds the mount point.
+ * Web application entry over the locally owned flattened shell library.
+ * Host-injected client package ids are remapped before boot so shared UI
+ * dependencies resolve to this neutral fork.
  */
 import { AppWebEntry } from '@isomoes/dsh-web-ui/client/web'
 import { remapForkedClientInjects } from './client-id-aliases.ts'

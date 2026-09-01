@@ -1,10 +1,12 @@
 /**
- * Command UI plugin, browser half: CommandUiRuntime (`ctx.commandUi`) owns both
- * Host slash-command presentation and local application actions. The slash
- * popup mounts by session; the searchable local command palette mounts in the
- * frame overlay and dispatches feature-owned callbacks and keybindings.
+ * Command UI plugin, browser half: CommandUiRuntime (`ctx.commandUi`) owning the
+ * capability-keyed directory cache, the '/' command source, the client
+ * contribution registry, and the per-session popupSelect controllers; the
+ * popupSelect shell self-registers into conversation.input.overlay with
+ * per-session resolution.
  */
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import type { ISessions } from '@deepseek-ai/dsh-api-session-controller/client'
 // Type-only: pulls the 'conversation.input.overlay' SlotMap declaration (the
 // key's owner) into this program so the overlay registration below typechecks
 // against the real declaration — no runtime edge to ui-conversation.
@@ -13,15 +15,15 @@ import type {} from '@isomoes/dsh-web-ui/client/ui-layout/client'
 import type {} from '@isomoes/dsh-web-ui/client/ui-settings/client'
 // Type-only: pulls the locale plugin's Context merge (ctx.locale).
 import type {} from '@isomoes/dsh-web-ui/client/locale/client'
+import type {} from '@isomoes/dsh-web-ui/client/ui-renderer/client'
+import type {} from '@isomoes/dsh-web-ui/client/ui-session/client'
 import { CommandUiRuntime } from './service.ts'
 import type { PopupSelectInjected } from './PopupSelectView.tsx'
 import { PopupSelectView } from './PopupSelectView.tsx'
 import { CommandPaletteView } from './CommandPaletteView.tsx'
 import { KeymapSettingsSection } from './KeymapSettingsSection.tsx'
 import { en, zh, type CommandKey } from './locales.ts'
-import {
-  en as settingsEn, zh as settingsZh, type ShortcutSettingsKey,
-} from './settings-locales.ts'
+import { en as settingsEn, zh as settingsZh, type ShortcutSettingsKey } from './settings-locales.ts'
 
 export { CommandUiRuntime } from './service.ts'
 export { CommandDirectory } from './directory.ts'
@@ -58,10 +60,8 @@ declare module '@isomoes/dsh-web-ui/client/ui-slots' {
 const NS = 'command'
 const SETTINGS_NS = 'settings.shortcuts'
 
-/** Required services: command/session services, locale, and profile-backed shortcut settings. */
-export const inject = [
-  'inputTriggers', 'sessions', 'remote', 'remote.commands', 'locale', 'connection', 'settingsScope',
-]
+/** Required services: the '/' source registry, session scopes, commands Remote, and locale registry. */
+export const inject = ['inputTriggers', 'sessions', 'remote', 'remote.commands', 'locale', 'settingsScope']
 
 /**
  * Client plugin body: mount the service, then register the popupSelect shell
@@ -95,7 +95,7 @@ export function apply(ctx: ClientContext): void {
   })
   ctx.inject(['slots', 'commandUi', 'sessions'], (scope: ClientContext) => {
     const command = scope.commandUi
-    const sessions = scope.sessions
+    const sessions = scope.get('sessions') as ISessions
     scope.slots.inject('conversation.input.overlay', () => scope.slots.register({
       name: 'conversation.input.overlay',
       id: 'command-popup',

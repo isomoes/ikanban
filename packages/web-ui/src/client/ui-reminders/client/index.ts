@@ -4,7 +4,9 @@
  * its durable controls to General settings.
  */
 
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import type {} from '@deepseek-ai/dsh-api-session-controller/client'
+import type {} from '@isomoes/dsh-web-ui/client/ui-session/client'
 import type {} from '@isomoes/dsh-web-ui/client/ui-settings/client'
 import type {} from '@isomoes/dsh-web-ui/client/locale/client'
 import type {} from '@isomoes/dsh-web-ui/client/ui-slots'
@@ -26,7 +28,7 @@ declare module '@isomoes/dsh-web-ui/client/ui-slots' {
 }
 
 /** Runtime/session facts plus feature-owned settings and Settings-row dependencies. */
-export const inject = ['sessions', 'settingsScope', 'slots', 'locale']
+export const inject = ['sessions', 'uiSession', 'settingsScope', 'slots', 'locale']
 
 /** Mount list-edge detection, lifecycle-owned playback, and settings controls. */
 export function apply(ctx: ClientContext): void {
@@ -36,7 +38,16 @@ export function apply(ctx: ClientContext): void {
   const player = new ReminderSoundPlayer()
   const observer = new SessionReminderObserver()
   const sync = (): void => {
-    const rows = Object.values(ctx.sessions.list.getSnapshot().byId)
+    const pending = ctx.uiSession.pendingInteractions.getSnapshot()
+    const rows = Object.values(ctx.sessions.list.getSnapshot().byId).map(row => {
+      const interaction = pending.get(row.id)
+      return {
+        id: row.id,
+        running: row.running,
+        ...(row.origin === undefined ? {} : { origin: row.origin }),
+        ...(interaction === undefined ? {} : { pendingInteraction: interaction.kind }),
+      }
+    })
     for (const event of observer.update(rows)) {
       // Consume edges while settings load, but never guess over a persisted
       // disabled preference. Later snapshots only report genuinely new edges.
@@ -52,6 +63,7 @@ export function apply(ctx: ClientContext): void {
   // Seed before subscribing: existing idle/waiting sessions never chime on boot.
   sync()
   ctx.effect(() => ctx.sessions.list.subscribe(sync), 'ui-reminders: session-list observer')
+  ctx.effect(() => ctx.uiSession.pendingInteractions.subscribe(sync), 'ui-reminders: interaction observer')
   ctx.effect(() => player.installUnlock(), 'ui-reminders: audio unlock')
   ctx.effect(() => () => {
     preferences.dispose()
