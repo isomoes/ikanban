@@ -4,9 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.0]
+
 - Restored the v0.3 standalone application boundary as one private web workspace, with GitHub Pages as the only publishing target.
 - Removed the DSH packages, browser implementation, plugin composition, and pnpm development workflow; restored a single-package Bun workspace.
-- Added a clean TypeScript/Vite foundation and OpenCode V2 API client entry point for direct browser connections to a configured backend. The browser currently shows a migration placeholder; the new frontend framework and UI are the next phase.
+- Restored the v0.3.18 SolidJS interface, including project and session navigation, message timelines, the prompt composer, file and diff viewers, model selection, themes, and settings.
+- Migrated backend connections to `@opencode/client` 2.0.11 with typed adapters for OpenCode V2 sessions, messages, permissions, forms, providers, files, and events. Backend sessions, execution, and provider credentials remain owned by OpenCode.
+- Added header-based server authentication, event reconnection with session resynchronization, and settings updates that preserve comments and unrelated fields in existing server JSON/JSONC configuration.
+- Added static deployment at `/ikanban/` with a direct-link fallback. The browser connects to a configured OpenCode V2 backend rather than the Pages origin; hosted use requires a reachable HTTPS backend with CORS enabled.
+- Documented the migration's remaining differences: archives are browser-local and scoped by server, session sharing and worktree reset are unavailable, and LSP status is not supported by V2.
+- Added adapter and UI regression coverage for the restored application and V2 integration.
 
 ## [0.5.3]
 

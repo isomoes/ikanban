@@ -5,7 +5,8 @@
    `packages/web/package.json`, and `bun.lock`.
 3. Verify:
    - `bun install --frozen-lockfile`
-    - `bun run typecheck && bun run build:web`
+   - `bun run typecheck && bun run build:web`
+   - `bun run --cwd packages/web test:unit`
    - `node scripts/check-release.mjs v<version>`
 4. Commit the release files with `git commit -m "release v<version>"`.
 5. Push the branch with `git push origin main`.
@@ -21,5 +22,6 @@ Both workspace manifests are private.
 Use the workflow's manual `tag` input to deploy an existing tag. Releases use the current application
 version sequence; restoring the architecture does not reset versions to 0.3.x.
 
-The current frontend is a migration foundation page. Describe that state accurately
-in release notes until the new OpenCode V2 interface is implemented.
+The current frontend restores the v0.3.18 SolidJS UI with OpenCode V2 adapters.
+Describe the migration state and remaining backend differences accurately in
+release notes; see `docs/architecture.md`.

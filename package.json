@@ -1,14 +1,21 @@
 {
   "name": "ikanban",
-  "version": "0.5.3",
+  "version": "0.6.0",
   "description": "iKanban standalone frontend for OpenCode V2",
   "private": true,
   "license": "MIT",
   "type": "module",
   "packageManager": "bun@1.3.12",
-  "workspaces": ["packages/web"],
-  "engines": { "node": "^22.19.0 || >=24.0.0" },
-  "repository": { "type": "git", "url": "https://github.com/isomoes/ikanban" },
+  "workspaces": [
+    "packages/web"
+  ],
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/isomoes/ikanban"
+  },
   "scripts": {
     "dev": "bun run --cwd packages/web dev",
     "dev:web": "bun run --cwd packages/web dev",
