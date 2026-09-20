@@ -1,0 +1,90 @@
+.settings-dialog {
+  --settings-space-1: 8px;
+  --settings-space-2: 12px;
+  --settings-space-3: 16px;
+  --settings-space-4: 24px;
+
+  [data-component="settings-page"] {
+    padding-inline: var(--settings-space-4);
+    padding-bottom: var(--settings-space-4);
+  }
+
+  [data-component="settings-header"] {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  [data-component="settings-section"],
+  [data-settings-section] {
+    gap: var(--settings-space-1);
+  }
+
+  [data-component="settings-section"] > .bg-surface-raised-base,
+  [data-settings-section] > .bg-surface-raised-base {
+    padding-inline: var(--settings-space-3);
+    border: 1px solid var(--border-weak-base);
+    border-radius: 0;
+    background: transparent;
+  }
+
+  [data-component="settings-row"],
+  [data-settings-row] {
+    gap: var(--settings-space-3);
+    padding-block: var(--settings-space-2);
+  }
+
+  [data-slot="tabs-trigger"]:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+  }
+
+  [data-slot="tabs-trigger-wrapper"]:has([data-selected]) {
+    color: var(--text-strong);
+    background: var(--surface-raised-base);
+  }
+}
+
+@media (max-width: 639px) {
+  .settings-dialog {
+    flex-direction: column;
+  }
+
+  .settings-dialog [data-slot="tabs-list"] {
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    min-height: 48px;
+    padding: 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-right: 0;
+    border-bottom: 1px solid var(--border-weak-base);
+  }
+
+  .settings-dialog [data-slot="settings-nav"],
+  .settings-dialog [data-slot="settings-nav-groups"],
+  .settings-dialog [data-slot="settings-nav-groups"] > div,
+  .settings-dialog [data-slot="settings-nav-group"],
+  .settings-dialog [data-slot="settings-nav-items"] {
+    width: max-content;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    padding-top: 0;
+  }
+
+  .settings-dialog [data-slot="tabs-section-title"],
+  .settings-dialog [data-slot="settings-nav-footer"] {
+    display: none;
+  }
+
+  .settings-dialog [data-slot="tabs-trigger-wrapper"] {
+    width: auto;
+    min-width: max-content;
+  }
+
+  .settings-dialog [data-component="settings-page"] {
+    padding-inline: 12px;
+  }
+}

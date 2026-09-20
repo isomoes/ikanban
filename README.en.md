@@ -6,13 +6,14 @@ iKanban is a standalone frontend for **OpenCode V2**.
 
 ## Migration status
 
-The repository has returned to the v0.3 single-application architecture.
+The application reuses the **v0.3.18 SolidJS UI** with **`@opencode/client` 2.0.11**.
 The DSH implementation has been removed. `packages/web` is the only application,
 deployed as static files to **GitHub Pages**.
 
-This is the **cleanup and foundation stage**: the browser currently displays a
-small placeholder page. The new UI will be built against `@opencode/client`;
-its frontend framework is still to be selected. See [the architecture notes](./docs/architecture.md).
+Project/session navigation, message timelines, the composer, file and diff views,
+model selection, themes, and settings are restored. A typed adapter converts V2
+messages, permissions, forms, models, and events into UI view models.
+See [the architecture notes](./docs/architecture.md).
 
 ## Development
 
@@ -31,11 +32,15 @@ opencode serve --hostname 127.0.0.1 --port 4096
 ```
 
 OpenCode V2 requires authentication and must allow the frontend origin via CORS.
-The browser connects directly to the backend. The future UI will implement server
-selection and sign-in. `src/client.ts` accepts a server URL and authentication headers.
+Use the server selector to enter the backend URL. For Bearer authentication, leave
+the username empty and enter the token in the password/token field. For Basic
+authentication, enter both username and password. `src/client.ts` creates the V2
+network client with authentication headers. Without `VITE_OPENCODE_URL`, the initial
+server is `http://127.0.0.1:4096`; API calls never default to the Pages origin.
 
 ```sh
 bun run typecheck
+bun run --cwd packages/web test:unit
 bun run build:web
 bun run preview:web --port 3000
 ```
@@ -50,10 +55,22 @@ The tag-driven workflow checks and builds the app, then deploys
 `packages/web/dist` to **GitHub Pages** at `/ikanban/`. Configure the repository's
 Pages source as **GitHub Actions**. Both workspace manifests are private.
 
-GitHub Pages has no proxy. A future UI hosted there must connect directly to a
+GitHub Pages has no proxy. The UI hosted there must connect directly to a
 reachable HTTPS OpenCode V2 server configured to allow its origin via CORS. A
 custom build can set `VITE_OPENCODE_URL`; the Pages workflow also accepts it as a
 repository variable. Never put credentials in Vite variables.
+
+## V2 differences
+
+- Session archiving is a browser-local preference, isolated by server URL, and is
+  not synchronized with other clients.
+- Sharing, worktree reset, and LSP status are unavailable in the V2 API; their
+  actions are not enabled.
+- Settings update an existing global server JSON/JSONC document through the V2
+  file API and reload configuration, preserving unrelated fields and comments.
+  Create a global configuration on the server first if none exists.
+- Event streams reconnect and reload loaded timelines after interruption; the V2
+  stream itself has no replay.
 
 See [the release procedure](./prompts/release.md). Previous releases and historical
 migration notes remain in `CHANGELOG.md` and `docs/`.

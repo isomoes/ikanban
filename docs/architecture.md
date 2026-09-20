@@ -1,53 +1,76 @@
-# Standalone frontend foundation
+# Restored UI, OpenCode V2 backend
 
-## Decision
+## Baseline
 
-Restore the single-browser-application boundary from **v0.3.18**, with
-**GitHub Pages as the only publishing target**. The web workspace is private;
-the build produces static files in `packages/web/dist`.
+The frontend reuses **v0.3.18**: SolidJS, Kobalte, Tailwind, and the existing
+project/session layout, composer, themes, file viewer, and settings. Application
+versions continue the current release sequence; restoring UI code does not roll
+the manifests back to 0.3.18.
 
-Build a new interface against the **OpenCode V2 API** using `@opencode/client`.
-Frontend framework selection belongs to the next implementation phase. The
-current TypeScript/Vite entry is a migration placeholder, not a functioning chat
-or Kanban interface.
+`packages/web` remains the only application. Both workspace manifests are private.
+Build output is static and deployed to GitHub Pages at `/ikanban/`. The build also
+emits `404.html` so Pages can load the router on direct project/session links.
 
 ## Boundaries
 
 ```text
-Browser: packages/web/src
-    │  @opencode/client (OpenCode V2)
-    ▼
+Restored SolidJS components and stores
+    │ UI view models
+src/client/{adapter,convert,events,types}.ts
+    │ native, typed V2 operations
+src/client.ts → @opencode/client 2.0.11
+    │ HTTP + authenticated event subscription + CORS
 Independent OpenCode V2 server
     sessions · tools · providers · permissions · execution
-
-GitHub Pages: static files + direct connection to a configured backend
 ```
 
-- `packages/web/src/client.ts` constructs the V2 network client, with an explicit
-  URL/headers or a `VITE_OPENCODE_URL` build-time default. A server URL is required;
-  Pages cannot handle API requests.
-- `/ikanban/` is the application base. Vite provides local development and static
-  build previews; API requests go directly to the OpenCode server in all environments.
-- The backend must support CORS for the frontend origin and HTTPS when accessed
-  from GitHub Pages. Authentication is supplied by the browser interface.
+- `src/client.ts` is the network-client factory. It accepts an explicit URL,
+  headers, and optional fetch implementation. Server credentials travel in headers.
+- `src/client/adapter.ts` implements the operations consumed by the restored UI.
+  Its response envelopes are UI conveniences, not V1 HTTP contracts. There is no
+  dependency on `@opencode-ai/sdk` and no V1 network fallback.
+- `src/client/convert.ts` projects native sessions, inline message content,
+  tool results, provider models, file bytes, and permission requests into stable
+  view models. `src/client/types.ts` describes these presentation models.
+- `src/client/events.ts` consumes native V2 events. Execution changes are coalesced
+  into message snapshots with stable part IDs; only changed messages are emitted.
+  The global context reconnects and resynchronizes loaded timelines because V2
+  subscriptions have no replay. Quiet streams are not mistaken for failed ones.
+- Native session and integration forms share `components/form-fields.tsx`.
+  Replies use field keys and option values, including conditional and typed fields.
+- `src/client/config.ts` preserves JSONC comments and unrelated settings when
+  updating the existing global document identified by the server. Configuration
+  writes and reloads use native V2 file/location APIs. No home path is guessed.
 
-## Removed implementation
+The browser initially uses `VITE_OPENCODE_URL`, a saved server, or
+`http://127.0.0.1:4096`. API requests never default to the Pages origin.
+Pages requires a reachable HTTPS backend with CORS allowing the frontend origin.
 
-`packages/ikanban`, `packages/web-ui`, and `packages/project-mcp` were DSH-specific
-packages. Their source, generated artifacts, dependencies, tests, profile-linking
-scripts, and two-package release pipeline have been retired. Local `.xdg` profile
-data is not part of the new application. Prior implementation history is available
-in Git, including both the v0.3 frontend and the v0.4/v0.5 DSH versions.
+## Backend differences
 
-The standalone npm packaging, CLI/proxy, and proxy tests have also been removed
-in favor of static-only deployment.
+- Archive visibility is stored locally, scoped by backend URL. V2 does not expose
+  server-side archive mutations.
+- Session sharing and worktree reset actions are unavailable. LSP is not run by V2.
+- Worktree creation returns a ready directory; the old asynchronous-ready wait
+  is no longer used for new worktrees.
+- Message history uses opaque V2 cursors, including control records and the user
+  message preceding a long assistant turn. Cursor requests omit `order`.
+- Provider authentication uses integration keys and OAuth attempt IDs. Polling is
+  cancelled when the dialog closes, and credentials remain backend-owned.
 
-## Next phase
+DSH packages, plugin composition, npm packaging, the CLI/proxy, and the former
+multi-product release pipeline remain retired.
 
-1. Choose the new frontend framework and interaction design.
-2. Implement server selection and authentication, including direct static-host connections.
-3. Build the project/session interface using V2 client methods and live events.
-4. Verify against a real authenticated OpenCode V2 server before claiming feature parity.
+## Verification
 
-Versions continue from the existing release sequence. The next release number is
-chosen during release preparation, not as part of this architectural cleanup.
+```sh
+bun install --frozen-lockfile
+bun run typecheck
+bun run --cwd packages/web test:unit
+bun run build:web
+```
+
+Adapter tests exercise the generated client's HTTP serialization, pagination,
+permissions/forms, OAuth attempts, file decoding, and JSONC preservation. Validate
+provider-specific authentication and actual model execution against the target
+server as part of release testing; fixture responses do not exercise a provider.

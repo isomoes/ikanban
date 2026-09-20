@@ -1,0 +1,59 @@
+:root {
+  --sidebar-project-pitch: 48px;
+  --sidebar-row-height: 28px;
+  --sidebar-section-gap: 8px;
+}
+
+.sidebar-cockpit [data-component="sidebar-project-list"] {
+  gap: calc(var(--sidebar-project-pitch) - 40px);
+}
+
+.sidebar-cockpit [data-component="sidebar-workspace-list"] {
+  gap: var(--sidebar-section-gap);
+}
+
+.sidebar-cockpit [data-component="sidebar-session-list"] {
+  gap: 0;
+}
+
+.sidebar-cockpit [data-action="workspace-toggle"],
+.sidebar-cockpit [data-component="sidebar-session-item"] > a {
+  height: var(--sidebar-row-height);
+  min-height: var(--sidebar-row-height);
+  padding-block: 2px;
+}
+
+.sidebar-cockpit [data-current="true"] {
+  position: relative;
+}
+
+.sidebar-cockpit [data-action="workspace-toggle"][data-current="true"]::before,
+.sidebar-cockpit [data-component="sidebar-session-item"] > a[data-current="true"]::before {
+  position: absolute;
+  inset-block: 5px;
+  left: -8px;
+  width: 2px;
+  border-radius: 999px;
+  background: var(--icon-interactive-base);
+  content: "";
+}
+
+.sidebar-cockpit [data-action="project-switch"][data-current="true"]::before {
+  position: absolute;
+  inset-block: 8px;
+  left: 0;
+  width: 2px;
+  border-radius: 999px;
+  background: var(--icon-interactive-base);
+  content: "";
+}
+
+.sidebar-cockpit :is(a, button):focus-visible {
+  outline: 2px solid var(--border-interactive-focus);
+  outline-offset: 1px;
+}
+
+.sidebar-mobile-scrim {
+  background: rgb(0 0 0 / 16%);
+  backdrop-filter: blur(1px);
+}
