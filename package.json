@@ -1,45 +1,23 @@
 {
-  "name": "@isomoes/dsh-ikanban-root",
+  "name": "ikanban",
   "version": "0.5.3",
+  "description": "iKanban standalone frontend for OpenCode V2",
   "private": true,
-  "description": "iKanban workspace",
   "license": "MIT",
   "type": "module",
-  "packageManager": "pnpm@11.7.0",
-  "workspaces": [
-    "packages/*"
-  ],
-  "engines": {
-    "node": "^22.19.0 || >=24.0.0"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/isomoes/ikanban.git"
-  },
+  "packageManager": "bun@1.3.12",
+  "workspaces": ["packages/web"],
+  "engines": { "node": "^22.19.0 || >=24.0.0" },
+  "repository": { "type": "git", "url": "https://github.com/isomoes/ikanban" },
   "scripts": {
-    "build": "pnpm -r --if-present run build:package",
-    "dev": "pnpm dev:install && node scripts/dev.mjs",
-    "dev:config": "dsh --profile ikanban-dev --dump-config",
-    "dev:install": "IKANBAN_DEV=1 pnpm build && IKANBAN_DEV=1 dsh plugin --profile ikanban-dev add ./packages/web-ui ./packages/ikanban",
-    "dev:remove": "dsh plugin --profile ikanban-dev remove @isomoes/dsh-ikanban",
-    "typecheck": "pnpm -r --if-present run typecheck",
-    "test": "pnpm -r --if-present run test"
-  },
-  "devDependencies": {
-    "@deepseek-ai/dsh": "^0.1.2-alpha.2",
-    "@deepseek-ai/dsh-anonymous-user-id": "^0.1.2-alpha.2",
-    "@deepseek-ai/dsh-authorization": "^0.1.2-alpha.2",
-    "@deepseek-ai/dsh-bash-local": "^0.1.2-alpha.2",
-    "@deepseek-ai/dsh-fs": "^0.1.2-alpha.2",
-    "@deepseek-ai/dsh-jobs": "^0.1.2-alpha.2",
-    "@deepseek-ai/dsh-output-retention": "^0.1.2-alpha.2",
-    "@deepseek-ai/dsh-session-persistence": "^0.1.2-alpha.2",
-    "@deepseek-ai/dsh-session-persistence-jsonl": "^0.1.2-alpha.2",
-    "@deepseek-ai/dsh-session-query": "^0.1.2-alpha.2",
-    "@deepseek-ai/dsh-session-query-sqlite": "^0.1.2-alpha.2",
-    "@deepseek-ai/dsh-session-telemetry": "^0.1.2-alpha.2",
-    "@deepseek-ai/dsh-session-title-llm": "^0.1.2-alpha.2",
-    "@deepseek-ai/dsh-spill": "^0.1.2-alpha.2",
-    "@deepseek-ai/dsh-subagent-in-process-driver": "^0.1.2-alpha.2"
+    "dev": "bun run --cwd packages/web dev",
+    "dev:web": "bun run --cwd packages/web dev",
+    "build": "bun run build:web",
+    "build:web": "bun run --cwd packages/web build",
+    "dev:web:watch": "bun run --cwd packages/web build:watch",
+    "preview:web": "bun run --cwd packages/web preview",
+    "typecheck": "bun run --cwd packages/web typecheck",
+    "type-check": "bun run typecheck",
+    "bump-version": "node scripts/bump-version.mjs"
   }
 }

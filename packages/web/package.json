@@ -1,0 +1,28 @@
+{
+  "name": "ikanban-web",
+  "version": "0.5.3",
+  "private": true,
+  "description": "iKanban standalone frontend for OpenCode V2",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/isomoes/ikanban",
+    "directory": "packages/web"
+  },
+  "engines": { "node": "^22.19.0 || >=24.0.0" },
+  "scripts": {
+    "dev": "vite",
+    "preview": "vite preview",
+    "build": "vite build",
+    "build:watch": "vite build --watch",
+    "typecheck": "tsc --noEmit",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": { "@opencode/client": "2.0.11" },
+  "devDependencies": {
+    "@types/node": "24.12.2",
+    "typescript": "5.9.3",
+    "vite": "7.3.6"
+  }
+}

@@ -1,89 +1,53 @@
 # iKanban
 
-[English](./README.en.md) | 简体中文
+中文 | [English](./README.en.md)
 
-iKanban 是一个面向键盘操作、基于 [DeepSeek Harness](https://github.com/deepseek-ai/DeepSeek-Harness) 的多智能体编码工作空间。它专为跨项目地驱动、审查和协调并行智能体工作而构建，将会话管理、差异审查和项目感知导航集于一处。
+iKanban 是面向 **OpenCode V2** 的独立前端应用。
 
-本 monorepo 包含 iKanban DSH bundle，以及由 iKanban 和 IPaper 共同使用、公开发布的产品中立浏览器软件包。
+## 当前迁移阶段
 
-<img alt="iKanban project UI" src="https://github.com/user-attachments/assets/9d5467e0-1963-474c-8d7c-57941a702064" />
+项目已恢复 v0.3 的单前端应用架构，移除 DSH 实现。
+唯一应用位于 `packages/web`，仅通过 **GitHub Pages** 发布静态页面。
 
-## 介绍视频
-
-以下视频介绍了 iKanban 的工作流及其演进，包括当前基于 DSH 的 `v0.5.0`。`v0.3` 及更早的视频早于当前软件包，因此其中的安装步骤和部分界面可能有所不同。
-
-**Bilibili 视频：** [为什么做它](https://www.bilibili.com/video/BV1t9AhztEjX/) · [v0.1](https://www.bilibili.com/video/BV1W3Pgz8ExJ/) · [v0.2](https://www.bilibili.com/video/BV1ZNP1znEn5/) · [v0.2.11 如何使用](https://www.bilibili.com/video/BV1Y9wMzKE2b/) · [v0.3](https://www.bilibili.com/video/BV1n9QEBSEch/) · [v0.3.14](https://www.bilibili.com/video/BV1zy3F6aEb2/) · [v0.4.2](https://www.bilibili.com/video/BV156b26eEbn/) · [v0.5.0](https://www.bilibili.com/video/BV1QC886JEts/)
-
-## 软件包
-
-- [`@isomoes/dsh-ikanban`](packages/ikanban) - 公开发布的 iKanban DSH bundle、编码预设、产品组合配置和品牌
-- [`@isomoes/dsh-web-ui`](packages/web-ui) - 与 IPaper 共用、公开发布的产品中立浏览器插件界面和 Vite shell
-
-## 使用方法
-
-### 1. 安装 DSH
-
-首先通过 npm 全局安装 DeepSeek Harness CLI：
-
-```bash
-npm install -g @deepseek-ai/dsh --registry=https://registry.npmjs.org
-```
-
-中国大陆用户可以将命令中的 npm 官方 registry 替换为国内镜像，例如
-`https://registry.npmmirror.com`。镜像同步可能存在延迟；如果需要最新发布的版本，请使用官方地址 `https://registry.npmjs.org`。
-
-### 2. 安装 iKanban
-
-将已发布的 iKanban bundle 和共享 Web UI 安装到 `ikanban` profile 中。如果该 profile 尚不存在，`dsh plugin` 命令会自动创建：
-
-```bash
-dsh plugin --profile ikanban add @isomoes/dsh-ikanban @isomoes/dsh-web-ui --registry=https://registry.npmjs.org
-```
-
-`@isomoes/dsh-web-ui` 必须是 profile 的直接依赖，因为 Cordis 从 profile 根目录解析浏览器 loader entry；它不会加入 `dsh.profile.bundles`，组合补丁仍然只由 `@isomoes/dsh-ikanban` 提供。这里的 `--registry` 同样可以替换为国内镜像；需要最新 iKanban 版本时请使用 npm 官方 registry。
-
-### 3. 更新 iKanban
-
-停止正在运行的 iKanban，然后通过 DSH 将该 profile 中的 iKanban bundle 和共享 Web UI 一起更新到最新版本：
-
-```bash
-dsh plugin --profile ikanban update @isomoes/dsh-ikanban @isomoes/dsh-web-ui --latest --config.minimumReleaseAge=0 --registry=https://registry.npmjs.org
-```
-
-`--config.minimumReleaseAge=0` 会在此次显式更新中绕过 pnpm 默认的 24 小时新版本等待期，否则刚发布的版本可能被报告为“Already up to date”。更新完成后，重新启动 iKanban 即可。国内镜像也可能存在同步延迟；若未获取到最新版本，请改用上述 npm 官方 registry。
-
-### 4. 运行 iKanban
-
-通过该 profile 启动 iKanban：
-
-```bash
-dsh --profile ikanban
-```
-
-可以通过启动参数指定端口，例如：
-
-```bash
-dsh --profile ikanban --port 9091
-```
-
-发布历史请参阅 [CHANGELOG.md](CHANGELOG.md)。当前架构与产品演进记录保留在以下文档中：
-
-**版本文档：** [`v0.4.2` 当前架构与基础功能](docs/0.4.2.md) · [`v0.1.6` 到 `v0.2.7`](docs/0.1.6TO0.2.7.md) · [`v0.2.7` 到 `v0.3.1`](docs/0.2.7TO0.3.1.md) · [`v0.3.1` 到 `v0.3.14`](docs/0.3.1TO0.3.14.md)
+本次仅完成**清理与基础设施恢复**：浏览器显示迁移占位页。
+新界面将通过 `@opencode/client` 连接 OpenCode V2，前端框架尚待选择。
+详见[架构说明](./docs/architecture.md)。
 
 ## 开发
 
-```bash
-pnpm install
-pnpm typecheck
-pnpm build
+需要 Bun **1.3.12**、Node **22.19+ 或 24+**；API 功能需要独立运行的 OpenCode V2 服务。
+
+```sh
+bun install --frozen-lockfile
+VITE_OPENCODE_URL=http://127.0.0.1:4096 bun run dev
 ```
 
-构建项目，将 iKanban bundle 与共享 Web UI checkout 都以链接方式安装到隔离的 `ikanban-dev` DSH profile，然后运行：
+访问 Vite 输出地址下的 `/ikanban/`。需要独立后端时，另行启动：
 
-```bash
-pnpm dev
+```sh
+opencode serve --hostname 127.0.0.1 --port 4096
 ```
 
-`pnpm dev` 会自动创建或刷新 profile，并显式链接 `@isomoes/dsh-web-ui`，使隔离 profile 可以解析组合配置中的 `@isomoes/dsh-web-ui/client/*` loader entry。Web UI 是普通运行时依赖，不会成为额外的 bundle layer；只有 iKanban 提供产品组合补丁。使用 `pnpm dev:config` 可以在不启动应用的情况下检查最终组合配置。该命令通过 tsdown 监视所有 fork 后的客户端 bundle，并通过 Vite 监视浏览器 shell。客户端变更会热重载对应的虚拟 DSH 软件包；shell 变更会复制到链接的软件包中，需要刷新浏览器。
+OpenCode V2 需要认证，并需通过 CORS 允许前端来源。浏览器直接连接后端；未来界面将提供服务选择与登录功能。
+`src/client.ts` 已提供服务地址与认证请求头入口。
 
-有关重新构建行为和 profile 清理方式，请参阅软件包的[开发指南](packages/ikanban/README.md#local-development)。
+```sh
+bun run typecheck
+bun run build:web
+bun run preview:web --port 3000
+```
+
+构建后的静态页面可在 `http://localhost:3000/ikanban/` 预览。
+需要设置默认后端时，在运行 `bun run build:web` 时指定 `VITE_OPENCODE_URL`。
+
+## 发布
+
+标签触发的工作流检查并构建应用，将 `packages/web/dist` 部署到
+**GitHub Pages** 的 `/ikanban/` 路径。仓库 Pages 来源需设置为 **GitHub Actions**。
+两个 workspace manifest 均设为私有。
+
+GitHub Pages 是纯静态托管；未来界面需直接连接可访问的 HTTPS OpenCode V2 服务，
+并在后端配置 CORS。自定义构建可设置 `VITE_OPENCODE_URL`，Pages 工作流也支持同名仓库变量。
+不要将凭据写入 Vite 环境变量。
+
+发布步骤见 [prompts/release.md](./prompts/release.md)。历史版本记录保留在 `CHANGELOG.md` 和 `docs/`。

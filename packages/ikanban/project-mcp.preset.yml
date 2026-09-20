@@ -1,5 +1,0 @@
-# Project-level MCP row for a custom DeepSeek Harness agent preset.
-# iKanban's shipped Built-in preset already includes this row.
-
-- id: project-mcp
-  name: '@isomoes/dsh-ikanban/project-mcp'

@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Restored the v0.3 standalone application boundary as one private web workspace, with GitHub Pages as the only publishing target.
+- Removed the DSH packages, browser implementation, plugin composition, and pnpm development workflow; restored a single-package Bun workspace.
+- Added a clean TypeScript/Vite foundation and OpenCode V2 API client entry point for direct browser connections to a configured backend. The browser currently shows a migration placeholder; the new frontend framework and UI are the next phase.
+
 ## [0.5.3]
 
 - Removed iKanban-specific Web runtime context from the system prompt while preserving the runtime environment registration.
