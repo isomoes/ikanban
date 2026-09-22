@@ -224,8 +224,11 @@ export function createComposerEditor(input: {
     }
     const stop =
       input.view.submit.working?.() &&
-      ((event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && event.key.toLowerCase() === "g") ||
-        event.key === "Escape")
+      !event.isComposing &&
+      !event.altKey &&
+      !event.shiftKey &&
+      ((event.ctrlKey && !event.metaKey && event.key.toLowerCase() === "g") ||
+        ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "c" && !window.getSelection()?.toString()))
     if (stop) {
       event.preventDefault()
       input.view.submit.onStop()

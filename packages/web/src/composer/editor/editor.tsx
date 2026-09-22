@@ -877,7 +877,14 @@ export function ComposerEditorSubmitButton(props: {
     <Tooltip
       placement="top"
       inactive={!props.stopping && props.disabled}
-      value={props.stopping ? props.stopLabel : props.sendLabel}
+      value={
+        <>
+          {props.stopping ? props.stopLabel : props.sendLabel}
+          <Show when={props.stopping}>
+            <Keybind keys={["Mod", "C"]} variant="neutral" />
+          </Show>
+        </>
+      }
     >
       <IconButton
         data-action="composer-submit"
