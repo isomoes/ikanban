@@ -1,6 +1,6 @@
 {
   "name": "ikanban",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "iKanban standalone frontend for OpenCode V2",
   "private": true,
   "license": "MIT",

@@ -4,7 +4,7 @@
 
 iKanban imports OpenCode's complete shared desktop/web frontend from the `v2`
 branch at `dcfe1ec7bd4922d4f44c141ba33047402bffc57e` (upstream 2.0.12).
-The application version is 0.6.1. See [upstream provenance](./upstream.md)
+The application version is 0.6.2. See [upstream provenance](./upstream.md)
 for source mappings, local changes, licenses, and the update procedure.
 
 | Local workspace | Upstream source | Role | Version policy |

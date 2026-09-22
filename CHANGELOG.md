@@ -4,8 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-- Docs: Restored historical Bilibili introduction and version walkthrough links in the Chinese README. (@isomoes)
-- CI: Added GitHub Release creation after Pages deployment using the tagged version's changelog entry, with release-note updates on workflow reruns. (@isomoes)
+## [0.6.2] - 2026-09-22
+
+- Branding: Added the iKanban logo and application version to the titlebar, refreshed application icons, and branded the About page for iKanban. (@isomoes) [1df98c2](https://github.com/isomoes/ikanban/commit/1df98c2f4227cba1da40b913dba8fde88e2fee13) [0968188](https://github.com/isomoes/ikanban/commit/09681885fc85cfb6c10102190bf0164b06455beb)
+- Web: Added Ctrl+H and Ctrl+L shortcuts to switch session tabs and removed conflicting bindings. (@isomoes) [ce03a44](https://github.com/isomoes/ikanban/commit/ce03a442e8be9ff450c0ff964d76717f4b756ac0)
+- UI: Restored the GitHub Dark Colorblind theme as a local integration with the OpenCode V2 frontend, pinned to upstream 2.0.12 at `dcfe1ec7bd4922d4f44c141ba33047402bffc57e`. (@isomoes) [fff59dd](https://github.com/isomoes/ikanban/commit/fff59ddb37f1659a745ac1b45c1d8d466ac8ced5)
+- Web: Prevented Escape in the prompt editor from interrupting a running response. (@isomoes) [a9e997a](https://github.com/isomoes/ikanban/commit/a9e997a7afb35b599f90ddc88aa5a6c86fe95e83)
+- Web: Preserved plugin-driven timeline scrolling and added scroll-interaction regression coverage. (@isomoes) [e7d573f](https://github.com/isomoes/ikanban/commit/e7d573fb68d9c4a4cd538bc663475f31fdba3a93)
+- Docs: Restored historical Bilibili introduction and version walkthrough links in the Chinese README. (@isomoes) [6bdeefe](https://github.com/isomoes/ikanban/commit/6bdeefedcdb9d50d41728b77ea7feecfdc681763)
+- CI: Added GitHub Release creation after Pages deployment using the tagged version's changelog entry, with release-note updates on workflow reruns. (@isomoes) [6bdeefe](https://github.com/isomoes/ikanban/commit/6bdeefedcdb9d50d41728b77ea7feecfdc681763)
 
 ## [0.6.1] - 2026-09-22
 

@@ -12,7 +12,7 @@ iKanban 是面向 **OpenCode V2** 的独立静态前端，直接采用上游共�
 
 ## 原生 V2 前端
 
-当前 iKanban 版本为 **0.6.1**。前端基于 OpenCode `v2` 分支 **2.0.12**，
+当前 iKanban 版本为 **0.6.2**。前端基于 OpenCode `v2` 分支 **2.0.12**，
 上游提交为 `dcfe1ec7bd4922d4f44c141ba33047402bffc57e`。
 
 - `packages/web`：唯一应用，由上游 `packages/app` 引入。

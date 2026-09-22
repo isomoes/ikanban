@@ -7,7 +7,7 @@ the upstream shared desktop/web application.
 
 ## Native V2 frontend
 
-iKanban is at **0.6.1**. The frontend is imported from OpenCode's `v2` branch,
+iKanban is at **0.6.2**. The frontend is imported from OpenCode's `v2` branch,
 version **2.0.12**, commit `dcfe1ec7bd4922d4f44c141ba33047402bffc57e`.
 
 - `packages/web`: the only application, imported from upstream `packages/app`.
