@@ -34,8 +34,8 @@ import { projectForSession } from "@/shell/layout/helpers"
 import { useSettingsDialog } from "@/settings/command"
 import { updaterAction } from "@/shell/updates/action"
 import type { UpdaterState } from "@/shell/updates/types"
-import devIcon from "../../../icons/dev/64x64.png"
-import betaIcon from "../../../icons/beta/64x64.png"
+import { version } from "../../../package.json"
+import { KanbanMark } from "./kanban-mark"
 
 const titlebarHeight = 36
 const windowsTitlebarHeight = 44 // Includes the content inset; matches the native Windows overlay.
@@ -794,10 +794,9 @@ function ChannelIndicator(props: {
   const language = useLanguage()
   const platform = usePlatform()
   const channel = import.meta.env.VITE_OPENCODE_CHANNEL
-  if (!channel || channel === "prod") return null
-
-  const label = () => language.t(`titlebar.channel.${channel}`)
-  const debug = () => (channel === "dev" || channel === "local" ? props.debugTools : undefined)
+  const build = import.meta.env.DEV ? "dev" : `v${version}`
+  const label = () => `iKanban ${build}`
+  const debug = () => (import.meta.env.DEV || channel === "dev" || channel === "local" ? props.debugTools : undefined)
   return (
     <Tooltip
       placement={props.sidebar ? "right" : "bottom"}
@@ -808,24 +807,17 @@ function ChannelIndicator(props: {
         component={debug() ? "button" : "div"}
         type={debug() ? "button" : undefined}
         data-slot="channel-indicator"
-        class="flex h-7 shrink-0 items-center rounded-[6px] [app-region:no-drag]"
+        class="flex h-7 shrink-0 items-center gap-1.5 rounded-[6px] pe-1 text-v2-text-text-base [app-region:no-drag]"
         classList={{
-          "w-6": props.sidebar,
-          "w-5": !props.sidebar,
           "cursor-pointer hover:bg-v2-background-bg-layer-02 focus-visible:outline-none focus-visible:bg-v2-background-bg-layer-02":
             !!debug(),
         }}
         onClick={() => debug()?.toggle()}
-        aria-label={debug() ? language.t("titlebar.toggleDebugTools") : undefined}
+        aria-label={debug() ? `${label()} — ${language.t("titlebar.toggleDebugTools")}` : label()}
         aria-pressed={debug()?.visible}
       >
-        <img
-          src={channel === "beta" ? betaIcon : devIcon}
-          alt={debug() ? "" : label()}
-          class="shrink-0 rounded-[4px] shadow-[var(--v2-elevation-raised)]"
-          classList={{ "size-6": props.sidebar, "size-5": !props.sidebar }}
-          draggable={false}
-        />
+        <KanbanMark class={props.sidebar ? "size-6 shrink-0" : "size-5 shrink-0"} />
+        <span class="text-[11px] leading-4 text-v2-text-text-faint">{build}</span>
       </Dynamic>
     </Tooltip>
   )
