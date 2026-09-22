@@ -28,7 +28,7 @@ Keep the local patch surface focused on:
    entry, after the upstream `packages/app` directory is relocated.
 3. An optional explicit `VITE_OPENCODE_URL` default and upstream runtime server
    selection; an empty setup opens the connection screen.
-4. iKanban browser-storage namespacing and application metadata.
+4. iKanban browser-storage namespacing, application metadata, and new-session wordmark.
 5. Pages CI, release/version tooling, and project documentation.
 6. Timeline auto-follow releases on plugin-driven upward scrolling, excluding
    the virtualizer's own anchoring writes.
