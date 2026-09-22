@@ -58,6 +58,7 @@ const names: Record<string, string> = {
   everforest: "Everforest",
   flexoki: "Flexoki",
   github: "GitHub",
+  "github-dark-colorblind": "GitHub Dark Colorblind",
   gruvbox: "Gruvbox",
   kanagawa: "Kanagawa",
   "lucent-orng": "Lucent Orng",

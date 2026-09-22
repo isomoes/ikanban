@@ -32,6 +32,13 @@ Keep the local patch surface focused on:
 5. Pages CI, release/version tooling, and project documentation.
 6. Timeline auto-follow releases on plugin-driven upward scrolling, excluding
    the virtualizer's own anchoring writes.
+7. The GitHub Dark Colorblind theme in `packages/ui/src/theme`, restored from
+   iKanban `v0.5.3` with its original color overrides and blue/orange diffs.
+   The source is
+   `packages/web-ui/src/client/ui-theme/themes/github-dark-colorblind.json`
+   at that tag. Adapt its seeds to the current `palette` format (background
+   `neutral` and foreground `ink`) and map its explicit UI colors through
+   `v2Overrides`; copying the legacy seeds produces washed-out V2 backgrounds.
 
 Server authentication and the native client/Solid data model follow upstream.
 Desktop-only features remain governed by the upstream web platform. Do not restore

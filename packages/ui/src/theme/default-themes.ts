@@ -13,6 +13,7 @@ import draculaThemeJson from "./themes/dracula.json"
 import everforestThemeJson from "./themes/everforest.json"
 import flexokiThemeJson from "./themes/flexoki.json"
 import githubThemeJson from "./themes/github.json"
+import githubDarkColorblindThemeJson from "./themes/github-dark-colorblind.json"
 import gruvboxThemeJson from "./themes/gruvbox.json"
 import kanagawaThemeJson from "./themes/kanagawa.json"
 import lucentOrngThemeJson from "./themes/lucent-orng.json"
@@ -50,6 +51,7 @@ export const draculaTheme = draculaThemeJson as DesktopTheme
 export const everforestTheme = everforestThemeJson as DesktopTheme
 export const flexokiTheme = flexokiThemeJson as DesktopTheme
 export const githubTheme = githubThemeJson as DesktopTheme
+export const githubDarkColorblindTheme = githubDarkColorblindThemeJson as DesktopTheme
 export const gruvboxTheme = gruvboxThemeJson as DesktopTheme
 export const kanagawaTheme = kanagawaThemeJson as DesktopTheme
 export const lucentOrngTheme = lucentOrngThemeJson as DesktopTheme
@@ -88,6 +90,7 @@ export const DEFAULT_THEMES: Record<string, DesktopTheme> = {
   everforest: everforestTheme,
   flexoki: flexokiTheme,
   github: githubTheme,
+  "github-dark-colorblind": githubDarkColorblindTheme,
   gruvbox: gruvboxTheme,
   kanagawa: kanagawaTheme,
   "lucent-orng": lucentOrngTheme,
