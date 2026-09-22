@@ -158,7 +158,6 @@ export function createTimelineVirtualizer(input: Input) {
   let touchNested = false
   let touchScrolling = false
   let touchAdjustment = 0
-  let pointerHeld = false
   let maxScroll = 0
   let virtualContent: HTMLDivElement | undefined
   let scrollTop = 0
@@ -235,6 +234,10 @@ export function createTimelineVirtualizer(input: Input) {
       setRendering("scrollAdjustment", 0)
       if (virtualContent) virtualContent.style.height = `${instance.getTotalSize()}px`
       elementScroll(offset, options, instance)
+      // Native scroll events arrive later. Advance the baseline for our own
+      // anchoring writes so only external upward movement releases follow.
+      const root = listRoot()
+      if (root) scrollTop = root.scrollTop
     },
     get getItemKey() {
       return getItemKey()
@@ -340,6 +343,7 @@ export function createTimelineVirtualizer(input: Input) {
       setRendering("scrollAdjustment", 0)
       if (virtualContent) virtualContent.style.height = `${virtualizer.getTotalSize()}px`
       elementScroll(Math.max(0, root.scrollTop + adjustment), {}, virtualizer)
+      scrollTop = root.scrollTop
     })
   }
   const virtualItemByKey = createMemo(
@@ -527,23 +531,9 @@ export function createTimelineVirtualizer(input: Input) {
   }
   onCleanup(clearTouchTarget)
 
-  // Drag-selecting past the edge and dragging the scrollbar both scroll without a wheel or key,
-  // so a held pointer is what separates those from the virtualizer's own measurement adjustments.
   const handleListPointerDown = (event: PointerEvent & { currentTarget: HTMLDivElement }) => {
     input.onUserScroll(event.target)
-    pointerHeld = true
   }
-  const releasePointer = () => {
-    pointerHeld = false
-  }
-  onMount(() => {
-    window.addEventListener("pointerup", releasePointer)
-    window.addEventListener("pointercancel", releasePointer)
-  })
-  onCleanup(() => {
-    window.removeEventListener("pointerup", releasePointer)
-    window.removeEventListener("pointercancel", releasePointer)
-  })
 
   const handleListKeyDown = (event: KeyboardEvent & { currentTarget: HTMLDivElement }) => {
     const key = scrollKey(event)
@@ -567,7 +557,9 @@ export function createTimelineVirtualizer(input: Input) {
     const atEnd = maxScroll - scrollTop <= endEpsilon
     const arrived = scrollTop > previousTop + endEpsilon || maxScroll < previousMaxScroll
     if (maxScroll <= 1 || (atEnd && arrived)) input.onPin()
-    else if ((pointerHeld || touchScrolling) && scrollTop < previousTop - endEpsilon) input.onUnpin()
+    // Extensions can scroll without a wheel, key, or held pointer. Our own
+    // writes already advance scrollTop, so this also recognizes plugin intent.
+    else if (scrollTop < previousTop - endEpsilon) input.onUnpin()
     settleColdBottom()
     input.onScheduleScrollState(root)
     input.onHistoryScroll()

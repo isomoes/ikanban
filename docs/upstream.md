@@ -30,6 +30,8 @@ Keep the local patch surface focused on:
    selection; an empty setup opens the connection screen.
 4. iKanban browser-storage namespacing and application metadata.
 5. Pages CI, release/version tooling, and project documentation.
+6. Timeline auto-follow releases on plugin-driven upward scrolling, excluding
+   the virtualizer's own anchoring writes.
 
 Server authentication and the native client/Solid data model follow upstream.
 Desktop-only features remain governed by the upstream web platform. Do not restore

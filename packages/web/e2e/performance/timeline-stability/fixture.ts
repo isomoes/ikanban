@@ -16,7 +16,7 @@ import { expect, type Page } from "@playwright/test"
 import { Schema } from "effect"
 import { mockOpenCodeServer } from "../../utils/mock-server"
 import { installSseTransport } from "../../utils/sse-transport"
-import { expectSessionReady } from "../../utils/waits"
+import { expectSessionTitle } from "../../utils/waits"
 
 export const directory = "C:/OpenCode/TimelineStability"
 export const projectID = "proj_timeline_stability"
@@ -157,7 +157,7 @@ export async function setupTimeline(
   })
   await page.addInitScript((settings) => {
     localStorage.setItem(
-      "settings.v3",
+      "ikanban.v2.direct.dat:settings.v3",
       JSON.stringify({
         general: {
           editToolPartsExpanded: false,
@@ -171,7 +171,7 @@ export async function setupTimeline(
   }, input.settings ?? {})
   if (input.locale) {
     await page.addInitScript((locale) => {
-      localStorage.setItem("opencode.global.dat:language", JSON.stringify({ locale }))
+      localStorage.setItem("ikanban.v2.global.dat:language", JSON.stringify({ locale }))
     }, input.locale)
   }
   if (input.reducedMotion) await page.emulateMedia({ reducedMotion: "reduce" })
@@ -186,8 +186,10 @@ export async function setupTimeline(
       mobile: false,
     })
   }
-  await page.goto(`/server/${base64Encode(server)}/session/${sessionID}`)
-  await expectSessionReady(page, { server, sessionID, title })
+  const path = `/ikanban/server/${base64Encode(server)}/session/${sessionID}`
+  await page.goto(path)
+  await expect(page).toHaveURL(path)
+  await expectSessionTitle(page, title)
   await transport.waitForConnection()
   if (input.cpuRate && input.cpuRate > 1) {
     const devtools = await page.context().newCDPSession(page)

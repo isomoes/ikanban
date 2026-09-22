@@ -201,6 +201,63 @@ test("does not pull a keyboard-scrolled user during shell remeasurement", async 
   await reportVisualStability(testInfo, "keyboard-during-resize", trace, anchorPlan(regions))
 })
 
+test("does not pull a plugin-scrolled user back when output grows", async ({ page }) => {
+  const shellID = "prt_plugin_scroll_shell"
+  const timeline = await setupTimeline(page, {
+    messages: [
+      ...history(20),
+      userMessage(),
+      assistantMessage([shell(shellID, "running", lines(5))], { completed: false }),
+    ],
+    settings: { shellToolPartsExpanded: true },
+    reducedMotion: true,
+  })
+  const scroller = page.locator(".scroll-view__viewport", { has: page.locator("[data-timeline-row]") })
+  await expect
+    .poll(() => scroller.evaluate((element) => element.scrollHeight - element.clientHeight - element.scrollTop))
+    .toBeLessThanOrEqual(1)
+  // Browser extensions write the offset directly, without dispatching input gestures.
+  await scroller.evaluate((element) => element.scrollBy({ top: -600, behavior: "instant" }))
+  await expect
+    .poll(() => scroller.evaluate((element) => element.scrollHeight - element.clientHeight - element.scrollTop))
+    .toBeGreaterThan(400)
+  await timeline.settle()
+  // Virtual measurements may adjust the native offset; the visible reading
+  // position, rather than the raw scrollTop, must stay anchored.
+  const anchor = await scroller.evaluate((element) => {
+    const view = element.getBoundingClientRect()
+    const row = [...element.querySelectorAll<HTMLElement>("[data-timeline-key]")].find((row) => {
+      const rect = row.getBoundingClientRect()
+      return rect.top >= view.top + 40 && rect.bottom <= view.bottom - 40
+    })
+    return row ? { key: row.dataset.timelineKey, top: row.getBoundingClientRect().top } : undefined
+  })
+  expect(anchor).toBeTruthy()
+  if (!anchor) return
+  await timeline.send(partUpdated(shell(shellID, "running", lines(50))), 400)
+  await expect
+    .poll(() =>
+      page.locator(`[data-timeline-key="${anchor.key}"]`).evaluate(
+        (element, top) => Math.abs(element.getBoundingClientRect().top - top),
+        anchor.top,
+      ),
+    )
+    .toBeLessThanOrEqual(1)
+  await expect
+    .poll(() => scroller.evaluate((element) => element.scrollHeight - element.clientHeight - element.scrollTop))
+    .toBeGreaterThan(400)
+
+  // Returning to the bottom restores following for subsequent output.
+  await scroller.evaluate((element) => element.scrollTo({ top: element.scrollHeight, behavior: "instant" }))
+  await expect
+    .poll(() => scroller.evaluate((element) => element.scrollHeight - element.clientHeight - element.scrollTop))
+    .toBeLessThanOrEqual(1)
+  await timeline.send(partUpdated(shell(shellID, "running", lines(80))), 400)
+  await expect
+    .poll(() => scroller.evaluate((element) => element.scrollHeight - element.clientHeight - element.scrollTop))
+    .toBeLessThanOrEqual(1)
+})
+
 test("keeps an older answer selected while scrolling within the interaction buffer", async ({ page }) => {
   await setupTimeline(page, {
     messages: history(80),
