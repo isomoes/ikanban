@@ -1,22 +1,52 @@
-# iKanban web
+# iKanban web application
 
-The private static iKanban frontend for OpenCode V2, deployed to GitHub Pages.
-The SolidJS interface is restored from v0.3.18 and uses `@opencode/client` 2.0.11.
+This is the OpenCode V2 shared desktop/web frontend imported from upstream
+`packages/app`, running with its browser platform. See the root
+[README](../../README.en.md) for connection and deployment instructions, and
+[upstream provenance](../../docs/upstream.md) for the pinned source and update process.
+
+## Development
 
 From the repository root:
 
 ```sh
+bun install --frozen-lockfile
 VITE_OPENCODE_URL=http://127.0.0.1:4096 bun run dev
-bun run typecheck
-bun run --cwd packages/web test:unit
-bun run build:web
-bun run preview:web --port 3000
 ```
 
-The application base is `/ikanban/`. `src/client.ts` connects directly to an
-explicit OpenCode V2 server URL, or a `VITE_OPENCODE_URL` build-time default.
-The server must allow the frontend origin via CORS. Select a server in the UI;
-leave the Basic username empty to use a Bearer token in the password/token field.
-See the root README for V2 feature differences and deployment requirements.
+Open `/ikanban/` at the address printed by Vite. The backend is a separately
+running OpenCode V2 server. Without `VITE_OPENCODE_URL` or a saved server, the app
+opens the upstream connection screen. Authentication uses the upstream fixed
+`opencode` username and server password.
 
-Source and development instructions: https://github.com/isomoes/ikanban
+## Checks
+
+```sh
+bun run typecheck
+bun run --cwd packages/web test:unit
+bun run --cwd packages/web test:browser
+bun run --cwd packages/ui test
+bun run --cwd packages/session-ui test
+env -u VITE_OPENCODE_URL bun run build:web
+bun run --cwd packages/web test:pages
+```
+
+The Pages suite requires Playwright Chromium. Install it from this package with
+`bunx playwright install chromium`. It exercises the production build with a
+Pages-style static server and controlled API fixtures. It does not execute models
+on a real backend.
+
+The imported upstream `e2e/` directory contains additional reference scenarios;
+`playwright.pages.config.ts` is the deployment-specific browser suite for local
+release verification.
+
+## Static deployment
+
+`bun run build:web` emits `packages/web/dist`. Vite resources, application routes,
+manifest, and service worker are scoped to `/ikanban/`. The generated `404.html`
+loads the application for direct session links on GitHub Pages.
+
+The browser connects directly to the user-configured backend. Production builds
+never infer a backend from the Pages origin. A remote HTTPS backend must allow
+the frontend origin through CORS and support the event stream and terminal
+WebSocket endpoints.

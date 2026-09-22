@@ -6,6 +6,7 @@
     "skipLibCheck": true,
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
+    "allowImportingTsExtensions": true,
     "esModuleInterop": true,
     "jsx": "preserve",
     "jsxImportSource": "solid-js",
@@ -18,6 +19,14 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src", "src/**/*.json", "package.json"],
-  "exclude": ["dist", "ts-dist"]
+  "include": [
+    "src",
+    "happydom.ts",
+    "playwright.pages.config.ts",
+    "test-pages",
+    "script/serve-pages.ts",
+    "vite*.ts",
+    "package.json"
+  ],
+  "exclude": ["dist", "ts-dist", "**/*.stories.*", "**/*.mdx"]
 }

@@ -1,0 +1,12 @@
+{
+  "repository": "https://github.com/anomalyco/opencode",
+  "branch": "v2",
+  "commit": "dcfe1ec7bd4922d4f44c141ba33047402bffc57e",
+  "version": "2.0.12",
+  "license": "MIT",
+  "packages": [
+    { "source": "packages/app", "destination": "packages/web", "versionPolicy": "ikanban" },
+    { "source": "packages/ui", "destination": "packages/ui", "versionPolicy": "upstream" },
+    { "source": "packages/session-ui", "destination": "packages/session-ui", "versionPolicy": "upstream" }
+  ]
+}

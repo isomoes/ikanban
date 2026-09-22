@@ -41,6 +41,10 @@ jobs:
           VITE_OPENCODE_URL: ${{ vars.VITE_OPENCODE_URL }}
       - name: Add SPA fallback for GitHub Pages
         run: cp packages/web/dist/index.html packages/web/dist/404.html
+      - name: Include license notices
+        run: |
+          cp LICENSE packages/web/dist/LICENSE-ikanban.txt
+          cp docs/upstream-license.txt packages/web/dist/LICENSE-opencode.txt
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

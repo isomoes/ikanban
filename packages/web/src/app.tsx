@@ -1,202 +1,140 @@
-import "@/index.css";
-import { File } from "@/ui/components/file";
-import { I18nProvider } from "@/ui/context/index";
-import { DialogProvider } from "@/ui/context/dialog";
-import { FileComponentProvider } from "@/ui/context/file";
-import { MarkedProvider } from "@/ui/context/marked";
-import { Font } from "@/ui/components/font";
-import { ThemeProvider } from "@/ui/theme/index";
-import { MetaProvider, Title } from "@solidjs/meta";
-import { Route, Router } from "@solidjs/router";
-import {
-  ErrorBoundary,
-  type JSX,
-  lazy,
-  type ParentProps,
-  Show,
-  Suspense,
-} from "solid-js";
-import { CommandProvider } from "@/context/command";
-import { CommentsProvider } from "@/context/comments";
-import { FileProvider } from "@/context/file";
-import { GlobalSDKProvider } from "@/context/global-sdk";
-import { GlobalSyncProvider } from "@/context/global-sync";
-import { HighlightsProvider } from "@/context/highlights";
-import { LanguageProvider, useLanguage } from "@/context/language";
-import { LayoutProvider } from "@/context/layout";
-import { ModelsProvider } from "@/context/models";
-import { NotificationProvider } from "@/context/notification";
-import { PermissionProvider } from "@/context/permission";
-import { usePlatform } from "@/context/platform";
-import { PromptProvider } from "@/context/prompt";
-import {
-  type ServerConnection,
-  ServerProvider,
-  useServer,
-} from "@/context/server";
-import { SettingsProvider } from "@/context/settings";
-import DirectoryLayout from "@/pages/directory-layout";
-import Layout from "@/pages/layout";
-import { ErrorPage } from "./pages/error";
+import "@/index.css"
+import { DialogProvider } from "@opencode/ui/context/dialog"
+import { FileComponentProvider } from "@opencode/ui/context/file"
+import { Font } from "@opencode/ui/font"
+import { ThemeProvider } from "@opencode/ui/theme/context"
+import { MetaProvider } from "@solidjs/meta"
+import { type BaseRouterProps, Router } from "@solidjs/router"
+import { QueryClient, QueryClientProvider } from "@tanstack/solid-query"
+import { type Component, createRenderEffect, ErrorBoundary, type JSX, type ParentProps } from "solid-js"
+import { Dynamic } from "solid-js/web"
+import { CommandProvider } from "@/shell/commands/command"
+import { DesktopCommands } from "@/shell/commands/desktop"
+import { GlobalProvider } from "@/runtime/server/runtime"
+import { HighlightsProvider } from "@/shell/updates/highlights"
+import { LanguageProvider, UiI18nBridge, type Locale } from "@/runtime/i18n/language"
+import { ServerConnection, ServersProvider } from "@/runtime/server/registry"
+import { SettingsProvider } from "@/settings/model"
+import { TabsProvider } from "@/shell/tabs/tabs"
+import { WslServersProvider } from "@/servers/wsl/context"
+import { SshProvider } from "@/servers/ssh/context"
+import { SshRestore } from "@/servers/ssh/restore"
+import { ErrorPage } from "@/shell/errors/error"
+import { AppRoutes, File, preloadRoute } from "@/shell/routes/routes"
+import { appBase } from "@/shell/routes/base"
 
-const Home = lazy(() => import("@/pages/home"));
-const Session = lazy(() => import("@/pages/session"));
-const Loading = () => (
-  <div
-    data-component="route-loading"
-    role="status"
-    aria-live="polite"
-    class="size-full"
-  >
-    <span class="sr-only">Loading</span>
-    <div data-slot="route-loading-rail" />
-    <div data-slot="route-loading-body" />
-  </div>
-);
-
-const HomeRoute = () => (
-  <Suspense fallback={<Loading />}>
-    <Home />
-  </Suspense>
-);
-
-const SessionRoute = () => (
-  <SessionProviders>
-    <Suspense fallback={<Loading />}>
-      <Session />
-    </Suspense>
-  </SessionProviders>
-);
-
-const SessionIndexRoute = () => <SessionRoute />;
-
-function UiI18nBridge(props: ParentProps) {
-  const language = useLanguage();
-  return (
-    <I18nProvider value={{ locale: language.locale, t: language.t }}>
-      {props.children}
-    </I18nProvider>
-  );
-}
+export { preloadRoute }
 
 declare global {
   interface Window {
-    __OPENCODE__?: {
-      updaterEnabled?: boolean;
-      deepLinks?: string[];
-      wsl?: boolean;
-    };
+    api?: {
+      setTitlebar?: (theme: { mode: "light" | "dark"; scheme?: "system" | "light" | "dark" }) => Promise<void>
+      exportDebugLogs?: () => Promise<string>
+    }
   }
 }
 
-function MarkedProviderWithNativeParser(props: ParentProps) {
-  const platform = usePlatform();
-  return (
-    <MarkedProvider nativeParser={platform.parseMarkdown}>
-      {props.children}
-    </MarkedProvider>
-  );
+function QueryProvider(props: ParentProps) {
+  const client = new QueryClient({
+    defaultOptions: {
+      queries: {
+        refetchOnReconnect: false,
+        refetchOnWindowFocus: false,
+        refetchOnMount: false,
+      },
+    },
+  })
+  return <QueryClientProvider client={client}>{props.children}</QueryClientProvider>
 }
 
-function AppShellProviders(props: ParentProps) {
-  return (
-    <SettingsProvider>
-      <PermissionProvider>
-        <LayoutProvider>
-          <NotificationProvider>
-            <ModelsProvider>
-              <CommandProvider>
-                <HighlightsProvider>
-                  <Layout>{props.children}</Layout>
-                </HighlightsProvider>
-              </CommandProvider>
-            </ModelsProvider>
-          </NotificationProvider>
-        </LayoutProvider>
-      </PermissionProvider>
-    </SettingsProvider>
-  );
+function BodyTypography() {
+  createRenderEffect(() => {
+    if (typeof document === "undefined") return
+    document.body.classList.remove("text-12-regular")
+    document.body.classList.add("font-(family-name:--font-family-text)", "text-[13px]", "font-[440]")
+  })
+
+  return null
 }
 
-function SessionProviders(props: ParentProps) {
-  return (
-    <FileProvider>
-      <PromptProvider>
-        <CommentsProvider>{props.children}</CommentsProvider>
-      </PromptProvider>
-    </FileProvider>
-  );
-}
-
-function RouterRoot(props: ParentProps<{ appChildren?: JSX.Element }>) {
-  return (
-    <AppShellProviders>
-      {props.appChildren}
-      {props.children}
-    </AppShellProviders>
-  );
-}
-
-export function AppBaseProviders(props: ParentProps) {
+export function AppBaseProviders(
+  props: ParentProps<{
+    locale?: Locale
+    onNativeTranslations?: Parameters<typeof LanguageProvider>[0]["onNativeTranslations"]
+    onThemeApplied?: (mode: "light" | "dark", scheme: "system" | "light" | "dark") => void
+  }>,
+) {
   return (
     <MetaProvider>
       <Font />
-      <ThemeProvider>
-        <LanguageProvider>
+      <ThemeProvider
+        onThemeApplied={(_, mode, scheme) => {
+          void window.api?.setTitlebar?.({ mode, scheme })
+          props.onThemeApplied?.(mode, scheme)
+        }}
+      >
+        <LanguageProvider locale={props.locale} onNativeTranslations={props.onNativeTranslations}>
           <UiI18nBridge>
-            <ErrorBoundary fallback={(error) => <ErrorPage error={error} />}>
-              <DialogProvider>
-                <MarkedProviderWithNativeParser>
-                  <FileComponentProvider component={File}>
-                    {props.children}
-                  </FileComponentProvider>
-                </MarkedProviderWithNativeParser>
-              </DialogProvider>
+            <ErrorBoundary
+              fallback={(error) => {
+                void import("@sentry/solid").then(({ captureException }) => captureException(error))
+                return <ErrorPage error={error} />
+              }}
+            >
+              <QueryProvider>
+                <WslServersProvider>
+                  <DialogProvider>
+                    <SshProvider>
+                      <FileComponentProvider component={File}>{props.children}</FileComponentProvider>
+                    </SshProvider>
+                  </DialogProvider>
+                </WslServersProvider>
+              </QueryProvider>
             </ErrorBoundary>
           </UiI18nBridge>
         </LanguageProvider>
       </ThemeProvider>
     </MetaProvider>
-  );
-}
-
-function ServerKey(props: ParentProps) {
-  const server = useServer();
-  return (
-    <Show when={server.key} keyed>
-      <Title>{server.name ? `IKanban - ${server.name}` : "IKanban"}</Title>
-      {props.children}
-    </Show>
-  );
+  )
 }
 
 export function AppInterface(props: {
-  children?: JSX.Element;
-  defaultServer: ServerConnection.Key;
-  servers?: Array<ServerConnection.Any>;
+  children?: JSX.Element
+  defaultServer?: ServerConnection.Key
+  canonicalLocalServer?: ServerConnection.Key
+  servers?: Array<ServerConnection.Any>
+  router?: Component<BaseRouterProps>
 }) {
+  // The visual layout lives in the router root so it remains mounted across
+  // route changes. Draft and session routes override only their server-bound data
+  // providers beneath it.
+  const Root = (rootProps: ParentProps) => (
+    <TabsProvider>
+      <GlobalProvider>
+        <BodyTypography />
+        <CommandProvider>
+          <DesktopCommands />
+          <SshRestore />
+          <HighlightsProvider>
+            {props.children}
+            {rootProps.children}
+          </HighlightsProvider>
+        </CommandProvider>
+      </GlobalProvider>
+    </TabsProvider>
+  )
+
   return (
-    <ServerProvider defaultServer={props.defaultServer} servers={props.servers}>
-      <ServerKey>
-        <GlobalSDKProvider>
-          <GlobalSyncProvider>
-            <Router
-              base={(import.meta.env.BASE_URL ?? "/").replace(/\/+$/, "")}
-              root={(routerProps) => (
-                <RouterRoot appChildren={props.children}>
-                  {routerProps.children}
-                </RouterRoot>
-              )}
-            >
-              <Route path="/" component={HomeRoute} />
-              <Route path="/:dir" component={DirectoryLayout}>
-                <Route path="/" component={SessionIndexRoute} />
-                <Route path="/:id?" component={SessionRoute} />
-              </Route>
-            </Router>
-          </GlobalSyncProvider>
-        </GlobalSDKProvider>
-      </ServerKey>
-    </ServerProvider>
-  );
+    <ServersProvider
+      defaultServer={props.defaultServer}
+      canonicalLocalServer={props.canonicalLocalServer}
+      servers={props.servers}
+    >
+      <SettingsProvider>
+        <Dynamic component={props.router ?? Router} base={appBase} root={Root}>
+          <AppRoutes />
+        </Dynamic>
+      </SettingsProvider>
+    </ServersProvider>
+  )
 }

@@ -1,6 +1,10 @@
 import { GlobalRegistrator } from "@happy-dom/global-registrator"
 
+// Keep Bun's HTTP primitives for the loopback transport fixtures. Happy DOM's
+// fetch replaces native socket error codes with a DOMException, hiding retries.
+const http = { fetch, Request, Response, Headers, AbortController, AbortSignal, DOMException }
 GlobalRegistrator.register()
+Object.assign(globalThis, http)
 
 const originalGetContext = HTMLCanvasElement.prototype.getContext
 // @ts-expect-error - we're overriding with a simplified mock

@@ -6,9 +6,58 @@
   "license": "MIT",
   "type": "module",
   "packageManager": "bun@1.3.12",
-  "workspaces": [
-    "packages/web"
-  ],
+  "workspaces": {
+    "packages": ["packages/web", "packages/ui", "packages/session-ui"],
+    "catalog": {
+      "@corvu/drawer": "0.2.4",
+      "@kobalte/core": "0.13.13",
+      "@pierre/diffs": "1.2.10",
+      "@playwright/test": "1.59.1",
+      "@sentry/solid": "10.71.0",
+      "@sentry/vite-plugin": "5.4.0",
+      "@shikijs/stream": "4.4.3",
+      "@solid-primitives/event-listener": "2.4.6",
+      "@solid-primitives/media": "2.3.6",
+      "@solid-primitives/resize-observer": "2.2.0",
+      "@solid-primitives/storage": "4.4.0",
+      "@solidjs/meta": "0.29.4",
+      "@solidjs/router": "1.0.0",
+      "@tanstack/solid-virtual": "3.13.37",
+      "@tsconfig/node22": "22.0.2",
+      "@types/bun": "1.4.0",
+      "@types/node": "24.12.2",
+      "@typescript/native-preview": "7.0.0-dev.20251207.1",
+      "diff": "8.0.4",
+      "effect": "4.0.0-rc.112",
+      "fuzzysort": "3.1.0",
+      "marked": "18.0.11",
+      "marked-shiki": "1.2.1",
+      "remeda": "2.26.0",
+      "remend": "1.3.1",
+      "shiki": "4.4.3",
+      "solid-js": "1.9.15",
+      "solid-list": "0.3.0",
+      "solid-sonner": "0.3.1",
+      "tailwindcss": "4.3.3",
+      "typescript": "5.8.2",
+      "vite": "8.2.2",
+      "vite-plugin-solid": "2.11.14"
+    }
+  },
+  "overrides": {
+    "effect": "4.0.0-rc.112",
+    "happy-dom": "20.11.1",
+    "solid-js": "1.9.15",
+    "@tanstack/virtual-core": "3.17.8"
+  },
+  "patchedDependencies": {
+    "@dnd-kit/dom@0.5.0": "patches/@dnd-kit%2Fdom@0.5.0.patch",
+    "@pierre/trees@1.0.0-beta.4": "patches/@pierre%2Ftrees@1.0.0-beta.4.patch",
+    "@tanstack/virtual-core@3.17.8": "patches/@tanstack%2Fvirtual-core@3.17.8.patch",
+    "ghostty-web@github:anomalyco/ghostty-web#83c0a07": "patches/ghostty-web@0.3.0.patch",
+    "solid-js@1.9.15": "patches/solid-js@1.9.15.patch",
+    "vite@8.2.2": "patches/vite@8.2.2.patch"
+  },
   "engines": {
     "node": "^22.19.0 || >=24.0.0"
   },
@@ -23,8 +72,10 @@
     "build:web": "bun run --cwd packages/web build",
     "dev:web:watch": "bun run --cwd packages/web build:watch",
     "preview:web": "bun run --cwd packages/web preview",
-    "typecheck": "bun run --cwd packages/web typecheck",
+    "typecheck": "bun run --cwd packages/ui typecheck && bun run --cwd packages/session-ui typecheck && bun run --cwd packages/web typecheck",
     "type-check": "bun run typecheck",
+    "test": "bun run test:unit",
+    "test:unit": "bun run --cwd packages/web test:unit",
     "bump-version": "node scripts/bump-version.mjs"
   }
 }
