@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.1]
+
+- Replaced the restored v0.3.18 UI and compatibility adapters with OpenCode's complete shared desktop/web frontend from the `v2` branch, pinned to upstream 2.0.12 at `dcfe1ec7bd4922d4f44c141ba33047402bffc57e`.
+- Imported the upstream application into `packages/web` and its shared components into the private `packages/ui` and `packages/session-ui` workspaces. The shared libraries retain upstream version 2.0.12 independently of the iKanban release version.
+- Adopted native V2 types, `@opencode/client`, and its Solid data layer for project and session navigation, message timelines, the composer, permissions and forms, files and diffs, terminals, models, and settings.
+- Adopted upstream URL/password connection and runtime server management with HTTP Basic authentication (`opencode` plus the server password). Without a configured or saved server, the application shows the connection screen without implicitly contacting localhost or the Pages origin.
+- Added iKanban application metadata and browser-storage namespacing. Legacy connection and layout state is not automatically migrated; users may need to add their servers again after upgrading.
+- Integrated the imported frontend with static hosting at `/ikanban/`, including router and asset paths, Tailwind source scanning, the deep-link fallback, scoped PWA behavior, and distributed license notices.
+- Added upstream provenance and synchronization documentation, version-policy checks, and Pages browser coverage for first connection, Basic-auth fixtures, deep links, and service-worker scope. Fixture tests do not establish live-backend or model-execution compatibility.
+- Required web unit tests and Pages browser checks against a build without a backend default in the deployment workflow, followed by an optional rebuild with the configured server URL.
+
 ## [0.6.0]
 
 - Restored the v0.3 standalone application boundary as one private web workspace, with GitHub Pages as the only publishing target.

@@ -10,7 +10,7 @@
 
 The complete shared application is imported from `packages/app` into
 `packages/web`. `packages/ui` and `packages/session-ui` retain their directory names.
-The application/root version is iKanban **0.6.0**; the shared libraries retain the
+The application/root version is iKanban **0.6.1**; the shared libraries retain the
 upstream version and are private workspaces.
 
 This source pin records the frontend import, not a claim that every backend

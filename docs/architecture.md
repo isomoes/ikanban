@@ -4,7 +4,7 @@
 
 iKanban imports OpenCode's complete shared desktop/web frontend from the `v2`
 branch at `dcfe1ec7bd4922d4f44c141ba33047402bffc57e` (upstream 2.0.12).
-The application version remains 0.6.0. See [upstream provenance](./upstream.md)
+The application version is 0.6.1. See [upstream provenance](./upstream.md)
 for source mappings, local changes, licenses, and the update procedure.
 
 | Local workspace | Upstream source | Role | Version policy |
@@ -86,7 +86,7 @@ bun run build:web
 ```
 
 Run tests locally before release. The Pages workflow installs dependencies, validates
-release versions, checks types, and builds the static app. Check
+release versions, checks types, runs web unit tests, and builds the static app. Check
 the built app under `/ikanban/`, including a direct history URL, static assets, and
 PWA scope. In a fresh browser state without a default backend, verify the connection
 screen and absence of implicit backend requests.
@@ -94,7 +94,8 @@ screen and absence of implicit backend requests.
 `bun run --cwd packages/web test:pages` automates static-hosting smoke checks with
 Playwright Chromium: first connection, a Basic-auth fixture, the `404.html` deep-link
 shell, and manifest/service-worker scope. Build with `VITE_OPENCODE_URL` unset before
-running it locally. CI builds once with the optional repository backend default.
+running it locally. CI runs these checks against a build without a backend default,
+then rebuilds for deployment if the optional repository backend default is configured.
 
 For a release, separately verify URL/password connection, server switching, project
 and session loading, a prompt and streamed response, permission/form interaction,

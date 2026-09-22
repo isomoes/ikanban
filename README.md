@@ -6,7 +6,7 @@ iKanban 是面向 **OpenCode V2** 的独立静态前端，直接采用上游共�
 
 ## 原生 V2 前端
 
-当前 iKanban 版本为 **0.6.0**。前端基于 OpenCode `v2` 分支 **2.0.12**，
+当前 iKanban 版本为 **0.6.1**。前端基于 OpenCode `v2` 分支 **2.0.12**，
 上游提交为 `dcfe1ec7bd4922d4f44c141ba33047402bffc57e`。
 
 - `packages/web`：唯一应用，由上游 `packages/app` 引入。
@@ -86,7 +86,7 @@ env -u VITE_OPENCODE_URL bun run --cwd packages/web test:pages
 
 ## 发布
 
-标签工作流运行版本检查、类型检查和静态构建，然后将 `packages/web/dist`
+标签工作流运行版本检查、类型检查、Web 单元测试、静态构建和 Pages 浏览器测试，然后将 `packages/web/dist`
 部署到 **GitHub Pages** 的 `/ikanban/`。仓库 Pages 来源需设置为 **GitHub Actions**。
 工作流支持同名仓库变量 `VITE_OPENCODE_URL`；留空即可由用户在连接页面输入后端。
 

@@ -35,7 +35,17 @@ jobs:
         run: node scripts/check-release.mjs "$RELEASE_TAG"
       - name: Check types
         run: bun run typecheck
-      - name: Build static app
+      - name: Run web unit tests
+        run: bun run --cwd packages/web test:unit
+      - name: Build without a backend default
+        run: env -u VITE_OPENCODE_URL bun run build:web
+      - name: Install Chromium
+        working-directory: packages/web
+        run: bunx playwright install --with-deps chromium
+      - name: Check GitHub Pages behavior
+        run: env -u VITE_OPENCODE_URL bun run --cwd packages/web test:pages
+      - name: Build with the configured backend default
+        if: ${{ vars.VITE_OPENCODE_URL != '' }}
         run: bun run build:web
         env:
           VITE_OPENCODE_URL: ${{ vars.VITE_OPENCODE_URL }}

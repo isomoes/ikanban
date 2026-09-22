@@ -7,7 +7,7 @@ the upstream shared desktop/web application.
 
 ## Native V2 frontend
 
-iKanban remains at **0.6.0**. The frontend is imported from OpenCode's `v2` branch,
+iKanban is at **0.6.1**. The frontend is imported from OpenCode's `v2` branch,
 version **2.0.12**, commit `dcfe1ec7bd4922d4f44c141ba33047402bffc57e`.
 
 - `packages/web`: the only application, imported from upstream `packages/app`.
@@ -99,8 +99,9 @@ they do not verify real model execution.
 
 ## Distribution
 
-The tag-driven workflow validates release versions, checks types, and builds the
-app before deploying `packages/web/dist` to **GitHub Pages** at
+The tag-driven workflow validates release versions, checks types, runs web unit
+tests, builds the app, and runs Pages browser tests before deploying
+`packages/web/dist` to **GitHub Pages** at
 `/ikanban/`. Set the repository's Pages source to **GitHub Actions**. The optional
 repository variable `VITE_OPENCODE_URL` sets the build default; leaving it empty
 lets users enter a backend on the connection screen.

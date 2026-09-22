@@ -1,13 +1,17 @@
 {
   "name": "ikanban",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "iKanban standalone frontend for OpenCode V2",
   "private": true,
   "license": "MIT",
   "type": "module",
   "packageManager": "bun@1.3.12",
   "workspaces": {
-    "packages": ["packages/web", "packages/ui", "packages/session-ui"],
+    "packages": [
+      "packages/web",
+      "packages/ui",
+      "packages/session-ui"
+    ],
     "catalog": {
       "@corvu/drawer": "0.2.4",
       "@kobalte/core": "0.13.13",
