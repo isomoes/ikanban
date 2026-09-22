@@ -7,6 +7,7 @@ import manifest from "./manifest.json" with { type: "json" }
 test.each(["dev", "beta", "prod", "local"])("bundles %s app icons", async (channel) => {
   const result = await build({
     root: import.meta.dirname,
+    base: "/ikanban/",
     configFile: false,
     logLevel: "silent",
     plugins: [
@@ -24,7 +25,7 @@ test.each(["dev", "beta", "prod", "local"])("bundles %s app icons", async (chann
   if (!("output" in result)) throw new Error("Expected a single build output")
 
   await check(channel === "local" ? "dev" : channel, async (path) => {
-    const file = result.output.find((file) => `/${file.fileName}` === path)
+    const file = result.output.find((file) => `/ikanban/${file.fileName}` === path)
     if (file?.type !== "asset") throw new Error(`Missing asset: ${path}`)
     return typeof file.source === "string" ? new TextEncoder().encode(file.source) : file.source
   })
@@ -33,6 +34,7 @@ test.each(["dev", "beta", "prod", "local"])("bundles %s app icons", async (chann
 test.each(["dev", "beta", "prod"])("serves %s app icons", async (channel) => {
   const server = await createServer({
     root: import.meta.dirname,
+    base: "/ikanban/",
     configFile: false,
     logLevel: "silent",
     plugins: [icons(channel)],
@@ -57,27 +59,22 @@ test.each(["dev", "beta", "prod"])("serves %s app icons", async (channel) => {
 })
 
 async function check(channel: string, read: (path: string) => Promise<Uint8Array>) {
-  const html = new TextDecoder().decode(await read("/index.html"))
-  const actual: typeof manifest = JSON.parse(new TextDecoder().decode(await read("/site.webmanifest")))
+  const html = new TextDecoder().decode(await read("/ikanban/index.html"))
+  const actual: typeof manifest = JSON.parse(new TextDecoder().decode(await read("/ikanban/site.webmanifest")))
   expect(actual.icons.every((icon) => icon.purpose === "maskable")).toBe(true)
   expect(actual).toEqual({
     ...manifest,
-    icons: manifest.icons.map((icon) => ({ ...icon, src: `/icons/${channel}${icon.src}` })),
+    icons: manifest.icons.map((icon) => ({ ...icon, src: `./icons/${channel}/${icon.src}` })),
   })
-  expect(html).toContain(`href="/icons/${channel}/favicon.ico"`)
-  expect(html).toContain(`href="/icons/${channel}/apple-touch-icon.png"`)
-  expect(html).toContain(`href="/site.webmanifest"`)
+  expect(html).toContain(`href="/ikanban/icons/${channel}/favicon.ico"`)
+  expect(html).toContain(`href="/ikanban/icons/${channel}/apple-touch-icon.png"`)
+  expect(html).toContain(`href="/ikanban/site.webmanifest"`)
   expect(html).not.toContain("%OPENCODE_")
 
   await Promise.all(
-    Object.entries({
-      "favicon.ico": "icon.ico",
-      "apple-touch-icon.png": "ios/AppIcon-60x60@3x.png",
-      "web-app-manifest-192x192.png": "android/mipmap-xxxhdpi/ic_launcher.png",
-      "web-app-manifest-512x512.png": "icon.png",
-    }).map(async ([name, source]) => {
-      const bytes = await read(`/icons/${channel}/${name}`)
-      expect(bytes).toEqual(await Bun.file(new URL(`../desktop/icons/${channel}/${source}`, import.meta.url)).bytes())
+    ["favicon.ico", "apple-touch-icon.png", "web-app-manifest-192x192.png", "web-app-manifest-512x512.png"].map(async (name) => {
+      const bytes = await read(`/ikanban/icons/${channel}/${name}`)
+      expect(bytes).toEqual(await Bun.file(new URL(`./public/${name}`, import.meta.url)).bytes())
       if (!name.endsWith(".png")) return
       const size = name === "apple-touch-icon.png" ? 180 : Number(name.match(/(192|512)/)?.[0])
       expect(new DataView(bytes.buffer, bytes.byteOffset).getUint32(16)).toBe(size)

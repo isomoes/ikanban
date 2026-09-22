@@ -45,11 +45,12 @@ export function icons(channel: string): Plugin {
       })
     },
     transformIndexHtml: {
-      order: "pre",
+      order: "post",
       handler(html) {
         return html
           .replace("%OPENCODE_FAVICON%", `${base}${prefix}/favicon.ico`)
           .replace("%OPENCODE_APPLE_TOUCH_ICON%", `${base}${prefix}/apple-touch-icon.png`)
+          .replace("%IKANBAN_MANIFEST%", `${base}site.webmanifest`)
       },
     },
   }

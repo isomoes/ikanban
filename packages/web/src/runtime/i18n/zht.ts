@@ -3,6 +3,12 @@ import en from "./en"
 type Keys = keyof typeof en
 
 export const dict = {
+  "settings.about.ikanbanDescription": "面向 OpenCode V2 的獨立前端。",
+  "settings.about.ikanbanRepository": "原始碼",
+  "settings.about.ikanbanIssues": "回報問題",
+  "settings.about.ikanbanReleases": "發行版本",
+  "settings.about.ikanbanContributors": "貢獻者",
+  "settings.about.ikanbanUpstream": "基於共用桌面 / Web 前端，來自",
   "desktop.menu.app": "OpenCode",
   "desktop.menu.file": "檔案",
   "desktop.menu.edit": "編輯",
