@@ -1,4 +1,4 @@
-name: Deploy GitHub Pages
+name: Release and Deploy GitHub Pages
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag to deploy (e.g. v0.6.0)"
+        description: "Tag to release and deploy (e.g. v0.6.1)"
         required: true
         type: string
 
@@ -76,3 +76,48 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  release:
+    needs: deploy-pages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: release-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Extract release notes from changelog
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFile, writeFile } from "node:fs/promises"
+          import { join } from "node:path"
+
+          const version = process.env.RELEASE_TAG.replace(/^v/, "")
+          const changelog = await readFile("CHANGELOG.md", "utf8")
+          const lines = changelog.split(/\r?\n/)
+          const start = lines.findIndex((line) => {
+            const heading = line.trim().match(/^## \[([^\]]+)\](?: - \d{4}-\d{2}-\d{2})?$/)
+            return heading?.[1] === version
+          })
+          if (start === -1) throw new Error(`Missing CHANGELOG.md entry for ${version}`)
+          const next = lines.findIndex((line, index) => index > start && /^##\s/.test(line))
+          const notes = lines.slice(start + 1, next === -1 ? undefined : next).join("\n").trim()
+          if (!notes) throw new Error(`Empty CHANGELOG.md entry for ${version}`)
+          await writeFile(join(process.env.RUNNER_TEMP, "release-notes.md"), `${notes}\n`)
+          NODE
+      - name: Create or update GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if gh release view "$RELEASE_TAG" > /dev/null 2>&1; then
+            gh release edit "$RELEASE_TAG" --title "$RELEASE_TAG" --notes-file "$RUNNER_TEMP/release-notes.md"
+          else
+            gh release create "$RELEASE_TAG" --verify-tag --title "$RELEASE_TAG" --notes-file "$RUNNER_TEMP/release-notes.md"
+          fi

@@ -1,6 +1,17 @@
 # Release Prompt
 
 1. Add the target version's release notes to `CHANGELOG.md`.
+   - Starting with 0.6.1, use headings `## [<version>] - YYYY-MM-DD` with the release
+     date and entries `- Area: Change description. (@username) [short-hash](commit-url)`,
+     following [apaper-plugin's changelog](https://github.com/ai4paper/apaper-plugin/blob/main/CHANGELOG.md)
+     with clickable commit hashes.
+   - Use a plain-text area label (for example, `Web`, `Docs`, or `CI`), credit the
+     change's author, and link the seven-character hash to
+     `https://github.com/isomoes/ikanban/commit/<full-hash>`.
+   - Use the commit that implements the change; include multiple commit links if
+     an entry summarizes multiple commits.
+   - Uncommitted `Unreleased` entries may omit the hash. Commit the implementation
+     first, then add its actual commit link when preparing the release notes.
 2. Run `bun run bump-version <version>` to update the root manifest,
    `packages/web/package.json`, and `bun.lock`. The shared libraries in
    `packages/ui` and `packages/session-ui` retain the imported upstream version
@@ -38,7 +49,12 @@ and Pages browser tests. If the repository defines `VITE_OPENCODE_URL`, it then
 rebuilds with that default for deployment. The Pages artifact includes the SPA
 fallback and license notices.
 
-Use the workflow's manual `tag` input to deploy an existing tag. Releases use the current application
+After Pages deployment succeeds, the workflow creates a GitHub Release using the
+matching version section from the tagged `CHANGELOG.md`. Missing or empty entries
+fail the release job. Rerunning the workflow updates the existing release's title
+and notes.
+
+Use the workflow's manual `tag` input to release and deploy an existing tag. Releases use the current application
 version sequence; restoring the architecture does not reset versions to 0.3.x.
 
 The frontend imports the complete upstream shared desktop/web UI and uses native

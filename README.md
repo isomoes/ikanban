@@ -4,6 +4,12 @@
 
 iKanban 是面向 **OpenCode V2** 的独立静态前端，直接采用上游共享的桌面 / Web 应用。
 
+## 历史版本介绍视频
+
+以下 Bilibili 视频记录了 iKanban 的早期工作流与版本演进，其中的界面和安装方式对应各自历史版本；当前版本的使用方式见下文。
+
+**Bilibili 视频：** [为什么做它](https://www.bilibili.com/video/BV1t9AhztEjX/) · [v0.1](https://www.bilibili.com/video/BV1W3Pgz8ExJ/) · [v0.2](https://www.bilibili.com/video/BV1ZNP1znEn5/) · [v0.2.11 如何使用](https://www.bilibili.com/video/BV1Y9wMzKE2b/) · [v0.3](https://www.bilibili.com/video/BV1n9QEBSEch/) · [v0.3.14](https://www.bilibili.com/video/BV1zy3F6aEb2/) · [v0.4.2](https://www.bilibili.com/video/BV156b26eEbn/) · [v0.5.0](https://www.bilibili.com/video/BV1QC886JEts/)
+
 ## 原生 V2 前端
 
 当前 iKanban 版本为 **0.6.1**。前端基于 OpenCode `v2` 分支 **2.0.12**，
@@ -88,6 +94,7 @@ env -u VITE_OPENCODE_URL bun run --cwd packages/web test:pages
 
 标签工作流运行版本检查、类型检查、Web 单元测试、静态构建和 Pages 浏览器测试，然后将 `packages/web/dist`
 部署到 **GitHub Pages** 的 `/ikanban/`。仓库 Pages 来源需设置为 **GitHub Actions**。
+部署成功后，工作流从该标签的 `CHANGELOG.md` 提取对应版本条目，创建 GitHub Release；重复运行会更新同一 Release 的说明。
 工作流支持同名仓库变量 `VITE_OPENCODE_URL`；留空即可由用户在连接页面输入后端。
 
 应用使用 history 路由，`404.html` 提供深层链接的应用入口；PWA 限定在 `/ikanban/` 范围。

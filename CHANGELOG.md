@@ -4,16 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-## [0.6.1]
+- Docs: Restored historical Bilibili introduction and version walkthrough links in the Chinese README. (@isomoes)
+- CI: Added GitHub Release creation after Pages deployment using the tagged version's changelog entry, with release-note updates on workflow reruns. (@isomoes)
 
-- Replaced the restored v0.3.18 UI and compatibility adapters with OpenCode's complete shared desktop/web frontend from the `v2` branch, pinned to upstream 2.0.12 at `dcfe1ec7bd4922d4f44c141ba33047402bffc57e`.
-- Imported the upstream application into `packages/web` and its shared components into the private `packages/ui` and `packages/session-ui` workspaces. The shared libraries retain upstream version 2.0.12 independently of the iKanban release version.
-- Adopted native V2 types, `@opencode/client`, and its Solid data layer for project and session navigation, message timelines, the composer, permissions and forms, files and diffs, terminals, models, and settings.
-- Adopted upstream URL/password connection and runtime server management with HTTP Basic authentication (`opencode` plus the server password). Without a configured or saved server, the application shows the connection screen without implicitly contacting localhost or the Pages origin.
-- Added iKanban application metadata and browser-storage namespacing. Legacy connection and layout state is not automatically migrated; users may need to add their servers again after upgrading.
-- Integrated the imported frontend with static hosting at `/ikanban/`, including router and asset paths, Tailwind source scanning, the deep-link fallback, scoped PWA behavior, and distributed license notices.
-- Added upstream provenance and synchronization documentation, version-policy checks, and Pages browser coverage for first connection, Basic-auth fixtures, deep links, and service-worker scope. Fixture tests do not establish live-backend or model-execution compatibility.
-- Required web unit tests and Pages browser checks against a build without a backend default in the deployment workflow, followed by an optional rebuild with the configured server URL.
+## [0.6.1] - 2026-09-22
+
+- Web: Replaced the restored v0.3.18 UI and compatibility adapters with OpenCode's complete shared desktop/web frontend from the `v2` branch, pinned to upstream 2.0.12 at `dcfe1ec7bd4922d4f44c141ba33047402bffc57e`. (@isomoes) [6417bc3](https://github.com/isomoes/ikanban/commit/6417bc36c32161aed2db34e8b7d84e42fd5f70d8)
+- Workspaces: Imported the upstream application into `packages/web` and its shared components into the private `packages/ui` and `packages/session-ui` workspaces. The shared libraries retain upstream version 2.0.12 independently of the iKanban release version. (@isomoes) [6417bc3](https://github.com/isomoes/ikanban/commit/6417bc36c32161aed2db34e8b7d84e42fd5f70d8)
+- Web: Adopted native V2 types, `@opencode/client`, and its Solid data layer for project and session navigation, message timelines, the composer, permissions and forms, files and diffs, terminals, models, and settings. (@isomoes) [6417bc3](https://github.com/isomoes/ikanban/commit/6417bc36c32161aed2db34e8b7d84e42fd5f70d8)
+- Connections: Adopted upstream URL/password connection and runtime server management with HTTP Basic authentication (`opencode` plus the server password). Without a configured or saved server, the application shows the connection screen without implicitly contacting localhost or the Pages origin. (@isomoes) [6417bc3](https://github.com/isomoes/ikanban/commit/6417bc36c32161aed2db34e8b7d84e42fd5f70d8)
+- Branding: Added iKanban application metadata and browser-storage namespacing. Legacy connection and layout state is not automatically migrated; users may need to add their servers again after upgrading. (@isomoes) [6417bc3](https://github.com/isomoes/ikanban/commit/6417bc36c32161aed2db34e8b7d84e42fd5f70d8)
+- Deployment: Integrated the imported frontend with static hosting at `/ikanban/`, including router and asset paths, Tailwind source scanning, the deep-link fallback, scoped PWA behavior, and distributed license notices. (@isomoes) [6417bc3](https://github.com/isomoes/ikanban/commit/6417bc36c32161aed2db34e8b7d84e42fd5f70d8)
+- Maintenance: Added upstream provenance and synchronization documentation, version-policy checks, and Pages browser coverage for first connection, Basic-auth fixtures, deep links, and service-worker scope. Fixture tests do not establish live-backend or model-execution compatibility. (@isomoes) [6417bc3](https://github.com/isomoes/ikanban/commit/6417bc36c32161aed2db34e8b7d84e42fd5f70d8)
+- CI: Required web unit tests and Pages browser checks against a build without a backend default in the deployment workflow, followed by an optional rebuild with the configured server URL. (@isomoes) [cc37f34](https://github.com/isomoes/ikanban/commit/cc37f3429a1259d0db63dded12a5a7cb59a1724b)
 
 ## [0.6.0]
 
