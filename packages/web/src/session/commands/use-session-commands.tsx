@@ -385,7 +385,6 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
     viewCommand({
       id: "input.focus",
       title: language.t("command.input.focus"),
-      keybind: "ctrl+l",
       onSelect: focusInput,
     }),
   ]

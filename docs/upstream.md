@@ -40,6 +40,9 @@ Keep the local patch surface focused on:
    `neutral` and foreground `ink`) and map its explicit UI colors through
    `v2Overrides`; copying the legacy seeds produces washed-out V2 backgrounds.
 
+8. Top session tabs support Ctrl+H / Ctrl+L for previous / next navigation.
+   The focus-input command has no default shortcut to free Ctrl+L for tabs.
+
 Server authentication and the native client/Solid data model follow upstream.
 Desktop-only features remain governed by the upstream web platform. Do not restore
 the old V1-shaped adapter as part of an upstream update.

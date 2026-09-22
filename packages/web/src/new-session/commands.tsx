@@ -33,7 +33,6 @@ export function useNewSessionCommands(input: {
       id: "input.focus",
       title: language.t("command.input.focus"),
       category: language.t("command.category.view"),
-      keybind: "ctrl+l",
       onSelect: input.restoreFocus,
     },
     {
