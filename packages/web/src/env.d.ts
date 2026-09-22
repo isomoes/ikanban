@@ -1,3 +1,5 @@
+/// <reference types="vite/client" />
+
 interface ImportMetaEnv {
   readonly VITE_OPENCODE_URL?: string
   readonly VITE_OPENCODE_CHANNEL?: "local" | "dev" | "beta" | "prod"

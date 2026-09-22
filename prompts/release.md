@@ -13,9 +13,10 @@
    - Uncommitted `Unreleased` entries may omit the hash. Commit the implementation
      first, then add its actual commit link when preparing the release notes.
 2. Run `bun run bump-version <version>` to update the root manifest,
-   `packages/web/package.json`, and `bun.lock`. The shared libraries in
-   `packages/ui` and `packages/session-ui` retain the imported upstream version
-   recorded in `docs/upstream.json`; do not bump them to the iKanban release version.
+   `packages/web/package.json`, and `bun.lock`. Together with `CHANGELOG.md`, these
+   are the only files that need updating for a release-only version bump.
+   The shared libraries in `packages/ui` and `packages/session-ui` retain their
+   existing versions; do not bump them to the iKanban release version.
 3. Verify:
    - `bun install --frozen-lockfile`
    - `bun run typecheck`
@@ -24,7 +25,8 @@
    - `(cd packages/web && bunx playwright install chromium)` (once per machine)
    - `env -u VITE_OPENCODE_URL bun run --cwd packages/web test:pages`
    - `node scripts/check-release.mjs v<version>`
-   - Record real-backend checks separately: backend version, URL/password
+   - Report verification results in the release summary, without creating tracked
+     per-release reports. Record real-backend checks separately: backend version, URL/password
      connection, server switching, session loading, prompt/streaming response,
      permissions/forms, files/diffs, and terminal WebSocket. Report untested
      interactions accurately; build and fixture tests do not verify a live backend.
@@ -43,11 +45,11 @@ HTTPS and terminal WebSockets, and accept upstream Basic authentication with
 username `opencode` and the server password.
 
 The root manifest and all three workspaces are private. The release checker
-validates the root/web release version and the shared libraries' upstream version.
+validates the root/web release version and all four manifests' private status.
 The workflow runs typecheck, web unit tests, a build without a backend default,
 and Pages browser tests. If the repository defines `VITE_OPENCODE_URL`, it then
 rebuilds with that default for deployment. The Pages artifact includes the SPA
-fallback and license notices.
+fallback and license notices from `LICENSE` and `packages/ui/LICENSE`.
 
 After Pages deployment succeeds, the workflow creates a GitHub Release using the
 matching version section from the tagged `CHANGELOG.md`. Missing or empty entries
@@ -58,6 +60,6 @@ Use the workflow's manual `tag` input to release and deploy an existing tag. Rel
 version sequence; restoring the architecture does not reset versions to 0.3.x.
 
 The frontend imports the complete upstream shared desktop/web UI and uses native
-V2 client types and the Solid data layer. Describe the pinned upstream revision
-and any local integration changes in release notes; see `docs/architecture.md`
-and `docs/upstream.md`. Historical release notes retain their original context.
+V2 client types and the Solid data layer. Describe relevant integration changes
+in release notes. Historical release notes retain
+their original context.

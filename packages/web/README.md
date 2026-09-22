@@ -2,8 +2,7 @@
 
 This is the OpenCode V2 shared desktop/web frontend imported from upstream
 `packages/app`, running with its browser platform. See the root
-[README](../../README.en.md) for connection and deployment instructions, and
-[upstream provenance](../../docs/upstream.md) for the pinned source and update process.
+[README](../../README.en.md) for workspace, connection, and deployment instructions.
 
 ## Development
 

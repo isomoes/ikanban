@@ -12,8 +12,7 @@ iKanban 是面向 **OpenCode V2** 的独立静态前端，直接采用上游共�
 
 ## 原生 V2 前端
 
-当前 iKanban 版本为 **0.6.2**。前端基于 OpenCode `v2` 分支 **2.0.12**，
-上游提交为 `dcfe1ec7bd4922d4f44c141ba33047402bffc57e`。
+前端基于 OpenCode `v2` 分支的共享桌面 / Web 应用。
 
 - `packages/web`：唯一应用，由上游 `packages/app` 引入。
 - `packages/ui`、`packages/session-ui`：上游共享组件，作为私有 workspace 使用。
@@ -22,7 +21,6 @@ iKanban 是面向 **OpenCode V2** 的独立静态前端，直接采用上游共�
   桌面专属功能由上游 Web 平台能力判断控制。
 
 会话、执行、工具、模型供应商及其凭据均由独立 OpenCode 后端管理。
-详见[架构说明](./docs/architecture.md)和[上游来源与同步流程](./docs/upstream.md)。
 
 ## 连接后端
 
@@ -101,4 +99,4 @@ env -u VITE_OPENCODE_URL bun run --cwd packages/web test:pages
 根项目及三个 workspace 均为私有；根项目和 Web 应用使用 iKanban 版本号，两个共享库保留上游版本号。
 
 发布流程见 [prompts/release.md](./prompts/release.md)。`CHANGELOG.md` 及旧迁移记录描述各自历史版本，
-当前实现以架构说明和上游来源记录为准。
+当前使用方式以本 README 为准。

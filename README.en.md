@@ -7,8 +7,7 @@ the upstream shared desktop/web application.
 
 ## Native V2 frontend
 
-iKanban is at **0.6.2**. The frontend is imported from OpenCode's `v2` branch,
-version **2.0.12**, commit `dcfe1ec7bd4922d4f44c141ba33047402bffc57e`.
+The frontend is imported from OpenCode's `v2` shared desktop/web application.
 
 - `packages/web`: the only application, imported from upstream `packages/app`.
 - `packages/ui` and `packages/session-ui`: upstream shared components, used as private workspaces.
@@ -19,8 +18,7 @@ version **2.0.12**, commit `dcfe1ec7bd4922d4f44c141ba33047402bffc57e`.
   gated by the upstream web platform's capabilities.
 
 An independent OpenCode backend owns sessions, execution, tools, providers, and
-provider credentials. See [the architecture](./docs/architecture.md) and
-[upstream provenance and sync instructions](./docs/upstream.md).
+provider credentials.
 
 ## Connect a backend
 
@@ -111,5 +109,4 @@ scoped to `/ikanban/`. The root and all three workspaces are private. The root a
 web app use the iKanban version; the two shared libraries keep their upstream version.
 
 See [the release procedure](./prompts/release.md). `CHANGELOG.md` and earlier
-migration notes describe their historical releases; the architecture and upstream
-provenance documents describe the current implementation.
+migration notes describe their historical releases; this README describes current usage.

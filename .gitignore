@@ -8,3 +8,9 @@ dist/
 # Local artifacts from the retired DSH development profile.
 /.xdg/
 /.pnpm-store/
+# Local architecture/upstream notes and release verification reports.
+/docs/architecture.md
+/docs/upstream.md
+/docs/upstream.json
+/docs/upstream-license.txt
+/docs/releases/
