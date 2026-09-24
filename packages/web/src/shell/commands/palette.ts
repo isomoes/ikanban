@@ -53,6 +53,14 @@ export function uniqueCommandPaletteEntries(items: CommandPaletteEntry[]) {
   })
 }
 
+export function initialCommandPaletteEntries(
+  preferred: CommandPaletteEntry[],
+  commands: CommandPaletteEntry[],
+  files: CommandPaletteEntry[],
+) {
+  return [...uniqueCommandPaletteEntries([...preferred, ...commands]), ...files]
+}
+
 export function createCommandPaletteFileEntry(path: string, category: string): CommandPaletteEntry {
   return {
     id: "file:" + path,

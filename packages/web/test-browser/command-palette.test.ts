@@ -2,7 +2,11 @@ import { describe, expect, test } from "bun:test"
 import type { Project } from "@/runtime/server/types"
 import type { SessionInfo } from "@opencode/client/promise"
 import { createRoot } from "solid-js"
-import { createServerSessionEntries } from "@/shell/commands/palette"
+import {
+  createServerSessionEntries,
+  initialCommandPaletteEntries,
+  type CommandPaletteEntry,
+} from "@/shell/commands/palette"
 import type { LocalProject } from "@/shell/state/layout"
 import { ServerConnection } from "@/runtime/server/registry"
 import { getProjectAvatarSource } from "@/shell/layout/helpers"
@@ -26,6 +30,24 @@ const session: SessionInfo = {
   title: "Palette session",
   time: { created: 1, updated: 2 },
 }
+
+test("initial palette includes commands without shortcuts after preferred commands", () => {
+  const entry = (id: string): CommandPaletteEntry => ({
+    id: `command:${id}`,
+    type: "command",
+    title: id,
+    category: "Commands",
+  })
+  const preferred = entry("session.new")
+  const exportCommand = entry("session.export")
+  const file: CommandPaletteEntry = { id: "file:readme", type: "file", title: "readme", category: "Files" }
+
+  expect(initialCommandPaletteEntries([preferred], [exportCommand, preferred], [file]).map((item) => item.id)).toEqual([
+    preferred.id,
+    exportCommand.id,
+    file.id,
+  ])
+})
 
 describe("command palette sessions", () => {
   test("uses the home project avatar and cancels superseded searches", async () => {

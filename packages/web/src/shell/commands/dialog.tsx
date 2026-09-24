@@ -12,7 +12,12 @@ import { useLanguage } from "@/runtime/i18n/language"
 import { useTabs } from "@/shell/tabs/tabs"
 import { SessionTabAvatar } from "@/shell/layout/session-tab-avatar"
 import { getRelativeTime } from "@/shell/time"
-import { createCommandPaletteFileEntry, createCommandPaletteModel, type CommandPaletteEntry } from "./palette"
+import {
+  createCommandPaletteFileEntry,
+  createCommandPaletteModel,
+  initialCommandPaletteEntries,
+  type CommandPaletteEntry,
+} from "./palette"
 import { createCommandPaletteSearch } from "./search"
 import "./dialog.css"
 
@@ -30,7 +35,12 @@ export function matchesCommandPaletteEntry(entry: CommandPaletteEntry, query: st
 export function DialogCommandPalette(props: { onOpenFile?: (path: string) => void }) {
   const palette = createCommandPaletteModel(props)
   const items = (q: string) => {
-    if (!q) return [...palette.preferredCommandEntries(), ...palette.recentFileEntries()]
+    if (!q)
+      return initialCommandPaletteEntries(
+        palette.preferredCommandEntries(),
+        palette.commandEntries(),
+        palette.recentFileEntries(),
+      )
     return palette.commandEntries().filter((entry) => matchesCommandPaletteEntry(entry, q))
   }
 
