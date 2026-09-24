@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.3] - 2026-09-24
+
+- Web: Made project search available from Home and updated command-palette shortcuts across the app. (@isomoes) [84d9730](https://github.com/isomoes/ikanban/commit/84d9730268b0bdc46306c71410996811a3d22a41)
+- Web: Showed all available commands when the command palette first opens. (@isomoes) [857397c](https://github.com/isomoes/ikanban/commit/857397cef43a968e10a93a13e0d2efd773bdc1f1)
+- Branding: Showed iKanban branding on the new-session screen. (@isomoes) [5bda1e2](https://github.com/isomoes/ikanban/commit/5bda1e2e6928b24aeb411f7bf99934556c318a25)
+- Docs: Added a README screenshot and Mermaid diagrams explaining the migration to the upstream OpenCode V2 frontend. (@isomoes) [d1f68cf](https://github.com/isomoes/ikanban/commit/d1f68cfde572149e2427af8303440479f9db535c) [4fd7355](https://github.com/isomoes/ikanban/commit/4fd7355279ff1d2ebd66184f2536739e1dbe75d7)
+- Maintenance: Simplified release documentation and removed obsolete tracked reference files. (@isomoes) [a5c2810](https://github.com/isomoes/ikanban/commit/a5c28108c6b345963c7f7f780c7764f49c7d3eaf)
+- CI: Simplified the Pages publish workflow after moving release checks to the local release process. (@isomoes) [0c1d096](https://github.com/isomoes/ikanban/commit/0c1d096c0245268bf97c3f155fbd81c0042d78c2)
+
 ## [0.6.2] - 2026-09-22
 
 - Branding: Added the iKanban logo and application version to the titlebar, refreshed application icons, and branded the About page for iKanban. (@isomoes) [1df98c2](https://github.com/isomoes/ikanban/commit/1df98c2f4227cba1da40b913dba8fde88e2fee13) [0968188](https://github.com/isomoes/ikanban/commit/09681885fc85cfb6c10102190bf0164b06455beb)
