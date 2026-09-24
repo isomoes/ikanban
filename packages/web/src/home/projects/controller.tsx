@@ -17,6 +17,7 @@ import type { HomeController } from "../model"
 import { useGlobal } from "@/runtime/server/runtime"
 import { SessionTransfer } from "@opencode/schema/session-transfer"
 import { useSshAuthenticate } from "@/servers/ssh/authenticate"
+import { useCommand } from "@/shell/commands/command"
 
 export const HomeServersSchema = Schema.Struct({
   collapsed: Persistence.record(Persistence.fallback(Schema.Boolean, () => false)),
@@ -32,6 +33,7 @@ export function createHomeProjectsController(home: HomeController) {
   const serverManagement = useServerActionsController()
   const global = useGlobal()
   const authenticate = useSshAuthenticate()
+  const command = useCommand()
   const [_state, setState, _, ready] = persisted(Persist.global("home.servers"), HomeServersSchema, { collapsed: {} })
   const [state] = createResource(
     () => ready.promise ?? Promise.resolve(),
@@ -54,6 +56,28 @@ export function createHomeProjectsController(home: HomeController) {
       onSelect: (result) => home.project.add(conn, homeProjectDirectories(result)),
     })
   }
+
+  command.register("home.projects", () => [
+    {
+      id: "project.select",
+      title: language.t("session.new.project.search"),
+      category: language.t("command.category.project"),
+      keybind: "mod+o",
+      onSelect: async () => {
+        const { HomeProjectSearch } = await import("./search-dialog")
+        void dialog.show(() => (
+          <HomeProjectSearch
+            servers={home.server.list}
+            projects={home.project.forServer}
+            onSelect={(conn, directory) => {
+              if (authenticate(conn, () => home.project.select(conn, directory))) return
+              home.project.select(conn, directory)
+            }}
+          />
+        ))
+      },
+    },
+  ])
 
   return {
     copy: {

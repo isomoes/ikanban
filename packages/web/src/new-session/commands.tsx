@@ -39,7 +39,7 @@ export function useNewSessionCommands(input: {
       id: "project.select",
       title: language.t("session.new.project.search"),
       category: language.t("command.category.project"),
-      keybind: "mod+shift+o",
+      keybind: "mod+o",
       disabled: input.project.empty(),
       onSelect: input.project.open,
     },

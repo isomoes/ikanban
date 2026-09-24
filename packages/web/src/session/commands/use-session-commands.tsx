@@ -315,7 +315,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
         id: "file.open",
         title: language.t("command.file.open"),
         description: language.t("palette.search.placeholder"),
-        keybind: "mod+p",
+        keybind: "mod+shift+o",
         slash: "open",
         onSelect: openFile,
       }),

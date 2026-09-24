@@ -13,7 +13,7 @@ import { Persist, persisted } from "@/runtime/persistence/storage"
 const IS_MAC = typeof navigator === "object" && /(Mac|iPod|iPhone|iPad)/.test(navigator.platform)
 
 const PALETTE_ID = "command.palette"
-export const DEFAULT_PALETTE_KEYBIND = "mod+k,mod+shift+p"
+export const DEFAULT_PALETTE_KEYBIND = "mod+p"
 const SUGGESTED_PREFIX = "suggested."
 const EDITABLE_KEYBIND_IDS = new Set(["terminal.toggle", "terminal.new", "file.attach", "browser.reload"])
 
