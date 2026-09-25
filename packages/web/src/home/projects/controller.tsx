@@ -57,6 +57,16 @@ export function createHomeProjectsController(home: HomeController) {
     })
   }
 
+  function close(conn: ServerConnection.Any, directory: string) {
+    const next = closeHomeProject(
+      home.selection.value(),
+      ServerConnection.key(conn),
+      home.server.context(conn).projects,
+      directory,
+    )
+    if (next) home.selection.set(next)
+  }
+
   command.register("home.projects", () => [
     {
       id: "project.select",
@@ -75,6 +85,18 @@ export function createHomeProjectsController(home: HomeController) {
             }}
           />
         ))
+      },
+    },
+    {
+      id: "project.close",
+      title: language.t("command.project.close"),
+      category: language.t("command.category.project"),
+      disabled: !home.project.selected(),
+      onSelect: () => {
+        const conn = home.server.focused()
+        const project = home.project.selected()
+        if (!conn || !project) return
+        close(conn, project.worktree)
       },
     },
   ])
@@ -177,15 +199,7 @@ export function createHomeProjectsController(home: HomeController) {
         if (home.server.health(conn)?.healthy === false) return
         choose(conn)
       },
-      close: (conn: ServerConnection.Any, directory: string) => {
-        const next = closeHomeProject(
-          home.selection.value(),
-          ServerConnection.key(conn),
-          home.server.context(conn).projects,
-          directory,
-        )
-        if (next) home.selection.set(next)
-      },
+      close,
       move: (conn: ServerConnection.Any, worktree: string, index: number) => {
         home.server.context(conn).projects.move(worktree, index)
       },

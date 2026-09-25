@@ -450,7 +450,9 @@ export const { use: useCommand, provider: CommandProvider } = createSimpleContex
     const keybindConfig = (id: string) => {
       if (id === PALETTE_ID) return settings.keybinds.get(PALETTE_ID) ?? DEFAULT_PALETTE_KEYBIND
       const base = actionId(id)
-      return options().find((x) => actionId(x.id) === base)?.keybind ?? bind(base, catalog[base]?.keybind)
+      const live = options().find((x) => actionId(x.id) === base)
+      if (live) return live.keybind
+      return bind(base, catalog[base]?.keybind)
     }
 
     return {

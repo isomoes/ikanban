@@ -221,7 +221,7 @@ export function createKeybindSettingsController(
     if (typeof custom === "string") return custom
 
     const live = input.command.options.find((item) => item.id === id)
-    if (live?.keybind) return live.keybind
+    if (live) return live.keybind
     return input.command.catalog.find((item) => item.id === id)?.keybind
   }
   const used = createMemo(() => {
