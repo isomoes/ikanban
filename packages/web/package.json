@@ -1,6 +1,6 @@
 {
   "name": "@ikanban/web",
-  "version": "0.6.3",
+  "version": "0.6.4",
   "private": true,
   "description": "iKanban standalone OpenCode V2 frontend",
   "type": "module",

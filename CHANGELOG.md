@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.4] - 2026-09-26
+
+- Web: Added a Close project command to the Home command palette and removed the Open file shortcut; live commands without a keybind no longer fall back to the persisted catalog. (@isomoes) [fcbb61e](https://github.com/isomoes/ikanban/commit/fcbb61ed0fd9069458f28ad24b0a399b5570a32f)
+- Branding: Pointed help, feedback, and error-report links to the iKanban repository. (@isomoes) [a8e0620](https://github.com/isomoes/ikanban/commit/a8e06207351ea6a6d1c2a851b4d01d3b0e1579d3)
+- Web: Limited interface translations to English and Simplified Chinese. (@isomoes) [e9cb3c6](https://github.com/isomoes/ikanban/commit/e9cb3c64cb4c27bc1cc6a6873f39031edad2e343)
+- Workspaces: Renamed the shared packages to `@ikanban/ui` and `@ikanban/session-ui`, versioned them with the application, and extended version bumping and release checks to all four manifests. (@isomoes) [4c72b05](https://github.com/isomoes/ikanban/commit/4c72b0550a4ca73f6d2e3f8edd25576ec680961a)
+- Maintenance: Removed unused shared components, stories, tooling, assets, and dependencies, along with the Playwright end-to-end and Pages suites. (@isomoes) [4c72b05](https://github.com/isomoes/ikanban/commit/4c72b0550a4ca73f6d2e3f8edd25576ec680961a)
+
 ## [0.6.3] - 2026-09-24
 
 - Web: Made project search available from Home and updated command-palette shortcuts across the app. (@isomoes) [84d9730](https://github.com/isomoes/ikanban/commit/84d9730268b0bdc46306c71410996811a3d22a41)

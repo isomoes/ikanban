@@ -7,7 +7,7 @@
     },
     "packages/session-ui": {
       "name": "@ikanban/session-ui",
-      "version": "0.6.3",
+      "version": "0.6.4",
       "dependencies": {
         "@ikanban/ui": "workspace:*",
         "@kobalte/core": "catalog:",
@@ -39,7 +39,7 @@
     },
     "packages/ui": {
       "name": "@ikanban/ui",
-      "version": "0.6.3",
+      "version": "0.6.4",
       "dependencies": {
         "@kobalte/core": "catalog:",
         "@pierre/diffs": "catalog:",
@@ -66,7 +66,7 @@
     },
     "packages/web": {
       "name": "@ikanban/web",
-      "version": "0.6.3",
+      "version": "0.6.4",
       "dependencies": {
         "@corvu/drawer": "catalog:",
         "@dnd-kit/abstract": "0.5.0",
