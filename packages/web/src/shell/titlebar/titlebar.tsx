@@ -1,6 +1,6 @@
 import { createEffect, createMemo, createResource, Match, Show, Switch, untrack } from "solid-js"
 import { createStore, unwrap } from "solid-js/store"
-import { Dynamic, Portal } from "solid-js/web"
+import { Portal } from "solid-js/web"
 import { useLocation, useNavigate } from "@solidjs/router"
 import { IconButton } from "@ikanban/ui/icon-button"
 import { Icon } from "@ikanban/ui/icon"
@@ -53,7 +53,6 @@ export type TitlebarUpdate = {
 
 export function Titlebar(props: {
   update?: TitlebarUpdate
-  debugTools?: { visible: boolean; toggle: () => void }
   verticalTabs?: { mount?: HTMLElement }
 }) {
   const platform = usePlatform()
@@ -325,55 +324,9 @@ export function Titlebar(props: {
               }
             }
             const toggleHome = () => tabs.toggleHome({ home: layout.route().type === "home", current: currentTab() })
-            const homeButton = (vertical = false) => (
-              <Show
-                when={vertical}
-                fallback={
-                  <Tooltip
-                    placement="bottom"
-                    value={
-                      <>
-                        {language.t("home.title")}
-                        <Keybind keys={command.keybindParts("home.toggle")} variant="neutral" />
-                      </>
-                    }
-                    class="shrink-0"
-                  >
-                    <IconButton
-                      type="button"
-                      variant="ghost-muted"
-                      size="large"
-                      class="!w-9 shrink-0"
-                      icon={<Icon name="grid-plus" />}
-                      state={layout.route().type === "home" ? "pressed" : undefined}
-                      onClick={toggleHome}
-                      aria-label={language.t("home.title")}
-                      aria-pressed={layout.route().type === "home"}
-                    />
-                  </Tooltip>
-                }
-              >
-                <button
-                  type="button"
-                  data-titlebar-tab-action
-                  data-action="vertical-tabs-home"
-                  data-state={layout.route().type === "home" ? "pressed" : undefined}
-                  class="group mb-1 flex h-7 w-full shrink-0 items-center gap-1.5 rounded-[6px] ps-1.5 pe-2 text-[13px] leading-4 text-v2-text-text-faint hover:text-v2-text-text-base data-[state=pressed]:text-v2-text-text-base"
-                  onClick={toggleHome}
-                  aria-label={language.t("home.title")}
-                  aria-pressed={layout.route().type === "home"}
-                >
-                  <Icon name="grid-plus" class="shrink-0" />
-                  <span class="min-w-0 truncate">{language.t("home.title")}</span>
-                  <span
-                    class="ms-auto hidden min-w-0 truncate text-v2-text-text-faint group-hover:block group-focus-visible:block"
-                    aria-hidden="true"
-                  >
-                    <bdi dir="ltr">{command.keybind("home.toggle")}</bdi>
-                  </span>
-                </button>
-              </Show>
-            )
+            const goHome = () => {
+              if (layout.route().type !== "home") toggleHome()
+            }
 
             command.register("titlebar-home", () => [
               {
@@ -454,12 +407,11 @@ export function Titlebar(props: {
                 }}
               >
                 <Show when={!mobile() && (!props.verticalTabs || windows())}>
-                  <ChannelIndicator horizontal debugTools={props.debugTools} />
+                  <ChannelIndicator horizontal active={layout.route().type === "home"} onClick={goHome} />
                 </Show>
                 <Show when={windows() || linux()}>
                   <WindowsAppMenu command={command} platform={platform} />
                 </Show>
-                <Show when={!mobile() && !props.verticalTabs}>{homeButton()}</Show>
 
                 <Show
                   when={!mobile()}
@@ -650,9 +602,8 @@ export function Titlebar(props: {
                               />
                             </Show>
                             <Show when={!windows()}>
-                              <ChannelIndicator sidebar debugTools={props.debugTools} />
+                              <ChannelIndicator sidebar active={layout.route().type === "home"} onClick={goHome} />
                             </Show>
-                            {homeButton(true)}
                             <button
                               type="button"
                               data-titlebar-tab-action
@@ -787,39 +738,36 @@ function TitlebarUpdateIconButton(props: { state: TitlebarUpdatePillState; verti
   )
 }
 
-function ChannelIndicator(props: {
-  horizontal?: boolean
-  sidebar?: boolean
-  debugTools?: { visible: boolean; toggle: () => void }
-}) {
+function ChannelIndicator(props: { horizontal?: boolean; sidebar?: boolean; active?: boolean; onClick: () => void }) {
   const language = useLanguage()
   const platform = usePlatform()
-  const channel = import.meta.env.VITE_OPENCODE_CHANNEL
+  const command = useCommand()
   const build = import.meta.env.DEV ? "dev" : `v${version}`
   const label = () => `iKanban ${build}`
-  const debug = () => (import.meta.env.DEV || channel === "dev" || channel === "local" ? props.debugTools : undefined)
   return (
     <Tooltip
       placement={props.sidebar ? "right" : "bottom"}
-      value={label()}
+      value={
+        <>
+          {language.t("home.title")}
+          <Keybind keys={command.keybindParts("home.toggle")} variant="neutral" />
+        </>
+      }
       class={`shrink-0 [app-region:no-drag] ${props.sidebar ? "mb-4 ms-0.5 self-start" : ""} ${props.horizontal ? "me-1.5" : ""} ${props.horizontal && platform.platform === "web" ? "ps-2.5" : ""}`}
     >
-      <Dynamic
-        component={debug() ? "button" : "div"}
-        type={debug() ? "button" : undefined}
+      <button
+        type="button"
         data-slot="channel-indicator"
-        class="flex h-7 shrink-0 items-center gap-1.5 rounded-[6px] pe-1 text-v2-text-text-base [app-region:no-drag]"
-        classList={{
-          "cursor-pointer hover:bg-v2-background-bg-layer-02 focus-visible:outline-none focus-visible:bg-v2-background-bg-layer-02":
-            !!debug(),
-        }}
-        onClick={() => debug()?.toggle()}
-        aria-label={debug() ? `${label()} — ${language.t("titlebar.toggleDebugTools")}` : label()}
-        aria-pressed={debug()?.visible}
+        data-action="titlebar-home"
+        data-state={props.active ? "pressed" : undefined}
+        class="flex h-7 shrink-0 cursor-pointer items-center gap-1.5 rounded-[6px] pe-1 text-v2-text-text-base hover:bg-v2-background-bg-layer-02 focus-visible:outline-none focus-visible:bg-v2-background-bg-layer-02 [app-region:no-drag]"
+        onClick={() => props.onClick()}
+        aria-label={`${label()} — ${language.t("home.title")}`}
+        aria-pressed={props.active}
       >
         <KanbanMark class={props.sidebar ? "size-6 shrink-0" : "size-5 shrink-0"} />
         <span class="text-[11px] leading-4 text-v2-text-text-faint">{build}</span>
-      </Dynamic>
+      </button>
     </Tooltip>
   )
 }

@@ -74,7 +74,6 @@ export default function Layout(props: ParentProps) {
         <Titlebar
           update={update}
           verticalTabs={verticalTabs() ? { mount: state.tabsMount } : undefined}
-          debugTools={debugTools}
         />
         <div class="flex flex-1 min-h-0 min-w-0 flex-row">
           <Show when={verticalTabs()}>
