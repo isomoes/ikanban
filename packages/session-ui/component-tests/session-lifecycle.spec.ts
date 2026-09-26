@@ -179,7 +179,7 @@ story("does not infer Thinking from busy, retry, or recovery without reasoning",
   )
 })
 
-for (const locale of ["de", "ar"] as const) {
+for (const locale of ["zh"] as const) {
   // Moved from packages/app/e2e/regression/session-timeline-locale-projection.spec.ts
   story(`projects localized tool names with an English fallback in ${locale}`, async ({ mount, page }) => {
     const timeline = await mount("current-session-research-agents--agent-research", {
@@ -192,7 +192,7 @@ for (const locale of ["de", "ar"] as const) {
     await expect(group.getByRole("button")).toHaveAccessibleName(/^Used 2 /)
     await expect(
       group.locator('[data-component="context-tool-group-trigger"] [data-slot="basic-tool-tool-title"]'),
-    ).toHaveText(locale === "de" ? "Lesen, Glob" : "\u0642\u0631\u0627\u0621\u0629, Glob")
+    ).toHaveText("读取, Glob")
     await expect(page.locator("html")).toHaveAttribute("lang", locale)
   })
 }

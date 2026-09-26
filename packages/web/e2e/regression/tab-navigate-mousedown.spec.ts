@@ -365,7 +365,7 @@ for (const direction of ["ltr", "rtl"]) {
 for (const profile of [
   { locale: "en", direction: "ltr" },
   { locale: "en", direction: "rtl" },
-  { locale: "ar", direction: "rtl" },
+  { locale: "zh", direction: "ltr" },
 ]) {
   test(`vertical shortcut hints align at the row end: ${profile.locale} ${profile.direction}`, async ({ page }) => {
     await mockServer(page)

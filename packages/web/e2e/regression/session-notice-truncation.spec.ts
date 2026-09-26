@@ -6,7 +6,7 @@ for (const width of [1400, 390]) {
   for (const profile of [
     { locale: "en", direction: "ltr" },
     { locale: "en", direction: "rtl" },
-    { locale: "ar", direction: "rtl" },
+    { locale: "zh", direction: "ltr" },
   ]) {
     test(`keeps notices on one line: ${profile.locale} ${profile.direction} ${width}`, async ({ page }, info) => {
       const command =

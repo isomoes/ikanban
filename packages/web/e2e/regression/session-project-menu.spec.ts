@@ -1,6 +1,4 @@
 import { expect, test } from "@playwright/test"
-import { dict } from "../../src/runtime/i18n/ar"
-import en from "../../src/runtime/i18n/en"
 import { fixture, pageMessages } from "../performance/timeline/session-timeline-stress.fixture"
 import { installStressSessionTabs, stressSessionHref } from "../performance/timeline/timeline-test-helpers"
 import { mockOpenCodeServer } from "../utils/mock-server"
@@ -10,7 +8,6 @@ test.use({ serviceWorkers: "block" })
 for (const direction of ["ltr", "rtl"] as const) {
   for (const workspace of [false, true]) {
     test(`session project menu for ${workspace ? "worktree" : "local"} in ${direction}`, async ({ page }) => {
-      const copy = direction === "rtl" ? dict : en
       const directory = workspace
         ? "C:/OpenCode/Worktrees/مشروع-42/long-folder-name-for-checking-wrapped-worktree-paths/another-long-folder-name-to-exercise-the-full-path-tooltip"
         : fixture.directory

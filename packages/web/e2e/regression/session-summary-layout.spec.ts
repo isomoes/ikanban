@@ -180,7 +180,7 @@ for (const theme of ["light", "dark"] as const) {
     await page.addInitScript((theme) => {
       localStorage.setItem("opencode-theme-id", "oc-2")
       localStorage.setItem("opencode-color-scheme", theme)
-      localStorage.setItem("opencode.global.dat:language", JSON.stringify({ locale: theme === "dark" ? "he" : "en" }))
+      localStorage.setItem("opencode.global.dat:language", JSON.stringify({ locale: theme === "dark" ? "zh" : "en" }))
     }, theme)
     await page.route("**/api/mcp**", (route) => {
       if (route.request().method() === "OPTIONS") return route.fallback()
