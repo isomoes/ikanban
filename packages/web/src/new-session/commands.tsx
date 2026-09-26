@@ -1,6 +1,7 @@
 import { useDialog } from "@ikanban/ui/context/dialog"
 import { useSettingsCommand } from "@/settings/command"
 import { useCommand } from "@/shell/commands/command"
+import { useServerReloadCommand } from "@/shell/commands/server"
 import { useLanguage } from "@/runtime/i18n/language"
 
 export function useNewSessionCommands(input: {
@@ -19,6 +20,7 @@ export function useNewSessionCommands(input: {
   const language = useLanguage()
 
   useSettingsCommand()
+  useServerReloadCommand()
   command.register("new-session", () => [
     {
       id: "command.palette",

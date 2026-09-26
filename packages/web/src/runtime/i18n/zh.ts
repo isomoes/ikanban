@@ -125,6 +125,9 @@ export const dict = {
   "command.category.workspace": "工作区",
   "command.category.settings": "设置",
   "command.logs.export": "导出日志",
+  "command.server.reload": "重新加载服务器配置",
+  "command.server.reload.pending": "正在重新加载服务器配置…",
+  "command.server.reload.done": "服务器配置已重新加载",
 
   "theme.scheme.system": "系统",
   "theme.scheme.light": "浅色",

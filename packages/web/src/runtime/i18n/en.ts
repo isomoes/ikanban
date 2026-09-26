@@ -74,6 +74,9 @@ export const dict = {
   "command.category.workspace": "Worktree",
   "command.category.settings": "Settings",
   "command.logs.export": "Export logs",
+  "command.server.reload": "Reload server configuration",
+  "command.server.reload.pending": "Reloading server configuration…",
+  "command.server.reload.done": "Server configuration reloaded",
   "command.debugBar.toggle": "Toggle debug bar",
 
   "theme.scheme.system": "System",

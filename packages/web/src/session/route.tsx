@@ -16,6 +16,7 @@ import { useData, useServer } from "@/runtime/server/current"
 import { ServerConnection } from "@/runtime/server/registry"
 import { TerminalProvider } from "@/session/terminal/context"
 import { useSettingsCommand } from "@/settings/command"
+import { useServerReloadCommand } from "@/shell/commands/server"
 import { SessionUIProvider } from "@/shell/routes/session-ui-provider"
 import { useTabs, type PendingSession } from "@/shell/tabs/tabs"
 import { requireServerKey } from "@/shell/routes/session"
@@ -94,6 +95,7 @@ function PreparingSession(props: { sessionID: string; pending: PendingSession })
 
 function TargetSessionSettingsCommand() {
   useSettingsCommand()
+  useServerReloadCommand()
   return null
 }
 
