@@ -107,21 +107,23 @@ export function NewSessionView(props: {
             </Suspense>
           </SummaryPopover>
         </div>
-        <div class="absolute inset-x-0 top-[25.375%] flex justify-center px-6">
+        <div class="absolute inset-x-0 top-12 bottom-12 flex justify-center px-6">
           <div
             ref={(element) => setStore("content", element)}
             data-slot="new-session-content"
-            class={NEW_SESSION_CONTENT_WIDTH}
+            class={`${NEW_SESSION_CONTENT_WIDTH} flex h-full min-h-0 flex-col`}
           >
-            <NewSessionWordmark />
-            <div class="mt-8 flex flex-col gap-8">
-              <Composer model={props.composer} />
+            <div class="flex min-h-0 flex-1 flex-col justify-end overflow-hidden pb-8">
+              <NewSessionWordmark />
+            </div>
+            <div class="flex shrink-0 flex-col gap-4">
               <Show when={props.project.empty()}>
                 <PromptProjectAddButton controller={props.project} />
               </Show>
+              <Composer model={props.composer} />
               <Show when={props.project.selected()}>
                 <div class="flex min-h-7 min-w-0 flex-col items-center justify-center gap-0 text-v2-text-text-faint sm:flex-row">
-                  <PromptProjectSelector controller={props.project} placement="bottom" />
+                  <PromptProjectSelector controller={props.project} placement="top" />
                   <Show
                     when={props.workspace.bar.visible()}
                     fallback={

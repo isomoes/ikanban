@@ -25,7 +25,7 @@ export function PromptWorkspaceSelector(props: {
   const language = useLanguage()
   const summary = () => props.variant === "summary"
   const placement = createMemo(() =>
-    summary() ? (language.direction() === "rtl" ? "right-start" : "left-start") : "bottom",
+    summary() ? (language.direction() === "rtl" ? "right-start" : "left-start") : "top",
   )
   const [search, setSearch] = createStore({ workspaces: "", branches: "" })
   let searchInput: HTMLInputElement | undefined
