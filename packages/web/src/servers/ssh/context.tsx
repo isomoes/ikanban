@@ -1,5 +1,5 @@
-import { createSimpleContext } from "@opencode/ui/context"
-import { useDialog } from "@opencode/ui/context/dialog"
+import { createSimpleContext } from "@ikanban/ui/context"
+import { useDialog } from "@ikanban/ui/context/dialog"
 import { queryOptions, useQuery, useQueryClient } from "@tanstack/solid-query"
 import { createEffect, onCleanup, untrack, type ParentProps } from "solid-js"
 import { usePlatform } from "@/runtime/platform/platform"

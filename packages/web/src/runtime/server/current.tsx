@@ -1,4 +1,4 @@
-import { createSimpleContext } from "@opencode/ui/context"
+import { createSimpleContext } from "@ikanban/ui/context"
 import { ServerConnection } from "./registry"
 import { useGlobal } from "./runtime"
 

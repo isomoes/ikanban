@@ -1,7 +1,7 @@
 import { Popover } from "@kobalte/core/popover"
-import { Icon } from "@opencode/ui/icon"
-import { Switch } from "@opencode/ui/switch"
-import { Tooltip } from "@opencode/ui/tooltip"
+import { Icon } from "@ikanban/ui/icon"
+import { Switch } from "@ikanban/ui/switch"
+import { Tooltip } from "@ikanban/ui/tooltip"
 import { getDirectory } from "@opencode/util/path"
 import {
   createEffect,

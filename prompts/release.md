@@ -13,17 +13,14 @@
    - Uncommitted `Unreleased` entries may omit the hash. Commit the implementation
      first, then add its actual commit link when preparing the release notes.
 2. Run `bun run bump-version <version>` to update the root manifest,
-   `packages/web/package.json`, and `bun.lock`. Together with `CHANGELOG.md`, these
-   are the only files that need updating for a release-only version bump.
-   The shared libraries in `packages/ui` and `packages/session-ui` retain their
-   existing versions; do not bump them to the iKanban release version.
+   `packages/web/package.json`, `packages/ui/package.json`,
+   `packages/session-ui/package.json`, and `bun.lock`. Together with `CHANGELOG.md`,
+   these are the only files that need updating for a release-only version bump.
 3. Verify:
    - `bun install --frozen-lockfile`
    - `bun run typecheck`
    - `bun run --cwd packages/web test:unit`
    - `env -u VITE_OPENCODE_URL bun run build:web`
-   - `(cd packages/web && bunx playwright install chromium)` (once per machine)
-   - `env -u VITE_OPENCODE_URL bun run --cwd packages/web test:pages`
    - `node scripts/check-release.mjs v<version>`
    - Report verification results in the release summary, without creating tracked
      per-release reports. Record real-backend checks separately: backend version, URL/password
@@ -45,10 +42,9 @@ HTTPS and terminal WebSockets, and accept upstream Basic authentication with
 username `opencode` and the server password.
 
 The root manifest and all three workspaces are private. The release checker
-validates the root/web release version and all four manifests' private status.
-The workflow runs typecheck, web unit tests, a build without a backend default,
-and Pages browser tests. If the repository defines `VITE_OPENCODE_URL`, it then
-rebuilds with that default for deployment. The Pages artifact includes the SPA
+validates that all four manifests share the release version and are private.
+The workflow validates versions and builds the app, using `VITE_OPENCODE_URL` as
+the build default when the repository defines it. The Pages artifact includes the SPA
 fallback and license notices from `LICENSE` and `packages/ui/LICENSE`.
 
 After Pages deployment succeeds, the workflow creates a GitHub Release using the

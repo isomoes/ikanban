@@ -4,8 +4,8 @@ import type {
   SessionMessageUser,
   SessionStatus,
 } from "@opencode/client/promise"
-import { useI18n } from "@opencode/ui/context/i18n"
-import { Tooltip } from "@opencode/ui/tooltip"
+import { useI18n } from "@ikanban/ui/context/i18n"
+import { Tooltip } from "@ikanban/ui/tooltip"
 import { For, Show, createMemo, type Accessor, type JSX } from "solid-js"
 import { Dynamic } from "solid-js/web"
 import type { SessionUserActions, SessionUserAttachmentReference, SessionUserComment } from "../actions"

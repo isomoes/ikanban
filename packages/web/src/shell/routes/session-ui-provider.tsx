@@ -1,5 +1,5 @@
-import { DataProvider } from "@opencode/session-ui/context"
-import { MarkdownProvider, type ReadMarkdownImage } from "@opencode/session-ui/context/markdown"
+import { DataProvider } from "@ikanban/session-ui/context"
+import { MarkdownProvider, type ReadMarkdownImage } from "@ikanban/session-ui/context/markdown"
 import { useNavigate, useParams } from "@solidjs/router"
 import { createMemo, type ParentProps } from "solid-js"
 import { useProviders } from "@/providers/catalog/providers"

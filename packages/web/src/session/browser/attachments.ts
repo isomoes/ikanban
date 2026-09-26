@@ -1,6 +1,6 @@
 import { batch, createEffect, createMemo, createRoot, getOwner, on, onCleanup, runWithOwner } from "solid-js"
 import { createStore, reconcile } from "solid-js/store"
-import { createSimpleContext } from "@opencode/ui/context"
+import { createSimpleContext } from "@ikanban/ui/context"
 import { useLanguage } from "@/runtime/i18n/language"
 import type { BrowserPaneCommand } from "@/runtime/platform/browser-pane"
 import { usePlatform } from "@/runtime/platform/platform"

@@ -1,7 +1,7 @@
 import { batch, createEffect, createMemo, onCleanup } from "solid-js"
 import { createStore, produce, reconcile } from "solid-js/store"
 import { isFileNotFoundError } from "@opencode/client/promise"
-import { createSimpleContext } from "@opencode/ui/context"
+import { createSimpleContext } from "@ikanban/ui/context"
 import { showToast } from "@/shell/notifications/toast"
 import { useParams } from "@solidjs/router"
 import { base64Encode } from "@opencode/util/encode"

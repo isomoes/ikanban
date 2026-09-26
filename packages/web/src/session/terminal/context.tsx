@@ -1,5 +1,5 @@
 import { createStore, produce } from "solid-js/store"
-import { createSimpleContext } from "@opencode/ui/context"
+import { createSimpleContext } from "@ikanban/ui/context"
 import { batch, createEffect, createMemo, createRoot, on, onCleanup } from "solid-js"
 import { useWorkspaceLocation, type LocationContext } from "@/workspaces/location"
 import type { Platform } from "@/runtime/platform/platform"

@@ -1,5 +1,5 @@
-import { DiffChanges } from "@opencode/ui/diff-changes"
-import { Icon } from "@opencode/ui/icon"
+import { DiffChanges } from "@ikanban/ui/diff-changes"
+import { Icon } from "@ikanban/ui/icon"
 import { getFilename } from "@opencode/util/path"
 import { createMemo, Show, type JSX } from "solid-js"
 import { useLanguage } from "@/runtime/i18n/language"

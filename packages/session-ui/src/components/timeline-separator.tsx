@@ -1,4 +1,4 @@
-import { ProviderIcon } from "@opencode/ui/provider-icon"
+import { ProviderIcon } from "@ikanban/ui/provider-icon"
 import { Show } from "solid-js"
 
 export function TimelineSeparator(props: { label: string; providerID?: string; variant?: string }) {

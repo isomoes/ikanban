@@ -1,4 +1,4 @@
-import { useDialog } from "@opencode/ui/context/dialog"
+import { useDialog } from "@ikanban/ui/context/dialog"
 import { ServerConnection } from "@/runtime/server/registry"
 import { usePlatform } from "@/runtime/platform/platform"
 import { lazy } from "solid-js"

@@ -16,7 +16,6 @@
       "@corvu/drawer": "0.2.4",
       "@kobalte/core": "0.13.13",
       "@pierre/diffs": "1.2.10",
-      "@playwright/test": "1.59.1",
       "@sentry/solid": "10.71.0",
       "@sentry/vite-plugin": "5.4.0",
       "@shikijs/stream": "4.4.3",

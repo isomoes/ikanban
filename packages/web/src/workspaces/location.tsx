@@ -1,4 +1,4 @@
-import { createSimpleContext } from "@opencode/ui/context"
+import { createSimpleContext } from "@ikanban/ui/context"
 import type { LocationGetOutput, LocationRef } from "@opencode/client/promise"
 import { retry } from "@opencode/util/retry"
 import { type Accessor, createEffect, createMemo, onCleanup } from "solid-js"

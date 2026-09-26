@@ -1,7 +1,7 @@
 import { getFilename } from "@opencode/util/path"
 import type { Project } from "@/runtime/server/types"
 import type { SessionInfo } from "@opencode/client/promise"
-import { useDialog } from "@opencode/ui/context/dialog"
+import { useDialog } from "@ikanban/ui/context/dialog"
 import { createMemo, onCleanup } from "solid-js"
 import { commandPaletteOptions, useCommand, type CommandOption } from "@/shell/commands/command"
 import { useFile } from "@/workspaces/files/model"

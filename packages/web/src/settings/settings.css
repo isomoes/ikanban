@@ -1,5 +1,5 @@
-@import "@opencode/ui/text-input.css";
-@import "@opencode/ui/button.css";
+@import "@ikanban/ui/text-input.css";
+@import "@ikanban/ui/button.css";
 
 [data-component="tabs-v2"][data-variant="settings"] {
   height: 100%;

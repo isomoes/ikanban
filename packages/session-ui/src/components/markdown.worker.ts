@@ -1,8 +1,8 @@
 /// <reference lib="webworker" />
 
 import { ShikiStreamTokenizer } from "@shikijs/stream"
-import { createMarkdownParser } from "@opencode/ui/context/marked-parser"
-import { OpenCodeTheme } from "@opencode/ui/context/marked-theme"
+import { createMarkdownParser } from "@ikanban/ui/context/marked-parser"
+import { OpenCodeTheme } from "@ikanban/ui/context/marked-theme"
 import {
   bundledLanguages,
   createHighlighter,

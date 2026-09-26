@@ -1,4 +1,4 @@
-import { createSimpleContext } from "@opencode/ui/context"
+import { createSimpleContext } from "@ikanban/ui/context"
 import { base64Encode } from "@opencode/util/encode"
 import { useParams } from "@solidjs/router"
 import { batch, createEffect, createMemo, onCleanup } from "solid-js"

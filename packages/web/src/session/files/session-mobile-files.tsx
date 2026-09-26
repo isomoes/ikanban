@@ -1,5 +1,5 @@
-import { Button } from "@opencode/ui/button"
-import { Tabs } from "@opencode/ui/tabs"
+import { Button } from "@ikanban/ui/button"
+import { Tabs } from "@ikanban/ui/tabs"
 import { getFilename } from "@opencode/util/path"
 import { createMemo, For } from "solid-js"
 import { createStore } from "solid-js/store"

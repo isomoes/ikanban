@@ -1,7 +1,7 @@
 import { useLanguage } from "@/runtime/i18n/language"
 import { usePlatform } from "@/runtime/platform/platform"
 import { useCommand, type CommandOption } from "./command"
-import { useDialog } from "@opencode/ui/context/dialog"
+import { useDialog } from "@ikanban/ui/context/dialog"
 import { DialogSsh } from "@/servers/ssh/dialog"
 import { useUpdaterAction } from "@/shell/updates/action"
 

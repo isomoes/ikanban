@@ -3,7 +3,7 @@ import type { SessionInboxInfo, SessionMessageInfo } from "@opencode/client/prom
 import { createRoot } from "solid-js"
 import { applyTimelineMessageHandoff, visibleTimelineMessages } from "./controller-projection"
 import { createTimelineProjection } from "./projection"
-import { timelinePresets } from "@opencode/session-ui/timeline/detail"
+import { timelinePresets } from "@ikanban/session-ui/timeline/detail"
 
 const messages = [
   { id: "msg_1", type: "user", text: "first", time: { created: 1 } },

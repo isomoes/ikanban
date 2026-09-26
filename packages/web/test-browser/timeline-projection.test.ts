@@ -8,7 +8,7 @@ import {
   Timeline,
   TimelineRow,
   type ReasoningMode,
-} from "@opencode/session-ui/timeline/projection"
+} from "@ikanban/session-ui/timeline/projection"
 import { createTimelineProjection } from "../src/session/timeline/projection"
 
 const assistant = (id: string, content: SessionMessageAssistant["content"]): SessionMessageAssistant => ({

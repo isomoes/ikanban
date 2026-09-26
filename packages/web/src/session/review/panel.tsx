@@ -5,9 +5,9 @@ import {
   SESSION_REVIEW_V2_SIDEBAR_WIDTH_MIN,
   SessionReviewV2,
   SessionReviewV2Sidebar,
-} from "@opencode/session-ui/v2/session-review-v2"
-import { SessionReviewFilePreviewV2 } from "@opencode/session-ui/v2/session-review-file-preview-v2"
-import { DiffChanges } from "@opencode/ui/diff-changes"
+} from "@ikanban/session-ui/v2/session-review-v2"
+import { SessionReviewFilePreviewV2 } from "@ikanban/session-ui/v2/session-review-file-preview-v2"
+import { DiffChanges } from "@ikanban/ui/diff-changes"
 import type {
   SessionReviewComment,
   SessionReviewCommentActions,
@@ -16,7 +16,7 @@ import type {
   SessionReviewDiffStyle,
   SessionReviewFocus,
   SessionReviewLineComment,
-} from "@opencode/session-ui/session-review"
+} from "@ikanban/session-ui/session-review"
 import FileTreeV2 from "@/session/files/file-tree-v2"
 import { sortFileTreeV2Paths } from "@/session/files/file-tree-v2-model"
 import { useLanguage } from "@/runtime/i18n/language"

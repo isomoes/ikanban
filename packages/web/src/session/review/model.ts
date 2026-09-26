@@ -1,6 +1,6 @@
 import type { FileDiffInfo } from "@opencode/client/promise"
-import type { SessionReviewLineComment } from "@opencode/session-ui/session-review"
-import { previewSelectedLines } from "@opencode/session-ui/pierre/selection-bridge"
+import type { SessionReviewLineComment } from "@ikanban/session-ui/session-review"
+import { previewSelectedLines } from "@ikanban/session-ui/pierre/selection-bridge"
 import { checksum } from "@opencode/util/encode"
 import { createQuery, skipToken, useQueryClient } from "@tanstack/solid-query"
 import { debounce } from "@solid-primitives/scheduled"

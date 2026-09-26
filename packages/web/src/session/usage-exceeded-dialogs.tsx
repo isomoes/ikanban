@@ -5,7 +5,7 @@ import { onCleanup } from "solid-js"
 import { Schema } from "effect"
 import { Persistence } from "@/runtime/persistence/schema"
 import { useSessionLayout } from "./session-layout"
-import { useDialog, useI18n } from "@opencode/ui/context"
+import { useDialog, useI18n } from "@ikanban/ui/context"
 import { DialogUsageExceeded } from "@/providers/connect/usage-exceeded"
 
 const GO_UPSELL_FREE_TIER_LAST_SEEN_AT = "go_upsell_last_seen_at"

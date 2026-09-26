@@ -1,5 +1,5 @@
-import { Badge } from "@opencode/ui/badge"
-import { useDialog } from "@opencode/ui/context/dialog"
+import { Badge } from "@ikanban/ui/badge"
+import { useDialog } from "@ikanban/ui/context/dialog"
 import { createMemo, Show, type Component } from "solid-js"
 import { ServerRowMenu } from "@/servers/registry/row-menu"
 import { ServerHealthIndicator } from "@/servers/registry/row"

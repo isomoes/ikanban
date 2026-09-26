@@ -1,6 +1,6 @@
 import { type Accessor, createMemo } from "solid-js"
 import { filter, firstBy, flat, groupBy, mapValues, pipe, uniqueBy, values } from "remeda"
-import { createSimpleContext } from "@opencode/ui/context"
+import { createSimpleContext } from "@ikanban/ui/context"
 import { useProviders } from "@/providers/catalog/providers"
 import { useGlobal } from "@/runtime/server/runtime"
 

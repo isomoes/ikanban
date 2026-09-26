@@ -83,22 +83,9 @@ Preview the built application at `http://localhost:3000/ikanban/`.
 change servers at runtime. Never put passwords, tokens, or other credentials in
 Vite environment variables.
 
-Optional Pages browser checks use a production build without a default backend
-and Playwright Chromium:
-
-```sh
-(cd packages/web && bunx playwright install chromium)
-env -u VITE_OPENCODE_URL bun run build:web
-env -u VITE_OPENCODE_URL bun run --cwd packages/web test:pages
-```
-
-These cover first connection, a Basic-auth test fixture, deep links, and PWA scope;
-they do not verify real model execution.
-
 ## Distribution
 
-The tag-driven workflow validates release versions, checks types, runs web unit
-tests, builds the app, and runs Pages browser tests before deploying
+The tag-driven workflow validates release versions and builds the app before deploying
 `packages/web/dist` to **GitHub Pages** at
 `/ikanban/`. Set the repository's Pages source to **GitHub Actions**. The optional
 repository variable `VITE_OPENCODE_URL` sets the build default; leaving it empty

@@ -4,7 +4,7 @@ import type {
   SessionMessageAssistantTool,
   SessionMessageInfo,
 } from "@opencode/client/promise"
-import { storyDocument, storyTool } from "../storybook/current-session-scenarios"
+import { storyDocument, storyTool } from "./rows-current.fixture"
 import { createTimelineProjection, Timeline, TimelineRow } from "./projection"
 
 describe("current session timeline rows", () => {

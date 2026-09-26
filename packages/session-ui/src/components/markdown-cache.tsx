@@ -1,5 +1,5 @@
 import { checksum } from "@opencode/util/encode"
-import { parseSmallMarkdown } from "@opencode/ui/context/marked-base"
+import { parseSmallMarkdown } from "@ikanban/ui/context/marked-base"
 import DOMPurify from "dompurify"
 import { MarkdownWorkerDisposedError, parseMarkdown } from "./markdown-worker"
 import { localImagePath, localLinkPath } from "./markdown-image"

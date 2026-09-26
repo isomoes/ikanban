@@ -1,6 +1,6 @@
-@import "@opencode/ui/styles/tailwind";
-@import "@opencode/session-ui/styles";
-@import "@opencode/ui/styles/tokens";
+@import "@ikanban/ui/styles/tailwind";
+@import "@ikanban/session-ui/styles";
+@import "@ikanban/ui/styles/tokens";
 @import "tw-animate-css";
 
 @font-face {

@@ -1,5 +1,5 @@
-import { FileIcon } from "@opencode/ui/file-icon"
-import "@opencode/ui/file-tree.css"
+import { FileIcon } from "@ikanban/ui/file-icon"
+import "@ikanban/ui/file-tree.css"
 import { getDirectory, getFilename } from "@opencode/util/path"
 import { createEffect, createMemo, createSignal, For, Show } from "solid-js"
 import { kindChange, kindLabel, syncFileTreeV2Width, type Kind } from "@/session/files/file-tree-v2"

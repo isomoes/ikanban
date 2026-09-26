@@ -80,19 +80,9 @@ bun run preview:web --port 3000
 `VITE_OPENCODE_URL` 仅用于提供可选的构建默认后端地址，运行时仍可更换服务器。
 不要将密码、token 或其他凭据放入 Vite 环境变量。
 
-可选的 Pages 浏览器检查使用无默认后端的生产构建和 Playwright Chromium：
-
-```sh
-(cd packages/web && bunx playwright install chromium)
-env -u VITE_OPENCODE_URL bun run build:web
-env -u VITE_OPENCODE_URL bun run --cwd packages/web test:pages
-```
-
-检查包含首次连接、Basic 认证测试服务、深层链接和 PWA 范围；不代表已验证真实模型执行。
-
 ## 发布
 
-标签工作流运行版本检查、类型检查、Web 单元测试、静态构建和 Pages 浏览器测试，然后将 `packages/web/dist`
+标签工作流运行版本检查和静态构建，然后将 `packages/web/dist`
 部署到 **GitHub Pages** 的 `/ikanban/`。仓库 Pages 来源需设置为 **GitHub Actions**。
 部署成功后，工作流从该标签的 `CHANGELOG.md` 提取对应版本条目，创建 GitHub Release；重复运行会更新同一 Release 的说明。
 工作流支持同名仓库变量 `VITE_OPENCODE_URL`；留空即可由用户在连接页面输入后端。

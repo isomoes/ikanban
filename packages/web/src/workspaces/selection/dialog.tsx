@@ -1,9 +1,9 @@
 import "@pierre/trees/web-components"
 import { FileTree } from "@pierre/trees"
-import { Dialog, DialogBody, DialogFooter, DialogHeader, DialogTitle } from "@opencode/ui/dialog"
-import { Button } from "@opencode/ui/button"
-import { TextInput } from "@opencode/ui/text-input"
-import { useDialog } from "@opencode/ui/context/dialog"
+import { Dialog, DialogBody, DialogFooter, DialogHeader, DialogTitle } from "@ikanban/ui/dialog"
+import { Button } from "@ikanban/ui/button"
+import { TextInput } from "@ikanban/ui/text-input"
+import { useDialog } from "@ikanban/ui/context/dialog"
 import { createEffect, createMemo, createResource, createSignal, For, onCleanup, onMount, Show } from "solid-js"
 import { useGlobal } from "@/runtime/server/runtime"
 import { useLanguage } from "@/runtime/i18n/language"
@@ -31,7 +31,7 @@ import {
   pickerAbsolutePath,
 } from "./domain"
 import "./dialog.css"
-import { Divider } from "@opencode/ui/divider"
+import { Divider } from "@ikanban/ui/divider"
 
 interface DirectoryPickerDialogProps {
   title?: string

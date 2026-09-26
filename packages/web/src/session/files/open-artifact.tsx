@@ -1,6 +1,6 @@
 import { createEffect, onCleanup, type ParentProps } from "solid-js"
-import { createSimpleContext } from "@opencode/ui/context"
-import { MarkdownProvider, useMarkdown } from "@opencode/session-ui/context/markdown"
+import { createSimpleContext } from "@ikanban/ui/context"
+import { MarkdownProvider, useMarkdown } from "@ikanban/session-ui/context/markdown"
 import { useBrowserAttachments } from "@/session/browser/attachments"
 import type { SessionModel } from "@/session/model"
 import { useFile } from "@/workspaces/files/model"

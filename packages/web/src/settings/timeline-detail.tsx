@@ -1,10 +1,10 @@
 import { For, Show, createMemo, createUniqueId } from "solid-js"
 import { createStore } from "solid-js/store"
-import { Collapsible } from "@opencode/ui/collapsible"
-import { Icon } from "@opencode/ui/icon"
-import { IconButton } from "@opencode/ui/icon-button"
-import { Switch } from "@opencode/ui/switch"
-import { Tooltip } from "@opencode/ui/tooltip"
+import { Collapsible } from "@ikanban/ui/collapsible"
+import { Icon } from "@ikanban/ui/icon"
+import { IconButton } from "@ikanban/ui/icon-button"
+import { Switch } from "@ikanban/ui/switch"
+import { Tooltip } from "@ikanban/ui/tooltip"
 import {
   timelineCategories,
   timelinePreset,
@@ -12,7 +12,7 @@ import {
   type TimelineCategory,
   type TimelineDetail,
   type TimelinePlacement,
-} from "@opencode/session-ui/timeline/detail"
+} from "@ikanban/session-ui/timeline/detail"
 import { useLanguage } from "@/runtime/i18n/language"
 import "./timeline-detail.css"
 

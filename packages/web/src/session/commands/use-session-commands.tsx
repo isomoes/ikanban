@@ -1,6 +1,6 @@
 import { useCommand, type CommandOption } from "@/shell/commands/command"
-import { useDialog } from "@opencode/ui/context/dialog"
-import { previewSelectedLines } from "@opencode/session-ui/pierre/selection-bridge"
+import { useDialog } from "@ikanban/ui/context/dialog"
+import { previewSelectedLines } from "@ikanban/session-ui/pierre/selection-bridge"
 import { useFile, selectionFromLines, type FileSelection, type SelectedLineRange } from "@/workspaces/files/model"
 import { useLanguage } from "@/runtime/i18n/language"
 import { useLayout } from "@/shell/state/layout"

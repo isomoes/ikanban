@@ -22,9 +22,6 @@
   "include": [
     "src",
     "happydom.ts",
-    "playwright.pages.config.ts",
-    "test-pages",
-    "script/serve-pages.ts",
     "vite*.ts",
     "package.json"
   ],

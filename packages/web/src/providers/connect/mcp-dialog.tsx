@@ -1,9 +1,9 @@
 import { Component, createMemo, Show } from "solid-js"
 import { useData } from "@/runtime/server/current"
 import { useWorkspaceLocation } from "@/workspaces/location"
-import { Dialog, DialogBody, DialogHeader, DialogTitleGroup } from "@opencode/ui/dialog"
-import { List } from "@opencode/ui/list"
-import { Switch } from "@opencode/ui/switch"
+import { Dialog, DialogBody, DialogHeader, DialogTitleGroup } from "@ikanban/ui/dialog"
+import { List } from "@ikanban/ui/list"
+import { Switch } from "@ikanban/ui/switch"
 import { useLanguage } from "@/runtime/i18n/language"
 import { useMcpToggle } from "@/providers/connect/mcp"
 

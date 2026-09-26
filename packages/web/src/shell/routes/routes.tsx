@@ -12,7 +12,7 @@ import Shell from "@/shell/shell"
 import { requireServerKey } from "./session"
 import { preloadPathname } from "./base"
 
-export const File = lazy(() => import("@opencode/session-ui/file").then((module) => ({ default: module.File })))
+export const File = lazy(() => import("@ikanban/session-ui/file").then((module) => ({ default: module.File })))
 const loadSessionRoute = () => Promise.all([import("@/session/route"), File.preload()]).then(([module]) => module)
 const DraftRoute = lazy(() => import("@/new-session/route").then((module) => ({ default: module.DraftRoute })))
 const SettingsScreen = lazy(() => import("@/settings/shell").then((module) => ({ default: module.SettingsScreen })))

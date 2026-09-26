@@ -1,4 +1,4 @@
-import { useDialog } from "@opencode/ui/context/dialog"
+import { useDialog } from "@ikanban/ui/context/dialog"
 import { useLanguage } from "@/runtime/i18n/language"
 import { ServerConnection } from "@/runtime/server/registry"
 import { displayName } from "@/shell/layout/helpers"

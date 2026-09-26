@@ -1,5 +1,5 @@
-import { Tabs } from "@opencode/ui/tabs"
-import { useDialog } from "@opencode/ui/context/dialog"
+import { Tabs } from "@ikanban/ui/tabs"
+import { useDialog } from "@ikanban/ui/context/dialog"
 import { createEffect, createMemo, on, onCleanup, onMount, Show, Switch, Match, type Accessor } from "solid-js"
 import { createStore } from "solid-js/store"
 import { useLanguage } from "@/runtime/i18n/language"

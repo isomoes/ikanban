@@ -1,4 +1,4 @@
-import { Icon } from "@opencode/ui/icon"
+import { Icon } from "@ikanban/ui/icon"
 import { Show } from "solid-js"
 import { useLanguage } from "@/runtime/i18n/language"
 import { ProjectSummaryCard } from "@/session/summary/project-card"

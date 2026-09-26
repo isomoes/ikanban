@@ -64,7 +64,7 @@ export default [
         },
         optimizeDeps: {
           exclude: workerDeps,
-          include: ["@opencode/session-ui > mermaid", "@opencode/session-ui > mermaid > katex"],
+          include: ["@ikanban/session-ui > mermaid", "@ikanban/session-ui > mermaid > katex"],
           rolldownOptions: { plugins: [bundleNestedWorkerDeps] },
         },
       }

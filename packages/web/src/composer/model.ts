@@ -1,5 +1,5 @@
-import { ImagePreview } from "@opencode/ui/image-preview"
-import { useDialog } from "@opencode/ui/context/dialog"
+import { ImagePreview } from "@ikanban/ui/image-preview"
+import { useDialog } from "@ikanban/ui/context/dialog"
 import type { ReferenceInfo } from "@opencode/client/promise"
 import { createComponent, createEffect, createMemo, on } from "solid-js"
 import type { ComposerSuggestion } from "./types"

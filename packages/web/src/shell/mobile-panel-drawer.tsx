@@ -1,5 +1,5 @@
 import type { ParentProps } from "solid-js"
-import { Button } from "@opencode/ui/button"
+import { Button } from "@ikanban/ui/button"
 import { useLanguage } from "@/runtime/i18n/language"
 import { MobileDrawer, MobileDrawerClose, MobileDrawerContent, MobileDrawerLabel } from "./mobile-drawer"
 import "./mobile-panel-drawer.css"

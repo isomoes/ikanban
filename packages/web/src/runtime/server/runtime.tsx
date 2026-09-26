@@ -1,4 +1,4 @@
-import { createSimpleContext } from "@opencode/ui/context"
+import { createSimpleContext } from "@ikanban/ui/context"
 import { Accessor, createEffect, createMemo, createResource, createRoot, getOwner } from "solid-js"
 import { createServerProjects, RECENTLY_CLOSED_DISPLAY_LIMIT, ServerConnection, useServers } from "./registry"
 import { pathKey } from "@/workspaces/path-key"
@@ -17,7 +17,7 @@ import { useLanguage } from "@/runtime/i18n/language"
 import { showToast } from "@/shell/notifications/toast"
 import { formatServerError } from "./errors"
 import { useSettings } from "@/settings/model"
-import { timelinePreset } from "@opencode/session-ui/timeline/detail"
+import { timelinePreset } from "@ikanban/session-ui/timeline/detail"
 
 export const { use: useGlobal, provider: GlobalProvider } = createSimpleContext({
   name: "Global",

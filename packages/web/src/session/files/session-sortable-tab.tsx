@@ -1,6 +1,6 @@
 import { Show } from "solid-js"
 import type { JSX } from "solid-js"
-import { FileIcon } from "@opencode/ui/file-icon"
+import { FileIcon } from "@ikanban/ui/file-icon"
 import { getFilename } from "@opencode/util/path"
 
 export function FileVisual(props: {

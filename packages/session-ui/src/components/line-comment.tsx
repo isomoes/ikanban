@@ -1,11 +1,11 @@
-import { useFilteredList } from "@opencode/ui/hooks"
+import { useFilteredList } from "@ikanban/ui/hooks"
 import { getDirectory, getFilename } from "@opencode/util/path"
 import { createSignal, For, onMount, Show, splitProps, type JSX } from "solid-js"
-import { Button } from "@opencode/ui/button"
-import { FileIcon } from "@opencode/ui/file-icon"
-import { Icon } from "@opencode/ui/icon"
+import { Button } from "@ikanban/ui/button"
+import { FileIcon } from "@ikanban/ui/file-icon"
+import { Icon } from "@ikanban/ui/icon"
 import { installLineCommentStyles } from "./line-comment-styles"
-import { useI18n } from "@opencode/ui/context/i18n"
+import { useI18n } from "@ikanban/ui/context/i18n"
 
 installLineCommentStyles()
 

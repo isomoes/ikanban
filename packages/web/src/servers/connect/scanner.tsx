@@ -1,7 +1,7 @@
 import QrScanner from "qr-scanner"
 import { onCleanup, onMount, Show } from "solid-js"
 import { createStore } from "solid-js/store"
-import { Button } from "@opencode/ui/button"
+import { Button } from "@ikanban/ui/button"
 import { useLanguage } from "@/runtime/i18n/language"
 import { decodePairingCode } from "./pairing"
 import "./scanner.css"

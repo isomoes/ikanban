@@ -27,17 +27,7 @@ bun run --cwd packages/web test:browser
 bun run --cwd packages/ui test
 bun run --cwd packages/session-ui test
 env -u VITE_OPENCODE_URL bun run build:web
-bun run --cwd packages/web test:pages
 ```
-
-The Pages suite requires Playwright Chromium. Install it from this package with
-`bunx playwright install chromium`. It exercises the production build with a
-Pages-style static server and controlled API fixtures. It does not execute models
-on a real backend.
-
-The imported upstream `e2e/` directory contains additional reference scenarios;
-`playwright.pages.config.ts` is the deployment-specific browser suite for local
-release verification.
 
 ## Static deployment
 

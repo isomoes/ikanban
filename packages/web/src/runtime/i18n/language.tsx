@@ -2,7 +2,7 @@ import { flatten, resolveTemplate, translator, type Flatten } from "@solid-primi
 import { createEffect, createMemo, createResource, type JSX } from "solid-js"
 import { createStore } from "solid-js/store"
 import { Option, Schema, SchemaGetter } from "effect"
-import { createSimpleContext } from "@opencode/ui/context"
+import { createSimpleContext } from "@ikanban/ui/context"
 import {
   I18nProvider,
   type UiI18n,
@@ -10,11 +10,11 @@ import {
   type UiI18nPluralLookupKey,
   type UiI18nPluralKey,
   type UiPluralCategory,
-} from "@opencode/ui/context/i18n"
+} from "@ikanban/ui/context/i18n"
 import { Persist, persisted } from "@/runtime/persistence/storage"
 import { Persistence } from "@/runtime/persistence/schema"
 import en from "@/runtime/i18n/en"
-import { dict } from "@opencode/ui/i18n/en"
+import { dict } from "@ikanban/ui/i18n/en"
 import {
   createDesktopNativeBundle,
   detectDesktopNativeLocale,
@@ -73,7 +73,7 @@ const merge = (app: Promise<Source>, ui: Promise<Source>) =>
   Promise.all([app, ui]).then(([a, b]) => ({ ...base, ...flatten({ ...a.dict, ...b.dict }) }) as Dictionary)
 
 const loaders: Record<Exclude<Locale, "en">, () => Promise<Dictionary>> = {
-  zh: () => merge(import("@/runtime/i18n/zh"), import("@opencode/ui/i18n/zh")),
+  zh: () => merge(import("@/runtime/i18n/zh"), import("@ikanban/ui/i18n/zh")),
 }
 
 function loadDict(locale: Locale) {

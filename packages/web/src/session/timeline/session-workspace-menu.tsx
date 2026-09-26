@@ -1,5 +1,5 @@
-import { Menu } from "@opencode/ui/menu"
-import { Icon } from "@opencode/ui/icon"
+import { Menu } from "@ikanban/ui/menu"
+import { Icon } from "@ikanban/ui/icon"
 import { getFilename } from "@opencode/util/path"
 import { createStore } from "solid-js/store"
 import { createSignal, For, onCleanup, Show, type ComponentProps, type JSX } from "solid-js"

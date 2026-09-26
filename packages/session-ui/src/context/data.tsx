@@ -5,7 +5,7 @@ import type {
   ShellOutputInput,
   ShellOutputOutput,
 } from "@opencode/client/promise"
-import { createSimpleContext } from "@opencode/ui/context"
+import { createSimpleContext } from "@ikanban/ui/context"
 import { PreloadMultiFileDiffResult } from "@pierre/diffs/ssr"
 
 export type SessionSummary = Pick<SessionInfo, "id" | "parentID" | "title" | "time">

@@ -1,5 +1,5 @@
-import { Icon } from "@opencode/ui/icon"
-import { ProjectAvatar } from "@opencode/ui/project-avatar"
+import { Icon } from "@ikanban/ui/icon"
+import { ProjectAvatar } from "@ikanban/ui/project-avatar"
 import { createUniqueId, Show, type ParentProps, type JSX } from "solid-js"
 import type { Project } from "@/runtime/server/types"
 import { useSettings } from "@/settings/model"
