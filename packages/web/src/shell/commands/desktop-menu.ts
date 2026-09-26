@@ -1,4 +1,5 @@
 import type { DesktopNativeKey } from "@/runtime/i18n/desktop-native"
+import { IKANBAN_ISSUES, IKANBAN_NEW_ISSUE, IKANBAN_WEBSITE } from "@/shell/links"
 
 export type DesktopMenuPlatform = "macos" | "windows"
 
@@ -281,19 +282,19 @@ export const DESKTOP_MENU: DesktopMenu[] = [
     id: "help",
     labelKey: "desktop.menu.help",
     items: [
-      { type: "item", labelKey: "desktop.menu.documentation", href: "https://opencode.ai/docs" },
-      { type: "item", labelKey: "desktop.menu.supportForum", href: "https://discord.com/invite/opencode" },
+      { type: "item", labelKey: "desktop.menu.documentation", href: IKANBAN_WEBSITE },
+      { type: "item", labelKey: "desktop.menu.supportForum", href: IKANBAN_ISSUES },
       { type: "item", labelKey: "desktop.menu.exportLogs", command: "logs.export" },
       { type: "separator" },
       {
         type: "item",
         labelKey: "desktop.menu.shareFeedback",
-        href: "https://github.com/anomalyco/opencode/issues/new?template=feature_request.yml",
+        href: `${IKANBAN_NEW_ISSUE}?labels=enhancement`,
       },
       {
         type: "item",
         labelKey: "desktop.menu.reportBug",
-        href: "https://github.com/anomalyco/opencode/issues/new?template=bug_report.yml",
+        href: `${IKANBAN_NEW_ISSUE}?labels=bug`,
       },
     ],
   },

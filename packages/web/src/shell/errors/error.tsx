@@ -7,6 +7,7 @@ import { createStore } from "solid-js/store"
 import { usePlatform } from "@/runtime/platform/platform"
 import { useLanguage } from "@/runtime/i18n/language"
 import { Icon } from "@opencode/ui/icon"
+import { IKANBAN_NEW_ISSUE } from "@/shell/links"
 import { errorDescriptionKey, errorStatus } from "./description"
 
 export type InitError = {
@@ -366,10 +367,10 @@ export const ErrorPage: Component<ErrorPageProps> = (props) => {
             <button
               type="button"
               class="flex items-center text-text-interactive-base gap-1"
-              onClick={() => platform.openExternal("https://opencode.ai/desktop-feedback")}
+              onClick={() => platform.openExternal(`${IKANBAN_NEW_ISSUE}?labels=bug`)}
             >
               <div>{language.t("error.page.report.discord")}</div>
-              <Icon name="discord" class="text-text-interactive-base" />
+              <Icon name="github" class="text-text-interactive-base" />
             </button>
           </div>
           <Show when={platform.version}>

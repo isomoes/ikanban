@@ -34,6 +34,7 @@ import { projectForSession } from "@/shell/layout/helpers"
 import { useSettingsDialog } from "@/settings/command"
 import { updaterAction } from "@/shell/updates/action"
 import type { UpdaterState } from "@/shell/updates/types"
+import { IKANBAN_ISSUES } from "@/shell/links"
 import { version } from "../../../package.json"
 import { KanbanMark } from "./kanban-mark"
 
@@ -582,7 +583,7 @@ export function Titlebar(props: {
                                 class="flex h-7 shrink-0 items-center gap-2 rounded-[6px] px-2 text-[13px] leading-4 text-v2-text-text-faint hover:bg-v2-background-bg-layer-02 focus-visible:outline-none focus-visible:bg-v2-background-bg-layer-02"
                                 onClick={() => {
                                   setMobileTabs("open", false)
-                                  platform.openExternal("https://opencode.ai/desktop-feedback")
+                                  platform.openExternal(IKANBAN_ISSUES)
                                 }}
                               >
                                 <Icon name="help" size="small" />

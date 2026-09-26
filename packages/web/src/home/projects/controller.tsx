@@ -18,6 +18,7 @@ import { useGlobal } from "@/runtime/server/runtime"
 import { SessionTransfer } from "@opencode/schema/session-transfer"
 import { useSshAuthenticate } from "@/servers/ssh/authenticate"
 import { useCommand } from "@/shell/commands/command"
+import { IKANBAN_ISSUES } from "@/shell/links"
 
 export const HomeServersSchema = Schema.Struct({
   collapsed: Persistence.record(Persistence.fallback(Schema.Boolean, () => false)),
@@ -216,7 +217,7 @@ export function createHomeProjectsController(home: HomeController) {
     },
     utility: {
       settings: openSettings,
-      help: () => platform.openExternal("https://opencode.ai/desktop-feedback"),
+      help: () => platform.openExternal(IKANBAN_ISSUES),
     },
   }
 }
