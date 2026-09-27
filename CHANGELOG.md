@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.5] - 2026-09-27
+
+- Web: Added a Reload server configuration command in new and existing sessions using the native OpenCode V2 location reload API, with progress, success, and error notifications. (@isomoes) [e296e3e](https://github.com/isomoes/ikanban/commit/e296e3e19228b921a2ff991691580e892cd7929e)
+- Web: Made the titlebar logo navigate Home and removed the separate Home button. (@isomoes) [5acb166](https://github.com/isomoes/ikanban/commit/5acb166b1ccf9acea94a5f741e5fc199a066e4c0)
+- Web: Moved the new-session composer and wordmark to the bottom, with project and workspace selectors opening upward. (@isomoes) [3cff105](https://github.com/isomoes/ikanban/commit/3cff10505dd6525b563c0c66d8ddf11829bb343f)
+
 ## [0.6.4] - 2026-09-26
 
 - Web: Added a Close project command to the Home command palette and removed the Open file shortcut; live commands without a keybind no longer fall back to the persisted catalog. (@isomoes) [fcbb61e](https://github.com/isomoes/ikanban/commit/fcbb61ed0fd9069458f28ad24b0a399b5570a32f)
