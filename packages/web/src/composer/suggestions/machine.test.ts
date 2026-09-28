@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test"
+import { Skill } from "@opencode/schema/skill"
 import type { ComposerPersistedState, ComposerSuggestion } from "../types"
 import { createComposerInteractionState, transitionComposer } from "./machine"
 
@@ -51,6 +52,31 @@ describe("Composer interaction machine", () => {
     )
 
     expect(result.state.popover).toEqual({ type: "context", query: "sr" })
+  })
+
+  test("does not reopen context completion for a mention pill", () => {
+    const input: ComposerPersistedState = {
+      prompt: [
+        {
+          type: "skill",
+          id: Skill.ID.make("review"),
+          name: Skill.Name.make("review"),
+          content: "@review",
+          start: 0,
+          end: 7,
+        },
+      ],
+      cursor: 7,
+      context: { items: [] },
+    }
+    const state = {
+      ...createComposerInteractionState(),
+      popover: { type: "context" as const, query: "review" },
+    }
+
+    const result = transitionComposer(state, { type: "input.changed", value: "@review", persist: false }, input)
+
+    expect(result.state.popover).toEqual({ type: "closed" })
   })
 
   test("enters shell mode from an initial exclamation mark", () => {

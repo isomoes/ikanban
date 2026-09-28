@@ -203,6 +203,14 @@ export function ComposerEditor(props: ComposerEditorProps) {
             }}
             onKeyDown={(event) => {
               if (!view.draftOnly && props.controller.onKeyDown(event)) return
+              if (
+                (event.key === "Backspace" || event.key === "Delete") &&
+                !event.isComposing &&
+                removeAdjacentMention(event.currentTarget, event.key === "Backspace" ? "backward" : "forward")
+              ) {
+                event.preventDefault()
+                return
+              }
               const mod = event.metaKey || event.ctrlKey
               if (mod && event.key === "ArrowUp" && !event.shiftKey && !event.altKey) {
                 if (view.submit.queue?.editFirst()) event.preventDefault()
@@ -468,6 +476,54 @@ function parseComposerEditor(editor: HTMLDivElement) {
   }
   if (parts.length > 0) return parts
   return [{ type: "text" as const, content: "", start: 0, end: 0 }]
+}
+
+// Browsers cannot reliably delete a non-editable mention pill at the caret, e.g. at the end of the editor.
+function removeAdjacentMention(editor: HTMLDivElement, direction: "backward" | "forward") {
+  const selection = window.getSelection()
+  if (!selection?.rangeCount || !selection.isCollapsed || !editor.contains(selection.anchorNode)) return false
+  const mention = adjacentMention(editor, selection.anchorNode!, selection.anchorOffset, direction)
+  if (!mention) return false
+  const range = document.createRange()
+  range.setStartBefore(mention)
+  range.collapse(true)
+  mention.remove()
+  selection.removeAllRanges()
+  selection.addRange(range)
+  editor.dispatchEvent(
+    new InputEvent("input", {
+      bubbles: true,
+      inputType: direction === "backward" ? "deleteContentBackward" : "deleteContentForward",
+    }),
+  )
+  return true
+}
+
+function adjacentMention(editor: HTMLElement, node: Node, offset: number, direction: "backward" | "forward") {
+  const backward = direction === "backward"
+  const inside = (node instanceof HTMLElement ? node : node.parentElement)?.closest<HTMLElement>("[data-mention]")
+  if (inside && editor.contains(inside)) return inside
+  let current: Node | null
+  if (node.nodeType === Node.TEXT_NODE) {
+    const text = (node.textContent ?? "").replace(/\u200B/g, "")
+    const before = (node.textContent ?? "").slice(0, offset).replace(/\u200B/g, "")
+    if (backward ? before.length > 0 : before.length < text.length) return
+    current = node
+  } else {
+    const child = (backward ? node.childNodes[offset - 1] : node.childNodes[offset]) ?? null
+    if (child instanceof HTMLElement && child.dataset.mention) return child
+    if (child && (child.nodeType !== Node.TEXT_NODE || (child.textContent ?? "").replace(/\u200B/g, ""))) return
+    current = child ?? node
+    if (!child && node === editor) return
+  }
+  while (current && current !== editor) {
+    let sibling = backward ? current.previousSibling : current.nextSibling
+    while (sibling && sibling.nodeType === Node.TEXT_NODE && !(sibling.textContent ?? "").replace(/\u200B/g, "")) {
+      sibling = backward ? sibling.previousSibling : sibling.nextSibling
+    }
+    if (sibling) return sibling instanceof HTMLElement && sibling.dataset.mention ? sibling : undefined
+    current = current.parentNode
+  }
 }
 
 function composerCursor(editor: HTMLDivElement) {

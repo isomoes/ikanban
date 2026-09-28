@@ -63,7 +63,10 @@ export function transitionComposer(
   event: ComposerInteractionEvent,
   persisted: ComposerPersistedState,
 ): ComposerEditorTransition {
-  if (event.type === "input.changed") return inputChanged(state, event.value, event.persist !== false, persisted.cursor)
+  if (event.type === "input.changed") {
+    const persist = event.persist !== false
+    return inputChanged(state, event.value, persist, persisted.cursor, persist ? event.value : triggerText(persisted))
+  }
   if (event.type === "commands.open") return openCommands(state, persisted)
   if (event.type === "context.open") return openContext(state)
   if (event.type === "popover.query") return queryChanged(state, event.value)
@@ -88,6 +91,7 @@ function inputChanged(
   value: string,
   persist: boolean,
   cursor: number | undefined,
+  trigger: string,
 ): ComposerEditorTransition {
   const setText: ComposerInteractionCommand[] = persist ? [{ type: "draft.setText", value }] : []
   if (state.mode === "normal" && value === "!") {
@@ -95,7 +99,7 @@ function inputChanged(
       { type: "draft.setText", value: "" },
     ])
   }
-  const context = value.slice(0, cursor ?? value.length).match(/(?:^|\s)@([^\s@]*)$/)
+  const context = trigger.slice(0, cursor ?? trigger.length).match(/(?:^|\s)@([^\s@]*)$/)
   if (context) {
     const query = context[1] ?? ""
     return changed({ ...state, popover: { type: "context", query }, focus: "editor" }, [
@@ -104,7 +108,7 @@ function inputChanged(
     ])
   }
 
-  const command = value.match(/^\/(\S*)$/)
+  const command = trigger.match(/^\/(\S*)$/)
   if (command) {
     const query = command[1] ?? ""
     return changed({ ...state, popover: { type: "command-inline", query }, focus: "editor" }, [
@@ -231,6 +235,16 @@ function keyDown(
 
 function promptText(persisted: ComposerPersistedState) {
   return persisted.prompt.map((part) => (part.type === "text" ? part.content : "")).join("")
+}
+
+// Mention pills keep their offsets but must not reopen suggestions for their own "@name" text.
+function triggerText(persisted: ComposerPersistedState) {
+  return persisted.prompt
+    .map((part) => {
+      if (isAttachment(part)) return ""
+      return part.type === "text" ? part.content : "\uFFFC".repeat(part.content.length)
+    })
+    .join("")
 }
 
 function populated(persisted: ComposerPersistedState) {
