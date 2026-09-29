@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.6] - 2026-09-29
+
+- Web: Fixed Backspace/Delete removal of skill mention pills in the composer and prevented mention text from reopening the suggestion list. (@isomoes) [9ce176c](https://github.com/isomoes/ikanban/commit/9ce176c80754a37a5fe6c208d650ffb3e1e30ff4)
+
 ## [0.6.5] - 2026-09-27
 
 - Web: Added a Reload server configuration command in new and existing sessions using the native OpenCode V2 location reload API, with progress, success, and error notifications. (@isomoes) [e296e3e](https://github.com/isomoes/ikanban/commit/e296e3e19228b921a2ff991691580e892cd7929e)
