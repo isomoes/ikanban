@@ -1,14 +1,17 @@
-import { Component } from "solid-js"
+import { Component, Show } from "solid-js"
 import { Select } from "@ikanban/ui/select"
+import { Switch } from "@ikanban/ui/switch"
 import { TextInput } from "@ikanban/ui/text-input"
 import { useLanguage } from "@/runtime/i18n/language"
 import { ExternalLink } from "@/runtime/platform/external-link"
 import { SettingsList } from "@/settings/list"
 import { SettingsRow } from "@/settings/row"
+import { useSettings } from "@/settings/model"
 import { createAppearanceSettingsController, type AppearanceSettingsController } from "@/settings/general/controllers"
 import "@/settings/settings.css"
 
 const schemeOptions: ("system" | "light" | "dark")[] = ["system", "light", "dark"]
+const tabLayoutOptions: ("horizontal" | "vertical")[] = ["horizontal", "vertical"]
 const fontSettings = {
   ui: {
     action: "settings-ui-font",
@@ -64,6 +67,7 @@ const FontSetting: Component<{
 export const SettingsAppearance: Component = () => {
   const language = useLanguage()
   const appearance = createAppearanceSettingsController()
+  const settings = useSettings()
 
   return (
     <>
@@ -124,6 +128,54 @@ export const SettingsAppearance: Component = () => {
             <FontSetting kind="ui" fonts={appearance.fonts} />
             <FontSetting kind="code" fonts={appearance.fonts} />
             <FontSetting kind="terminal" fonts={appearance.fonts} />
+            <SettingsRow
+              title={language.t("settings.appearance.row.tabs.title")}
+              description={language.t("settings.appearance.row.tabs.description")}
+            >
+              <Select
+                data-action="settings-tab-layout"
+                options={tabLayoutOptions}
+                current={tabLayoutOptions.find((option) => option === settings.appearance.tabLayout())}
+                placement="bottom-end"
+                gutter={6}
+                label={(option) =>
+                  option === "horizontal"
+                    ? language.t("settings.appearance.row.tabs.horizontal")
+                    : language.t("settings.appearance.row.tabs.vertical")
+                }
+                onSelect={(option) => option && settings.appearance.setTabLayout(option)}
+              />
+            </SettingsRow>
+            <SettingsRow
+              title={language.t("settings.appearance.row.projectName.title")}
+              description={language.t("settings.appearance.row.projectName.description")}
+            >
+              <div data-action="settings-show-project-name">
+                <Switch
+                  checked={settings.appearance.showProjectName()}
+                  onChange={settings.appearance.setShowProjectName}
+                  hideLabel
+                >
+                  {language.t("settings.appearance.row.projectName.title")}
+                </Switch>
+              </div>
+            </SettingsRow>
+            <Show when={import.meta.env.VITE_OPENCODE_CHANNEL !== "prod"}>
+              <SettingsRow
+                title={language.t("settings.general.row.showProjectIcon.title")}
+                description={language.t("settings.general.row.showProjectIcon.description")}
+              >
+                <div data-action="settings-show-project-icon">
+                  <Switch
+                    checked={settings.general.showProjectIcon()}
+                    onChange={settings.general.setShowProjectIcon}
+                    hideLabel
+                  >
+                    {language.t("settings.general.row.showProjectIcon.title")}
+                  </Switch>
+                </div>
+              </SettingsRow>
+            </Show>
           </SettingsList>
         </div>
       </div>

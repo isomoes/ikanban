@@ -52,13 +52,24 @@ describe("settings search index", () => {
   test("only advertises settings supported by this platform and channel", () => {
     const targets = (input: Parameters<typeof index>[0]) => index(input).map((item) => item.view.target)
     expect(targets({})).not.toContain("settings-pinch-zoom")
-    expect(targets({})).not.toContain("settings-experimental-browser")
+    expect(targets({})).not.toContain("settings-browser-pane")
     expect(targets({})).not.toContain("settings-show-project-icon")
     expect(targets({ desktop: true })).toContain("settings-pinch-zoom")
-    expect(targets({ browser: true })).toContain("settings-experimental-browser")
+    expect(targets({ browser: true })).toContain("settings-browser-pane")
     expect(targets({ dev: true })).toContain("settings-show-project-icon")
     expect(targets({ dev: true })).not.toContain("settings-mobile-titlebar-bottom")
     expect(targets({ dev: true, mobile: true })).toContain("settings-mobile-titlebar-bottom")
+  })
+
+  test("merges former experimental options into preferences and appearance", () => {
+    const items = index({ browser: true, dev: true })
+    const destination = (target: string) => items.find((item) => item.view.target === target)?.view.tab
+    expect(destination("settings-browser-pane")).toBe("general")
+    expect(destination("settings-tab-layout")).toBe("appearance")
+    expect(destination("settings-show-project-name")).toBe("appearance")
+    expect(destination("settings-show-project-icon")).toBe("appearance")
+    expect(items.some((item) => item.view.tab === ("experimental" as string))).toBe(false)
+    expect(rankSettings("experimental", items, root)).toEqual([])
   })
 
   test("uses section labels and stable identities independent of translated text", () => {

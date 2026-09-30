@@ -15,7 +15,6 @@ import { DialogServer } from "@/servers/connect/dialog"
 import { LocationProvider } from "@/workspaces/location"
 import { SettingsGeneral } from "./general/general"
 import { SettingsAppearance } from "./appearance/appearance"
-import { SettingsExperimental } from "./experimental/experimental"
 import { SettingsKeybinds } from "./keybinds/keybinds"
 import { SettingsNotifications } from "./notifications/notifications"
 import { SettingsProviders } from "./providers/providers"
@@ -52,7 +51,6 @@ const serverTabs = [
 ] as const
 
 const trailingTabs = [
-  [{ value: "experimental", icon: pageIcons.experimental, label: "settings.tab.experimental" }],
   [{ value: "about", icon: pageIcons.about, label: "settings.tab.about" }],
 ] as const
 
@@ -281,9 +279,6 @@ function RootSettings() {
       </Tabs.Content>
       <Tabs.Content value="shortcuts" class="settings-panel">
         <SettingsKeybinds active={surface.view().tab === "shortcuts"} autofocus={!surface.search.state.selected} />
-      </Tabs.Content>
-      <Tabs.Content value="experimental" class="settings-panel">
-        <SettingsExperimental />
       </Tabs.Content>
       <Tabs.Content value="about" class="settings-panel settings-about">
         <SettingsAbout active={surface.view().tab === "about"} />

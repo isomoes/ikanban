@@ -20,7 +20,6 @@ export const clientSettings: Entry<SettingsRootTab>[] = [
   { tab: "appearance", label: "settings.general.section.appearance" },
   { tab: "notifications", label: "settings.tab.notifications" },
   { tab: "shortcuts", label: "settings.shortcuts.title", keywords: "keybind keyboard hotkey" },
-  { tab: "experimental", label: "settings.tab.experimental" },
   { tab: "about", label: "settings.tab.about", keywords: "version license credits" },
   { tab: "general", label: "settings.general.row.language.title", target: "settings-language" },
   {
@@ -167,20 +166,20 @@ export const clientSettings: Entry<SettingsRootTab>[] = [
     keywords: "sound audio errors",
   },
   {
-    tab: "experimental",
+    tab: "general",
     label: "settings.general.row.browserPane.title",
-    target: "settings-experimental-browser",
+    target: "settings-browser-pane",
     available: "browser",
   },
   {
-    tab: "experimental",
+    tab: "appearance",
     label: "settings.appearance.row.tabs.title",
     target: "settings-tab-layout",
     keywords: "vertical horizontal tabs",
   },
-  { tab: "experimental", label: "settings.appearance.row.projectName.title", target: "settings-show-project-name" },
+  { tab: "appearance", label: "settings.appearance.row.projectName.title", target: "settings-show-project-name" },
   {
-    tab: "experimental",
+    tab: "appearance",
     label: "settings.general.row.showProjectIcon.title",
     target: "settings-show-project-icon",
     available: "dev",

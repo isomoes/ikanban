@@ -339,6 +339,23 @@ export const SettingsGeneral: Component = () => {
         <TerminalPlacementSetting />
         <FollowUpBehaviorSetting />
 
+        <Show when={platform.browserPane}>
+          <SettingsRow
+            title={language.t("settings.general.row.browserPane.title")}
+            description={language.t("settings.general.row.browserPane.description")}
+          >
+            <div data-action="settings-browser-pane">
+              <Switch
+                checked={settings.general.experimentalBrowser()}
+                onChange={settings.general.setExperimentalBrowser}
+                hideLabel
+              >
+                {language.t("settings.general.row.browserPane.title")}
+              </Switch>
+            </div>
+          </SettingsRow>
+        </Show>
+
         <Show when={desktop()}>
           <SettingsRow
             title={language.t("settings.general.row.pinchZoom.title")}
