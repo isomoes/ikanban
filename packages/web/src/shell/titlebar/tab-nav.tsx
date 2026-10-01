@@ -263,6 +263,13 @@ export function TabNavItem(props: {
             )}
           </Show>
         </span>
+        <Show when={props.orientation !== "vertical" && projectName()}>
+          {(name) => (
+            <span data-slot="tab-project" dir="auto" title={previewPath()}>
+              {name()}
+            </span>
+          )}
+        </Show>
         <span
           ref={(el) => {
             titleEl = el

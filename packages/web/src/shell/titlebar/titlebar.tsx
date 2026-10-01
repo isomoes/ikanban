@@ -30,7 +30,7 @@ import { MobileDrawer, MobileDrawerContent, MobileDrawerLabel, MobileDrawerTrigg
 import { sessionTabTitle } from "./tab-title"
 import { SessionTabAvatar } from "@/shell/layout/session-tab-avatar"
 import { SessionProgressIndicatorV2 } from "@ikanban/session-ui/v2/session-progress-indicator-v2"
-import { projectForSession } from "@/shell/layout/helpers"
+import { displayName, projectForSession } from "@/shell/layout/helpers"
 import { useSettingsDialog } from "@/settings/command"
 import { updaterAction } from "@/shell/updates/action"
 import type { UpdaterState } from "@/shell/updates/types"
@@ -379,6 +379,11 @@ export function Titlebar(props: {
               const conn = global.servers.list().find((item) => ServerConnection.key(item) === tab.server)
               return projectForSession(value, conn ? global.ensureServerCtx(conn).projects.list() : [])
             })
+            const currentProjectName = createMemo(() => {
+              const value = session()
+              if (!value) return
+              return displayName(currentProject() ?? { worktree: value.location.directory })
+            })
             const currentTitle = () => {
               const tab = currentTab()
               if (!tab) return language.t("home.title")
@@ -465,6 +470,18 @@ export function Titlebar(props: {
                                   />
                                 )}
                               </Show>
+                            </span>
+                          )}
+                        </Show>
+                        <Show when={currentProjectName()}>
+                          {(name) => (
+                            <span
+                              data-slot="mobile-tab-project"
+                              dir="auto"
+                              title={session()?.location.directory}
+                              class="max-w-[35%] shrink-0 truncate border-e border-v2-border-border-muted pe-2 text-[11px] text-v2-text-text-muted"
+                            >
+                              {name()}
                             </span>
                           )}
                         </Show>
