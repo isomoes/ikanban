@@ -46,22 +46,39 @@ export function SessionMobileViewTabs(props: {
       <Tabs value={props.current} variant="line" class="!h-auto min-w-0 flex-1" data-slot="session-mobile-view-tabs">
         <Tabs.List aria-label={language.t("session.view.select")} class="!h-9 !gap-0 !px-0 before:!hidden">
           <For each={["session", "changes", "files", "terminal"] as const}>
-            {(view) => (
-              <Tabs.Trigger
-                value={view}
-                class="min-w-0 flex-1"
-                classes={{ button: "w-full justify-center" }}
-                onClick={() => props.onSelect(view)}
-              >
-                {view === "session"
+            {(view) => {
+              const label = () =>
+                view === "session"
                   ? language.t("session.tab.session")
                   : view === "changes"
                     ? language.plural("session.review.change", 0)
                     : view === "files"
                       ? language.t("session.tab.files")
-                      : language.t("terminal.title")}
-              </Tabs.Trigger>
-            )}
+                      : language.t("terminal.title")
+              return (
+                <Tabs.Trigger
+                  value={view}
+                  class="min-w-0 flex-1"
+                  classes={{ button: "w-full justify-center" }}
+                  aria-label={label()}
+                  title={label()}
+                  onClick={() => props.onSelect(view)}
+                >
+                  <Icon
+                    name={
+                      view === "session"
+                        ? "speech-bubble"
+                        : view === "changes"
+                          ? "branch"
+                          : view === "files"
+                            ? "folder"
+                            : "terminal"
+                    }
+                    size="normal"
+                  />
+                </Tabs.Trigger>
+              )
+            }}
           </For>
         </Tabs.List>
       </Tabs>
