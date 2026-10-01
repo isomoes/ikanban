@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.7] - 2026-10-01
+
+- Web: Replaced mobile session navigation labels with icons while retaining accessible labels and tooltips. (@isomoes) [49207ee](https://github.com/isomoes/ikanban/commit/49207ee4fad64d567c398d8eb890cbe10cfbc689)
+- Web: Showed project names beside session titles in the top bar. (@isomoes) [9179c82](https://github.com/isomoes/ikanban/commit/9179c82f278872a417f5a081a2eb16acf829015b)
+- Settings: Moved experimental options into Appearance and General settings and removed the separate Experimental page. (@isomoes) [3804466](https://github.com/isomoes/ikanban/commit/3804466c9c4d64c124f3a2c8fef9134ddd1aeef5)
+
 ## [0.6.6] - 2026-09-29
 
 - Web: Fixed Backspace/Delete removal of skill mention pills in the composer and prevented mention text from reopening the suggestion list. (@isomoes) [9ce176c](https://github.com/isomoes/ikanban/commit/9ce176c80754a37a5fe6c208d650ffb3e1e30ff4)
