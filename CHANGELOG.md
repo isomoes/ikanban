@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.8] - 2026-10-02
+
+- Integration: Updated the native OpenCode V2 client, schema, browser plugin, and utility packages to 2.0.22 and documented the matching backend version. (@isomoes) [1d6e407](https://github.com/isomoes/ikanban/commit/1d6e407c1a6edb0b0e5e2d059df8ea0202029bc6)
+- Settings: Distinguished OAuth and API-key provider accounts, displayed server-reported authentication failures, and added a reconnect action for accounts needing authentication. (@isomoes) [1d6e407](https://github.com/isomoes/ikanban/commit/1d6e407c1a6edb0b0e5e2d059df8ea0202029bc6)
+- Web: Improved fuzzy project search across project selectors and settings, including nested directory discovery. (@isomoes) [bbce24d](https://github.com/isomoes/ikanban/commit/bbce24de2c5a2f1ab489f1159846686f166ee54c)
+
 ## [0.6.7] - 2026-10-01
 
 - Web: Replaced mobile session navigation labels with icons while retaining accessible labels and tooltips. (@isomoes) [49207ee](https://github.com/isomoes/ikanban/commit/49207ee4fad64d567c398d8eb890cbe10cfbc689)
