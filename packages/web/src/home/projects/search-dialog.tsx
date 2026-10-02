@@ -2,7 +2,8 @@ import { useDialog } from "@ikanban/ui/context/dialog"
 import { useLanguage } from "@/runtime/i18n/language"
 import { ServerConnection } from "@/runtime/server/registry"
 import { displayName } from "@/shell/layout/helpers"
-import { CommandPaletteView, matchesCommandPaletteEntry } from "@/shell/commands/dialog"
+import { CommandPaletteView } from "@/shell/commands/dialog"
+import { searchProjects } from "@/workspaces/project-search"
 import type { CommandPaletteEntry } from "@/shell/commands/palette"
 import type { LocalProject } from "@/shell/state/layout"
 
@@ -34,7 +35,12 @@ export function HomeProjectSearch(props: {
   return (
     <CommandPaletteView
       placeholder={language.t("session.new.project.search")}
-      items={(query) => entries().filter((entry) => matchesCommandPaletteEntry(entry, query))}
+      items={(query) =>
+        searchProjects(
+          entries().map((entry) => ({ entry, name: entry.title, worktree: entry.description ?? "" })),
+          query,
+        ).map((item) => item.entry)
+      }
       sources={[]}
       highlight={() => {}}
       select={(entry) => {

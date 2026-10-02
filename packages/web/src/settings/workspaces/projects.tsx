@@ -7,7 +7,7 @@ import { TextInput } from "@ikanban/ui/text-input"
 import { useLanguage } from "@/runtime/i18n/language"
 import { useGlobal } from "@/runtime/server/runtime"
 import { ServerConnection } from "@/runtime/server/registry"
-import { displayName } from "@/shell/layout/helpers"
+import { searchProjects } from "@/workspaces/project-search"
 import type { LocalProject } from "@/shell/state/layout"
 import { SettingsSearchEmpty } from "../search-empty"
 import { settingsProjects } from "../servers/inventory"
@@ -35,8 +35,7 @@ export const SettingsProjects: Component<{
   const projects = createMemo(() => settingsProjects(global.ensureServerCtx(props.server)))
   const searchable = createMemo(() => projects().length > 7)
   const filtered = createMemo(() => {
-    const query = searchable() ? store.filter.trim().toLowerCase() : ""
-    return query ? projects().filter((project) => displayName(project).toLowerCase().includes(query)) : projects()
+    return searchProjects(projects(), searchable() ? store.filter : "")
   })
   createEffect(() => {
     if (!searchable()) setStore("filter", "")

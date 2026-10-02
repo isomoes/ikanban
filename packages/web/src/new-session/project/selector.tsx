@@ -16,6 +16,7 @@ import { getProjectAvatarVariant } from "@/shell/state/layout"
 import { useLanguage } from "@/runtime/i18n/language"
 import { displayName, getProjectAvatarSource } from "@/shell/layout/helpers"
 import { pathKey } from "@/workspaces/path-key"
+import { searchProjects } from "@/workspaces/project-search"
 import { handleDocumentSearchKeydown } from "@/shell/commands/search-keydown"
 import { createMenuDismissController } from "@/shell/commands/menu-dismiss"
 
@@ -66,11 +67,7 @@ export function createPromptProjectController(input: {
       )
   }
   const selected = () => current() ?? input.controls().available[0]
-  const projects = () => {
-    const search = store.search.trim().toLowerCase()
-    if (!search) return input.controls().available
-    return input.controls().available.filter((project) => displayName(project).toLowerCase().includes(search))
-  }
+  const projects = () => searchProjects(input.controls().available, store.search)
   const servers = () =>
     input
       .controls()
@@ -113,10 +110,7 @@ export function createPromptProjectController(input: {
     input.controls().add(language.t("command.project.open"), server)
   }
   const setSearch = (value: string) => {
-    const search = value.trim().toLowerCase()
-    const first = input
-      .controls()
-      .available.find((project) => !search || displayName(project).toLowerCase().includes(search))
+    const first = searchProjects(input.controls().available, value)[0]
     setStore({
       search: value,
       active: first ? projectKey(first) : actionKey(servers().length > 1 ? undefined : servers()[0]?.key),

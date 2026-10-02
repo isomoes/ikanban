@@ -345,6 +345,7 @@ export function createDirectorySearch(args: {
   home: () => string
 }) {
   const cache = new Map<string, Promise<Array<{ name: string; absolute: string }>>>()
+  const indexes = new Map<string, Promise<string[]>>()
   let current = 0
 
   const scoped = (value: string) => {
@@ -379,6 +380,42 @@ export function createDirectorySearch(args: {
     return fuzzysort.go(query, items, { key: "name", limit }).map((item) => item.obj.absolute)
   }
 
+  const searchable = (name: string) =>
+    !name.startsWith(".") && !["node_modules", "vendor", "dist", "build", "target"].includes(name)
+
+  // The server's directory finder may only complete literal path prefixes.
+  // Cache a bounded, shallow index so names can also match nested projects.
+  const index = (directory: string) => {
+    const key = JSON.stringify([args.location(), trimPickerPath(directory)])
+    const existing = indexes.get(key)
+    if (existing) return existing
+    const request = (async () => {
+      const found = new Set<string>()
+      let pending = [directory]
+      let remaining = 80
+      for (let depth = 0; depth < 3 && pending.length && remaining > 0; depth++) {
+        const level = pending.slice(0, remaining)
+        remaining -= level.length
+        const next: string[] = []
+        for (let offset = 0; offset < level.length; offset += 4) {
+          const batches = await Promise.all(level.slice(offset, offset + 4).map(directories))
+          for (const [batch, nodes] of batches.entries()) {
+            const parent = level[offset + batch]!
+            for (const node of nodes) {
+              if (node.absolute === parent || !treePathWithin(parent, node.absolute) || found.has(node.absolute)) continue
+              found.add(node.absolute)
+              if (searchable(node.name)) next.push(node.absolute)
+            }
+          }
+        }
+        pending = next
+      }
+      return [...found]
+    })()
+    indexes.set(key, request)
+    return request
+  }
+
   return async (filter: string) => {
     const token = ++current
     const active = () => token === current
@@ -403,14 +440,18 @@ export function createDirectorySearch(args: {
               )
               .catch(() => [])
       if (!active()) return []
-      if (results.length) {
-        return results.slice(0, 50)
-      }
+      if (!query && results.length) return results.slice(0, 50)
       const fallback = query
-        ? await match(input.directory, query, 50)
+        ? await index(input.directory)
         : (await directories(input.directory)).map((item) => item.absolute)
       if (!active()) return []
-      return fallback
+      if (!query) return fallback
+      const candidates = Array.from(new Set([...results, ...fallback])).map((absolute) => ({
+        absolute,
+        name: getFilename(absolute),
+        path: pickerRelativePath(input.directory, absolute) ?? absolute,
+      }))
+      return fuzzysort.go(query, candidates, { keys: ["name", "path"], limit: 50 }).map((item) => item.obj.absolute)
     }
     const segments = query.replace(/^\/+/, "").split("/")
     const head = segments.slice(0, -1).filter((part) => part && part !== ".")

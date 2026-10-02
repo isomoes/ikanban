@@ -209,7 +209,10 @@ test("uses listings for typed searches outside the current location", async () =
   } as unknown as Parameters<typeof createDirectorySearch>[0]["sdk"]
   const search = createDirectorySearch({ sdk, home: () => "/home/luke", base: () => "/repo", location: () => location })
   expect(await search("sib")).toEqual(["/repo/sibling"])
-  expect(calls).toEqual([{ location, path: "/repo" }])
+  expect(calls).toEqual([
+    { location, path: "/repo" },
+    { location, path: "/repo/sibling" },
+  ])
 })
 
 test("keeps literal tilde directory names in server listing and search results", async () => {
@@ -363,6 +366,92 @@ test("matches the default directory listing when typed search is unsupported", a
   })
 
   expect(await search("documents")).toEqual(["/home/luke/Documents"])
+})
+
+test("combines backend prefix results with fuzzy directory name matches", async () => {
+  const location = { directory: "/repo" }
+  const sdk = {
+    api: {
+      file: {
+        find: () => Promise.resolve({ location, data: [{ path: "ik-tools/", type: "directory" }] }),
+        list: () =>
+          Promise.resolve({
+            location,
+            data: [
+              { path: "ik-tools/", type: "directory" },
+              { path: "ikanban/", type: "directory" },
+              { path: "unrelated/", type: "directory" },
+              { path: "ik-file", type: "file" },
+            ],
+          }),
+      },
+    },
+  } as unknown as Parameters<typeof createDirectorySearch>[0]["sdk"]
+  const search = createDirectorySearch({ sdk, home: () => "/repo", base: () => "/repo", location: () => location })
+
+  expect((await search("ik")).sort()).toEqual(["/repo/ik-tools", "/repo/ikanban"])
+  expect(await search("kbn")).toEqual(["/repo/ikanban"])
+  expect(await search("KAN")).toEqual(["/repo/ikanban"])
+})
+
+test("ranks nested backend results by fuzzy names and relative paths", async () => {
+  const location = { directory: "/repo" }
+  const sdk = {
+    api: {
+      file: {
+        find: () =>
+          Promise.resolve({
+            location,
+            data: [
+              { path: "packages/ikanban/", type: "directory" },
+              { path: "packages/unrelated/", type: "directory" },
+            ],
+          }),
+        list: () => Promise.resolve({ location, data: [] }),
+      },
+    },
+  } as unknown as Parameters<typeof createDirectorySearch>[0]["sdk"]
+  const search = createDirectorySearch({ sdk, home: () => "/repo", base: () => "/repo", location: () => location })
+
+  expect(await search("kbn")).toEqual(["/repo/packages/ikanban"])
+  expect(await search("pkik")).toEqual(["/repo/packages/ikanban"])
+})
+
+test("finds nested projects by abbreviation without typing their parent path", async () => {
+  const location = { directory: "/home/luke" }
+  const calls: string[] = []
+  const entries: Record<string, string[]> = {
+    "/home/luke": ["code", ".cache", "node_modules"],
+    "/home/luke/code": ["js"],
+    "/home/luke/code/js": ["ikanban", "other"],
+  }
+  const sdk = {
+    api: {
+      file: {
+        find: () => Promise.resolve({ location, data: [] }),
+        list: (input: { path: string }) => {
+          calls.push(input.path)
+          return Promise.resolve({
+            location,
+            data: (entries[input.path] ?? []).map((name) => ({
+              path: input.path + "/" + name + "/",
+              type: "directory",
+            })),
+          })
+        },
+      },
+    },
+  } as unknown as Parameters<typeof createDirectorySearch>[0]["sdk"]
+  const search = createDirectorySearch({
+    sdk,
+    home: () => location.directory,
+    base: () => location.directory,
+    location: () => location,
+  })
+
+  expect(await search("kbn")).toEqual(["/home/luke/code/js/ikanban"])
+  expect(await search("kan")).toEqual(["/home/luke/code/js/ikanban"])
+  expect(calls).toEqual(["/home/luke", "/home/luke/code", "/home/luke/code/js"])
 })
 
 test("searches from an absolute root without a default base", async () => {
