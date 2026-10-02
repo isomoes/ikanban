@@ -5,6 +5,7 @@ import { ProviderIcon } from "@ikanban/ui/provider-icon"
 import { showToast } from "@/shell/notifications/toast"
 import { popularProviders, useProviders } from "@/providers/catalog/providers"
 import { useIntegrations } from "@/providers/catalog/integrations"
+import { providerConnection } from "@/providers/catalog/connections"
 import { createMemo, type Component, For, Show } from "solid-js"
 import { useLanguage } from "@/runtime/i18n/language"
 import { useServerSDK } from "@/runtime/server/client"
@@ -39,6 +40,7 @@ export const SettingsProviders: Component<{
   const integrations = useIntegrations(() => props.directory)
   const providerConnect = useProviderConnectController({ onBack: props.onBack })
   const integration = (providerID: string) => integrations.list().find((item) => item.id === providerID)
+  const connection = (providerID: string) => providerConnection(integration(providerID))
 
   const connect = (provider?: string) => {
     providerConnect.select(provider)
@@ -82,7 +84,8 @@ export const SettingsProviders: Component<{
   const type = (item: ProviderItem) => {
     const current = source(item)
     if (current === "env") return language.t("settings.providers.tag.environment")
-    if (current === "api") return language.t("provider.connect.method.apiKey")
+    if (current === "api")
+      return connection(item.id).method === "oauth" ? "OAuth" : language.t("provider.connect.method.apiKey")
     if (current === "config") return language.t("settings.providers.tag.config")
     if (current === "custom") return language.t("settings.providers.tag.custom")
     return language.t("settings.providers.tag.other")
@@ -149,11 +152,24 @@ export const SettingsProviders: Component<{
                         height={PROVIDER_ICON_SIZE}
                         class="settings-provider-icon shrink-0"
                       />
-                      <div class="settings-provider-main">
-                        <span class="settings-provider-name truncate">{item.name}</span>
-                        <Badge>{type(item)}</Badge>
+                      <div class="settings-provider-copy">
+                        <div class="settings-provider-main">
+                          <span class="settings-provider-name truncate">{item.name}</span>
+                          <Badge>{type(item)}</Badge>
+                          <Show when={connection(item.id).auth}>
+                            <Badge>{language.t("session.summary.needsAuth")}</Badge>
+                          </Show>
+                        </div>
+                        <Show when={connection(item.id).auth}>
+                          {(auth) => <p class="settings-provider-description">{auth().message}</p>}
+                        </Show>
                       </div>
                     </div>
+                    <Show when={connection(item.id).auth}>
+                      <Button size="normal" variant="neutral" onClick={() => connect(item.id)}>
+                        {language.t("common.connect")}
+                      </Button>
+                    </Show>
                     <Show
                       when={canDisconnect(item)}
                       fallback={

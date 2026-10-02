@@ -38,9 +38,9 @@
   },
   "dependencies": {
     "@kobalte/core": "catalog:",
-    "@opencode/client": "2.0.12",
+    "@opencode/client": "2.0.22",
     "@ikanban/ui": "workspace:*",
-    "@opencode/util": "2.0.12",
+    "@opencode/util": "2.0.22",
     "@pierre/diffs": "catalog:",
     "@shikijs/stream": "catalog:",
     "@solid-primitives/event-listener": "catalog:",

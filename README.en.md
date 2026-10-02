@@ -20,6 +20,10 @@ The frontend is imported from OpenCode's `v2` shared desktop/web application.
 An independent OpenCode backend owns sessions, execution, tools, providers, and
 provider credentials.
 
+The OpenCode client packages are pinned to **2.0.22**. Use an OpenCode **2.0.22**
+backend for the matching API. Provider settings distinguish OAuth and API-key
+accounts and display authentication failures reported by the server.
+
 ## Connect a backend
 
 Open [iKanban](https://isomoes.github.io/ikanban/) and enter your OpenCode V2 server
