@@ -1,4 +1,4 @@
-import { createEffect, createSignal, Match, Show, Switch } from "solid-js"
+import { createSignal, Match, Show, Switch } from "solid-js"
 import { Button } from "@ikanban/ui/button"
 import { Icon } from "@ikanban/ui/icon"
 import { IconButton } from "@ikanban/ui/icon-button"
@@ -12,18 +12,14 @@ import type { SessionBtwModel } from "./model"
 
 export function SessionBtwPanel(props: { btw: SessionBtwModel }) {
   const language = useLanguage()
-  const [copied, setCopied] = createSignal(false)
-
-  createEffect(() => {
-    props.btw.answer()
-    setCopied(false)
-  })
+  const [copiedAnswer, setCopiedAnswer] = createSignal<string>()
+  const copied = () => copiedAnswer() !== undefined && copiedAnswer() === props.btw.answer()
 
   const copy = () => {
     const answer = props.btw.answer()
     if (!answer) return
     void navigator.clipboard.writeText(answer).then(
-      () => setCopied(true),
+      () => setCopiedAnswer(answer),
       () => showToast({ title: language.t("common.requestFailed") }),
     )
   }

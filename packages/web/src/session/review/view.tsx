@@ -5,7 +5,7 @@ import { Tabs } from "@ikanban/ui/tabs"
 import { Icon } from "@ikanban/ui/icon"
 import { IconButton } from "@ikanban/ui/icon-button"
 import { Menu } from "@ikanban/ui/menu"
-import { For, Match, Show, Suspense, Switch, lazy, createEffect, onCleanup, type JSX } from "solid-js"
+import { For, Match, Show, Suspense, Switch, lazy, onCleanup, type JSX } from "solid-js"
 import { createStore } from "solid-js/store"
 import { useLanguage } from "@/runtime/i18n/language"
 import { useSettings } from "@/settings/model"
@@ -34,7 +34,10 @@ export function SessionMobileViewTabs(props: {
     detailsLoaded: false,
     pending: false,
   })
-  createEffect(() => props.onDetailsOpenChange?.(store.details))
+  const setDetails = (open: boolean) => {
+    setStore("details", open)
+    props.onDetailsOpenChange?.(open)
+  }
   onCleanup(() => props.onDetailsOpenChange?.(false))
   let trigger: HTMLButtonElement | undefined
   return (
@@ -106,7 +109,8 @@ export function SessionMobileViewTabs(props: {
             onCloseAutoFocus={(event) => {
               if (!store.pending) return
               event.preventDefault()
-              setStore({ details: true, detailsLoaded: true, pending: false })
+              setStore({ detailsLoaded: true, pending: false })
+              setDetails(true)
             }}
           >
             <Menu.Item onSelect={() => props.onSelect("usage")}>{language.t("session.tab.usage")}</Menu.Item>
@@ -123,10 +127,10 @@ export function SessionMobileViewTabs(props: {
           <MobilePanelDrawer
             title={language.t("session.summary.title")}
             open={store.details}
-            onOpenChange={(open) => setStore("details", open)}
+            onOpenChange={setDetails}
             returnFocus={() => trigger}
           >
-            {props.details?.(() => setStore("details", false))}
+            {props.details?.(() => setDetails(false))}
           </MobilePanelDrawer>
         </Suspense>
       </Show>

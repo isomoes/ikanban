@@ -9,15 +9,10 @@ import {
   createEffect,
   createComputed,
   on,
-  onMount,
 } from "solid-js"
 import { createStore } from "solid-js/store"
-import { makeEventListener } from "@solid-primitives/event-listener"
-import { debounce } from "@solid-primitives/scheduled"
 import { ResizeHandle } from "@ikanban/ui/resize-handle"
 import { MessageTimeline } from "@/session/timeline/message-timeline"
-import { useServer } from "@/runtime/server/current"
-import { projectForSession } from "@/shell/layout/helpers"
 import { ComposerDropzone } from "@/composer/dropzone"
 import type { SessionModel } from "@/session/model"
 import { SESSION_PANEL_WIDTH_MIN } from "@/session/session-panel-width"
@@ -26,8 +21,10 @@ import { TerminalPanel } from "@/session/terminal/panel"
 import { useUsageExceededDialogs } from "./usage-exceeded-dialogs"
 import { SessionErrorFallback } from "./route-error"
 import { createSessionScreenLayout } from "./screen-layout"
+import { createSessionScreenPanes } from "./screen-panes"
 import { createSessionReview } from "./review/model"
-import { SessionDesktopReview, SessionMobileReview, SessionMobileViewTabs } from "./review/view"
+import { SessionDesktopReview, SessionMobileReview } from "./review/view"
+import { SessionMobileTabs } from "./screen-mobile-tabs"
 import { SessionContextTab } from "./files/session-context-tab"
 import { createSessionTimelineInteraction } from "./timeline/interaction"
 import { createTimelineSearchController } from "./timeline/search-controller"
@@ -35,7 +32,6 @@ import { TimelineSearchBar } from "./timeline/search-bar"
 import { ActiveSessionComposerRegion, createActiveSessionRegion } from "./composer/region"
 import { SessionIdentityHeader } from "./session-identity-header"
 import { SessionReviewToggle } from "./header/session-header-actions"
-import { createAnimatedPresence } from "@/runtime/animated-presence"
 import { createTimelineCache } from "./timeline/cache"
 import { ArtifactMarkdownProvider, ArtifactOpenerProvider } from "./files/open-artifact"
 import { createSessionBtw } from "./btw/model"
@@ -43,11 +39,6 @@ import { createSessionBtw } from "./btw/model"
 const SessionMobileFiles = lazy(async () => {
   const { SessionMobileFiles } = await import("./files/session-mobile-files")
   return { default: SessionMobileFiles }
-})
-
-const SessionSummaryPanel = lazy(async () => {
-  const { SessionSummaryPanel } = await import("./summary/panel")
-  return { default: SessionSummaryPanel }
 })
 
 export function SessionScreen(props: { session: SessionModel }) {
@@ -63,11 +54,6 @@ export function SessionScreen(props: { session: SessionModel }) {
 
 function SessionScreenContent(props: { session: SessionModel }) {
   const session = props.session
-  const server = useServer()
-  const detailsProject = createMemo(() => {
-    const info = session.data.info()
-    return info ? projectForSession(info, server.ctx.sync.data.project) : undefined
-  })
   const isDesktop = session.isDesktop
   const btw = createSessionBtw(session)
   const screen = createSessionScreenLayout(session)
@@ -79,114 +65,41 @@ function SessionScreenContent(props: { session: SessionModel }) {
     pauseAutoScroll: timeline.view.unpin,
   })
   const messagesReady = timeline.ready
-  const [store, setStore] = createStore({
+  const {
+    store: paneStore,
+    setStore: setPaneStore,
+    setElements,
+    sideVisible,
+    sideTerminalVisible,
+    sidePresence,
+    bottomTerminalPresence,
+    sideMotion,
+    paneAnimating,
+    trackSideWidthMotion,
+    hideTimelineScrollbar,
+    revealTimelineScrollbar,
+    mobileTerminalCached,
+  } = createSessionScreenPanes({ session, screen })
+  const [state, setState] = createStore({
     deferRender: false,
-    bottomTerminalCached: false,
-    sideWidthMotion: false,
-    timelineScrollbarHidden: false,
-    sideHeightMotion: false,
-    sideRegionPresent: false,
-    sideReviewPresent: false,
-    sideTerminalPresent: false,
-    mobileTerminalCached: false,
     mobileMoveDismissed: false,
-    summaryResizeTranslate: undefined as string | undefined,
-  })
-  const [elements, setElements] = createStore<{
-    chat?: HTMLDivElement
-    side?: HTMLDivElement
-    bottomTerminal?: HTMLDivElement
-  }>({})
-  const finishWindowResize = debounce(() => setStore("summaryResizeTranslate", undefined), 150)
-  onMount(() => {
-    makeEventListener(window, "resize", () => {
-      if (store.summaryResizeTranslate === undefined) {
-        const content = elements.chat?.querySelector("[data-timeline-virtual-content]")
-        // Freeze the painted offset, including an in-flight slide, until resizing settles.
-        setStore("summaryResizeTranslate", content ? getComputedStyle(content).translate : "none")
-      }
-      finishWindowResize()
-    })
-  })
-  const sideVisible = createMemo(() => isDesktop() && screen.side.layout().visible)
-  const sideTerminalVisible = createMemo(() => isDesktop() && screen.terminal.side() && screen.terminal.open())
-  const bottomTerminalVisible = createMemo(() => isDesktop() && screen.terminal.open() && screen.terminal.bottom())
-  const sidePresence = createAnimatedPresence(
-    () => sideVisible() || undefined,
-    () => elements.side ?? null,
-    session.layout.tabKey,
-  )
-  const bottomTerminalPresence = createAnimatedPresence(
-    () => bottomTerminalVisible() || undefined,
-    () => elements.bottomTerminal ?? null,
-    session.layout.tabKey,
-  )
-  const sideMotion = createMemo<{
-    key?: string
-    region: boolean
-    terminal: boolean
-    animateRegion: boolean
-    animateTerminal: boolean
-  }>((previous) => {
-    const key = session.layout.tabKey()
-    const region = screen.side.region.open()
-    const terminal = sideTerminalVisible()
-    const sameTab = previous?.key === key
-    return {
-      key,
-      region,
-      terminal,
-      animateRegion: !!previous && sameTab && previous.region !== region,
-      animateTerminal: !!previous && sameTab && previous.terminal !== terminal,
-    }
-  })
-  const paneAnimating = () =>
-    sidePresence.animate() ||
-    sideMotion().animateRegion ||
-    sideMotion().animateTerminal ||
-    bottomTerminalPresence.animate()
-  const trackSideWidthMotion = (event: TransitionEvent) => {
-    if (event.currentTarget !== event.target || event.propertyName !== "width") return
-    setStore("sideWidthMotion", event.type === "transitionrun")
-  }
-  const hideTimelineScrollbar = () => setStore("timelineScrollbarHidden", true)
-  const revealTimelineScrollbar = (event: Event) => {
-    if (!store.timelineScrollbarHidden || store.sideWidthMotion) return
-    if (!(event.target instanceof Element) || !event.target.closest('[data-slot="session-timeline-scroll"]')) return
-    setStore("timelineScrollbarHidden", false)
-  }
-  createEffect(() => {
-    if (sideTerminalVisible()) setStore("sideTerminalPresent", true)
-    if (bottomTerminalVisible()) setStore("bottomTerminalCached", true)
-    if (!sideVisible()) setStore("sideHeightMotion", false)
-  })
-  createEffect(() => {
-    if (!isDesktop() || screen.terminal.bottom()) setStore("sideTerminalPresent", false)
-    if (isDesktop() && screen.terminal.side()) setStore("bottomTerminalCached", false)
-  })
-  createEffect(() => {
-    if (screen.side.region.open()) setStore("sideRegionPresent", true)
-    if (screen.review.panelOpen()) setStore("sideReviewPresent", true)
   })
 
   createComputed((prev) => {
     const key = session.identity.sessionKey()
     if (key !== prev) {
-      setStore("mobileMoveDismissed", false)
-      setStore("deferRender", true)
+      setState("mobileMoveDismissed", false)
+      setState("deferRender", true)
       const owner = session.ownership.capture()
       requestAnimationFrame(() => {
-        setTimeout(() => owner.run(() => setStore("deferRender", false)), 0)
+        setTimeout(() => owner.run(() => setState("deferRender", false)), 0)
       })
     }
     return key
   })
-  const review = createSessionReview({ session, screen, deferRender: () => store.deferRender })
+  const review = createSessionReview({ session, screen, deferRender: () => state.deferRender })
   const mobileView = createMemo(() => (screen.terminal.open() ? "terminal" : review.mobile.tab()))
   const conversationVisible = createMemo(() => isDesktop() || mobileView() === "session")
-  createEffect(() => {
-    if (!isDesktop() && screen.terminal.open()) setStore("mobileTerminalCached", true)
-  })
   const composer = createActiveSessionRegion({
     session,
     screen,
@@ -199,59 +112,6 @@ function SessionScreenContent(props: { session: SessionModel }) {
     createEffect(on(session.identity.sessionKey, reset, { defer: true }))
     return <SessionErrorFallback error={error} sessionID={session.identity.params.id} />
   }
-
-  const mobileTabs = () => (
-    <Show when={session.identity.sessionKey()} keyed>
-      {(_key) => (
-        <SessionMobileViewTabs
-          current={mobileView()}
-          onDetailsOpenChange={review.details.setOpen}
-          details={
-            !session.data.isChild() && detailsProject()
-              ? (close) => (
-                  <Show when={detailsProject()}>
-                    {(project) => (
-                      <SessionSummaryPanel
-                        mobile
-                        project={project()}
-                        directory={session.workspace.directory()}
-                        local={!session.workspace.current()}
-                        branch={
-                          session.shared.data.location.vcs.info({ directory: session.workspace.directory() })?.branch
-                            .current
-                        }
-                        baseBranch={
-                          session.shared.data.location.vcs.info({ directory: project().worktree })?.branch.current
-                        }
-                        diffs={project().vcs ? review.details.diffs() : []}
-                        sessionID={session.identity.params.id ?? ""}
-                        moveEligible={composer.workspaceMoveEligible()}
-                        moveDismissed={store.mobileMoveDismissed}
-                        onMoveDismiss={() => setStore("mobileMoveDismissed", true)}
-                        onReview={() => {
-                          close()
-                          review.mobile.setTab("changes")
-                          session.layout.view().terminal.close()
-                        }}
-                        backgroundTasks={composer.requests.background.tasks()}
-                      />
-                    )}
-                  </Show>
-                )
-              : undefined
-          }
-          onSelect={(view) => {
-            if (view === "terminal") {
-              session.layout.view().terminal.open()
-              return
-            }
-            review.mobile.setTab(view)
-            session.layout.view().terminal.close()
-          }}
-        />
-      )}
-    </Show>
-  )
 
   const timelineView = createTimelineCache(
     session,
@@ -299,7 +159,15 @@ function SessionScreenContent(props: { session: SessionModel }) {
         input={composer.drop.input()}
         identity={session.layout.tabKey}
       />
-      <Show when={!isDesktop() && !!session.identity.params.id}>{mobileTabs()}</Show>
+      <Show when={!isDesktop() && !!session.identity.params.id}><SessionMobileTabs
+          session={session}
+          review={review}
+          mobileView={mobileView()}
+          workspaceMoveEligible={composer.workspaceMoveEligible}
+          backgroundTasks={composer.requests.background.tasks}
+          moveDismissed={state.mobileMoveDismissed}
+          onMoveDismiss={() => setState("mobileMoveDismissed", true)}
+        /></Show>
       {/* Surface query errors without suspending session metadata while messages load. */}
       <Show when={timeline.resource.error}>
         {(error) => {
@@ -307,7 +175,7 @@ function SessionScreenContent(props: { session: SessionModel }) {
         }}
       </Show>
       <div class="relative flex-1 min-h-0 overflow-hidden">
-        <Show when={!isDesktop() && store.mobileTerminalCached}>
+        <Show when={!isDesktop() && mobileTerminalCached()}>
           <div class="absolute inset-0" classList={{ invisible: mobileView() !== "terminal" }}>
             <TerminalPanel fill embedded present contentHeight="100%" />
           </div>
@@ -368,9 +236,9 @@ function SessionScreenContent(props: { session: SessionModel }) {
             data-slot="session-chat-panel"
             ref={(element) => setElements("chat", element)}
             data-summary-open={isDesktop() && review.details.open()}
-            data-summary-resizing={store.summaryResizeTranslate !== undefined}
-            data-width-animating={store.sideWidthMotion}
-            data-scrollbar-hidden={store.timelineScrollbarHidden || store.sideWidthMotion}
+            data-summary-resizing={paneStore.summaryResizeTranslate !== undefined}
+            data-width-animating={paneStore.sideWidthMotion}
+            data-scrollbar-hidden={paneStore.timelineScrollbarHidden || paneStore.sideWidthMotion}
             onPointerMove={revealTimelineScrollbar}
             onPointerDown={revealTimelineScrollbar}
             onWheel={revealTimelineScrollbar}
@@ -380,7 +248,7 @@ function SessionScreenContent(props: { session: SessionModel }) {
             onTransitionCancel={trackSideWidthMotion}
             style={{
               width: screen.panel.width(),
-              "--session-summary-resize-translate": store.summaryResizeTranslate,
+              "--session-summary-resize-translate": paneStore.summaryResizeTranslate,
             }}
           >
             <Show when={!!session.identity.params.id}>
@@ -406,7 +274,7 @@ function SessionScreenContent(props: { session: SessionModel }) {
             </Show>
           </div>
 
-          <Show when={sidePresence.present() || store.sideReviewPresent || store.sideTerminalPresent}>
+          <Show when={sidePresence.present() || paneStore.sideReviewPresent || paneStore.sideTerminalPresent}>
             <div
               ref={(element) => setElements("side", element)}
               data-slot="session-side-panel-presence"
@@ -414,7 +282,7 @@ function SessionScreenContent(props: { session: SessionModel }) {
               onAnimationEnd={(event) => {
                 if (event.currentTarget !== event.target) return
                 if (event.animationName !== "side-region-presence-in" || !sideVisible()) return
-                setStore("sideHeightMotion", true)
+                setPaneStore("sideHeightMotion", true)
               }}
               classList={{
                 "relative z-0 min-w-0 h-full flex-1 overflow-visible": sidePresence.present(),
@@ -431,12 +299,12 @@ function SessionScreenContent(props: { session: SessionModel }) {
                   data-slot="session-side-region"
                   classList={{
                     "absolute inset-x-0 top-0 min-h-0 overflow-visible transition-[height] duration-[240ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none": true,
-                    "will-change-[height]": !screen.size.active() && store.sideHeightMotion && paneAnimating(),
-                    "transition-none": screen.size.active() || !store.sideHeightMotion || !paneAnimating(),
+                    "will-change-[height]": !screen.size.active() && paneStore.sideHeightMotion && paneAnimating(),
+                    "transition-none": screen.size.active() || !paneStore.sideHeightMotion || !paneAnimating(),
                   }}
                   style={{ height: sideVisible() ? screen.side.region.height() : "100%" }}
                 >
-                  <Show when={store.sideRegionPresent}>
+                  <Show when={paneStore.sideRegionPresent}>
                     <div
                       data-slot="session-side-region-presence"
                       data-opened={sideMotion().animateRegion ? sideMotion().region : undefined}
@@ -446,14 +314,14 @@ function SessionScreenContent(props: { session: SessionModel }) {
                         if (event.animationName !== "side-region-presence-out") return
                         if (screen.side.region.open()) return
                         if (sideTerminalVisible()) return
-                        setStore("sideRegionPresent", false)
-                        setStore("sideReviewPresent", false)
+                        setPaneStore("sideRegionPresent", false)
+                        setPaneStore("sideReviewPresent", false)
                       }}
                     >
                       <SessionDesktopReview
                         review={review}
                         btw={btw}
-                        present={store.sideReviewPresent}
+                        present={paneStore.sideReviewPresent}
                       />
                     </div>
                   </Show>
@@ -490,12 +358,12 @@ function SessionScreenContent(props: { session: SessionModel }) {
                     data-slot="session-side-terminal-region"
                     classList={{
                       "relative z-10 min-h-0 shrink-0 overflow-visible transition-[height] duration-[240ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none": true,
-                      "will-change-[height]": !screen.size.active() && store.sideHeightMotion && paneAnimating(),
-                      "transition-none": screen.size.active() || !store.sideHeightMotion || !paneAnimating(),
+                      "will-change-[height]": !screen.size.active() && paneStore.sideHeightMotion && paneAnimating(),
+                      "transition-none": screen.size.active() || !paneStore.sideHeightMotion || !paneAnimating(),
                     }}
                     style={{ height: screen.side.terminal.height() }}
                   >
-                    <Show when={store.sideTerminalPresent}>
+                    <Show when={paneStore.sideTerminalPresent}>
                       <div
                         data-slot="side-terminal-panel-presence"
                         data-opened={sideMotion().animateTerminal ? sideMotion().terminal : undefined}
@@ -505,7 +373,7 @@ function SessionScreenContent(props: { session: SessionModel }) {
                           <TerminalPanel
                             fill
                             framed={false}
-                            present={store.sideTerminalPresent}
+                            present={paneStore.sideTerminalPresent}
                             animate={sidePresence.animate() || sideMotion().animateTerminal}
                             contentHeight={screen.side.terminal.contentHeight()}
                             reserveReviewToggle={!screen.side.region.open()}
@@ -520,7 +388,7 @@ function SessionScreenContent(props: { session: SessionModel }) {
           </Show>
         </div>
 
-        <Show when={isDesktop() && (bottomTerminalPresence.present() || store.bottomTerminalCached)}>
+        <Show when={isDesktop() && (bottomTerminalPresence.present() || paneStore.bottomTerminalCached)}>
           <div
             ref={(element) => setElements("bottomTerminal", element)}
             data-slot="terminal-panel-presence"
@@ -549,7 +417,7 @@ function SessionScreenContent(props: { session: SessionModel }) {
             </Show>
             <TerminalPanel
               stacked={isDesktop()}
-              present={store.bottomTerminalCached}
+              present={paneStore.bottomTerminalCached}
               animate={bottomTerminalPresence.animate()}
             />
           </div>

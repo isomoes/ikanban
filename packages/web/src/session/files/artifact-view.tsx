@@ -65,8 +65,13 @@ export function ArtifactView(props: { path: string; content: FileContent; cacheK
     const value = kind()
     return value !== "binary" && previewableKinds.has(value)
   })
+  const table = createMemo(() => {
+    if (kind() !== "table") return undefined
+    return parseDelimited(props.content.content, props.path.toLowerCase().endsWith(".tsv") ? "\t" : ",")
+  })
+
   const meta = createMemo(() => {
-    const info = state.info
+    const info = { ...state.info, ...(table() ? { rows: table()!.total, columns: table()!.columns } : {}) }
     return [
       info.width && info.height ? `${info.width} × ${info.height}` : undefined,
       info.duration ? formatDuration(info.duration) : undefined,
@@ -113,7 +118,7 @@ export function ArtifactView(props: { path: string; content: FileContent; cacheK
             <ArtifactFont path={props.path} content={props.content} />
           </Match>
           <Match when={kind() === "table"}>
-            <ArtifactTable path={props.path} text={props.content.content} onInfo={media.onInfo} />
+            <ArtifactTable parsed={table()!} />
           </Match>
           <Match when={kind() === "markdown" || kind() === "mermaid"}>{rendered()}</Match>
           <Match when={kind() === "binary"}>
@@ -337,10 +342,9 @@ function ArtifactMermaid(props: { text: string; cacheKey?: string }) {
   )
 }
 
-function ArtifactTable(props: { path: string; text: string; onInfo: (info: ArtifactInfo) => void }) {
+function ArtifactTable(props: { parsed: ReturnType<typeof parseDelimited> }) {
   const language = useLanguage()
-  const parsed = createMemo(() => parseDelimited(props.text, props.path.toLowerCase().endsWith(".tsv") ? "\t" : ","))
-  createEffect(() => props.onInfo({ rows: parsed().total, columns: parsed().columns }))
+  const parsed = () => props.parsed
   // Pad the header to the widest row so no data column is dropped.
   const header = () => Array.from({ length: parsed().columns }, (_, index) => parsed().rows[0]?.[index] ?? "")
   const body = () => parsed().rows.slice(1)
