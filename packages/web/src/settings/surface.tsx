@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "@solidjs/router"
-import { batch, createEffect, on } from "solid-js"
+import { batch, createEffect, createMemo, on } from "solid-js"
 import { createStore } from "solid-js/store"
 import { createSimpleContext } from "@ikanban/ui/context"
 import { useLayout, type LayoutRoute } from "@/shell/state/layout"
@@ -37,6 +37,8 @@ export type SettingsView = (
   subtab?: "mcps" | "plugins" | "skills" | "lsps"
   searchActivation?: number
 }
+
+const serverOnlyRootTabs: SettingsRootTab[] = ["projects", "workspaces", "providers", "models", "extensions", "servers"]
 
 const rootTabs: Record<SettingsRootTab, true> = {
   general: true,
@@ -90,7 +92,12 @@ export const { use: useSettingsSurface, provider: SettingsSurfaceProvider } = cr
     }>()
     const open = () => layout.route().type === "settings"
     const source = () => location.state?.settings?.route ?? { type: "home" as const }
-    const view = (): SettingsView => location.state?.settings?.view ?? { type: "root", tab: "general" }
+    const view = createMemo((): SettingsView => {
+      const current: SettingsView = location.state?.settings?.view ?? { type: "root", tab: "general" }
+      if (current.type === "root" && servers().length > 1 && serverOnlyRootTabs.includes(current.tab))
+        return { type: "root", tab: "general" }
+      return current
+    })
     const [search, setSearch] = createStore({
       query: "",
       origin: undefined as SettingsView | undefined,

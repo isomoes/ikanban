@@ -133,7 +133,6 @@ export function SettingsScreen() {
       surface.back()
       return
     }
-    if (view.type === "project" && !target.connection) surface.replaceServer(target.key)
   })
   createEffect(() => {
     const view = surface.view()
@@ -243,13 +242,6 @@ function RootSettings() {
     ...trailingTabs.map((items) => ({ items: items.map((item) => ({ ...item, label: language.t(item.label) })) })),
   ])
 
-  createEffect(() => {
-    const view = surface.view()
-    if (view.type !== "root" || !multiple()) return
-    if (["projects", "workspaces", "providers", "models", "extensions", "servers"].includes(view.tab))
-      surface.open("general")
-  })
-
   const change = (value: string) => {
     if (value.startsWith("server:")) {
       surface.openServer(value.slice("server:".length))
@@ -342,9 +334,6 @@ function ServerSettings(props: { entry: SettingsServer }) {
       })),
     },
   ])
-  createEffect(() => {
-    if (!props.entry.connection && surface.view().tab !== "general") surface.select("general")
-  })
   const change = (value: string) => {
     if (value === "workspaces") setState("worktreeFilterReset", (current) => current + 1)
     surface.select(value)
