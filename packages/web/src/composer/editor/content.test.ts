@@ -13,7 +13,7 @@ describe("Composer editor content", () => {
     renderComposerEditor(editor, prompt)
 
     expect(editor.querySelector<HTMLElement>("[data-mention=file]")?.dataset.path).toBe("src/a.ts")
-    expect(parseComposerEditor(editor)).toEqual(prompt)
+    expect<unknown>(parseComposerEditor(editor)).toEqual(prompt)
   })
 
   test("parse returns a single empty text part for blank content", () => {

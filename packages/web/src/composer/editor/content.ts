@@ -172,7 +172,7 @@ function adjacentMention(editor: HTMLElement, node: Node, offset: number, direct
   }
 }
 
-export function composerCursor(editor: HTMLDivElement) {
+export function composerCursor(editor: HTMLElement) {
   const selection = window.getSelection()
   if (!selection?.rangeCount || !editor.contains(selection.anchorNode)) return editor.textContent?.length ?? 0
   const range = selection.getRangeAt(0).cloneRange()
