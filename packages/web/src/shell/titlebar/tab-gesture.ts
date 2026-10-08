@@ -1,3 +1,6 @@
+// MouseEvent.button uses 1 for the middle/wheel button.
+export const MIDDLE_MOUSE_BUTTON = 1
+
 import type { Ref } from "solid-js"
 
 export function isTabCloseTarget(target: EventTarget | null) {
