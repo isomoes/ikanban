@@ -88,7 +88,6 @@ function SessionScreenContent(props: { session: SessionModel }) {
     sideRegionPresent: false,
     sideReviewPresent: false,
     sideTerminalPresent: false,
-    mobileTerminalCached: false,
     mobileMoveDismissed: false,
     summaryResizeTranslate: undefined as string | undefined,
   })
@@ -184,9 +183,7 @@ function SessionScreenContent(props: { session: SessionModel }) {
   const review = createSessionReview({ session, screen, deferRender: () => store.deferRender })
   const mobileView = createMemo(() => (screen.terminal.open() ? "terminal" : review.mobile.tab()))
   const conversationVisible = createMemo(() => isDesktop() || mobileView() === "session")
-  createEffect(() => {
-    if (!isDesktop() && screen.terminal.open()) setStore("mobileTerminalCached", true)
-  })
+  const mobileTerminalCached = createMemo((cached) => cached || (!isDesktop() && screen.terminal.open()), false)
   const composer = createActiveSessionRegion({
     session,
     screen,
@@ -307,7 +304,7 @@ function SessionScreenContent(props: { session: SessionModel }) {
         }}
       </Show>
       <div class="relative flex-1 min-h-0 overflow-hidden">
-        <Show when={!isDesktop() && store.mobileTerminalCached}>
+        <Show when={!isDesktop() && mobileTerminalCached()}>
           <div class="absolute inset-0" classList={{ invisible: mobileView() !== "terminal" }}>
             <TerminalPanel fill embedded present contentHeight="100%" />
           </div>

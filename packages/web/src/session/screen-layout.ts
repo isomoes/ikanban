@@ -1,4 +1,4 @@
-import { createEffect, createMemo } from "solid-js"
+import { createMemo } from "solid-js"
 import { createStore } from "solid-js/store"
 import { createResizeObserver } from "@solid-primitives/resize-observer"
 import { useLayout } from "@/shell/state/layout"
@@ -65,12 +65,10 @@ export function createSessionScreenLayout(session: SessionModel) {
       files: fileTreeOpen(),
     }),
   )
-  const [motion, setMotion] = createStore({ gap: panelLayout().stacked, closing: false })
-  createEffect((previous) => {
+  const motion = createMemo<{ gap: boolean; closing: boolean }>((previous) => {
     const stacked = panelLayout().stacked
-    if (previous !== stacked) setMotion({ gap: stacked, closing: !stacked })
-    return stacked
-  }, panelLayout().stacked)
+    return previous.gap === stacked ? previous : { gap: stacked, closing: !stacked }
+  }, { gap: panelLayout().stacked, closing: false })
   const sideRegionOpen = createMemo(() => reviewPanelOpen() || fileTreeOpen())
   const terminalPane = createMemo(() =>
     Math.min(view().terminal.height(), typeof window === "undefined" ? 600 : window.innerHeight * 0.6),
@@ -108,8 +106,8 @@ export function createSessionScreenLayout(session: SessionModel) {
     side: {
       contentWidth: sideContentWidth,
       gap: {
-        closing: () => motion.closing,
-        height: createMemo(() => (motion.gap ? "8px" : "0px")),
+        closing: () => motion().closing,
+        height: createMemo(() => (motion().gap ? "8px" : "0px")),
       },
       layout: panelLayout,
       region: {

@@ -347,21 +347,22 @@ export function SessionFileView(props: SessionFileViewProps) {
     ),
   })
 
-  createEffect(() => {
-    if (typeof window === "undefined") return
+  if (typeof window !== "undefined") {
+    makeEventListener(
+      window,
+      "keydown",
+      (event) => {
+        if (activeFileTab() !== props.tab) return
+        if (!(event.metaKey || event.ctrlKey) || event.altKey || event.shiftKey) return
+        if (event.key.toLowerCase() !== "f") return
 
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (activeFileTab() !== props.tab) return
-      if (!(event.metaKey || event.ctrlKey) || event.altKey || event.shiftKey) return
-      if (event.key.toLowerCase() !== "f") return
-
-      event.preventDefault()
-      event.stopPropagation()
-      find?.focus()
-    }
-
-    makeEventListener(window, "keydown", onKeyDown, { capture: true })
-  })
+        event.preventDefault()
+        event.stopPropagation()
+        find?.focus()
+      },
+      { capture: true },
+    )
+  }
 
   createEffect(
     on(
