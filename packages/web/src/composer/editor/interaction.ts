@@ -21,6 +21,11 @@ import {
 } from "../suggestions/machine"
 import { clonePrompt, isAttachment, promptLength } from "../prompt-parts"
 import type { ComposerQueue } from "../adapter"
+import { composerCursor } from "./content"
+import { canNavigateHistory, setEditorCursor } from "./history-cursor"
+import { insertPastedText, shouldHandlePasteAsAttachment } from "./paste"
+
+export { shouldHandlePasteAsAttachment }
 
 export type ComposerSelectControl = {
   options: Accessor<ComposerOption[]>
@@ -271,7 +276,7 @@ export function createComposerEditor(input: {
     const selection = window.getSelection()
     if (!selection?.isCollapsed || !editor.contains(selection.anchorNode)) return false
     const text = draft.state.prompt.map((part) => ("content" in part ? part.content : "")).join("")
-    if (!canNavigateHistory(direction, text, editorCursor(editor), state.historyIndex >= 0)) return false
+    if (!canNavigateHistory(direction, text, composerCursor(editor), state.historyIndex >= 0)) return false
     const entries = input.history.entries(state.mode)
     if (direction === "up") {
       if (entries.length === 0 || state.historyIndex >= entries.length - 1) return false
@@ -399,31 +404,7 @@ export function createComposerEditor(input: {
         return
       }
       if (!text) return
-      event.preventDefault()
-      // insertText emits input events per line, repeatedly parsing and saving the draft.
-      // Escaped HTML inserts multiline text once and preserves native selection and undo.
-      const normalized = text.replace(/\r\n?/g, "\n")
-      const multiline = normalized.includes("\n")
-      const value = multiline
-        ? normalized.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
-        : normalized
-      if (
-        typeof document.execCommand === "function" &&
-        document.execCommand(multiline ? "insertHTML" : "insertText", false, value)
-      )
-        return
-      const target = event.currentTarget
-      const selection = window.getSelection()
-      if (!(target instanceof HTMLElement) || !selection?.rangeCount || !target.contains(selection.anchorNode)) return
-      const range = selection.getRangeAt(0)
-      range.deleteContents()
-      const node = document.createTextNode(normalized)
-      range.insertNode(node)
-      range.setStartAfter(node)
-      range.collapse(true)
-      selection.removeAllRanges()
-      selection.addRange(range)
-      target.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertFromPaste", data: normalized }))
+      insertPastedText(event, text)
     },
     onDragEnter(event: DragEvent) {
       event.preventDefault()
@@ -458,44 +439,3 @@ export function createComposerEditor(input: {
 }
 
 export type ComposerEditorModel = ReturnType<typeof createComposerEditor>
-
-export function shouldHandlePasteAsAttachment(clipboard: DataTransfer | null) {
-  return Array.from(clipboard?.items ?? []).some((item) => item.kind === "file")
-}
-
-function canNavigateHistory(direction: "up" | "down", text: string, cursor: number, inHistory: boolean) {
-  const position = Math.max(0, Math.min(cursor, text.length))
-  if (inHistory) return position === 0 || position === text.length
-  if (direction === "up") return position === 0 && text.length === 0
-  return position === text.length
-}
-
-function editorCursor(editor: HTMLElement) {
-  const selection = window.getSelection()
-  if (!selection?.rangeCount || !editor.contains(selection.anchorNode)) return editor.textContent?.length ?? 0
-  const range = selection.getRangeAt(0).cloneRange()
-  range.selectNodeContents(editor)
-  range.setEnd(selection.anchorNode!, selection.anchorOffset)
-  return range.toString().length
-}
-
-function setEditorCursor(editor: HTMLElement | undefined, cursor: number) {
-  if (!editor) return
-  const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT)
-  let remaining = cursor
-  let node = walker.nextNode()
-  while (node) {
-    const length = node.textContent?.length ?? 0
-    if (remaining <= length) {
-      const range = document.createRange()
-      range.setStart(node, remaining)
-      range.collapse(true)
-      const selection = window.getSelection()
-      selection?.removeAllRanges()
-      selection?.addRange(range)
-      return
-    }
-    remaining -= length
-    node = walker.nextNode()
-  }
-}
