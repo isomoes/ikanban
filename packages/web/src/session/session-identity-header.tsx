@@ -11,8 +11,7 @@ import { createStore } from "solid-js/store"
 import { useServer } from "@/runtime/server/current"
 import { ServerConnection } from "@/runtime/server/registry"
 import { useLanguage } from "@/runtime/i18n/language"
-import { usePlatform } from "@/runtime/platform/platform"
-import { displayName, errorMessage, getProjectAvatarSource, projectForSession } from "@/shell/layout/helpers"
+import { displayName, getProjectAvatarSource, projectForSession } from "@/shell/layout/helpers"
 import { getProjectAvatarVariant, useLayout, type LocalProject } from "@/shell/state/layout"
 import { tabKey, useTabs } from "@/shell/tabs/tabs"
 import { useSettings } from "@/settings/model"
@@ -20,7 +19,6 @@ import { useSettingsSurface } from "@/settings/surface"
 import { pathKey } from "@/workspaces/path-key"
 import { isProjectDirectory, isWorkspaceDirectory } from "@/workspaces/paths"
 import { sessionHref } from "@/shell/routes/session"
-import { showToast } from "@/shell/notifications/toast"
 import { sessionTitle } from "./title"
 import "./session-identity-header.css"
 
@@ -43,7 +41,6 @@ export function SessionProjectMenu(props: {
 }) {
   const server = useServer()
   const language = useLanguage()
-  const platform = usePlatform()
   const layout = useLayout()
   const settingsSurface = useSettingsSurface()
   const navigate = useNavigate()
@@ -54,17 +51,6 @@ export function SessionProjectMenu(props: {
     pathFocused: false,
   })
   const projectName = createMemo(() => displayName(props.project ?? { worktree: props.directory ?? "" }))
-  const canOpenPath = () =>
-    platform.platform === "desktop" && !!platform.openPath && server.isLocal && !!props.directory
-  const openPath = () => {
-    if (!canOpenPath() || !platform.openPath || !props.directory) return
-    void platform.openPath(props.directory).catch((cause: unknown) =>
-      showToast({
-        title: language.t("common.requestFailed"),
-        description: errorMessage(cause, language.t("common.requestFailed")),
-      }),
-    )
-  }
   const openProjectSettings = () => {
     const current = props.project
     if (!current) return
@@ -162,9 +148,8 @@ export function SessionProjectMenu(props: {
             <Menu.Item
               class="session-project-link min-w-0 w-full cursor-default"
               disabled={!props.directory}
-              aria-disabled={!canOpenPath()}
-              closeOnSelect={canOpenPath()}
-              onSelect={openPath}
+              aria-disabled="true"
+              closeOnSelect={false}
               onFocus={() => setState("pathFocused", true)}
               onBlur={() => setState("pathFocused", false)}
               onKeyDown={(event) => {
@@ -187,9 +172,6 @@ export function SessionProjectMenu(props: {
                 >
                   {props.directory}
                 </bdi>
-              </span>
-              <span data-slot="session-project-open-icon" class="session-project-link-open" aria-hidden="true">
-                <Icon name="arrow-up-right" />
               </span>
             </Menu.Item>
           </Tooltip>

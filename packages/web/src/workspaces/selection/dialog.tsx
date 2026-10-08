@@ -37,7 +37,7 @@ interface DirectoryPickerDialogProps {
   title?: string
   multiple?: boolean
   onSelect: (result: string | string[] | null) => void
-  server: ServerConnection.Any
+  server: ServerConnection.Http
   location?: LocationRef
   mode?: "directory" | "file"
   start?: string

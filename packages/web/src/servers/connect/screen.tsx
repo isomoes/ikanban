@@ -5,7 +5,6 @@ import { Button } from "@ikanban/ui/button"
 import { TextInput } from "@ikanban/ui/text-input"
 import { Wordmark } from "@ikanban/ui/wordmark"
 import { useLanguage } from "@/runtime/i18n/language"
-import { usePlatform } from "@/runtime/platform/platform"
 import { useCheckServerHealth } from "@/runtime/server/health"
 import { useServers } from "@/runtime/server/registry"
 import { serverAddress } from "./pairing"
@@ -17,14 +16,13 @@ const PairingScanner = lazy(() => import("./scanner").then((module) => ({ defaul
 
 export function ConnectServerScreen() {
   const language = useLanguage()
-  const platform = usePlatform()
   const servers = useServers()
   const check = useCheckServerHealth()
   const camera = createCameraAvailability()
   const [state, setState] = createStore({ url: "", password: "", urls: [] as string[], error: "", scanning: false })
   const connectionError = () =>
     language.t(
-      platform.platform === "web" && isMixedContent(location.href, state.url)
+      isMixedContent(location.href, state.url)
         ? "server.connect.mixedContent"
         : "server.connect.failed",
     )
@@ -135,25 +133,23 @@ export function ConnectServerScreen() {
               {language.t(request.isPending ? "dialog.server.add.checking" : "server.connect.button")}
             </Button>
           </form>
-          <Show when={platform.platform === "web"}>
-            <Button
-              variant="neutral"
-              size="large"
-              disabled={request.isPending || !camera.available.latest}
-              aria-describedby={
-                !camera.available.latest && !camera.available.loading ? "server-connect-camera-unavailable" : undefined
-              }
-              onClick={() => setState("scanning", true)}
-            >
-              {language.t("server.connect.scan")}
-            </Button>
-            <Show when={!camera.available.latest && !camera.available.loading}>
-              <p id="server-connect-camera-unavailable">
-                {language.t(
-                  window.isSecureContext ? "server.connect.camera.unavailable" : "server.connect.camera.insecure",
-                )}
-              </p>
-            </Show>
+          <Button
+            variant="neutral"
+            size="large"
+            disabled={request.isPending || !camera.available.latest}
+            aria-describedby={
+              !camera.available.latest && !camera.available.loading ? "server-connect-camera-unavailable" : undefined
+            }
+            onClick={() => setState("scanning", true)}
+          >
+            {language.t("server.connect.scan")}
+          </Button>
+          <Show when={!camera.available.latest && !camera.available.loading}>
+            <p id="server-connect-camera-unavailable">
+              {language.t(
+                window.isSecureContext ? "server.connect.camera.unavailable" : "server.connect.camera.insecure",
+              )}
+            </p>
           </Show>
           <footer>
             <p>{language.t("server.connect.pair.description")}</p>

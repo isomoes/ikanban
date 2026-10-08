@@ -5,7 +5,7 @@ import { useGlobal } from "./runtime"
 // Must be keyed for now
 export const { use: useServer, provider: ServerProvider } = createSimpleContext({
   name: "Server",
-  init: (props: { conn: ServerConnection.Any }) => {
+  init: (props: { conn: ServerConnection.Http }) => {
     const conn = props.conn
     const key = ServerConnection.key(conn)
 

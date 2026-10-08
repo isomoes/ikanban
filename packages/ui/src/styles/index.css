@@ -7,7 +7,6 @@
 @import "katex/dist/katex.min.css" layer(base);
 
 @import "../data-display/accordion/accordion.css" layer(components);
-@import "../components/app-icon.css" layer(components);
 @import "../components/card.css" layer(components);
 @import "../components/collapsible.css" layer(components);
 @import "../components/file-icon.css" layer(components);

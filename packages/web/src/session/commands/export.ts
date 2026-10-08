@@ -1,6 +1,5 @@
 import type { SessionInfo, SessionMessageInfo } from "@opencode/client/promise"
 import type { ServerApi } from "@/runtime/server/api"
-import type { Platform } from "@/runtime/platform/platform"
 
 export type SessionExportData = {
   info: SessionInfo
@@ -53,16 +52,4 @@ export function downloadSessionExport(filename: string, data: unknown) {
   a.click()
   document.body.removeChild(a)
   URL.revokeObjectURL(url)
-}
-
-export async function saveSessionExport(
-  filename: string,
-  data: unknown,
-  platform: Pick<Platform, "saveFile">,
-) {
-  if (!platform.saveFile) {
-    downloadSessionExport(filename, data)
-    return true
-  }
-  return platform.saveFile({ defaultPath: filename }, JSON.stringify(data, null, 2))
 }

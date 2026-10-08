@@ -13,7 +13,6 @@ import { SessionSidePanel } from "../files/session-side-panel"
 import { ReviewPanel } from "./panel"
 import { SessionReviewTab } from "./review-tab"
 import type { ChangeMode, SessionReviewModel } from "./model"
-import type { createSessionBrowser } from "../browser/model"
 import type { SessionBtwModel } from "../btw/model"
 import { SessionBtwPanel } from "../btw/panel"
 
@@ -145,7 +144,6 @@ export function SessionMobileReview(props: { review: SessionReviewModel }) {
 
 export function SessionDesktopReview(props: {
   review: SessionReviewModel
-  browser: ReturnType<typeof createSessionBrowser>
   btw: SessionBtwModel
   present?: boolean
 }) {
@@ -172,7 +170,6 @@ export function SessionDesktopReview(props: {
         reviewPresent={props.present}
         size={props.review.screen.size}
         stacked={props.review.screen.side.layout().stacked}
-        browser={props.browser}
         btwPanel={() => <SessionBtwPanel btw={props.btw} />}
       />
     </Suspense>

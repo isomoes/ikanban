@@ -25,7 +25,7 @@ const workerDeps = ["@shikijs/stream", "marked", "marked-shiki", "remend"]
 
 /** @type {import("rolldown").Plugin} */
 const bundleNestedWorkerDeps = {
-  name: "opencode-desktop:bundle-nested-worker-deps",
+  name: "ikanban:bundle-nested-worker-deps",
   resolveId(id, importer) {
     if (!importer || !workerDeps.includes(id) || !importer.includes("node_modules")) return
     try {
@@ -48,7 +48,7 @@ export const channel = (() => {
  */
 export default [
   {
-    name: "opencode-desktop:config",
+    name: "ikanban:config",
     config() {
       return {
         resolve: {
@@ -71,7 +71,7 @@ export default [
     },
   },
   {
-    name: "opencode-desktop:theme-preload",
+    name: "ikanban:theme-preload",
     transformIndexHtml: {
       order: "pre",
       handler: inlineThemePreload,

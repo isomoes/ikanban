@@ -12,9 +12,8 @@ import { Markdown } from "@ikanban/session-ui/markdown"
 import { ScrollView } from "@ikanban/ui/scroll-view"
 import type { SessionMessageInfo } from "@opencode/client/promise"
 import { showToast } from "@/shell/notifications/toast"
-import { fetchSessionExport, saveSessionExport, sessionExportFilename } from "@/session/commands/export"
+import { downloadSessionExport, fetchSessionExport, sessionExportFilename } from "@/session/commands/export"
 import { useLanguage } from "@/runtime/i18n/language"
-import { usePlatform } from "@/runtime/platform/platform"
 import { useProviders } from "@/providers/catalog/providers"
 import { useWorkspaceLocation } from "@/workspaces/location"
 import { useServerSDK } from "@/runtime/server/client"
@@ -85,7 +84,6 @@ const emptyMessages: SessionMessageInfo[] = []
 export function SessionContextTab() {
   const data = useData()
   const language = useLanguage()
-  const platform = usePlatform()
   const sdk = useWorkspaceLocation()
   const serverSDK = useServerSDK()
   const providers = useProviders(() => sdk().directory)
@@ -201,7 +199,7 @@ export function SessionContextTab() {
         api: serverSDK.api,
       })
       const filename = sessionExportFilename(data.info)
-      if (!(await saveSessionExport(filename, data, platform))) return
+      downloadSessionExport(filename, data)
       showToast({
         variant: "success",
         icon: "circle-check",

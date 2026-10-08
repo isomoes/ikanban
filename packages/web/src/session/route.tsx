@@ -23,7 +23,6 @@ import { requireServerKey } from "@/shell/routes/session"
 import { useSessionModel } from "./model"
 import { SessionPanelFrame } from "./session-frame"
 import { SessionIdentityHeader } from "./session-identity-header"
-import { IncompatibleServerPanel } from "./incompatible-server-panel"
 import { SessionErrorFallback } from "./route-error"
 import { createSessionResolution } from "./session-resolution"
 import { SessionScreen } from "./screen"
@@ -116,7 +115,6 @@ function SessionRouteErrorBoundary(props: ParentProps<{ sessionID?: string; serv
 function ResolvedTargetSessionRoute() {
   const params = useParams<{ id: string }>()
   const server = useServer()
-  const tabs = useTabs()
   const data = useData()
   const current = createSessionResolution(
     () => params.id,
@@ -126,25 +124,14 @@ function ResolvedTargetSessionRoute() {
   const directory = createMemo(() => current()?.location.directory)
 
   return (
-    <Show
-      when={!server.health?.incompatible}
-      fallback={
-        <SessionStatePanel>
-          <IncompatibleServerPanel
-            onClose={() => tabs.removeSessionTab({ server: server.key, sessionId: params.id })}
-          />
-        </SessionStatePanel>
-      }
-    >
-      <Show when={directory()} fallback={<PendingSessionState sessionID={params.id} />}>
-        {(value) => (
-          <LocationProvider directory={value}>
-            <SessionUIProvider directory={value()} server={server.key}>
-              <TargetSessionPage />
-            </SessionUIProvider>
-          </LocationProvider>
-        )}
-      </Show>
+    <Show when={directory()} fallback={<PendingSessionState sessionID={params.id} />}>
+      {(value) => (
+        <LocationProvider directory={value}>
+          <SessionUIProvider directory={value()} server={server.key}>
+            <TargetSessionPage />
+          </SessionUIProvider>
+        </LocationProvider>
+      )}
     </Show>
   )
 }

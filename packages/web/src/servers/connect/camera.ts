@@ -1,9 +1,7 @@
 import { createResource } from "solid-js"
-import { usePlatform } from "@/runtime/platform/platform"
 
 export function createCameraAvailability() {
-  const platform = usePlatform()
-  const supported = platform.platform === "web" && window.isSecureContext && !!navigator.mediaDevices?.getUserMedia
+  const supported = window.isSecureContext && !!navigator.mediaDevices?.getUserMedia
   const [available, actions] = createResource(
     async () => {
       if (!supported || !navigator.mediaDevices.enumerateDevices) return false

@@ -6,12 +6,6 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./desktop": "./src/desktop.ts",
-    "./desktop-menu": "./src/shell/commands/desktop-menu.ts",
-    "./i18n/desktop-native": "./src/runtime/i18n/desktop-native.ts",
-    "./updater": "./src/shell/updates/types.ts",
-    "./wsl/types": "./src/servers/wsl/types.ts",
-    "./ssh": "./src/servers/ssh/types.ts",
     "./vite": "./vite.js",
     "./index.css": "./src/index.css"
   },
@@ -54,7 +48,6 @@
     "@kobalte/core": "catalog:",
     "@opencode/client": "2.0.22",
     "@opencode/schema": "2.0.22",
-    "@opencode/plugin-browser": "2.0.22",
     "@ikanban/session-ui": "workspace:*",
     "@ikanban/ui": "workspace:*",
     "@opencode/util": "2.0.22",

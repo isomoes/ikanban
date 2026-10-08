@@ -9,8 +9,6 @@ import type { ComposerControls } from "../adapter"
 export type AttachmentDestination = {
   /** Input modalities the selected model reads natively. */
   input: { image: boolean; pdf: boolean }
-  /** The server shares the client's filesystem, so an attachment's source path resolves as-is. */
-  local: boolean
   /** Streams a file into the server's temporary directory and returns its absolute path there. */
   upload: (file: File, report: (loaded: number) => void, signal: AbortSignal) => Promise<string>
 }
@@ -21,7 +19,6 @@ export function useAttachmentDestination(controls: Accessor<ComposerControls>) {
   const location = useWorkspaceLocation()
   return (): AttachmentDestination => ({
     input: controls().model.selection.current()?.capabilities.input ?? { image: false, pdf: false },
-    local: server.isLocal,
     upload: async (file, report, signal) => {
       const info = await sdk.api.server.info({ signal })
       // One directory per upload keeps the original filename without collisions; the server

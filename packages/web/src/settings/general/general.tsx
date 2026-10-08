@@ -1,4 +1,4 @@
-import { Component, Show, createMemo, createResource } from "solid-js"
+import { Component, Show, createMemo } from "solid-js"
 import { createMediaQuery } from "@solid-primitives/media"
 import { Button } from "@ikanban/ui/button"
 import { Select } from "@ikanban/ui/select"
@@ -6,8 +6,6 @@ import { Switch } from "@ikanban/ui/switch"
 import { TextInput } from "@ikanban/ui/text-input"
 import { TimelineDetailControl } from "@/settings/timeline-detail"
 import { useLanguage } from "@/runtime/i18n/language"
-import { usePlatform } from "@/runtime/platform/platform"
-import { useUpdaterAction } from "@/shell/updates/action"
 import {
   type FollowUpBehavior,
   type TerminalPlacement,
@@ -296,24 +294,8 @@ const LanguageSetting = () => {
 
 export const SettingsGeneral: Component = () => {
   const language = useLanguage()
-  const platform = usePlatform()
   const settings = useSettings()
   const mobile = createMediaQuery("(max-width: 767px)")
-  const updater = useUpdaterAction()
-  const desktop = createMemo(() => platform.platform === "desktop")
-
-  const [pinchZoom, { mutate: setPinchZoom }] = createResource(
-    () => desktop() && "getPinchZoomEnabled" in platform,
-    () => Promise.resolve(platform.getPinchZoomEnabled?.() ?? false).catch(() => false),
-    { initialValue: false },
-  )
-
-  const onPinchZoomChange = (checked: boolean) => {
-    setPinchZoom(checked)
-    const update = platform.setPinchZoomEnabled?.(checked)
-    if (!update) return
-    void update.catch(() => setPinchZoom(!checked))
-  }
 
   const GeneralSection = () => (
     <div class="settings-section">
@@ -338,34 +320,6 @@ export const SettingsGeneral: Component = () => {
 
         <TerminalPlacementSetting />
         <FollowUpBehaviorSetting />
-
-        <Show when={platform.browserPane}>
-          <SettingsRow
-            title={language.t("settings.general.row.browserPane.title")}
-            description={language.t("settings.general.row.browserPane.description")}
-          >
-            <div data-action="settings-browser-pane">
-              <Switch
-                checked={settings.general.experimentalBrowser()}
-                onChange={settings.general.setExperimentalBrowser}
-                hideLabel
-              >
-                {language.t("settings.general.row.browserPane.title")}
-              </Switch>
-            </div>
-          </SettingsRow>
-        </Show>
-
-        <Show when={desktop()}>
-          <SettingsRow
-            title={language.t("settings.general.row.pinchZoom.title")}
-            description={language.t("settings.general.row.pinchZoom.description")}
-          >
-            <div data-action="settings-pinch-zoom">
-              <Switch checked={pinchZoom.latest} onChange={onPinchZoomChange} />
-            </div>
-          </SettingsRow>
-        </Show>
 
         <SettingsRow
           title={language.t("session.review.wrapLines")}
@@ -444,41 +398,6 @@ export const SettingsGeneral: Component = () => {
     </div>
   )
 
-  const UpdatesSection = () => (
-    <div class="settings-section">
-      <h3 class="settings-section-title">{language.t("settings.general.section.updates")}</h3>
-
-      <SettingsList>
-        <SettingsRow
-          title={language.t("settings.general.row.releaseNotes.title")}
-          description={language.t("settings.general.row.releaseNotes.description")}
-        >
-          <div data-action="settings-release-notes">
-            <Switch
-              checked={settings.general.releaseNotes()}
-              onChange={(checked) => settings.general.setReleaseNotes(checked)}
-            />
-          </div>
-        </SettingsRow>
-
-        <SettingsRow
-          title={language.t("settings.updates.row.check.title")}
-          description={language.t("settings.updates.row.check.description")}
-        >
-          <Button
-            data-action="settings-check-updates"
-            size="normal"
-            variant="neutral"
-            disabled={!updater.action().run}
-            onClick={() => updater.run()}
-          >
-            {language.t(updater.action().label)}
-          </Button>
-        </SettingsRow>
-      </SettingsList>
-    </div>
-  )
-
   return (
     <>
       <div class="settings-tab-header">
@@ -505,10 +424,6 @@ export const SettingsGeneral: Component = () => {
             </div>
           </SettingsList>
         </section>
-
-        <Show when={desktop()}>
-          <UpdatesSection />
-        </Show>
       </div>
     </>
   )

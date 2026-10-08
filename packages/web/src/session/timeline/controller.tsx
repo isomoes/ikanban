@@ -15,9 +15,8 @@ import { removedSessionIDs } from "@/session/session-domain"
 import { useServerSDK } from "@/runtime/server/client"
 import { sessionHref } from "@/shell/routes/session"
 import { sessionTitle } from "@/session/title"
-import { fetchSessionExport, saveSessionExport, sessionExportFilename } from "@/session/commands/export"
+import { downloadSessionExport, fetchSessionExport, sessionExportFilename } from "@/session/commands/export"
 import { showToast } from "@/shell/notifications/toast"
-import { usePlatform } from "@/runtime/platform/platform"
 import { applyTimelineMessageHandoff, timelineChildTitle, visibleTimelineMessages } from "./controller-projection"
 import { createTimelineProjection } from "./projection"
 import { useServer } from "@/runtime/server/current"
@@ -56,7 +55,6 @@ export function createTimelineController(input: { session: TimelineSessionSource
   const tabs = useTabs()
   const dialog = useDialog()
   const language = useLanguage()
-  const platform = usePlatform()
   const handedOffMessages = createMemo(() =>
     applyTimelineMessageHandoff(
       input.session.history.messages(),
@@ -172,7 +170,7 @@ export function createTimelineController(input: { session: TimelineSessionSource
     try {
       const data = await fetchSessionExport({ sessionID: id, api: serverSDK.api })
       const filename = sessionExportFilename(data.info)
-      if (!(await saveSessionExport(filename, data, platform))) return
+      downloadSessionExport(filename, data)
       showToast({
         variant: "success",
         icon: "circle-check",

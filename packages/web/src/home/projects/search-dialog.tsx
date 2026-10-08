@@ -8,9 +8,9 @@ import type { CommandPaletteEntry } from "@/shell/commands/palette"
 import type { LocalProject } from "@/shell/state/layout"
 
 export function HomeProjectSearch(props: {
-  servers: () => ServerConnection.Any[]
-  projects: (server: ServerConnection.Any) => LocalProject[]
-  onSelect: (server: ServerConnection.Any, directory: string) => void
+  servers: () => ServerConnection.Http[]
+  projects: (server: ServerConnection.Http) => LocalProject[]
+  onSelect: (server: ServerConnection.Http, directory: string) => void
 }) {
   const dialog = useDialog()
   const language = useLanguage()

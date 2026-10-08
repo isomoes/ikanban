@@ -6,7 +6,6 @@ import { Icon } from "@ikanban/ui/icon"
 import { TextInput } from "@ikanban/ui/text-input"
 import { ScrollView } from "@ikanban/ui/scroll-view"
 import { useLanguage } from "@/runtime/i18n/language"
-import { usePlatform } from "@/runtime/platform/platform"
 import { useGlobal } from "@/runtime/server/runtime"
 import { ProjectIcon } from "@/shell/layout/project-icon"
 import { useCommand } from "@/shell/commands/command"
@@ -20,7 +19,6 @@ import { SettingsSearchEmpty } from "./search-empty"
 export function SettingsSearch() {
   const language = useLanguage()
   const command = useCommand()
-  const platform = usePlatform()
   const global = useGlobal()
   const servers = useSettingsServers()
   const surface = useSettingsSurface()
@@ -73,8 +71,6 @@ export function SettingsSearch() {
   const catalog = createMemo(() =>
     settingsSearchIndex({
       servers: inventory(),
-      desktop: platform.platform === "desktop",
-      browser: !!platform.browserPane,
       dev: import.meta.env.VITE_OPENCODE_CHANNEL !== "prod",
       mobile: mobile(),
       translate: language.t,

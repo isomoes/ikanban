@@ -38,7 +38,6 @@ export type ComposerEditorView = {
   agent?: ComposerSelectControl
   variant?: ComposerSelectControl
   submit: {
-    available?: Accessor<boolean>
     stopping: Accessor<boolean>
     working?: Accessor<boolean>
     queue?: ComposerQueue
@@ -102,7 +101,7 @@ export function createComposerEditor(input: {
       input.view.add?.onAttach()
       return
     }
-    attachments.pick(() => fileInput?.click())
+    fileInput?.click()
   }
   const contextList = useFilteredList<ComposerSuggestion>({
     items: async (query) => {
@@ -344,7 +343,6 @@ export function createComposerEditor(input: {
       draft.removeAttachment(id)
     },
     canSubmit() {
-      if (input.view.submit.available?.() === false) return false
       if (input.view.draftOnly) return false
       if (attachments?.pending().length) return false
       const persisted = draft.state
@@ -378,7 +376,6 @@ export function createComposerEditor(input: {
       dispatch({ type: "mode.shell" })
     },
     submit(options?: { alternate?: boolean }) {
-      if (input.view.submit.available?.() === false) return
       if (input.view.draftOnly) return
       if (attachments?.pending().length) return
       input.view.submit.onSubmit(options)
@@ -397,7 +394,7 @@ export function createComposerEditor(input: {
     onPaste(event: ClipboardEvent) {
       const clipboard = event.clipboardData
       const text = clipboard?.getData("text/plain")
-      if (attachments && shouldHandlePasteAsAttachment(clipboard, !!input.attachments?.readClipboardImage)) {
+      if (attachments && shouldHandlePasteAsAttachment(clipboard)) {
         void attachments.handlePaste(event)
         return
       }
@@ -462,10 +459,8 @@ export function createComposerEditor(input: {
 
 export type ComposerEditorModel = ReturnType<typeof createComposerEditor>
 
-export function shouldHandlePasteAsAttachment(clipboard: DataTransfer | null, readClipboardImage: boolean) {
-  if (Array.from(clipboard?.items ?? []).some((item) => item.kind === "file")) return true
-  if (Array.from(clipboard?.types ?? []).some((type) => type.startsWith("text/"))) return false
-  return readClipboardImage
+export function shouldHandlePasteAsAttachment(clipboard: DataTransfer | null) {
+  return Array.from(clipboard?.items ?? []).some((item) => item.kind === "file")
 }
 
 function canNavigateHistory(direction: "up" | "down", text: string, cursor: number, inHistory: boolean) {

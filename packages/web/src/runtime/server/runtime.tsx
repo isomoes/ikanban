@@ -11,7 +11,7 @@ import { createPermissionAutoApprover } from "@/session/requests/auto-approve"
 import { createServerNotificationState } from "@/shell/notifications/notification"
 import { createNotificationCoordinator } from "@/shell/notifications/coordinator"
 import { Persist, persisted } from "@/runtime/persistence/storage"
-import { createDesktopData } from "./data"
+import { createAppData } from "./data"
 import { ModelState } from "./persistence"
 import { useLanguage } from "@/runtime/i18n/language"
 import { showToast } from "@/shell/notifications/toast"
@@ -36,7 +36,7 @@ export const { use: useGlobal, provider: GlobalProvider } = createSimpleContext(
     const owner = getOwner()
     if (!owner) throw new Error("Global provider requires a Solid owner")
 
-    const ensureServerCtx = (conn: ServerConnection.Any) => {
+    const ensureServerCtx = (conn: ServerConnection.Http) => {
       const key = ServerConnection.key(conn)
       const existing = serverCtxs.get(key)
       if (existing) return existing
@@ -70,7 +70,7 @@ export const { use: useGlobal, provider: GlobalProvider } = createSimpleContext(
         health: serverHealth,
       },
       models,
-      ensureServerCtx(conn: ServerConnection.Any) {
+      ensureServerCtx(conn: ServerConnection.Http) {
         return ensureServerCtx(conn)
       },
     }
@@ -102,7 +102,7 @@ function createGlobalModels() {
 }
 
 function createServerController(
-  conn: ServerConnection.Any,
+  conn: ServerConnection.Http,
   scope: ServerScope,
   projects: ReturnType<typeof createServerProjects>,
   notificationCoordinator: ReturnType<typeof createNotificationCoordinator>,
@@ -128,7 +128,7 @@ function createServerController(
       })
     },
   })
-  const data = createDesktopData({
+  const data = createAppData({
     data: source,
     remove: (sessionID) => sdk.api.session.remove({ sessionID }),
   })
@@ -167,8 +167,7 @@ function createServerController(
       .map((worktree) => enrich({ worktree, expanded: false }))
   })
 
-  const isLocal =
-    (conn?.type === "sidecar" && conn.variant === "base") || (conn?.type === "http" && isLocalHost(conn.http.url))
+  const isLocal = conn && isLocalHost(conn.http.url)
 
   return {
     data,
@@ -185,9 +184,9 @@ function createServerController(
   }
 }
 
-export function useServerCtx(server: Accessor<ServerConnection.Any>): Accessor<ServerCtx>
-export function useServerCtx(server: Accessor<ServerConnection.Any | undefined>): Accessor<ServerCtx | undefined>
-export function useServerCtx(server: Accessor<ServerConnection.Any | undefined>) {
+export function useServerCtx(server: Accessor<ServerConnection.Http>): Accessor<ServerCtx>
+export function useServerCtx(server: Accessor<ServerConnection.Http | undefined>): Accessor<ServerCtx | undefined>
+export function useServerCtx(server: Accessor<ServerConnection.Http | undefined>) {
   const global = useGlobal()
   return () => {
     const s = server()

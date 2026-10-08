@@ -1,6 +1,5 @@
 import type { FormAnswer, IntegrationMethod, IntegrationOauthConnectOutput } from "@opencode/client/promise"
 import { useLanguage } from "@/runtime/i18n/language"
-import { usePlatform } from "@/runtime/platform/platform"
 import { useServerSDK } from "@/runtime/server/client"
 import { useData } from "@/runtime/server/current"
 import { createEffect, createMemo, createResource, onCleanup } from "solid-js"
@@ -16,7 +15,6 @@ export function createProviderConnectionController(options: {
   pollInterval?: number
 }) {
   const language = useLanguage()
-  const platform = usePlatform()
   const serverSDK = useServerSDK()
   const data = useData()
   const location = () => {
@@ -186,14 +184,7 @@ export function createProviderConnectionController(options: {
         ...(answer ? { answer } : {}),
         location: location(),
       })
-      .then((response) => {
-        if (options.provider() === "opencode" && platform.platform === "desktop") {
-          const url = new URL(response.data.url)
-          url.searchParams.set("client_id", "opencode-desktop")
-          response.data.url = url.href
-        }
-        return { ok: true as const, authorization: response.data }
-      })
+      .then((response) => ({ ok: true as const, authorization: response.data }))
       .catch((error) => ({ ok: false as const, error }))
     if (polling.disposed || generation !== polling.generation) return
     if (!result.ok) {

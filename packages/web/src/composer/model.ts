@@ -12,7 +12,7 @@ import { useLayout } from "@/shell/state/layout"
 import { usePlatform } from "@/runtime/platform/platform"
 import { useWorkspaceLocation } from "@/workspaces/location"
 import { resolveBlobUrl } from "@/runtime/persistence/drafts"
-import { useData, useServer } from "@/runtime/server/current"
+import { useData } from "@/runtime/server/current"
 import { createSessionTabs } from "@/session/helpers"
 import { showToast } from "@/shell/notifications/toast"
 import { formatServerError } from "@/runtime/server/errors"
@@ -33,8 +33,6 @@ export type ComposerModel = ComposerEditorModel & {
 export function createComposerModel(adapter: ComposerAdapter, options?: { queue?: ComposerQueue }): ComposerModel {
   const sdk = useWorkspaceLocation()
   const data = useData()
-  const server = useServer()
-  const available = () => server.conn.type !== "ssh" || server.ctx.sdk.connection.status() === "connected"
   const files = useFile()
   const layout = useLayout()
   const comments = useComments()
@@ -349,8 +347,6 @@ export function createComposerModel(adapter: ComposerAdapter, options?: { queue?
       return () => command.trigger(selected.id, "slash")
     },
     attachments: {
-      picker: platform.openAttachmentPickerDialog,
-      directory: () => sdk().directory,
       destination: useAttachmentDestination(adapter.controls),
       isDialogActive: () => !!dialog.active,
       duplicate: () => showToast({ title: language.t("prompt.toast.attachmentDuplicate.title") }),
@@ -360,15 +356,6 @@ export function createComposerModel(adapter: ComposerAdapter, options?: { queue?
           title: language.t("prompt.toast.uploadFailed.title"),
           description: composerErrorMessage(language, error),
         }),
-      onError: (error) =>
-        showToast({
-          variant: "error",
-          title: language.t("common.requestFailed"),
-          description: error instanceof Error ? error.message : String(error),
-        }),
-      readClipboardImage: platform.readClipboardImage,
-      getPathForFile: platform.getPathForFile,
-      onDragCancel: platform.onDragCancel,
       store: platform.draftStore?.putBlob,
     },
     view: {
@@ -391,12 +378,10 @@ export function createComposerModel(adapter: ComposerAdapter, options?: { queue?
         keybind: () => command.keybindParts("model.variant.cycle"),
       },
       submit: {
-        available,
         stopping,
         working: adapter.working,
         queue: options?.queue,
         onSubmit: (submitOptions) => {
-          if (!available()) return
           const queue = options?.queue
           // Confirming an edit re-admits the queued prompt instead of sending
           // the composer value as a new prompt. Enter keeps it queued in

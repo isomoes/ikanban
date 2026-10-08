@@ -16,7 +16,7 @@ import "@/settings/search.css"
 import "@/settings/settings.css"
 
 export const SettingsProjects: Component<{
-  server: ServerConnection.Any
+  server: ServerConnection.Http
   onOpenProject: (project: LocalProject) => void
 }> = (props) => {
   const language = useLanguage()

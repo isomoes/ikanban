@@ -7,8 +7,7 @@ import { useLanguage } from "@/runtime/i18n/language"
 import { ServerConnection, serverName } from "@/runtime/server/registry"
 import { useServerCollectionController } from "@/servers/registry/controller"
 import { DialogServer } from "@/servers/connect/dialog"
-import { AddServerMenu, WslServerSettings } from "@/servers/wsl/settings"
-import { SshServerSettings } from "@/servers/ssh/settings"
+import { AddServerMenu } from "@/servers/registry/add-menu"
 import { SettingsList } from "@/settings/list"
 import { ShellSetting } from "@/settings/general/general"
 import { createServerShellController } from "@/settings/general/controllers"
@@ -19,7 +18,7 @@ export const SettingsServerGeneral: Component<{
   entry: SettingsServer
   nested?: boolean
   onAddServer?: () => void
-  onServerChange?: (server: ServerConnection.Any) => void
+  onServerChange?: (server: ServerConnection.Http) => void
 }> = (props) => {
   const dialog = useDialog()
   const language = useLanguage()
@@ -50,45 +49,25 @@ export const SettingsServerGeneral: Component<{
         <section class="settings-section settings-server-connection" data-component="settings-server-connection">
           <h3 class="settings-section-title">{language.t("settings.server.section.connection")}</h3>
           <SettingsList>
-            <Show
-              when={props.entry.ssh}
-              fallback={
-                <Show
-                  when={props.entry.wsl}
-                  fallback={
-                    <Show when={props.entry.connection}>
-                      {(server) => (
-                        <div class="settings-servers-row">
-                          <div class="settings-servers-lead">
-                            <ServerHealthIndicator health={health()} />
-                            <div class="settings-servers-copy">
-                              <bdi class="settings-servers-name" dir="auto">
-                                {serverName(server()) || props.entry.key}
-                              </bdi>
-                              <bdi class="settings-servers-meta" dir="ltr">
-                                {server().http.url}
-                              </bdi>
-                            </div>
-                          </div>
-                          <div class="settings-servers-actions">
-                            <Show
-                              when={controller.defaults.available() && controller.defaults.key() === props.entry.key}
-                            >
-                              <Badge>{language.t("dialog.server.status.default")}</Badge>
-                            </Show>
-                            <ServerRowMenu server={server()} domain={controller} onEdit={edit} />
-                          </div>
-                        </div>
-                      )}
-                    </Show>
-                  }
-                >
-                  {(item) => <WslServerSettings domain={controller} servers={() => [item()]} />}
+            <div class="settings-servers-row">
+              <div class="settings-servers-lead">
+                <ServerHealthIndicator health={health()} />
+                <div class="settings-servers-copy">
+                  <bdi class="settings-servers-name" dir="auto">
+                    {serverName(props.entry.connection) || props.entry.key}
+                  </bdi>
+                  <bdi class="settings-servers-meta" dir="ltr">
+                    {props.entry.connection.http.url}
+                  </bdi>
+                </div>
+              </div>
+              <div class="settings-servers-actions">
+                <Show when={controller.defaults.available() && controller.defaults.key() === props.entry.key}>
+                  <Badge>{language.t("dialog.server.status.default")}</Badge>
                 </Show>
-              }
-            >
-              {(item) => <SshServerSettings filter="" id={item().config.id} domain={controller} />}
-            </Show>
+                <ServerRowMenu server={props.entry.connection} domain={controller} onEdit={edit} />
+              </div>
+            </div>
           </SettingsList>
         </section>
 
@@ -100,7 +79,7 @@ export const SettingsServerGeneral: Component<{
   )
 }
 
-function ServerShell(props: { server: ServerConnection.Any }) {
+function ServerShell(props: { server: ServerConnection.Http }) {
   const language = useLanguage()
   const controller = createServerShellController(() => props.server)
   return (

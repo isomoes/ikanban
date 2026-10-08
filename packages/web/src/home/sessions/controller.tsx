@@ -20,8 +20,7 @@ import { errorMessage } from "@/shell/layout/helpers"
 import { useSessionTabAvatarState } from "@/shell/layout/project-avatar-state"
 import { removedSessionIDs } from "@/session/session-domain"
 import { pathKey } from "@/workspaces/path-key"
-import { fetchSessionExport, saveSessionExport, sessionExportFilename } from "@/session/commands/export"
-import { usePlatform } from "@/runtime/platform/platform"
+import { downloadSessionExport, fetchSessionExport, sessionExportFilename } from "@/session/commands/export"
 import { sessionLabel, sessionTitle } from "@/session/title"
 import { showToast } from "@/shell/notifications/toast"
 import { archiveHomeSession } from "./archive"
@@ -45,7 +44,6 @@ export function createHomeSessionsController(home: HomeController) {
   const command = useCommand()
   const dialog = useDialog()
   const language = useLanguage()
-  const platform = usePlatform()
   const queryClient = useQueryClient()
   const projectDirectories = createMemo(() => {
     const selected = home.selection.value().directory
@@ -173,7 +171,7 @@ export function createHomeSessionsController(home: HomeController) {
     try {
       const data = await fetchSessionExport({ sessionID: session.id, api: ctx.sdk.api })
       const filename = sessionExportFilename(data.info)
-      if (!(await saveSessionExport(filename, data, platform))) return
+      downloadSessionExport(filename, data)
       showToast({
         variant: "success",
         icon: "circle-check",

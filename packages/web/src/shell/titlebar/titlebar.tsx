@@ -12,7 +12,6 @@ import { usePlatform } from "@/runtime/platform/platform"
 import { useCommand } from "@/shell/commands/command"
 import { useLanguage } from "@/runtime/i18n/language"
 import { useSettings } from "@/settings/model"
-import { WindowsAppMenu } from "./windows-menu"
 import { applyPath, backPath, forwardPath, type HistoryLocation } from "./history"
 import { TitlebarTabStrip } from "@/shell/titlebar/tab-strip"
 import { makeEventListener } from "@solid-primitives/event-listener"
@@ -32,29 +31,11 @@ import { SessionTabAvatar } from "@/shell/layout/session-tab-avatar"
 import { SessionProgressIndicatorV2 } from "@ikanban/session-ui/v2/session-progress-indicator-v2"
 import { displayName, projectForSession } from "@/shell/layout/helpers"
 import { useSettingsDialog } from "@/settings/command"
-import { updaterAction } from "@/shell/updates/action"
-import type { UpdaterState } from "@/shell/updates/types"
 import { IKANBAN_ISSUES } from "@/shell/links"
 import { version } from "../../../package.json"
 import { KanbanMark } from "./kanban-mark"
 
-const titlebarHeight = 36
-const windowsTitlebarHeight = 44 // Includes the content inset; matches the native Windows overlay.
-const minTitlebarZoom = 0.25
-const windowsControlsBaseWidth = 138 // 3 native Windows caption buttons at 46px each.
-// Native controls: 14px left inset, two 20px button pitches, and a 14px button.
-const macTrafficLightsBaseWidth = 68
-const macTrafficLightsTopClearance = 28
-
-export type TitlebarUpdate = {
-  state: UpdaterState | undefined
-  install: () => void
-}
-
-export function Titlebar(props: {
-  update?: TitlebarUpdate
-  verticalTabs?: { mount?: HTMLElement }
-}) {
+export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
   const platform = usePlatform()
   const command = useCommand()
   const language = useLanguage()
@@ -64,20 +45,6 @@ export function Titlebar(props: {
   const location = useLocation()
   const mobile = createMediaQuery("(max-width: 767px)")
   const bottom = createMemo(() => mobile() && settings.general.mobileTitlebarPosition() === "bottom")
-
-  const mac = createMemo(() => platform.platform === "desktop" && platform.os === "macos")
-  const windows = createMemo(() => platform.platform === "desktop" && platform.os === "windows")
-  const linux = createMemo(() => platform.platform === "desktop" && platform.os === "linux")
-  const macTrafficLights = createMemo(() => mac() && !platform.windowFullscreen?.())
-  const macVerticalTabs = createMemo(() => mac() && !!props.verticalTabs)
-  const zoom = () => platform.webviewZoom?.() ?? 1
-  const titlebarZoom = () => (windows() ? Math.max(zoom(), minTitlebarZoom) : zoom())
-  const minHeight = () => {
-    if (mac()) return `${titlebarHeight / zoom()}px`
-    if (windows()) return `env(titlebar-area-height, ${windowsTitlebarHeight / Math.min(titlebarZoom(), 1)}px)`
-    return undefined
-  }
-  const windowsControlsWidth = () => `${windowsControlsBaseWidth / Math.max(titlebarZoom(), 1)}px`
 
   const [history, setHistory] = createStore({
     stack: [] as HistoryLocation[],
@@ -99,23 +66,7 @@ export function Titlebar(props: {
     })
   })
 
-  const updateState = createMemo<TitlebarUpdatePillState>(() => {
-    const state = props.update?.state
-    const installing = state?.status === "installing"
-    const version = state?.status === "ready" || state?.status === "download-required" ? state.version : undefined
-    return {
-      visible: version !== undefined || installing,
-      installing,
-      label: language.t("titlebar.update"),
-      ariaLabel: language.t(updaterAction(state).label),
-      title: version ? language.t("titlebar.updateVersion", { version }) : undefined,
-      onInstall: () => props.update?.install(),
-    }
-  })
-  const rightState = createMemo<TitlebarRightState>(() => ({
-    update: updateState(),
-  }))
-  const hideVerticalTitlebar = createMemo(() => !!props.verticalTabs && !windows())
+  const hideVerticalTitlebar = createMemo(() => !!props.verticalTabs)
 
   const back = () => {
     const next = backPath(history)
@@ -157,23 +108,13 @@ export function Titlebar(props: {
         "order-last": bottom(),
       }}
       style={{
-        height:
-          platform.platform === "web"
-            ? bottom()
-              ? "calc(28px + max(8px, var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))))"
-              : "calc(28px + max(8px, env(safe-area-inset-top, 0px)))"
-            : undefined,
+        height: bottom()
+          ? "calc(28px + max(8px, var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))))"
+          : "calc(28px + max(8px, env(safe-area-inset-top, 0px)))",
         "padding-top": bottom() ? "0px" : "env(safe-area-inset-top, 0px)",
         "padding-bottom": bottom() ? "var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))" : "0px",
-        "min-height": minHeight(),
-        // Keep native macOS traffic lights clear even when the desktop window is narrow.
-        "padding-left": macTrafficLights() ? `${macTrafficLightsBaseWidth / zoom()}px` : 0,
-        width: windows() ? `env(titlebar-area-width, calc(100vw - ${windowsControlsWidth()}))` : undefined,
-        "max-width": windows() ? `env(titlebar-area-width, calc(100vw - ${windowsControlsWidth()}))` : undefined,
-        // Native Windows caption controls remain on the physical right in both writing directions.
-        "margin-right": windows() ? "auto" : undefined,
+        "padding-left": 0,
       }}
-      data-tauri-drag-region
     >
       <Switch>
         <Match when>
@@ -333,7 +274,7 @@ export function Titlebar(props: {
                 id: "home.toggle",
                 title: language.t("home.title"),
                 category: language.t("command.category.view"),
-                keybind: windows() ? "alt+home" : "mod+b",
+                keybind: "mod+b",
                 hidden: true,
                 onSelect: toggleHome,
               },
@@ -404,18 +345,12 @@ export function Titlebar(props: {
               <div
                 class="h-full flex-1 overflow-hidden flex flex-row items-center gap-1.5 px-2 md:pe-3"
                 classList={{
-                  "pt-[max(0px,calc(8px-env(safe-area-inset-top,0px)))]": !bottom() && !windows(),
+                  "pt-[max(0px,calc(8px-env(safe-area-inset-top,0px)))]": !bottom(),
                   "pb-[max(0px,calc(8px-var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px))))]": bottom(),
-                  "pl-4": macTrafficLights(),
-                  // Center the 20px app icon over the sidebar's 16px icon column.
-                  "ps-3.5": windows(),
                 }}
               >
-                <Show when={!mobile() && (!props.verticalTabs || windows())}>
+                <Show when={!mobile() && !props.verticalTabs}>
                   <ChannelIndicator horizontal active={layout.route().type === "home"} onClick={goHome} />
-                </Show>
-                <Show when={windows() || linux()}>
-                  <WindowsAppMenu command={command} platform={platform} />
                 </Show>
 
                 <Show
@@ -432,7 +367,7 @@ export function Titlebar(props: {
                     >
                       <MobileDrawerTrigger
                         data-slot="mobile-tabs-trigger"
-                        class="flex h-7 min-w-0 flex-1 items-center gap-2 rounded-[6px] px-2 text-[13px] leading-4 text-v2-text-text-base focus-visible:outline-none [app-region:no-drag]"
+                        class="flex h-7 min-w-0 flex-1 items-center gap-2 rounded-[6px] px-2 text-[13px] leading-4 text-v2-text-text-base focus-visible:outline-none"
                         aria-label={language.t("titlebar.tabs")}
                       >
                         <Show when={currentTab()} fallback={<Icon name="grid-plus" class="shrink-0" />}>
@@ -611,16 +546,7 @@ export function Titlebar(props: {
                             mount={mount}
                             ref={(element) => (element.className = "flex size-full min-h-0 flex-col")}
                           >
-                            <Show when={macVerticalTabs()}>
-                              <div
-                                class="mb-4 min-h-7 w-full shrink-0"
-                                style={{ height: `${macTrafficLightsTopClearance / zoom()}px` }}
-                                data-tauri-drag-region
-                              />
-                            </Show>
-                            <Show when={!windows()}>
-                              <ChannelIndicator sidebar active={layout.route().type === "home"} onClick={goHome} />
-                            </Show>
+                            <ChannelIndicator sidebar active={layout.route().type === "home"} onClick={goHome} />
                             <button
                               type="button"
                               data-titlebar-tab-action
@@ -655,11 +581,6 @@ export function Titlebar(props: {
                                 onReorder={(keys) => tabsStoreActions.reorder(keys)}
                               />
                             </div>
-                            <Show when={updateState().visible}>
-                              <div data-slot="vertical-tabs-footer" class="mt-2 flex w-full shrink-0 flex-col">
-                                <TitlebarUpdateIconButton state={updateState()} vertical />
-                              </div>
-                            </Show>
                           </Portal>
                         )}
                       </Show>
@@ -670,7 +591,7 @@ export function Titlebar(props: {
                   <div class="flex-1" />
                 </Show>
                 <Show when={!props.verticalTabs}>
-                  <TitlebarRight state={rightState()} />
+                  <TitlebarRight />
                 </Show>
               </div>
             )
@@ -681,83 +602,16 @@ export function Titlebar(props: {
   )
 }
 
-type TitlebarUpdatePillState = {
-  visible: boolean
-  installing: boolean
-  label: string
-  ariaLabel: string
-  title?: string
-  onInstall: () => void
-}
-
-type TitlebarRightState = {
-  update: TitlebarUpdatePillState
-}
-
-function TitlebarRight(props: { state: TitlebarRightState }) {
+function TitlebarRight() {
   return (
     <div class="relative z-20 flex shrink-0 items-center justify-end gap-0 overflow-visible">
-      <Show when={props.state.update.visible}>
-        <TitlebarUpdateIconButton state={props.state.update} />
-      </Show>
       <TitlebarRightMount />
-    </div>
-  )
-}
-
-function TitlebarUpdateIconButton(props: { state: TitlebarUpdatePillState; vertical?: boolean }) {
-  const label = () => (
-    <span
-      class="shrink-0 text-[11px] leading-4 text-v2-text-text-accent [font-weight:530] opacity-0 motion-safe:transition-all duration-150 ease-out group-hover:opacity-100 group-hover:translate-x-0 group-focus-within:opacity-100 group-focus-within:translate-x-0 motion-reduce:translate-x-0"
-      classList={{
-        "ms-px me-4 -translate-x-2 rtl:translate-x-2": props.vertical,
-        "ms-2 me-px translate-x-2 rtl:-translate-x-2": !props.vertical,
-      }}
-    >
-      {props.state.label}
-    </span>
-  )
-  return (
-    <div
-      data-slot="titlebar-update"
-      class="group relative shrink-0 rounded-full bg-v2-background-bg-deep transition-[width] duration-150 ease-out hover:z-30 focus-within:z-30 motion-reduce:transition-none"
-      classList={{
-        "h-7 w-7 self-start hover:w-[84px] focus-within:w-[84px]": props.vertical,
-        "me-3 h-5 w-5 hover:w-[68px] focus-within:w-[68px]": !props.vertical,
-      }}
-    >
-      <button
-        type="button"
-        class="absolute top-0 z-10 flex h-full w-full items-center overflow-hidden rounded-full bg-v2-icon-icon-accent/20 text-v2-icon-icon-accent transition-[background-color] duration-150 ease-out group-hover:bg-[color-mix(in_srgb,var(--v2-icon-icon-accent)_20%,var(--v2-background-bg-deep))] group-focus-within:bg-[color-mix(in_srgb,var(--v2-icon-icon-accent)_20%,var(--v2-background-bg-deep))] focus-visible:outline-none disabled:opacity-60 motion-reduce:transition-none [app-region:no-drag]"
-        classList={{ "start-0 justify-start": props.vertical, "end-0 justify-end": !props.vertical }}
-        onClick={props.state.onInstall}
-        disabled={props.state.installing}
-        aria-busy={props.state.installing}
-        aria-label={props.state.ariaLabel}
-      >
-        <Show when={!props.vertical}>{label()}</Show>
-        <span
-          class="flex shrink-0 items-center justify-center"
-          classList={{ "size-7": props.vertical, "size-5": !props.vertical }}
-        >
-          <Show
-            when={!props.state.installing}
-            fallback={<span data-slot="titlebar-update-loader" aria-hidden="true" />}
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-              <path d="M7 11V3M3.5 7.63128L7 11L10.5 7.63128" stroke="currentColor" />
-            </svg>
-          </Show>
-        </span>
-        <Show when={props.vertical}>{label()}</Show>
-      </button>
     </div>
   )
 }
 
 function ChannelIndicator(props: { horizontal?: boolean; sidebar?: boolean; active?: boolean; onClick: () => void }) {
   const language = useLanguage()
-  const platform = usePlatform()
   const command = useCommand()
   const build = import.meta.env.DEV ? "dev" : `v${version}`
   const label = () => `iKanban ${build}`
@@ -770,14 +624,14 @@ function ChannelIndicator(props: { horizontal?: boolean; sidebar?: boolean; acti
           <Keybind keys={command.keybindParts("home.toggle")} variant="neutral" />
         </>
       }
-      class={`shrink-0 [app-region:no-drag] ${props.sidebar ? "mb-4 ms-0.5 self-start" : ""} ${props.horizontal ? "me-1.5" : ""} ${props.horizontal && platform.platform === "web" ? "ps-2.5" : ""}`}
+      class={`shrink-0 ${props.sidebar ? "mb-4 ms-0.5 self-start" : ""} ${props.horizontal ? "me-1.5" : ""} ${props.horizontal ? "ps-2.5" : ""}`}
     >
       <button
         type="button"
         data-slot="channel-indicator"
         data-action="titlebar-home"
         data-state={props.active ? "pressed" : undefined}
-        class="flex h-7 shrink-0 cursor-pointer items-center gap-1.5 rounded-[6px] pe-1 text-v2-text-text-base hover:bg-v2-background-bg-layer-02 focus-visible:outline-none focus-visible:bg-v2-background-bg-layer-02 [app-region:no-drag]"
+        class="flex h-7 shrink-0 cursor-pointer items-center gap-1.5 rounded-[6px] pe-1 text-v2-text-text-base hover:bg-v2-background-bg-layer-02 focus-visible:outline-none focus-visible:bg-v2-background-bg-layer-02"
         onClick={() => props.onClick()}
         aria-label={`${label()} — ${language.t("home.title")}`}
         aria-pressed={props.active}

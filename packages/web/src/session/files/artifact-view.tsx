@@ -1,7 +1,6 @@
 import { createEffect, createMemo, For, Match, on, onCleanup, Show, Switch, type JSX } from "solid-js"
 import { createStore } from "solid-js/store"
 import { createResizeObserver } from "@solid-primitives/resize-observer"
-import { Button } from "@ikanban/ui/button"
 import { FileIcon } from "@ikanban/ui/file-icon"
 import { SegmentedControl, SegmentedControlItem } from "@ikanban/ui/segmented-control"
 import { ScrollView } from "@ikanban/ui/scroll-view"
@@ -95,11 +94,6 @@ export function ArtifactView(props: { path: string; content: FileContent; cacheK
         mode={state.mode}
         onModeChange={previewable() ? (mode) => setState("mode", mode) : undefined}
         meta={meta()}
-        actions={
-          <Show when={kind() === "html"}>
-            <OpenInBrowserButton path={props.path} />
-          </Show>
-        }
       />
       <Show when={!previewable() || state.mode === "preview"} fallback={props.source}>
         <Switch>
@@ -154,7 +148,6 @@ function ArtifactToolbar(props: {
   mode?: ArtifactMode
   onModeChange?: (mode: ArtifactMode) => void
   meta: string[]
-  actions?: JSX.Element
 }) {
   const language = useLanguage()
   return (
@@ -185,21 +178,8 @@ function ArtifactToolbar(props: {
             )}
           </For>
         </div>
-        {props.actions}
       </div>
     </div>
-  )
-}
-
-function OpenInBrowserButton(props: { path: string }) {
-  const language = useLanguage()
-  const artifacts = useArtifactOpener()
-  return (
-    <Show when={artifacts.canOpenInBrowser(props.path)}>
-      <Button size="small" variant="ghost" icon="globe" onClick={() => artifacts.openInBrowser(props.path)}>
-        {language.t("file.view.openInBrowser")}
-      </Button>
-    </Show>
   )
 }
 

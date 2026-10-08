@@ -75,7 +75,6 @@ const placementOnlySchema = Persistence.struct({ placement: placementSchema })
 
 const generalSchema = Persistence.struct({
   autoSave: Schema.Boolean,
-  releaseNotes: Schema.Boolean,
   showFileTree: Schema.Boolean,
   showNavigation: Schema.Boolean,
   showSearch: Schema.Boolean,
@@ -94,7 +93,6 @@ const generalSchema = Persistence.struct({
   mobileDiffWrap: Schema.Boolean,
   terminalPlacement: Schema.Literals(["side", "bottom"]),
   followUpBehavior: Schema.Literals(["queue", "steer"]),
-  experimentalBrowser: Schema.Boolean,
 })
 
 const appearanceSchema = Persistence.struct({
@@ -239,7 +237,6 @@ export const settingsPersistence = Persistence.migrate(
 export const defaultSettings: Settings = {
   general: {
     autoSave: true,
-    releaseNotes: true,
     showFileTree: false,
     showNavigation: false,
     showSearch: false,
@@ -251,7 +248,6 @@ export const defaultSettings: Settings = {
     mobileDiffWrap: true,
     terminalPlacement: "side",
     followUpBehavior: "steer",
-    experimentalBrowser: false,
   },
   sessionSummary: { projectExpanded: true, serverExpanded: true },
   appearance: { fontSize: 14, mono: "", sans: "", terminal: "", tabLayout: "horizontal", showProjectName: false },
@@ -305,10 +301,6 @@ export const { use: useSettings, provider: SettingsProvider } = createSimpleCont
         setAutoSave(value: boolean) {
           setStore("general", "autoSave", value)
         },
-        releaseNotes: withFallback(() => store.general?.releaseNotes, defaultSettings.general.releaseNotes),
-        setReleaseNotes(value: boolean) {
-          setStore("general", "releaseNotes", value)
-        },
         showFileTree,
         setShowFileTree(value: boolean) {
           setStore("general", "showFileTree", value)
@@ -358,13 +350,6 @@ export const { use: useSettings, provider: SettingsProvider } = createSimpleCont
         followUpBehavior: withFallback(() => store.general?.followUpBehavior, defaultSettings.general.followUpBehavior),
         setFollowUpBehavior(value: FollowUpBehavior) {
           setStore("general", "followUpBehavior", value)
-        },
-        experimentalBrowser: withFallback(
-          () => store.general?.experimentalBrowser,
-          defaultSettings.general.experimentalBrowser,
-        ),
-        setExperimentalBrowser(value: boolean) {
-          setStore("general", "experimentalBrowser", value)
         },
       },
       sessionSummary: {

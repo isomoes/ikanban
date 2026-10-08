@@ -28,7 +28,6 @@
     "./radio": "./src/forms/radio/radio.tsx",
     "./segmented-control": "./src/navigation/segmented-control/segmented-control.tsx",
     "./select": "./src/forms/select/select.tsx",
-    "./split-button": "./src/actions/split-button/split-button.tsx",
     "./switch": "./src/forms/switch/switch.tsx",
     "./tabs": "./src/navigation/tabs/tabs.tsx",
     "./text-input": "./src/forms/text-input/text-input.tsx",

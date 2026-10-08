@@ -2,25 +2,20 @@ import { lazy, Show, Suspense, type ParentProps } from "solid-js"
 import { createStore } from "solid-js/store"
 import { createMediaQuery } from "@solid-primitives/media"
 import { ResizeHandle } from "@ikanban/ui/resize-handle"
-import { Titlebar, type TitlebarUpdate } from "@/shell/titlebar/titlebar"
-import { usePlatform } from "@/runtime/platform/platform"
+import { Titlebar } from "@/shell/titlebar/titlebar"
 import { ToastRegion } from "@/shell/notifications/toast"
 import { UploadToastHost } from "@/composer/attachments/uploads"
 import { TitlebarRightProvider } from "@/shell/titlebar/right-slot"
 import { useSettingsSurface } from "@/settings/surface"
 import { useSettings } from "@/settings/model"
-import { SshAuthentication } from "@/servers/ssh/authentication"
-import { useUpdaterInstall } from "@/shell/updates/download"
 import { useCommand } from "@/shell/commands/command"
 import { useLanguage } from "@/runtime/i18n/language"
 
 const DebugBar = lazy(() => import("@/shell/debug/debug-bar").then((module) => ({ default: module.DebugBar })))
 
 export default function Layout(props: ParentProps) {
-  const platform = usePlatform()
   const settings = useSettingsSurface()
   const preferences = useSettings()
-  const installUpdate = useUpdaterInstall()
   const command = useCommand()
   const language = useLanguage()
   const mobile = createMediaQuery("(max-width: 767px)")
@@ -32,12 +27,6 @@ export default function Layout(props: ParentProps) {
   const verticalTabs = () => preferences.appearance.tabLayout() === "vertical" && !mobile()
   const bottomTitlebar = () => mobile() && preferences.general.mobileTitlebarPosition() === "bottom"
 
-  const update: TitlebarUpdate = {
-    get state() {
-      return platform.updater?.state()
-    },
-    install: installUpdate,
-  }
   // A plain object avoids the compiler's conditional-prop memo, which leaks when read from event handlers.
   const debugTools = {
     get visible() {
@@ -60,21 +49,13 @@ export default function Layout(props: ParentProps) {
       <div
         class="relative bg-v2-background-bg-deep flex-1 min-h-0 min-w-0 flex flex-col select-none [&_input]:select-text [&_textarea]:select-text [&_[contenteditable]]:select-text"
         style={{
-          // Native Windows chrome supplies the gap; retain paint clearance for the panels' outer outlines.
-          "--shell-top-inset": bottomTitlebar()
-            ? "max(0px, calc(8px - env(safe-area-inset-top, 0px)))"
-            : platform.platform === "desktop" && platform.os === "windows"
-              ? "1px"
-              : "8px",
+          "--shell-top-inset": bottomTitlebar() ? "max(0px, calc(8px - env(safe-area-inset-top, 0px)))" : "8px",
           "--shell-bottom-inset": bottomTitlebar()
             ? "8px"
             : "max(0px, calc(8px - var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))))",
         }}
       >
-        <Titlebar
-          update={update}
-          verticalTabs={verticalTabs() ? { mount: state.tabsMount } : undefined}
-        />
+        <Titlebar verticalTabs={verticalTabs() ? { mount: state.tabsMount } : undefined} />
         <div class="flex flex-1 min-h-0 min-w-0 flex-row">
           <Show when={verticalTabs()}>
             <aside
@@ -111,9 +92,7 @@ export default function Layout(props: ParentProps) {
               "--settings-top-inset": mobile() && !bottomTitlebar() ? "0px" : "var(--shell-top-inset, 8px)",
             }}
           >
-            <SshAuthentication>
-              <Suspense>{props.children}</Suspense>
-            </SshAuthentication>
+            <Suspense>{props.children}</Suspense>
           </main>
         </div>
         <Show when={state.debugTools}>

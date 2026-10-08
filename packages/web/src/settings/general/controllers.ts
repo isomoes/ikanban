@@ -23,7 +23,7 @@ import { showToast } from "@/shell/notifications/toast"
 export { createShellOptions, createSoundPreviewController } from "./behavior"
 export type { ShellOption, ShellSelectOption } from "./behavior"
 
-export function createServerShellController(server: Accessor<ServerConnection.Any>) {
+export function createServerShellController(server: Accessor<ServerConnection.Http>) {
   const language = useLanguage()
   const serverCtx = useServerCtx(server)
   const source = () => ServerConnection.key(server())

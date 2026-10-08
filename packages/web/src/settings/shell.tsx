@@ -10,7 +10,7 @@ import { useGlobal, useServerCtx } from "@/runtime/server/runtime"
 import { ServerConnection } from "@/runtime/server/registry"
 import type { LocalProject } from "@/shell/state/layout"
 import { useServerCollectionController } from "@/servers/registry/controller"
-import { AddServerMenu } from "@/servers/wsl/settings"
+import { AddServerMenu } from "@/servers/registry/add-menu"
 import { DialogServer } from "@/servers/connect/dialog"
 import { LocationProvider } from "@/workspaces/location"
 import { SettingsGeneral } from "./general/general"
@@ -107,7 +107,7 @@ export function SettingsScreen() {
   )
 
   const connection = (key: string) => servers().find((item) => item.key === key)
-  const project = (server: ServerConnection.Any, directory: string) => {
+  const project = (server: ServerConnection.Http, directory: string) => {
     const context = global.ensureServerCtx(server)
     const value =
       context.projects.list().find((item) => item.worktree === directory) ??
@@ -401,7 +401,7 @@ function ServerSettings(props: { entry: SettingsServer }) {
   )
 }
 
-function ProjectSettings(props: { server: ServerConnection.Any; project: LocalProject }) {
+function ProjectSettings(props: { server: ServerConnection.Http; project: LocalProject }) {
   const language = useLanguage()
   const surface = useSettingsSurface()
   const activeDirectory = useSettingsDirectory(() => props.server)
@@ -449,11 +449,11 @@ function ProjectSettings(props: { server: ServerConnection.Any; project: LocalPr
   )
 }
 
-function connectionFor(list: readonly ServerConnection.Any[], key: string | undefined) {
+function connectionFor(list: readonly ServerConnection.Http[], key: string | undefined) {
   return list.find((item) => ServerConnection.key(item) === key)
 }
 
-function useSettingsDirectory(server: Accessor<ServerConnection.Any | undefined>) {
+function useSettingsDirectory(server: Accessor<ServerConnection.Http | undefined>) {
   const surface = useSettingsSurface()
   const tabs = useTabs()
   const serverCtx = useServerCtx(server)

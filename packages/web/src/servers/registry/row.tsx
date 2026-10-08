@@ -1,7 +1,4 @@
 import { Tooltip } from "@ikanban/ui/tooltip"
-import { Icon } from "@ikanban/ui/icon"
-import { Spinner } from "@ikanban/ui/spinner"
-import { useLanguage } from "@/runtime/i18n/language"
 import { createResizeObserver } from "@solid-primitives/resize-observer"
 import {
   children,
@@ -17,7 +14,7 @@ import { type ServerConnection, serverName } from "@/runtime/server/registry"
 import type { ServerHealth } from "@/runtime/server/health"
 
 interface ServerRowProps extends ParentProps {
-  conn: ServerConnection.Any
+  conn: ServerConnection.Http
   status?: ServerHealth
   class?: string
   nameClass?: string
@@ -94,7 +91,7 @@ export function ServerRow(props: ServerRowProps) {
               {(badge) => badge()}
             </Show>
           </div>
-          <Show when={props.showCredentials && props.conn.type === "http" && props.conn.http.password}>
+          <Show when={props.showCredentials && props.conn.http.password}>
             <span class="text-text-weak">••••••••</span>
           </Show>
         </div>
@@ -104,53 +101,15 @@ export function ServerRow(props: ServerRowProps) {
   )
 }
 
-export function ServerHealthIndicator(props: {
-  health?: ServerHealth
-  connecting?: boolean
-  authenticationRequired?: boolean
-}) {
-  const language = useLanguage()
+export function ServerHealthIndicator(props: { health?: ServerHealth }) {
   return (
-    <Show
-      when={props.authenticationRequired}
-      fallback={
-        <Show
-          when={props.connecting || props.health?.checking}
-          fallback={
-            <Show
-              when={props.health?.incompatible}
-              fallback={
-                <div
-                  classList={{
-                    "size-1.5 rounded-full shrink-0 my-[3.5px]": true,
-                    "bg-icon-success-base": props.health?.healthy === true,
-                    "bg-icon-critical-base": props.health?.healthy === false,
-                    "bg-border-weak-base": props.health === undefined,
-                  }}
-                />
-              }
-            >
-              <Icon name="warning" size="small" class="shrink-0 text-icon-warning-base" />
-            </Show>
-          }
-        >
-          <span
-            role="status"
-            aria-label={language.t("ssh.stage.connecting")}
-            class="inline-flex h-3.5 w-1.5 shrink-0 items-center justify-center text-v2-icon-icon-muted"
-          >
-            <Spinner class="size-3 shrink-0" />
-          </span>
-        </Show>
-      }
-    >
-      <span
-        role="status"
-        aria-label={language.t("ssh.stage.authentication")}
-        class="inline-flex h-3.5 w-1.5 shrink-0 items-center justify-center text-v2-icon-icon-muted"
-      >
-        <Icon name="lock" size="small" class="shrink-0" />
-      </span>
-    </Show>
+    <div
+      classList={{
+        "size-1.5 rounded-full shrink-0 my-[3.5px]": true,
+        "bg-icon-success-base": props.health?.healthy === true,
+        "bg-icon-critical-base": props.health?.healthy === false,
+        "bg-border-weak-base": props.health === undefined,
+      }}
+    />
   )
 }

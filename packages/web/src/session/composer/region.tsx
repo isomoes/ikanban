@@ -13,7 +13,6 @@ import { promptLength } from "@/composer/prompt-parts"
 import { useCommand } from "@/shell/commands/command"
 import { useLanguage } from "@/runtime/i18n/language"
 import { useLocal } from "@/providers/models/selection"
-import { usePlatform } from "@/runtime/platform/platform"
 import { useWorkspaceLocation } from "@/workspaces/location"
 import { requireServerKey, sessionHref } from "@/shell/routes/session"
 import { useComposerCommands } from "@/composer/commands"
@@ -41,7 +40,6 @@ export function createActiveSessionRegion(input: {
   const local = useLocal()
   const location = useWorkspaceLocation()
   const navigate = useNavigate()
-  const platform = usePlatform()
   const prompt = useComposerState()
   const state = createSessionRequestModel()
   const controls = createComposerControls({
@@ -81,18 +79,10 @@ export function createActiveSessionRegion(input: {
 
   const openAttachment: NonNullable<SessionUserActions["openAttachment"]> = (file) => {
     const url = file.source.type === "uri" ? file.source.uri : `data:${file.mime};base64,${file.data}`
-    const download = () => {
-      const anchor = document.createElement("a")
-      anchor.href = url
-      anchor.download = getFilename(file.name) || "attachment"
-      anchor.click()
-    }
-    const path = file.name ?? ""
-    const absolute = path.startsWith("/") || path.startsWith("\\\\") || /^[a-zA-Z]:[\\/]/.test(path)
-    if (!platform.revealPath || !absolute) return download()
-    void platform.revealPath(path).then((revealed) => {
-      if (!revealed) download()
-    }, download)
+    const anchor = document.createElement("a")
+    anchor.href = url
+    anchor.download = getFilename(file.name) || "attachment"
+    anchor.click()
   }
   const focus = () => {
     if (!input.session.data.isChild()) promptRef?.focus()

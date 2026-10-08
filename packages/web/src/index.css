@@ -284,52 +284,6 @@
     container-name: getting-started;
   }
 
-  [data-component="menu-v2-content"].desktop-app-menu {
-    min-width: 160px;
-    padding: 2px;
-  }
-
-  [data-component="menu-v2-content"].desktop-app-menu:not(.desktop-app-menu-sub) {
-    width: 160px;
-  }
-
-  [data-component="menu-v2-content"].desktop-app-menu-sub {
-    width: max-content;
-    min-width: 240px;
-    max-width: min(320px, calc(100vw - 24px));
-  }
-
-  [data-component="menu-v2-content"].desktop-app-menu [data-slot="menu-v2-group-label"] {
-    display: flex;
-    align-items: center;
-    height: 28px;
-    padding: 0 12px;
-    font-size: var(--font-size-x-small);
-    font-weight: var(--font-weight-medium);
-    line-height: 1;
-    color: var(--text-weak);
-  }
-
-  [data-component="menu-v2-content"].desktop-app-menu [data-component="menu-v2-item"] {
-    min-height: 28px;
-    padding: 0 12px;
-    gap: 8px;
-    font-weight: var(--font-weight-regular);
-    line-height: 1;
-  }
-
-  [data-component="menu-v2-content"].desktop-app-menu [data-slot="menu-v2-item-content"] {
-    white-space: nowrap;
-  }
-
-  [data-component="menu-v2-content"].desktop-app-menu [data-slot="menu-v2-item-shortcut"] {
-    margin-left: auto;
-    color: var(--text-weak);
-    font-size: var(--font-size-x-small);
-    font-weight: var(--font-weight-regular);
-    white-space: nowrap;
-  }
-
   [data-component="getting-started-actions"] {
     display: flex;
     flex-direction: column;
@@ -388,31 +342,6 @@
       color-mix(in srgb, var(--v2-background-bg-base) 10.416%, transparent) 83.87%,
       transparent 100%
     );
-  }
-
-  [data-slot="titlebar-update-loader"] {
-    display: block;
-    flex-shrink: 0;
-    margin: 1px;
-    width: 12px;
-    height: 12px;
-    border-radius: 9999px;
-    border: 2px solid color-mix(in srgb, var(--v2-icon-icon-accent) 30%, transparent);
-    border-top-color: var(--v2-icon-icon-accent);
-    animation: titlebar-update-loader-spin 0.67s linear infinite;
-    transform-origin: 50% 50%;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    [data-slot="titlebar-update-loader"] {
-      animation: none;
-    }
-  }
-
-  @keyframes titlebar-update-loader-spin {
-    to {
-      transform: rotate(360deg);
-    }
   }
 
   @keyframes home-projects-fade-top {

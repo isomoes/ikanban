@@ -284,7 +284,7 @@ export function TitlebarTabStrip(props: {
     >
       <div
         data-slot={vertical() ? "vertical-tabs-scroll" : "titlebar-tabs-scroll"}
-        class="flex min-w-0 no-scrollbar [app-region:no-drag]"
+        class="flex min-w-0 no-scrollbar"
         classList={{
           "flex-row items-center gap-1.5 overflow-x-auto": !vertical(),
           "max-h-full flex-col overflow-y-auto overflow-x-hidden": vertical(),

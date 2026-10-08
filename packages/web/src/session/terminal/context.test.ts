@@ -33,31 +33,24 @@ describe("getWorkspaceTerminalCacheKey", () => {
   })
 
   test("can include a server scope", () => {
-    expect(String(getWorkspaceTerminalCacheKey("/repo", "ssh:debian" as ServerScope))).toBe(
-      "ssh:debian\u0000/repo\u0000__workspace__",
+    expect(String(getWorkspaceTerminalCacheKey("/repo", "https://debian.example" as ServerScope))).toBe(
+      "https://debian.example\u0000/repo\u0000__workspace__",
     )
   })
 
   test("clears the current workspace terminal store", () => {
-    const removed: { storage?: string; key: string }[] = []
     const platform: Platform = {
-      platform: "desktop",
-      windowID: "window",
       openExternal: () => undefined,
       restart: async () => undefined,
       notify: async () => undefined,
-      openDirectoryPickerDialog: async () => null,
-      storage: (storage) => ({
-        getItem: () => null,
-        setItem: () => undefined,
-        removeItem: (key) => void removed.push({ storage, key }),
-      }),
     }
+    const target = Persist.workspace(base64Encode("C:/repo"), "terminal")
+    const name = `${target.storage}:${target.key}`
+    localStorage.setItem(name, "{}")
 
     clearWorkspaceTerminals("C:/repo", platform)
 
-    const target = Persist.workspace(base64Encode("C:/repo"), "terminal")
-    expect(removed).toEqual([{ storage: target.storage, key: target.key }])
+    expect(localStorage.getItem(name)).toBeNull()
   })
 })
 

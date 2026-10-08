@@ -16,7 +16,7 @@ import "./project.css"
 
 export const SettingsProjectGeneral: Component<{
   project: LocalProject
-  server: ServerConnection.Any
+  server: ServerConnection.Http
   onOpenServer: () => void
 }> = (props) => {
   const language = useLanguage()

@@ -58,24 +58,6 @@ describe("buildPromptRequest", () => {
     expect(uploads.map((file) => file.name)).toEqual(["a.png", "b.pdf"])
   })
 
-  test("preserves an external attachment source path for the model", () => {
-    const result = buildPromptRequest({
-      prompt: [],
-      context: [],
-      images: [
-        inline("opencode.global.dat", "text/plain", {
-          sourcePath: "C:\\Users\\Luke\\AppData\\Roaming\\ai.opencode.desktop.beta\\opencode.global.dat",
-        }),
-      ],
-      text: "inspect this",
-      sessionDirectory: "C:\\Repos\\sst\\opencode",
-    })
-
-    expect(result.files[0]?.name).toBe(
-      "C:\\Users\\Luke\\AppData\\Roaming\\ai.opencode.desktop.beta\\opencode.global.dat",
-    )
-  })
-
   test("preserves reference aliases as directory files", () => {
     const result = buildPromptRequest({
       prompt: [

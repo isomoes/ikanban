@@ -141,7 +141,7 @@ describe("composer persistence schemas", () => {
       Persistence.withInitial(ComposerStore, { prompt: DEFAULT_PROMPT, context: { items: [] } }),
     )({
       prompt: [
-        { ...image, dataUrl: "data:image/png;base64,YQ==", sourcePath: "/image.png" },
+        { ...image, dataUrl: "data:image/png;base64,YQ==" },
         { ...image, blob: { id: "data:image/png;base64,Yg==" } },
         { ...image, blob: { id: "hash", url: "blob:hydrated" } },
         { ...image, blob: { id: "missing" } },
@@ -152,7 +152,6 @@ describe("composer persistence schemas", () => {
     expect(value.prompt).toHaveLength(6)
     expect(value.prompt[0]).toEqual({
       ...image,
-      sourcePath: "/image.png",
       blob: { id: "data:image/png;base64,YQ==", url: "data:image/png;base64,YQ==" },
     })
     // Bytes still in the draft store resolve on use; a non-blob URL is discarded in favour of the id.

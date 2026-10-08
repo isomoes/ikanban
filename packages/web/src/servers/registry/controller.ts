@@ -6,7 +6,6 @@ import { ServerConnection, useServers } from "@/runtime/server/registry"
 import { useTabs } from "@/shell/tabs/tabs"
 import { type ServerHealth } from "@/runtime/server/health"
 import { showToast } from "@/shell/notifications/toast"
-import { useSsh } from "../ssh/context"
 
 function showRequestError(language: ReturnType<typeof useLanguage>, err: unknown) {
   showToast({
@@ -48,7 +47,7 @@ function useDefaultServer() {
 }
 
 export function sortServerConnections(input: {
-  servers: ServerConnection.Any[]
+  servers: ServerConnection.Http[]
   health: Record<string, ServerHealth | undefined>
   defaultKey: ServerConnection.Key | null
 }) {
@@ -70,7 +69,6 @@ export function sortServerConnections(input: {
 
 export function useServerActionsController() {
   const server = useServers()
-  const ssh = useSsh()
   const tabs = useTabs()
   const platform = usePlatform()
   const language = useLanguage()
@@ -78,8 +76,6 @@ export function useServerActionsController() {
 
   const remove = async (key: ServerConnection.Key) => {
     try {
-      if (key.startsWith("wsl:")) await platform.wslServers?.removeServer(key)
-      if (key.startsWith("ssh:")) await ssh.forget(key.slice(4))
       tabs.removeServer(key)
       server.remove(key)
       if ((await platform.getDefaultServer?.()) === key) await defaults.set(null)
@@ -93,12 +89,6 @@ export function useServerActionsController() {
     connection: {
       canRemove: server.canRemove,
       remove,
-      canHide: (key: ServerConnection.Key) => {
-        const conn = server.list.find((item) => ServerConnection.key(item) === key)
-        return server.visible.length > 1 && !!conn && ServerConnection.builtin(conn)
-      },
-      isHidden: (key: ServerConnection.Key) => server.isHidden(key),
-      setHidden: (key: ServerConnection.Key, hidden: boolean) => server.setHidden(key, hidden),
     },
   }
 }

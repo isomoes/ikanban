@@ -65,7 +65,6 @@ describe("settings schema", () => {
     expect(decode({})).toEqual({
       general: {
         autoSave: true,
-        releaseNotes: true,
         showFileTree: false,
         showNavigation: false,
         showSearch: false,
@@ -77,7 +76,6 @@ describe("settings schema", () => {
         mobileDiffWrap: true,
         terminalPlacement: "side",
         followUpBehavior: "steer",
-        experimentalBrowser: false,
       },
       sessionSummary: { projectExpanded: true, serverExpanded: true },
       appearance: {
@@ -108,7 +106,6 @@ describe("settings schema", () => {
       general: {
         showTerminal: true,
         autoSave: false,
-        releaseNotes: undefined,
         reasoningMode: 3,
         followUpBehavior: "invalid",
       },
@@ -122,7 +119,6 @@ describe("settings schema", () => {
     expect(settings.general).toMatchObject({
       showTerminal: true,
       autoSave: false,
-      releaseNotes: true,
       timelineDetail: timelinePresets[2].value,
       followUpBehavior: "steer",
     })
@@ -140,12 +136,6 @@ describe("settings schema", () => {
     expect(settings.notifications).toEqual({ agent: false, permissions: true, errors: true })
     expect(settings.sounds).toMatchObject({ agent: "custom", agentEnabled: false, permissions: "staplebops-02" })
     expect(decode(encode(settings))).toEqual(settings)
-  })
-
-  test("browser attachment is opt-in and preserves an explicit choice", () => {
-    expect(decode({}).general.experimentalBrowser).toBe(false)
-    expect(decode({ general: { experimentalBrowser: true } }).general.experimentalBrowser).toBe(true)
-    expect(decode({ general: { experimentalBrowser: false } }).general.experimentalBrowser).toBe(false)
   })
 
   test.each([undefined, null, false, 7, "invalid", []].map((invalid) => [invalid]))(

@@ -40,7 +40,7 @@ export function workspaceInventoryQuery(
 }
 
 export function useWorkspacesPrefetch(
-  server: Accessor<ServerConnection.Any | undefined>,
+  server: Accessor<ServerConnection.Http | undefined>,
   projectID?: Accessor<string | undefined>,
 ) {
   const client = useQueryClient()

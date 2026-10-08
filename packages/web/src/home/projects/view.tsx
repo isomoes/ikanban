@@ -11,62 +11,52 @@ import { ProjectAvatar } from "@ikanban/ui/project-avatar"
 import { Icon } from "@ikanban/ui/icon"
 import { IconButton } from "@ikanban/ui/icon-button"
 import { Button } from "@ikanban/ui/button"
-import { Spinner } from "@ikanban/ui/spinner"
 import { Menu } from "@ikanban/ui/menu"
 import { Tooltip } from "@ikanban/ui/tooltip"
 import { getProjectAvatarVariant, type HomeProjectSelection, type LocalProject } from "@/shell/state/layout"
 import { ServerConnection } from "@/runtime/server/registry"
 import { useLanguage } from "@/runtime/i18n/language"
-import { usePlatform } from "@/runtime/platform/platform"
 import { displayName, getProjectAvatarSource } from "@/shell/layout/helpers"
 import { ServerRowMenuView, serverMenuLabels } from "@/servers/registry/row-menu"
 import { ServerHealthIndicator } from "@/servers/registry/row"
 import { type ServerHealth } from "@/runtime/server/health"
-import { fileManagerApp } from "@/home/projects/file-manager"
 import "./view.css"
 
 const HOME_PROJECT_NAV_LABEL = "min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap"
 
-const serverContextMenuID = (server: ServerConnection.Any) => `server:${ServerConnection.key(server)}`
-const projectContextMenuID = (server: ServerConnection.Any, directory: string) =>
+const serverContextMenuID = (server: ServerConnection.Http) => `server:${ServerConnection.key(server)}`
+const projectContextMenuID = (server: ServerConnection.Http, directory: string) =>
   `project:${ServerConnection.key(server)}:${directory}`
 
 export type HomeProjectsViewProps = {
   dropdown?: boolean
   language: ReturnType<typeof useLanguage>
-  servers: ServerConnection.Any[]
+  servers: ServerConnection.Http[]
   projects: LocalProject[]
   recentlyClosed: LocalProject[]
   selection: HomeProjectSelection
   homedir: string
-  serverHealth: (server: ServerConnection.Any) => ServerHealth | undefined
-  projectsForServer: (server: ServerConnection.Any) => LocalProject[]
-  collapsed: (server: ServerConnection.Any) => boolean
+  serverHealth: (server: ServerConnection.Http) => ServerHealth | undefined
+  projectsForServer: (server: ServerConnection.Http) => LocalProject[]
+  collapsed: (server: ServerConnection.Http) => boolean
   canDefaultServer: boolean
   defaultServerKey: ServerConnection.Key | null | undefined
-  canRevealProject: (server: ServerConnection.Any) => boolean
-  unseenCount: (server: ServerConnection.Any, project: LocalProject) => number
+  unseenCount: (server: ServerConnection.Http, project: LocalProject) => number
   onWheel: (event: WheelEvent) => void
-  onChooseProject: (server: ServerConnection.Any) => void
-  onFocusServer: (server: ServerConnection.Any) => void
-  onAuthenticateServer?: (server: ServerConnection.Any) => void
-  onToggleCollapsed: (server: ServerConnection.Any) => void
+  onChooseProject: (server: ServerConnection.Http) => void
+  onFocusServer: (server: ServerConnection.Http) => void
+  onToggleCollapsed: (server: ServerConnection.Http) => void
   onEditServer: (server: ServerConnection.Http) => void
-  onSetDefaultServer: (server: ServerConnection.Any | undefined) => void
-  canRemoveServer: (server: ServerConnection.Any) => boolean
-  onRemoveServer: (server: ServerConnection.Any) => void
-  canHideServer: (server: ServerConnection.Any) => boolean
-  onHideServer: (server: ServerConnection.Any) => void
-  onMoveProject: (server: ServerConnection.Any, worktree: string, index: number) => void
-  onSelectProject: (server: ServerConnection.Any, directory: string) => void
-  onAddProjects: (server: ServerConnection.Any, directories: string[]) => void
-  onOpenProjectNewSession: (server: ServerConnection.Any, directory: string) => void
-  canImportSession: boolean
-  onImportSession: (server: ServerConnection.Any, project: LocalProject) => void
-  onEditProject: (server: ServerConnection.Any, project: LocalProject) => void
-  onRevealProject: (server: ServerConnection.Any, project: LocalProject) => void
-  onClearNotifications: (server: ServerConnection.Any, project: LocalProject) => void
-  onCloseProject: (server: ServerConnection.Any, directory: string) => void
+  onSetDefaultServer: (server: ServerConnection.Http | undefined) => void
+  canRemoveServer: (server: ServerConnection.Http) => boolean
+  onRemoveServer: (server: ServerConnection.Http) => void
+  onMoveProject: (server: ServerConnection.Http, worktree: string, index: number) => void
+  onSelectProject: (server: ServerConnection.Http, directory: string) => void
+  onAddProjects: (server: ServerConnection.Http, directories: string[]) => void
+  onOpenProjectNewSession: (server: ServerConnection.Http, directory: string) => void
+  onEditProject: (server: ServerConnection.Http, project: LocalProject) => void
+  onClearNotifications: (server: ServerConnection.Http, project: LocalProject) => void
+  onCloseProject: (server: ServerConnection.Http, directory: string) => void
   onOpenSettings: () => void
   onOpenHelp: () => void
 }
@@ -125,10 +115,6 @@ export function HomeProjectsView(props: HomeProjectsViewProps) {
               onFocusServer={(server) => {
                 props.onFocusServer(server)
                 setState("open", false)
-              }}
-              onAuthenticateServer={(server) => {
-                setState("open", false)
-                props.onAuthenticateServer?.(server)
               }}
               onChooseProject={(server) => {
                 setState("open", false)
@@ -204,12 +190,7 @@ function HomeProjectsPanel(props: HomeProjectsViewProps) {
           </HomeProjectNavButton>
         </Show>
         <Show
-          when={
-            props.servers.length > 1 ||
-            props.servers.some(
-              (server) => server.type === "ssh" && (server.authenticationRequired || server.connecting),
-            )
-          }
+          when={props.servers.length > 1}
           fallback={
             <Show when={props.servers[0]}>
               {(server) => (
@@ -244,8 +225,6 @@ function HomeProjectsPanel(props: HomeProjectsViewProps) {
                 const healthy = () => !!props.serverHealth(item)?.healthy
                 const hasProjects = () => projects().length > 0
                 const collapsed = () => props.collapsed(item)
-                const authentication = () => item.type === "ssh" && item.authenticationRequired
-                const connecting = () => item.type === "ssh" && item.connecting
                 return (
                   <div class="flex min-w-0 flex-col gap-1">
                     <HomeServerRow
@@ -256,26 +235,7 @@ function HomeProjectsPanel(props: HomeProjectsViewProps) {
                       collapsed={collapsed()}
                       health={props.serverHealth(item)}
                     />
-                    <Show when={authentication() || connecting()}>
-                      <div class="mx-3 h-px bg-v2-border-border-base" />
-                      <div class="px-1.5 py-1">
-                        <Button
-                          data-action="home-server-authenticate"
-                          class="w-full"
-                          size="small"
-                          variant="neutral"
-                          disabled={connecting()}
-                          aria-busy={!!connecting()}
-                          onClick={() => props.onAuthenticateServer?.(item)}
-                        >
-                          <Show when={connecting()}>
-                            <Spinner class="size-3.5" />
-                          </Show>
-                          {props.language.t(connecting() ? "ssh.stage.connecting" : "ssh.action.authenticate")}
-                        </Button>
-                      </div>
-                    </Show>
-                    <Show when={healthy() && !authentication() && !connecting() && hasProjects() && !collapsed()}>
+                    <Show when={healthy() && hasProjects() && !collapsed()}>
                       <div class="mx-3 h-px bg-v2-border-border-base" />
                       <HomeProjectList {...props} {...contextMenuProps} server={item} items={projects()} />
                     </Show>
@@ -338,18 +298,14 @@ function HomeServerRow(props: {
   onSetDefaultServer: HomeProjectsViewProps["onSetDefaultServer"]
   canRemoveServer: HomeProjectsViewProps["canRemoveServer"]
   onRemoveServer: HomeProjectsViewProps["onRemoveServer"]
-  canHideServer: HomeProjectsViewProps["canHideServer"]
-  onHideServer: HomeProjectsViewProps["onHideServer"]
   onSetContextMenuOpen: HomeProjectsContextMenuProps["onSetContextMenuOpen"]
   onChooseProject: HomeProjectsViewProps["onChooseProject"]
-  server: ServerConnection.Any
+  server: ServerConnection.Http
   selected: boolean
   collapsed: boolean
   health: ServerHealth | undefined
 }) {
   const healthy = () => !!props.health?.healthy
-  const authentication = () => props.server.type === "ssh" && props.server.authenticationRequired
-  const incompatible = () => !!props.health?.incompatible
   const canToggle = () => healthy() && props.projectsForServer(props.server).length > 0
   const contextMenuID = () => serverContextMenuID(props.server)
   onCleanup(() => {
@@ -357,125 +313,107 @@ function HomeServerRow(props: {
     if (props.contextMenuOpen(id)) props.onSetContextMenuOpen(id, false)
   })
   return (
-    <Tooltip
-      appearance="standard"
-      placement="top"
-      class="flex h-7 w-full min-w-0"
-      inactive={!incompatible() && !authentication()}
-      value={
-        authentication()
-          ? props.language.t("ssh.stage.authentication")
-          : props.language.t("server.row.incompatible", { version: props.health?.version ?? "1" })
-      }
+    <div
+      class="group/server relative flex h-7 w-full min-w-0 items-center rounded-[6px]"
+      data-home-row
+      data-dimmed={!healthy()}
+      data-selected={props.selected ? "" : undefined}
     >
-      <div
-        class="group/server relative flex h-7 w-full min-w-0 items-center rounded-[6px]"
-        data-home-row
-        data-dimmed={!healthy() && !incompatible()}
+      <HomeProjectNavButton
+        type="button"
         data-selected={props.selected ? "" : undefined}
+        disabled={!healthy()}
+        onClick={() => props.onFocusServer(props.server)}
       >
-        <HomeProjectNavButton
-          type="button"
-          data-selected={props.selected ? "" : undefined}
-          disabled={!healthy() && !authentication()}
-          onClick={() => props.onFocusServer(props.server)}
-        >
-          <span
-            data-action="home-server-collapse"
-            class={`
-            -ml-0.5 -mr-1.5 inline-flex size-5 shrink-0 items-center justify-center
-            rounded-[4px] text-v2-icon-icon-muted
-          `}
-            classList={{
-              "hover:bg-v2-overlay-simple-overlay-hover": canToggle(),
-              "cursor-default opacity-40": !canToggle(),
-            }}
-            aria-label={
-              props.collapsed ? props.language.t("home.server.expand") : props.language.t("home.server.collapse")
-            }
-            aria-disabled={!canToggle()}
-            aria-expanded={canToggle() ? !props.collapsed : undefined}
-            onClick={(event) => {
-              event.preventDefault()
-              event.stopPropagation()
-              if (!canToggle()) return
-              props.onToggleCollapsed(props.server)
-            }}
-            onPointerDown={(event) => event.preventDefault()}
-          >
-            <Icon
-              name="chevron-down"
-              size="small"
-              class="transition-transform duration-150 ease-in-out"
-              style={{ transform: `rotate(${props.collapsed || !canToggle() ? -90 : 0}deg)` }}
-            />
-          </span>
-          <div class="flex size-4 shrink-0 items-center justify-center -mr-0.5">
-            <ServerHealthIndicator
-              health={props.health}
-              connecting={props.server.type === "ssh" && props.server.connecting}
-              authenticationRequired={authentication()}
-            />
-          </div>
-          <span
-            data-slot="home-row-label"
-            class="flex min-w-0 flex-1 items-center gap-1"
-            classList={{ "opacity-60": !healthy() && !incompatible() }}
-          >
-            <span class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
-              {props.server.displayName ?? new URL(props.server.http.url).host}
-            </span>
-            <Show when={props.server.label}>
-              {(label) => (
-                <span
-                  class={`
-                  shrink-0 rounded-[3px] border border-v2-border-border-base px-1 py-0.5
-                  text-[9px] leading-none text-v2-text-text-muted
-                `}
-                >
-                  {label()}
-                </span>
-              )}
-            </Show>
-          </span>
-        </HomeProjectNavButton>
-        <div
-          data-slot="home-row-actions"
+        <span
+          data-action="home-server-collapse"
           class={`
-          hover-reveal absolute bottom-0 right-1 top-0 flex items-center gap-1 rounded-r-[6px] pl-2
-          group-hover/server:opacity-100 focus-within:opacity-100 data-[menu=true]:opacity-100
+          -ml-0.5 -mr-1.5 inline-flex size-5 shrink-0 items-center justify-center
+          rounded-[4px] text-v2-icon-icon-muted
         `}
-          data-menu={props.contextMenuOpen(contextMenuID())}
+          classList={{
+            "hover:bg-v2-overlay-simple-overlay-hover": canToggle(),
+            "cursor-default opacity-40": !canToggle(),
+          }}
+          aria-label={
+            props.collapsed ? props.language.t("home.server.expand") : props.language.t("home.server.collapse")
+          }
+          aria-disabled={!canToggle()}
+          aria-expanded={canToggle() ? !props.collapsed : undefined}
+          onClick={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
+            if (!canToggle()) return
+            props.onToggleCollapsed(props.server)
+          }}
+          onPointerDown={(event) => event.preventDefault()}
         >
-          <ServerRowMenuView
-            server={props.server}
-            labels={serverMenuLabels(props.language)}
-            canDefault={props.canDefaultServer}
-            isDefault={props.defaultServerKey === ServerConnection.key(props.server)}
-            canRemove={props.canRemoveServer(props.server)}
-            canHide={props.canHideServer(props.server)}
-            onEdit={props.onEditServer}
-            onSetDefault={() => props.onSetDefaultServer(props.server)}
-            onRemoveDefault={() => props.onSetDefaultServer(undefined)}
-            onRemove={() => props.onRemoveServer(props.server)}
-            onHide={() => props.onHideServer(props.server)}
-            open={props.contextMenuOpen(contextMenuID())}
-            onOpenChange={(open) => props.onSetContextMenuOpen(contextMenuID(), open)}
+          <Icon
+            name="chevron-down"
+            size="small"
+            class="transition-transform duration-150 ease-in-out"
+            style={{ transform: `rotate(${props.collapsed || !canToggle() ? -90 : 0}deg)` }}
           />
-          <Tooltip class="flex shrink-0 items-center" placement="bottom" value={props.language.t("home.project.add")}>
-            <IconButton
-              data-action="home-add-project"
-              variant="ghost-muted"
-              size="small"
-              icon={<Icon name="folder-add-left" />}
-              aria-label={props.language.t("home.project.add")}
-              disabled={props.health?.healthy === false && !authentication()}
-              onClick={() => props.onChooseProject(props.server)}
-            />
-          </Tooltip>
+        </span>
+        <div class="flex size-4 shrink-0 items-center justify-center -mr-0.5">
+          <ServerHealthIndicator health={props.health} />
         </div>
+        <span
+          data-slot="home-row-label"
+          class="flex min-w-0 flex-1 items-center gap-1"
+          classList={{ "opacity-60": !healthy() }}
+        >
+          <span class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
+            {props.server.displayName ?? new URL(props.server.http.url).host}
+          </span>
+          <Show when={props.server.label}>
+            {(label) => (
+              <span
+                class={`
+                shrink-0 rounded-[3px] border border-v2-border-border-base px-1 py-0.5
+                text-[9px] leading-none text-v2-text-text-muted
+              `}
+              >
+                {label()}
+              </span>
+            )}
+          </Show>
+        </span>
+      </HomeProjectNavButton>
+      <div
+        data-slot="home-row-actions"
+        class={`
+        hover-reveal absolute bottom-0 right-1 top-0 flex items-center gap-1 rounded-r-[6px] pl-2
+        group-hover/server:opacity-100 focus-within:opacity-100 data-[menu=true]:opacity-100
+      `}
+        data-menu={props.contextMenuOpen(contextMenuID())}
+      >
+        <ServerRowMenuView
+          server={props.server}
+          labels={serverMenuLabels(props.language)}
+          canDefault={props.canDefaultServer}
+          isDefault={props.defaultServerKey === ServerConnection.key(props.server)}
+          canRemove={props.canRemoveServer(props.server)}
+          onEdit={props.onEditServer}
+          onSetDefault={() => props.onSetDefaultServer(props.server)}
+          onRemoveDefault={() => props.onSetDefaultServer(undefined)}
+          onRemove={() => props.onRemoveServer(props.server)}
+          open={props.contextMenuOpen(contextMenuID())}
+          onOpenChange={(open) => props.onSetContextMenuOpen(contextMenuID(), open)}
+        />
+        <Tooltip class="flex shrink-0 items-center" placement="bottom" value={props.language.t("home.project.add")}>
+          <IconButton
+            data-action="home-add-project"
+            variant="ghost-muted"
+            size="small"
+            icon={<Icon name="folder-add-left" />}
+            aria-label={props.language.t("home.project.add")}
+            disabled={props.health?.healthy === false}
+            onClick={() => props.onChooseProject(props.server)}
+          />
+        </Tooltip>
       </div>
-    </Tooltip>
+    </div>
   )
 }
 
@@ -486,7 +424,7 @@ type HomeProjectsContextMenuProps = {
 
 type HomeProjectListProps = HomeProjectsViewProps &
   HomeProjectsContextMenuProps & {
-    server: ServerConnection.Any
+    server: ServerConnection.Http
     items: LocalProject[]
   }
 
@@ -563,7 +501,7 @@ function HomeProjectSlot(
 
 function HomeProjectEmpty(
   props: HomeProjectsViewProps & {
-    server: ServerConnection.Any
+    server: ServerConnection.Http
     items: LocalProject[]
   },
 ) {
@@ -595,7 +533,7 @@ function HomeProjectEmpty(
 function HomeRecentlyClosedRow(
   props: HomeProjectsViewProps & {
     project: LocalProject
-    server: ServerConnection.Any
+    server: ServerConnection.Http
   },
 ) {
   const unreachable = () => props.serverHealth(props.server)?.healthy === false
@@ -625,14 +563,13 @@ function HomeProjectRow(
   props: HomeProjectsViewProps &
     HomeProjectsContextMenuProps & {
       project: LocalProject
-      server: ServerConnection.Any
+      server: ServerConnection.Http
       index: number
       serverSelected: boolean
       selected: boolean
       unseen: number
     },
 ) {
-  const platform = usePlatform()
   const serverUnreachable = () => props.serverHealth(props.server)?.healthy === false
   const sortable = useSortable({
     get id() {
@@ -734,22 +671,9 @@ function HomeProjectRow(
               <Menu.Item onSelect={() => props.onOpenProjectNewSession(props.server, props.project.worktree)}>
                 {props.language.t("command.session.new")}
               </Menu.Item>
-              <Show when={props.canImportSession}>
-                <Menu.Item onSelect={() => props.onImportSession(props.server, props.project)}>
-                  {props.language.t("command.session.import")}
-                </Menu.Item>
-              </Show>
               <Menu.Item onSelect={() => props.onEditProject(props.server, props.project)}>
                 {props.language.t("dialog.project.edit.title")}
               </Menu.Item>
-              <Show when={props.canRevealProject(props.server)}>
-                <Menu.Item onSelect={() => props.onRevealProject(props.server, props.project)}>
-                  {props.language.t(
-                    fileManagerApp(platform.platform === "desktop" ? (platform.os ?? "unknown") : "unknown")
-                      .actionLabel,
-                  )}
-                </Menu.Item>
-              </Show>
               <Menu.Item
                 disabled={props.unseen === 0}
                 onSelect={() => props.onClearNotifications(props.server, props.project)}

@@ -12,7 +12,7 @@ type Entry<Tab> = {
   description?: Label
   section?: Label
   subtab?: "mcps" | "plugins" | "skills" | "lsps"
-  available?: "desktop" | "browser" | "dev" | "mobile-dev"
+  available?: "dev" | "mobile-dev"
 }
 
 export const clientSettings: Entry<SettingsRootTab>[] = [
@@ -49,12 +49,6 @@ export const clientSettings: Entry<SettingsRootTab>[] = [
   },
   {
     tab: "general",
-    label: "settings.general.row.pinchZoom.title",
-    target: "settings-pinch-zoom",
-    available: "desktop",
-  },
-  {
-    tab: "general",
     label: "session.review.wrapLines",
     target: "settings-mobile-diff-wrap",
     keywords: "diff wrap lines",
@@ -71,20 +65,6 @@ export const clientSettings: Entry<SettingsRootTab>[] = [
     target: "settings-timeline-detail",
     section: "settings.timeline.title",
     keywords: "thinking reasoning tools timeline summary detailed",
-  },
-  {
-    tab: "general",
-    label: "settings.general.row.releaseNotes.title",
-    target: "settings-release-notes",
-    section: "settings.general.section.updates",
-    available: "desktop",
-  },
-  {
-    tab: "general",
-    label: "settings.updates.row.check.title",
-    target: "settings-check-updates",
-    section: "settings.general.section.updates",
-    available: "desktop",
   },
   {
     tab: "general",
@@ -164,12 +144,6 @@ export const clientSettings: Entry<SettingsRootTab>[] = [
     section: "settings.general.section.sounds",
     description: "settings.general.sounds.errors.description",
     keywords: "sound audio errors",
-  },
-  {
-    tab: "general",
-    label: "settings.general.row.browserPane.title",
-    target: "settings-browser-pane",
-    available: "browser",
   },
   {
     tab: "appearance",

@@ -27,7 +27,6 @@
   color: var(--v2-text-text-base);
   box-shadow: var(--v2-elevation-overlay);
   outline: none;
-  app-region: no-drag;
 }
 
 [data-slot="mobile-drawer-content"][data-transitioning] {

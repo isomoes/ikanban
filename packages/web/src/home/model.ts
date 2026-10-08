@@ -3,8 +3,7 @@ import { type HomeProjectSelection, useLayout } from "@/shell/state/layout"
 import { ServerConnection, useServers } from "@/runtime/server/registry"
 import { useTabs } from "@/shell/tabs/tabs"
 import { toggleHomeProjectSelection } from "@/shell/layout/helpers"
-import { createEffect, createMemo, startTransition } from "solid-js"
-import type { SessionInfo } from "@opencode/client/promise"
+import { createEffect, createMemo } from "solid-js"
 
 export function createHomeController() {
   const layout = useLayout()
@@ -12,8 +11,8 @@ export function createHomeController() {
   const servers = useServers()
   const tabs = useTabs()
   const selection = layout.home.selection
-  const focusedServer = createMemo<ServerConnection.Any | undefined>(
-    () => servers.visible.find((conn) => ServerConnection.key(conn) === selection().server) ?? servers.visible[0],
+  const focusedServer = createMemo<ServerConnection.Http | undefined>(
+    () => servers.list.find((conn) => ServerConnection.key(conn) === selection().server) ?? servers.list[0],
   )
   const focusedServerCtx = useServerCtx(focusedServer)
   const focusedSync = () => focusedServerCtx()?.sync
@@ -29,7 +28,7 @@ export function createHomeController() {
   )
 
   createEffect(() => {
-    const list = servers.visible
+    const list = servers.list
     if (list.some((conn) => ServerConnection.key(conn) === selection().server)) return
     const conn = list[0]
     if (conn) setSelection({ server: ServerConnection.key(conn) })
@@ -46,35 +45,23 @@ export function createHomeController() {
     layout.home.setSelection(next)
   }
 
-  function openProjectNewSession(conn: ServerConnection.Any, directory: string) {
+  function openProjectNewSession(conn: ServerConnection.Http, directory: string) {
     const ctx = global.ensureServerCtx(conn)
     ctx.projects.open(directory)
     ctx.projects.touch(directory)
     void tabs.newDraft({ server: ServerConnection.key(conn), directory })
   }
 
-  function openProjectSession(conn: ServerConnection.Any, directory: string, session: SessionInfo) {
-    const ctx = global.ensureServerCtx(conn)
-    void ctx.data.session.message.sync(session.id).catch(() => undefined)
-    void startTransition(() => {
-      const tab = tabs.addSessionTab({ server: ServerConnection.key(conn), sessionId: session.id })
-      tabs.select(tab)
-      ctx.data.session.remember(session)
-      ctx.projects.open(directory)
-      ctx.projects.touch(directory)
-    })
-  }
-
   return {
     selection: {
       value: selection,
       set: setSelection,
-      focusServer: (conn: ServerConnection.Any) => setSelection({ server: ServerConnection.key(conn) }),
+      focusServer: (conn: ServerConnection.Http) => setSelection({ server: ServerConnection.key(conn) }),
     },
     server: {
-      list: () => servers.visible,
-      health: (conn: ServerConnection.Any) => global.servers.health[ServerConnection.key(conn)],
-      context: (conn: ServerConnection.Any) => global.ensureServerCtx(conn),
+      list: () => servers.list,
+      health: (conn: ServerConnection.Http) => global.servers.health[ServerConnection.key(conn)],
+      context: (conn: ServerConnection.Http) => global.ensureServerCtx(conn),
       focused: focusedServer,
       focusedContext: focusedServerCtx,
       focusedSync,
@@ -85,8 +72,8 @@ export function createHomeController() {
       homedir,
       selected: selectedProject,
       newSession: newSessionProject,
-      forServer: (conn: ServerConnection.Any) => global.ensureServerCtx(conn).projects.list(),
-      select: (conn: ServerConnection.Any, directory: string) => {
+      forServer: (conn: ServerConnection.Http) => global.ensureServerCtx(conn).projects.list(),
+      select: (conn: ServerConnection.Http, directory: string) => {
         const key = ServerConnection.key(conn)
         if (global.servers.health[key]?.healthy === false) return
         if (
@@ -98,7 +85,7 @@ export function createHomeController() {
           return
         setSelection(toggleHomeProjectSelection(selection(), key, directory))
       },
-      add: (conn: ServerConnection.Any, directories: string[]) => {
+      add: (conn: ServerConnection.Http, directories: string[]) => {
         const directory = directories[0]
         if (!directory) return
         const ctx = global.ensureServerCtx(conn)
@@ -125,7 +112,6 @@ export function createHomeController() {
         openProjectNewSession(conn, project.worktree)
       },
       openProjectNewSession,
-      openProjectSession,
     },
   }
 }

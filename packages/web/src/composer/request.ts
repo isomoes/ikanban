@@ -9,7 +9,7 @@ import {
   type PromptComment,
 } from "@/composer/comment-note"
 
-// Network fields feed both boundaries; display fields keep desktop-only rendering details in the local echo.
+// Network fields feed both boundaries; display fields keep rendering details in the local echo.
 type PromptRequest = {
   text: string
   displayText: string
@@ -116,7 +116,7 @@ export function buildPromptRequest(input: BuildPromptRequestInput): PromptReques
   const inline = input.images.map((attachment) => ({
     uri: attachment.dataUrl,
     mime: attachment.mime,
-    name: attachment.sourcePath ?? attachment.filename,
+    name: attachment.filename,
   }))
   // Like comments, path references reach the model as text and the message UI through metadata.
   const attachments = input.prompt

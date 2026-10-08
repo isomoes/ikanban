@@ -225,26 +225,11 @@ export const ErrorPage: Component<ErrorPageProps> = (props) => {
   const language = useLanguage()
   const formattedError = () => formatError(props.error, language.t)
   const status = () => errorStatus(props.error)
-  let recordedFatalError: Promise<void> | undefined
   const [store, setStore] = createStore({
-    actionError: undefined as string | undefined,
     captureException: undefined as typeof captureException | undefined,
   })
 
-  function ensureFatalErrorRecorded() {
-    recordedFatalError ??=
-      platform.recordFatalRendererError?.({
-        error: formattedError(),
-        url: location.href,
-        version: platform.version,
-        platform: platform.platform,
-        os: platform.os,
-      }) ?? Promise.resolve()
-    return recordedFatalError
-  }
-
   onMount(() => {
-    void ensureFatalErrorRecorded().catch(() => undefined)
     void import("@sentry/solid")
       .then(({ captureException, isEnabled }) => {
         if (isEnabled()) setStore("captureException", () => captureException)
@@ -252,41 +237,8 @@ export const ErrorPage: Component<ErrorPageProps> = (props) => {
       .catch(() => undefined)
   })
 
-  async function checkForUpdates() {
-    const state = await platform.updater?.check()
-    setStore("actionError", state?.status === "error" ? state.message : undefined)
-  }
-
-  async function installUpdate() {
-    await platform.updater
-      ?.install()
-      .then(() => setStore("actionError", undefined))
-      .catch((err) => {
-        setStore("actionError", formatError(err, language.t))
-      })
-  }
-
-  const updateVersion = () => {
-    const state = platform.updater?.state()
-    return state?.status === "ready" || state?.status === "download-required" ? state.version : undefined
-  }
-
-  async function exportDebugLogs() {
-    const exportLogs = platform.exportDebugLogs
-    if (!exportLogs) return
-    await ensureFatalErrorRecorded()
-      .then(() => exportLogs())
-      .then(() => setStore("actionError", undefined))
-      .catch((err) => {
-        setStore("actionError", formatError(err, language.t))
-      })
-  }
-
   return (
-    <div
-      class="relative flex-1 h-full w-full min-h-0 min-w-0 overflow-y-auto flex flex-col items-center justify-start sm:justify-center p-4 sm:p-8 font-sans"
-      data-tauri-drag-region
-    >
+    <div class="relative flex-1 h-full w-full min-h-0 min-w-0 overflow-y-auto flex flex-col items-center justify-start sm:justify-center p-4 sm:p-8 font-sans">
       <div class="w-full max-w-3xl flex flex-col items-center justify-center gap-6 sm:gap-8 my-auto">
         <Logo class="w-48 sm:w-58.5 opacity-12 shrink-0" />
         <div class="flex flex-col items-center gap-2 text-center">
@@ -310,13 +262,8 @@ export const ErrorPage: Component<ErrorPageProps> = (props) => {
         />
         <div class="flex flex-row items-center justify-center gap-3 flex-wrap max-w-64">
           <Button size="large" onClick={platform.restart}>
-            {language.t(platform.platform === "web" ? "error.page.action.reload" : "error.page.action.restart")}
+            {language.t("error.page.action.reload")}
           </Button>
-          <Show when={platform.platform === "desktop" && platform.exportDebugLogs}>
-            <Button size="large" variant="ghost" onClick={exportDebugLogs}>
-              {language.t("error.page.action.exportLogs")}
-            </Button>
-          </Show>
           <Show when={store.captureException}>
             {(capture) => {
               const [reported, setReported] = createSignal(false)
@@ -334,33 +281,7 @@ export const ErrorPage: Component<ErrorPageProps> = (props) => {
               )
             }}
           </Show>
-          <Show when={platform.updater}>
-            <Show
-              when={updateVersion()}
-              fallback={
-                <Button
-                  size="large"
-                  variant="ghost"
-                  onClick={checkForUpdates}
-                  disabled={["checking", "downloading", "installing"].includes(platform.updater?.state().status ?? "")}
-                >
-                  {platform.updater?.state().status === "checking"
-                    ? language.t("error.page.action.checking")
-                    : language.t("error.page.action.checkUpdates")}
-                </Button>
-              }
-            >
-              {(version) => (
-                <Button size="large" onClick={installUpdate}>
-                  {language.t("error.page.action.updateTo", { version: version() })}
-                </Button>
-              )}
-            </Show>
-          </Show>
         </div>
-        <Show when={store.actionError}>
-          {(message) => <p class="text-xs text-text-danger-base text-center max-w-2xl">{message()}</p>}
-        </Show>
         <div class="flex flex-col items-center gap-2 text-xs text-center">
           <div class="flex flex-wrap items-center justify-center gap-1">
             {language.t("error.page.report.prefix")}

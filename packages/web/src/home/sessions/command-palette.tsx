@@ -12,7 +12,7 @@ import {
 import { CommandPaletteView, matchesCommandPaletteEntry } from "@/shell/commands/dialog"
 
 export function HomeCommandPalette(props: {
-  server: ServerConnection.Any
+  server: ServerConnection.Http
   onSelectSession: (entry: CommandPaletteEntry) => void
 }) {
   const command = useCommand()

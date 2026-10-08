@@ -56,7 +56,6 @@ const ImageFields = {
   type: Schema.Literal("image"),
   id: Schema.String,
   filename: Schema.String,
-  sourcePath: Persistence.optional(Schema.String),
   mime: Schema.String,
 }
 const Image = Persistence.struct({
@@ -82,7 +81,6 @@ export const ImageAttachmentPart = Schema.Struct({
         type: value.type,
         id: value.id,
         filename: value.filename,
-        sourcePath: value.sourcePath,
         mime: value.mime,
         blob: {
           id,

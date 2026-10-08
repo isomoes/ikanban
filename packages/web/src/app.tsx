@@ -9,30 +9,16 @@ import { QueryClient, QueryClientProvider } from "@tanstack/solid-query"
 import { type Component, createRenderEffect, ErrorBoundary, type JSX, type ParentProps } from "solid-js"
 import { Dynamic } from "solid-js/web"
 import { CommandProvider } from "@/shell/commands/command"
-import { DesktopCommands } from "@/shell/commands/desktop"
 import { GlobalProvider } from "@/runtime/server/runtime"
-import { HighlightsProvider } from "@/shell/updates/highlights"
 import { LanguageProvider, UiI18nBridge, type Locale } from "@/runtime/i18n/language"
 import { ServerConnection, ServersProvider } from "@/runtime/server/registry"
 import { SettingsProvider } from "@/settings/model"
 import { TabsProvider } from "@/shell/tabs/tabs"
-import { WslServersProvider } from "@/servers/wsl/context"
-import { SshProvider } from "@/servers/ssh/context"
-import { SshRestore } from "@/servers/ssh/restore"
 import { ErrorPage } from "@/shell/errors/error"
 import { AppRoutes, File, preloadRoute } from "@/shell/routes/routes"
 import { appBase } from "@/shell/routes/base"
 
 export { preloadRoute }
-
-declare global {
-  interface Window {
-    api?: {
-      setTitlebar?: (theme: { mode: "light" | "dark"; scheme?: "system" | "light" | "dark" }) => Promise<void>
-      exportDebugLogs?: () => Promise<string>
-    }
-  }
-}
 
 function QueryProvider(props: ParentProps) {
   const client = new QueryClient({
@@ -57,23 +43,12 @@ function BodyTypography() {
   return null
 }
 
-export function AppBaseProviders(
-  props: ParentProps<{
-    locale?: Locale
-    onNativeTranslations?: Parameters<typeof LanguageProvider>[0]["onNativeTranslations"]
-    onThemeApplied?: (mode: "light" | "dark", scheme: "system" | "light" | "dark") => void
-  }>,
-) {
+export function AppBaseProviders(props: ParentProps<{ locale?: Locale }>) {
   return (
     <MetaProvider>
       <Font />
-      <ThemeProvider
-        onThemeApplied={(_, mode, scheme) => {
-          void window.api?.setTitlebar?.({ mode, scheme })
-          props.onThemeApplied?.(mode, scheme)
-        }}
-      >
-        <LanguageProvider locale={props.locale} onNativeTranslations={props.onNativeTranslations}>
+      <ThemeProvider>
+        <LanguageProvider locale={props.locale}>
           <UiI18nBridge>
             <ErrorBoundary
               fallback={(error) => {
@@ -82,13 +57,9 @@ export function AppBaseProviders(
               }}
             >
               <QueryProvider>
-                <WslServersProvider>
-                  <DialogProvider>
-                    <SshProvider>
-                      <FileComponentProvider component={File}>{props.children}</FileComponentProvider>
-                    </SshProvider>
-                  </DialogProvider>
-                </WslServersProvider>
+                <DialogProvider>
+                  <FileComponentProvider component={File}>{props.children}</FileComponentProvider>
+                </DialogProvider>
               </QueryProvider>
             </ErrorBoundary>
           </UiI18nBridge>
@@ -102,7 +73,7 @@ export function AppInterface(props: {
   children?: JSX.Element
   defaultServer?: ServerConnection.Key
   canonicalLocalServer?: ServerConnection.Key
-  servers?: Array<ServerConnection.Any>
+  servers?: Array<ServerConnection.Http>
   router?: Component<BaseRouterProps>
 }) {
   // The visual layout lives in the router root so it remains mounted across
@@ -113,12 +84,8 @@ export function AppInterface(props: {
       <GlobalProvider>
         <BodyTypography />
         <CommandProvider>
-          <DesktopCommands />
-          <SshRestore />
-          <HighlightsProvider>
-            {props.children}
-            {rootProps.children}
-          </HighlightsProvider>
+          {props.children}
+          {rootProps.children}
         </CommandProvider>
       </GlobalProvider>
     </TabsProvider>

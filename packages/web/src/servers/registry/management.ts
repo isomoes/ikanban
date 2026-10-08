@@ -41,7 +41,7 @@ export function replaceServerConnection(
   next: ServerConnection.Http,
   operations: {
     removeTabs: (key: ServerConnection.Key) => void
-    add: (server: ServerConnection.Http) => ServerConnection.Any | undefined
+    add: (server: ServerConnection.Http) => ServerConnection.Http | undefined
     remove: (key: ServerConnection.Key) => void
   },
 ) {

@@ -11,8 +11,6 @@ export function flushPersisted() {
   for (const save of [...pending]) save()
 }
 
-// Covers synchronous web storage. Desktop registers its own pagehide handling earlier than this
-// module loads, so its shutdown path calls flushPersisted() itself before flushing namespaces.
 if (typeof document !== "undefined") {
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") flushPersisted()

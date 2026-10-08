@@ -66,7 +66,7 @@ function fixture() {
   }
 }
 
-describe("web search desktop consent", () => {
+describe("web search consent", () => {
   test.each([
     ["random", "allow"],
     [false, "disable"],

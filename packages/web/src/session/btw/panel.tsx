@@ -7,13 +7,11 @@ import { TextShimmer } from "@ikanban/ui/text-shimmer"
 import { Tooltip } from "@ikanban/ui/tooltip"
 import { Markdown } from "@ikanban/session-ui/markdown"
 import { useLanguage } from "@/runtime/i18n/language"
-import { usePlatform } from "@/runtime/platform/platform"
 import { showToast } from "@/shell/notifications/toast"
 import type { SessionBtwModel } from "./model"
 
 export function SessionBtwPanel(props: { btw: SessionBtwModel }) {
   const language = useLanguage()
-  const platform = usePlatform()
   const [copied, setCopied] = createSignal(false)
 
   createEffect(() => {
@@ -24,7 +22,7 @@ export function SessionBtwPanel(props: { btw: SessionBtwModel }) {
   const copy = () => {
     const answer = props.btw.answer()
     if (!answer) return
-    void (platform.writeClipboardText?.(answer) ?? navigator.clipboard.writeText(answer)).then(
+    void navigator.clipboard.writeText(answer).then(
       () => setCopied(true),
       () => showToast({ title: language.t("common.requestFailed") }),
     )

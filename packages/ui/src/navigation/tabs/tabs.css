@@ -701,11 +701,7 @@
   }
 }
 
-:root body #review-panel [data-component="tabs"] .session-review-v2-open-in-app-slot {
+:root body #review-panel [data-component="tabs"] .session-review-v2-actions-slot {
   flex-shrink: 0;
   margin-inline-start: auto;
-}
-
-:root body #review-panel [data-component="tabs"] .session-review-v2-open-in-app {
-  flex-shrink: 0;
 }

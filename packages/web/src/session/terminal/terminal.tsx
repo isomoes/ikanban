@@ -21,7 +21,7 @@ import { terminalWriter } from "@/session/terminal/writer"
 const TOGGLE_TERMINAL_ID = "terminal.toggle"
 const DEFAULT_TOGGLE_TERMINAL_KEYBIND = "ctrl+`"
 // Serialization on unmount is a synchronous O(rows x cols) walk on the main thread and the
-// result is written to localStorage or desktop state for every terminal in the workspace.
+// result is written to localStorage for every terminal in the workspace.
 // Persisting the most recent 2k scrollback rows keeps restore fidelity for the history users
 // actually scroll back through while capping teardown cost and snapshot size; the live
 // terminal keeps its full 10k scrollback while mounted.
@@ -341,15 +341,6 @@ export const Terminal = (props: TerminalProps) => {
     scheduleFit()
   })
 
-  let zoom = platform.webviewZoom?.()
-  createEffect(() => {
-    const next = platform.webviewZoom?.()
-    if (next === undefined) return
-    if (next === zoom) return
-    zoom = next
-    scheduleFit()
-  })
-
   const focusTerminal = () => {
     const t = term
     if (!t) return
@@ -378,10 +369,6 @@ export const Terminal = (props: TerminalProps) => {
 
     event.preventDefault()
     event.stopImmediatePropagation()
-    if (URL.canParse(text) && new URL(text).protocol === "file:" && platform.openLocalFile) {
-      platform.openLocalFile(text)
-      return
-    }
     platform.openExternal(text)
   }
 

@@ -26,7 +26,6 @@ import { useLanguage } from "@/runtime/i18n/language"
 import { normalizeServerUrl, ServerConnection, useServers } from "@/runtime/server/registry"
 import { useTabs } from "@/shell/tabs/tabs"
 import { useCheckServerHealth } from "@/runtime/server/health"
-import { usePlatform } from "@/runtime/platform/platform"
 import { isMixedContent } from "./browser"
 import { createCameraAvailability } from "./camera"
 import { decodePairingCode } from "./pairing"
@@ -43,7 +42,6 @@ export const DialogServer: Component<{
 }> = (props) => {
   const dialog = useDialog()
   const language = useLanguage()
-  const platform = usePlatform()
   const camera = createCameraAvailability()
   const form = createFormController({
     onSelect: (server) => {
@@ -159,7 +157,7 @@ export const DialogServer: Component<{
                 onKeyDown={keyDown}
               />
             </div>
-            <Show when={props.mode === "add" && platform.platform === "web"}>
+            <Show when={props.mode === "add"}>
               <div class="flex w-full min-w-0 flex-col gap-2">
                 <Button
                   variant="neutral"
@@ -202,7 +200,6 @@ export const DialogServer: Component<{
 }
 
 function createFormController(options: { onSelect?: (server: ServerConnection.Http) => void } = {}) {
-  const platform = usePlatform()
   const server = useServers()
   const tabs = useTabs()
   const global = useGlobal()
@@ -282,7 +279,7 @@ function createFormController(options: { onSelect?: (server: ServerConnection.Ht
         setStore(
           "error",
           language.t(
-            platform.platform === "web" && isMixedContent(location.href, normalized)
+            isMixedContent(location.href, normalized)
               ? "server.connect.mixedContent"
               : "dialog.server.add.error",
           ),

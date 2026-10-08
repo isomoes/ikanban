@@ -2,7 +2,6 @@ import { Popover } from "@kobalte/core/popover"
 import { Icon } from "@ikanban/ui/icon"
 import { Switch } from "@ikanban/ui/switch"
 import { Tooltip } from "@ikanban/ui/tooltip"
-import { getDirectory } from "@opencode/util/path"
 import {
   createEffect,
   createMemo,
@@ -17,7 +16,6 @@ import {
 } from "solid-js"
 import { createStore } from "solid-js/store"
 import { useLanguage } from "@/runtime/i18n/language"
-import { usePlatform } from "@/runtime/platform/platform"
 import { useData, useServer } from "@/runtime/server/current"
 import { useServerSDK } from "@/runtime/server/client"
 import { ServerConnection, serverName } from "@/runtime/server/registry"
@@ -439,19 +437,16 @@ function ServicePopover(
 
 function ServiceConfigLink(props: { directory: string; service: Service }) {
   const language = useLanguage()
-  const platform = usePlatform()
   const server = useServer()
   const sdk = useServerSDK()
   const [store, setStore] = createStore({ opening: false, copied: false })
-  const label = () => language.t(server.isLocal ? "session.summary.configure" : "session.summary.copyConfigPath")
   createEffect(() => {
     if (!store.copied) return
     const timeout = setTimeout(() => setStore("copied", false), 2000)
     onCleanup(() => clearTimeout(timeout))
   })
   const activate = async () => {
-    const revealPath = platform.revealPath
-    if (store.opening || (server.isLocal && !revealPath)) return
+    if (store.opening) return
     setStore({ opening: true, copied: false })
     const directory = props.directory
     await sdk.api.config
@@ -462,14 +457,9 @@ function ServiceConfigLink(props: { directory: string; service: Service }) {
           .filter((entry) => entry.path !== undefined && /\.jsonc?$/.test(entry.path))
         const path =
           documents.findLast((entry) => entry.info[props.service] !== undefined)?.path ?? documents.at(-1)?.path
-        if (!server.isLocal) {
-          if (!path) throw new Error(language.t("session.summary.configFileMissing"))
-          await (platform.writeClipboardText?.(path) ?? navigator.clipboard.writeText(path))
-          setStore("copied", true)
-          return
-        }
-        if (path && (await revealPath?.(path))) return
-        await platform.openPath?.(path ? getDirectory(path) : directory)
+        if (!path) throw new Error(language.t("session.summary.configFileMissing"))
+        await navigator.clipboard.writeText(path)
+        setStore("copied", true)
       })
       .catch((error: unknown) =>
         showToast({
@@ -484,16 +474,15 @@ function ServiceConfigLink(props: { directory: string; service: Service }) {
     <>
       <span class="session-service-config-separator" role="separator" />
       <Show
-        when={!server.isLocal || platform.revealPath}
+        when={!server.isLocal}
         fallback={
           <span class="session-service-row">
             <Icon name="settings-gear" class="shrink-0 text-v2-icon-icon-muted" />
-            {label()}
+            {language.t("session.summary.configure")}
           </span>
         }
       >
         <Tooltip
-          inactive={server.isLocal}
           value={language.t(store.copied ? "ui.message.copied" : "ui.message.copy")}
           placement="top"
           getAnchorRect={(anchor) => anchor?.querySelector("svg")?.getBoundingClientRect()}
@@ -504,19 +493,11 @@ function ServiceConfigLink(props: { directory: string; service: Service }) {
             type="button"
             class="session-service-config"
             disabled={store.opening}
-            onMouseDown={(event) => {
-              if (!server.isLocal) event.preventDefault()
-            }}
+            onMouseDown={(event) => event.preventDefault()}
             onClick={() => void activate()}
           >
-            <Icon
-              name={server.isLocal ? "settings-gear" : store.copied ? "check" : "outline-copy"}
-              class="shrink-0 text-v2-icon-icon-muted"
-            />
-            <span class="session-summary-label">{label()}</span>
-            <Show when={server.isLocal}>
-              <Icon name="arrow-up-right" class="session-service-config-arrow shrink-0" />
-            </Show>
+            <Icon name={store.copied ? "check" : "outline-copy"} class="shrink-0 text-v2-icon-icon-muted" />
+            <span class="session-summary-label">{language.t("session.summary.copyConfigPath")}</span>
           </button>
         </Tooltip>
       </Show>

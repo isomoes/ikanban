@@ -401,11 +401,9 @@ export const Persist = {
 
 function resolveTarget(target: PersistTarget, platform: Platform): PersistTarget {
   if (target.scope !== "window") return target
-  const windowID = platform.platform === "desktop" ? platform.windowID : "browser"
-  if (!windowID) throw new Error("Desktop window ID is required for window-scoped storage")
   return {
     ...target,
-    storage: windowStorage(windowID),
+    storage: windowStorage("browser"),
   }
 }
 
@@ -415,15 +413,6 @@ export function removePersisted(
 ) {
   if (target.draft && platform?.draftStore) {
     void platform.draftStore.removeItem(`${target.storage ?? DIRECT_STORAGE}:${target.key}`)
-  }
-  const isDesktop = platform?.platform === "desktop" && !!platform.storage
-
-  if (isDesktop) {
-    void platform.storage?.(target.storage ?? DIRECT_STORAGE)?.removeItem(target.key)
-    for (const storage of target.workspaceStorageAliases ?? []) {
-      void platform.storage?.(storage)?.removeItem(target.key)
-    }
-    return
   }
 
   if (!target.storage) {
@@ -456,7 +445,6 @@ export function persisted<S extends Schema.ConstraintCodec<object, unknown>>(
     if (Option.isSome(value)) return serialize(value.value)
   }
   const store = createStore<S["Type"]>(Schema.decodeUnknownSync(Schema.toType(initialized))(initial))
-  const isDesktop = platform.platform === "desktop" && !!platform.storage
   const draft = config.draft ? platform.draftStore : undefined
   const prefix = `${config.storage ?? DIRECT_STORAGE}:`
   // The newest serialized draft, replayed into storage if a slow load finishes after an edit.
@@ -470,7 +458,6 @@ export function persisted<S extends Schema.ConstraintCodec<object, unknown>>(
         removeItem: (key: string) => draft.removeItem(prefix + key),
       } satisfies AsyncStorage
     }
-    if (isDesktop) return platform.storage?.(config.storage ?? DIRECT_STORAGE)
     if (!config.storage) return localStorageDirect()
     return localStorageWithPrefix(config.storage)
   })()
@@ -478,7 +465,7 @@ export function persisted<S extends Schema.ConstraintCodec<object, unknown>>(
   const workspaceAliases = config.workspaceStorageAliases ?? []
 
   const storage = (() => {
-    if (!isDesktop && !draft) {
+    if (!draft) {
       const current = currentStorage as SyncStorage
       const sources = [
         ...workspaceAliases.map((storage) => ({ storage: localStorageWithPrefix(storage) })),
@@ -509,25 +496,17 @@ export function persisted<S extends Schema.ConstraintCodec<object, unknown>>(
 
     const current = currentStorage as AsyncStorage
     const previousDraftStorage = draft
-      ? isDesktop
-        ? platform.storage?.(config.storage ?? DIRECT_STORAGE)
-        : config.storage
-          ? localStorageWithPrefix(config.storage)
-          : localStorageDirect()
-      : undefined
-    const previousStorage = config.previousKey
-      ? isDesktop
-        ? platform.storage?.(DIRECT_STORAGE)
+      ? config.storage
+        ? localStorageWithPrefix(config.storage)
         : localStorageDirect()
       : undefined
+    const previousStorage = config.previousKey ? localStorageDirect() : undefined
     const relocationSources = [
       previousDraftStorage ? { storage: previousDraftStorage } : undefined,
-      ...workspaceAliases.map((name) => ({
-        storage: isDesktop ? platform.storage?.(name) : localStorageWithPrefix(name),
-      })),
+      ...workspaceAliases.map((name) => ({ storage: localStorageWithPrefix(name) })),
       previousStorage && config.previousKey ? { storage: previousStorage, key: config.previousKey } : undefined,
     ]
-      .filter((source): source is { storage: SyncStorage | AsyncStorage; key?: string } => !!source?.storage)
+      .filter((source): source is NonNullable<typeof source> => !!source)
       .map((source) => ({ ...source, storage: toAsyncStorage(source.storage) }))
 
     const api: AsyncStorage = {

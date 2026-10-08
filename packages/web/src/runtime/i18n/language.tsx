@@ -15,18 +15,10 @@ import { Persist, persisted } from "@/runtime/persistence/storage"
 import { Persistence } from "@/runtime/persistence/schema"
 import en from "@/runtime/i18n/en"
 import { dict } from "@ikanban/ui/i18n/en"
-import {
-  createDesktopNativeBundle,
-  detectDesktopNativeLocale,
-  DESKTOP_NATIVE_ENGLISH,
-  DESKTOP_NATIVE_LABELS,
-  DESKTOP_NATIVE_LOCALES,
-  DESKTOP_NATIVE_LOCALE_TAGS,
-  type DesktopNativeBundle,
-  type DesktopNativeLocale,
-} from "@/runtime/i18n/desktop-native"
 
-export type Locale = DesktopNativeLocale
+const LOCALES = ["en", "zh"] as const
+
+export type Locale = (typeof LOCALES)[number]
 export type Direction = "ltr" | "rtl"
 
 function localeDirection(_locale: Locale): Direction {
@@ -52,9 +44,7 @@ function cookie(locale: Locale) {
   return `ikanban.v2.locale=${encodeURIComponent(locale)}; Path=/ikanban/; Max-Age=31536000; SameSite=Lax`
 }
 
-const LOCALES: readonly Locale[] = DESKTOP_NATIVE_LOCALES
-
-const LocaleSchema = Schema.Literals(DESKTOP_NATIVE_LOCALES)
+const LocaleSchema = Schema.Literals(LOCALES)
 const StoredLocaleSchema = Schema.Struct({
   locale: Schema.String.pipe(
     Schema.decodeTo(LocaleSchema, {
@@ -64,7 +54,15 @@ const StoredLocaleSchema = Schema.Struct({
   ),
 })
 
-const INTL = DESKTOP_NATIVE_LOCALE_TAGS
+const LABELS: Record<Locale, string> = {
+  en: "English",
+  zh: "简体中文",
+}
+
+const INTL: Record<Locale, string> = {
+  en: "en",
+  zh: "zh-Hans",
+}
 
 const base = flatten({ ...en, ...dict })
 const dicts = new Map<Locale, Dictionary>([["en", base]])
@@ -91,9 +89,23 @@ export function loadLocaleDict(locale: Locale) {
   return loadDict(locale).then(() => undefined)
 }
 
+function parseLocale(value: string) {
+  try {
+    return new Intl.Locale(value).maximize()
+  } catch {
+    return undefined
+  }
+}
+
 function detectLocale(): Locale {
   if (typeof navigator !== "object") return "en"
-  return detectDesktopNativeLocale(navigator.languages?.length ? navigator.languages : [navigator.language])
+  for (const language of navigator.languages?.length ? navigator.languages : [navigator.language]) {
+    const source = parseLocale(language)
+    if (!source) continue
+    const match = LOCALES.find((candidate) => parseLocale(INTL[candidate])?.language === source.language)
+    if (match) return match
+  }
+  return "en"
 }
 
 export function normalizeLocale(value: string): Locale {
@@ -135,7 +147,7 @@ export function loadInitialLocale() {
 export const { use: useLanguage, provider: LanguageProvider } = createSimpleContext({
   name: "Language",
   gate: false,
-  init: (props: { locale?: Locale; onNativeTranslations?: (bundle: DesktopNativeBundle) => void }) => {
+  init: (props: { locale?: Locale }) => {
     const initial = props.locale ?? readStoredLocale() ?? detectLocale()
     const [store, setStore, _, ready] = persisted(languageTarget, languageSchema, { locale: initial })
 
@@ -178,7 +190,7 @@ export const { use: useLanguage, provider: LanguageProvider } = createSimpleCont
     const plural = (key: PluralKey, count: number, params?: Record<string, string | number | boolean>) =>
       pluralForm(key, pluralCategory(intl(), count), { ...params, count })
 
-    const label = (value: Locale) => DESKTOP_NATIVE_LABELS[value]
+    const label = (value: Locale) => LABELS[value]
 
     createEffect(() => {
       if (typeof document !== "object") return
@@ -186,15 +198,6 @@ export const { use: useLanguage, provider: LanguageProvider } = createSimpleCont
       document.documentElement.lang = intl()
       document.documentElement.dir = direction()
       document.cookie = cookie(value)
-    })
-
-    createEffect(() => {
-      if (!props.onNativeTranslations || dictionary.loading) return
-      const current = dictionary()
-      if (!current) return
-      props.onNativeTranslations(
-        createDesktopNativeBundle(locale(), (key) => current[key] ?? DESKTOP_NATIVE_ENGLISH[key]),
-      )
     })
 
     return {

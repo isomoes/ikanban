@@ -10,19 +10,18 @@ function setup(read: () => string | null | Promise<string | null> = () => null) 
   return createRoot((dispose) => {
     const writes: ComposerStore[] = []
     const state = createComposerState(ServerScope.local, { draftID: "composer-write-batch-test" }, undefined, {
-      platform: "desktop",
-      os: "windows",
-      windowID: "composer-write-batch-test",
       openExternal() {},
       restart: async () => {},
       notify: async () => {},
-      storage: () => ({
+      draftStore: {
         getItem: read,
-        setItem: (_key, value) => {
-          writes.push(JSON.parse(value))
+        setItem: async () => {},
+        removeItem: async () => {},
+        setDocument: async (_key, document) => {
+          writes.push(document as ComposerStore)
         },
-        removeItem() {},
-      }),
+        putBlob: async () => ({ id: "blob", url: "blob:test" }),
+      },
     })
     return { state, writes, editor: createComposerEditorActions(state.store), dispose }
   })

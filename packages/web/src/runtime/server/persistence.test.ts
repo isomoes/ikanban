@@ -209,53 +209,35 @@ describe("directory cache schemas", () => {
 test.skipIf(isServer)(
   "persisted server relocation hydrates migrated state and writes current schema on updates",
   async () => {
-    const values = new Map([
-      [
-        "ikanban.v2.direct.dat:server.v3",
-        JSON.stringify({
-          list: [{ url: "https://remote.example", username: "legacy", password: "secret" }],
-          projects: { "https://remote.example": [{ worktree: "/project", expanded: false }] },
-          lastProject: { "https://remote.example": "/project" },
-        }),
-      ],
-    ])
+    localStorage.clear()
+    localStorage.setItem(
+      "ikanban.v2.direct.dat:server.v3",
+      JSON.stringify({
+        list: [{ url: "https://remote.example", username: "legacy", password: "secret" }],
+        projects: { "https://remote.example": [{ worktree: "/project", expanded: false }] },
+        lastProject: { "https://remote.example": "/project" },
+      }),
+    )
     const root = createRoot((dispose) => ({
       dispose,
       state: persisted(
         { ...Persist.global("server"), previousKey: "server.v3" },
         serverState(() => "https://remote.example"),
         initial,
-        {
-          platform: "desktop",
-          windowID: "test",
-          openExternal() {},
-          restart: async () => {},
-          notify: async () => {},
-          openDirectoryPickerDialog: async () => null,
-          storage: (name = "default") => ({
-            getItem: async (key) => values.get(`${name}:${key}`) ?? null,
-            setItem: async (key, value) => {
-              values.set(`${name}:${key}`, value)
-            },
-            removeItem: async (key) => {
-              values.delete(`${name}:${key}`)
-            },
-          }),
-        },
+        { openExternal() {}, restart: async () => {}, notify: async () => {} },
       ),
     }))
     try {
-      await root.state[3].promise
-      expect(values.has("ikanban.v2.direct.dat:server.v3")).toBe(false)
       expect(root.state[0].list).toEqual([
         { type: "http", http: { url: "https://remote.example", password: "secret" } },
       ])
       expect(root.state[0].projects).toEqual({ local: [{ worktree: "/project", expanded: false }] })
       expect(root.state[0].lastProject).toEqual({ local: "/project" })
+      expect(localStorage.getItem("ikanban.v2.direct.dat:server.v3")).toBeNull()
       root.state[1]("projects", "local", 0, "expanded", true)
       flushPersisted()
-      const stored = values.get("ikanban.v2.global.dat:server")
-      expect(stored).toBeDefined()
+      const stored = localStorage.getItem("ikanban.v2.global.dat:server")
+      expect(stored).not.toBeNull()
       if (!stored) throw new Error("server state was not written")
       const decoded = Schema.decodeUnknownSync(Schema.fromJsonString(serverSchema()))(stored)
       expect(decoded.projects.local).toEqual([{ worktree: "/project", expanded: true }])
@@ -263,6 +245,7 @@ test.skipIf(isServer)(
       expect(decoded.list).toEqual(root.state[0].list)
     } finally {
       root.dispose()
+      localStorage.clear()
     }
   },
 )

@@ -9,7 +9,6 @@ export function createWebPlatform(version: string) {
   const currentServerUrl = configuredServerUrl(import.meta.env.VITE_OPENCODE_URL)
   const storedServerUrl = readDefaultServerUrl()
   const platform: Platform = {
-    platform: "web",
     draftStore: createBrowserDraftStore(),
     version,
     openExternal(value) {

@@ -10,7 +10,7 @@ import { showToast } from "@/shell/notifications/toast"
 
 type ProjectPatch = Pick<ProjectUpdateInput, "name" | "icon" | "commands">
 
-export function createEditProjectModel(props: { project: LocalProject; server: ServerConnection.Any }) {
+export function createEditProjectModel(props: { project: LocalProject; server: ServerConnection.Http }) {
   const language = useLanguage()
   const global = useGlobal()
   const serverCtx = createMemo(() => global.ensureServerCtx(props.server))

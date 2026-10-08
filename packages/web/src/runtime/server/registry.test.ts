@@ -60,18 +60,7 @@ describe("resolveServerList", () => {
   })
 })
 
-test("treats WSL sidecars as remote server connections", () => {
-  expect(
-    ServerConnection.local({
-      type: "sidecar",
-      variant: "wsl",
-      distro: "Debian",
-      http: { url: "http://127.0.0.1:4097" },
-    }),
-  ).toBe(false)
-  expect(ServerConnection.local({ type: "sidecar", variant: "base", http: { url: "http://127.0.0.1:4096" } })).toBe(
-    true,
-  )
+test("treats only loopback http servers as local", () => {
   expect(ServerConnection.local({ type: "http", http: { url: "http://localhost:4096" } })).toBe(true)
   expect(ServerConnection.local({ type: "http", http: { url: "https://server.example.test" } })).toBe(false)
 })

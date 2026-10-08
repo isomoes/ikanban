@@ -25,26 +25,9 @@ const Stored = Persistence.migrate(
 )
 
 const web: Platform = {
-  platform: "web",
   openExternal: () => undefined,
   restart: async () => undefined,
   notify: async () => undefined,
-}
-
-function desktop() {
-  const values = new Map<string, string>()
-  const platform: Platform = {
-    ...web,
-    platform: "desktop",
-    windowID: "schema-test",
-    openDirectoryPickerDialog: async () => null,
-    storage: (name) => ({
-      getItem: async (key) => values.get(`${name}:${key}`) ?? null,
-      setItem: async (key, value) => void values.set(`${name}:${key}`, value),
-      removeItem: async (key) => void values.delete(`${name}:${key}`),
-    }),
-  }
-  return { values, platform }
 }
 
 describe("schema-backed persistence", () => {
@@ -106,51 +89,21 @@ describe("schema-backed persistence", () => {
     })
   })
 
-  test("relocates and canonicalizes desktop state before becoming ready", async () => {
-    const storage = desktop()
-    storage.values.set("ikanban.v2.direct.dat:old-schema", JSON.stringify({ oldLabel: "desktop" }))
-    storage.values.set("undefined:old-schema", JSON.stringify({ oldLabel: "another app" }))
-    const root = createRoot((dispose) => ({
-      dispose,
-      state: persisted(
-        { ...Persist.global("schema-desktop"), previousKey: "old-schema" },
-        Stored,
-        initial,
-        storage.platform,
-      ),
-    }))
-    try {
-      expect(root.state[3]()).toBe(false)
-      await root.state[3].promise
-      expect(root.state[0]).toEqual({ enabled: true, label: "desktop" })
-      expect(storage.values.has("ikanban.v2.direct.dat:old-schema")).toBe(false)
-      expect(storage.values.get("undefined:old-schema")).toBe(JSON.stringify({ oldLabel: "another app" }))
-      expect(JSON.parse(storage.values.get("ikanban.v2.global.dat:schema-desktop")!)).toEqual({
-        enabled: true,
-        label: "desktop",
-      })
-      root.state[1]("label", "changed")
-      flushPersisted()
-      expect(JSON.parse(storage.values.get("ikanban.v2.global.dat:schema-desktop")!)).toEqual({
-        enabled: true,
-        label: "changed",
-      })
-    } finally {
-      root.dispose()
-    }
-  })
-
-  test("a late desktop read does not overwrite an edit made while loading", async () => {
+  test("a late draft read does not overwrite an edit made while loading", async () => {
     const pending = Promise.withResolvers<string | null>()
-    const storage = desktop()
-    storage.platform.storage = () => ({
-      getItem: () => pending.promise,
-      setItem: async () => undefined,
-      removeItem: async () => undefined,
-    })
+    const platform: Platform = {
+      ...web,
+      draftStore: {
+        getItem: () => pending.promise,
+        setItem: async () => undefined,
+        removeItem: async () => undefined,
+        setDocument: async () => undefined,
+        putBlob: async () => ({ id: "blob", url: "blob:test" }),
+      },
+    }
     const root = createRoot((dispose) => ({
       dispose,
-      state: persisted(Persist.global("schema-late"), Stored, initial, storage.platform),
+      state: persisted({ ...Persist.global("schema-late"), draft: true }, Stored, initial, platform),
     }))
     try {
       root.state[1]("label", "new edit")

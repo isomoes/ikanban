@@ -242,7 +242,7 @@ describe("layout workspace helpers", () => {
 
   test("defers home project navigation until its server is active", () => {
     expect(
-      homeProjectNavigation(serverKey("sidecar"), serverKey("https://debian.example"), "/YW1hem9u/session"),
+      homeProjectNavigation(serverKey("https://localhost:4096"), serverKey("https://debian.example"), "/YW1hem9u/session"),
     ).toEqual({
       server: serverKey("https://debian.example"),
       href: "/YW1hem9u/session",

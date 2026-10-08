@@ -5,22 +5,19 @@ import { InlineInput } from "@ikanban/ui/inline-input"
 import { Menu } from "@ikanban/ui/menu"
 import { getFilename } from "@opencode/util/path"
 import { useLanguage } from "@/runtime/i18n/language"
-import { usePlatform } from "@/runtime/platform/platform"
 import { ServerConnection } from "@/runtime/server/registry"
 import { useGlobal } from "@/runtime/server/runtime"
-import { displayName, errorMessage } from "@/shell/layout/helpers"
-import { fileManagerApp } from "@/home/projects/file-manager"
+import { displayName } from "@/shell/layout/helpers"
 import { ProjectIcon } from "@/shell/layout/project-icon"
 import { showToast } from "@/shell/notifications/toast"
 import type { LocalProject } from "@/shell/state/layout"
 
 export function SettingsProjectRow(props: {
   project: LocalProject
-  server: ServerConnection.Any
+  server: ServerConnection.Http
   onOpen: (project: LocalProject) => void
 }) {
   const language = useLanguage()
-  const platform = usePlatform()
   const global = useGlobal()
   const [store, setStore] = createStore({
     menu: undefined as { x: number; y: number } | undefined,
@@ -177,23 +174,6 @@ export function SettingsProjectRow(props: {
             }}
           >
             <Menu.Item onSelect={openEditor}>{language.t("common.rename")}</Menu.Item>
-            <Show
-              when={platform.platform === "desktop" && !!platform.openPath && ServerConnection.local(props.server)}
-            >
-              <Menu.Item
-                onSelect={() => {
-                  if (!platform.openPath) return
-                  void platform.openPath(props.project.worktree).catch((cause: unknown) =>
-                    showToast({
-                      title: language.t("common.requestFailed"),
-                      description: errorMessage(cause, language.t("common.requestFailed")),
-                    }),
-                  )
-                }}
-              >
-                {language.t(fileManagerApp(platform.os ?? "unknown").actionLabel)}
-              </Menu.Item>
-            </Show>
             <Menu.Separator />
             <Menu.Item
               onSelect={() => {

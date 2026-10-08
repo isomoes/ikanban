@@ -188,7 +188,7 @@ function handoffMessage(value: ComposerSubmission): SessionMessageUser {
       data: "",
       mime: image.mime,
       source: { type: "uri", uri: image.blob.url },
-      name: image.sourcePath ?? image.filename,
+      name: image.filename,
     })),
     metadata: {
       displayText: value.text,

@@ -6,7 +6,7 @@ import { uuid } from "@/runtime/persistence/uuid"
 
 type SessionMutation = { readonly id: string; readonly type: "remove"; readonly sessionID: string }
 
-export function createDesktopData(input: { data: Data; remove: (sessionID: string) => Promise<void> }) {
+export function createAppData(input: { data: Data; remove: (sessionID: string) => Promise<void> }) {
   const mutation = createSessionMutations(input.remove)
   onCleanup(input.data.on("session.deleted", (event) => mutation.deleted(event.data.sessionID)))
 
