@@ -137,7 +137,7 @@ function createServerController(
   const notification = createServerNotificationState({ sdk, data, key: connKey, coordinator: notificationCoordinator })
 
   function enrich(project: { worktree: string; expanded: boolean }) {
-    const [childStore] = sync.child(project.worktree, { bootstrap: false })
+    const [childStore] = sync.child(project.worktree)
     const projectID = childStore.project
     const metadata = projectID
       ? sync.data.project.find((x) => x.id === projectID)

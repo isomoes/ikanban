@@ -2,10 +2,11 @@ import { describe, expect, test } from "bun:test"
 import type { AgentListOutput, ModelListOutput, Project, ProviderListOutput } from "@opencode/client/promise"
 import {
   directoryKey,
+  locationPath,
   normalizeAgentList,
   normalizeProjectInfo,
   normalizeProviderList,
-  updateProjectInfo,
+  projectList,
 } from "./utils"
 
 describe("normalizeAgentList", () => {
@@ -117,33 +118,34 @@ describe("directoryKey", () => {
   })
 })
 
-describe("updateProjectInfo", () => {
-  test("applies saved metadata without losing workspace inventory", () => {
-    const update = {
-      id: "project",
-      canonical: "/repo",
-      name: "Repo",
-      icon: { color: "purple" },
-      time: { created: 1, updated: 2, active: 2 },
-      sandboxes: ["/repo-sandbox"],
-    } satisfies Project
+describe("projectList", () => {
+  const metadata = (id: string, canonical: string) => ({
+    id,
+    canonical,
+    time: { created: 1, updated: 1, active: 1 },
+    sandboxes: [],
+  })
 
-    expect(
-      updateProjectInfo(
-        {
-          ...update,
-          name: "Old name",
-          icon: { color: "gray" },
-          worktree: "/old-repo",
-          worktrees: [{ directory: "/repo", strategy: "git" }],
-        },
-        update,
-      ),
-    ).toMatchObject({
-      name: "Repo",
-      icon: { color: "purple" },
+  test("normalizes, filters, sorts by id, and applies loaded worktree inventories", () => {
+    const list = projectList(
+      [metadata("b", "/b"), metadata("a", "/a"), metadata("t", "/tmp/opencode-test/x"), metadata("", "/none")],
+      (id) => (id === "a" ? [{ directory: "/a" }, { directory: "/a/feature", strategy: "git" }] : undefined),
+    )
+    expect(list.map((project) => project.id)).toEqual(["a", "b"])
+    expect(list[0]).toMatchObject({ worktree: "/a", sandboxes: ["/a/feature"] })
+    expect(list[1]).toMatchObject({ worktree: "/b", worktrees: [{ directory: "/b" }] })
+  })
+})
+
+describe("locationPath", () => {
+  test("is empty until the default location loads", () => {
+    expect(locationPath(undefined)).toEqual({ state: "", config: "", worktree: "", directory: "", home: "" })
+    expect(locationPath({ directory: "/repo/src", project: { directory: "/repo" } } as never)).toEqual({
+      state: "",
+      config: "",
       worktree: "/repo",
-      worktrees: [{ directory: "/repo", strategy: "git" }],
+      directory: "/repo/src",
+      home: "",
     })
   })
 })

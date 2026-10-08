@@ -107,15 +107,6 @@ export const ModelState = Persistence.struct({
   ),
 })
 
-export const VcsState = Persistence.struct({
-  value: Schema.optional(
-    Persistence.struct({
-      branch: Schema.optional(Schema.String),
-      default_branch: Schema.optional(Schema.String),
-    }),
-  ),
-})
-
 const ProjectMeta = Persistence.struct({
   name: Schema.optional(Schema.String),
   icon: Schema.optional(

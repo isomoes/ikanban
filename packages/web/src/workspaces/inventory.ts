@@ -1,13 +1,9 @@
-import type { QueryClient } from "@tanstack/solid-query"
+import { createStore } from "solid-js/store"
 import type { WorktreeDirectory } from "@opencode/client/promise"
 import type { ServerApi } from "@/runtime/server/api"
 import type { ServerScope } from "@/runtime/server/scope"
 import type { Project } from "@/runtime/server/types"
 import { sameDirectory } from "./paths"
-
-export function worktreeInventoryKey(scope: ServerScope, projectID: string) {
-  return [scope, "worktree", projectID] as const
-}
 
 export function worktreeInventoryViewKey(scope: ServerScope, projectID?: string) {
   return [scope, "settings-workspace-inventory", projectID ?? null] as const
@@ -26,32 +22,26 @@ export function withWorktreeInventory(project: Project, worktrees: readonly Work
 }
 
 // Reads use saved inventory; explicit demand also discovers external worktree changes.
-export function createWorktreeInventory(input: {
-  scope: ServerScope
-  queryClient: QueryClient
-  api: () => Pick<ServerApi["worktree"], "list" | "refresh">
-  updated: (projectID: string, worktrees: WorktreeDirectory[]) => void
-}) {
-  const options = (projectID: string) => ({
-    queryKey: worktreeInventoryKey(input.scope, projectID),
-    queryFn: () =>
-      input
+// The store is the only copy of each project's inventory: project lists and views derive from it.
+export function createWorktreeInventory(input: { api: () => Pick<ServerApi["worktree"], "list" | "refresh"> }) {
+  const [store, setStore] = createStore<Record<string, WorktreeDirectory[]>>({})
+  const loading = new Map<string, Promise<WorktreeDirectory[]>>()
+  return {
+    cached: (projectID: string): readonly WorktreeDirectory[] | undefined => store[projectID],
+    list: (projectID: string) => {
+      const active = loading.get(projectID)
+      if (active) return active.catch(() => undefined)
+      const request = input
         .api()
         .list({ projectID })
         .then((items) => {
-          input.updated(projectID, items)
+          setStore(projectID, items)
           return items
-        }),
-    // `worktree.updated` and reconnect invalidation drive list reloads; time alone does not re-list.
-    staleTime: Infinity,
-    gcTime: Infinity,
-    retry: false,
-  })
-  return {
-    cached: (projectID: string) =>
-      input.queryClient.getQueryData<WorktreeDirectory[]>(worktreeInventoryKey(input.scope, projectID)),
-    list: (projectID: string) =>
-      input.queryClient.fetchQuery({ ...options(projectID), staleTime: 0 }).catch(() => undefined),
+        })
+        .finally(() => loading.delete(projectID))
+      loading.set(projectID, request)
+      return request.catch(() => undefined)
+    },
     refresh: (projectID: string) =>
       input
         .api()

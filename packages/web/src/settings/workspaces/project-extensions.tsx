@@ -2,7 +2,6 @@ import { Icon } from "@ikanban/ui/icon"
 import { Switch } from "@ikanban/ui/switch"
 import { Tabs } from "@ikanban/ui/tabs"
 import { Button } from "@ikanban/ui/button"
-import { useQuery } from "@tanstack/solid-query"
 import {
   type Component,
   For,
@@ -11,7 +10,6 @@ import {
   createMemo,
   createResource,
   createSignal,
-  onCleanup,
   type JSX,
 } from "solid-js"
 import { useLanguage } from "@/runtime/i18n/language"
@@ -120,21 +118,21 @@ const ProjectLanguageServers: Component = () => {
   const language = useLanguage()
   const server = useServerSDK()
   const location = useWorkspaceLocation()
-  const config = useQuery(() => ({
-    queryKey: [server.scope, "settings-project-language-servers", location().directory],
-    enabled: server.connection.status() === "connected",
-    queryFn: () => server.api.config.get({ location: { directory: location().directory } }),
-  }))
-  const configured = createMemo(() =>
-    configuredLanguageServers(config.isPending || config.isError ? [] : (config.data ?? [])),
+  const data = useData()
+  const documents = () => data.location.config.list({ directory: location().directory })
+  // Data keeps loaded config current on `config.updated`; this only performs the first load and retries.
+  const [load, { refetch }] = createResource(
+    () => (server.connection.status() === "connected" ? location().directory : undefined),
+    (directory) => data.location.config.sync({ directory }),
   )
-  const empty = () => !config.isPending && !config.isError && configured().servers.length === 0
-  onCleanup(
-    server.event.on("config.updated", (event) => {
-      if (event.location && event.location.directory !== location().directory) return
-      void config.refetch()
-    }),
-  )
+  const pending = () => documents() === undefined && !load.error
+  const failed = () => documents() === undefined && !!load.error
+  const retry = () => {
+    data.location.config.invalidate({ directory: location().directory })
+    void refetch()
+  }
+  const configured = createMemo(() => configuredLanguageServers(documents() ?? []))
+  const empty = () => !pending() && !failed() && configured().servers.length === 0
 
   return (
     <div class="project-settings-extension-section">
@@ -162,17 +160,17 @@ const ProjectLanguageServers: Component = () => {
         <span>{language.t("project.settings.extensions.lsp.description")}</span>
       </div>
       <Show
-        when={!config.isPending}
+        when={!pending()}
         fallback={<p class="project-settings-extension-empty-description">{language.t("common.loading")}</p>}
       >
         <Show
-          when={!config.isError}
+          when={!failed()}
           fallback={
             <div class="project-settings-extension-section-copy" role="status">
               <span class="project-settings-extension-empty-description">
                 {language.t("project.settings.extensions.lsp.loadFailed")}
               </span>
-              <Button variant="ghost-muted" onClick={() => void config.refetch()}>
+              <Button variant="ghost-muted" onClick={retry}>
                 {language.t("project.settings.extensions.lsp.retry")}
               </Button>
             </div>
