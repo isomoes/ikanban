@@ -1,7 +1,6 @@
 import type { Component } from "solid-js"
-import { For, Show, createEffect, createMemo, createSignal } from "solid-js"
+import { For, Show, createEffect, createMemo, on } from "solid-js"
 import { createStore } from "solid-js/store"
-import { createResizeObserver } from "@solid-primitives/resize-observer"
 import { Key } from "@solid-primitives/keyed"
 import type { SessionInfo } from "@opencode/client/promise"
 import { useQuery, useQueryClient } from "@tanstack/solid-query"
@@ -10,14 +9,12 @@ import { Dialog, DialogFooter, DialogHeader, DialogTitleGroup } from "@ikanban/u
 import { Icon } from "@ikanban/ui/icon"
 import { IconButton } from "@ikanban/ui/icon-button"
 import { Menu } from "@ikanban/ui/menu"
-import { Tooltip } from "@ikanban/ui/tooltip"
 import { useDialog } from "@ikanban/ui/context/dialog"
 import { getFilename } from "@opencode/util/path"
 import { useLanguage } from "@/runtime/i18n/language"
 import { useServer } from "@/runtime/server/current"
 import { showToast } from "@/shell/notifications/toast"
 import { getRelativeTime } from "@/shell/time"
-import { sessionLabel } from "@/session/title"
 import { pathKey } from "@/workspaces/path-key"
 import { worktreeInventoryKey } from "@/workspaces/inventory"
 import { SettingsList } from "@/settings/list"
@@ -40,12 +37,9 @@ import {
 import { listAllSessions } from "@/session/list"
 import type { ServerScope } from "@/runtime/server/scope"
 import { workspaceInventoryQuery } from "./queries"
+import { DialogDeleteWorkspaces } from "./delete-dialog"
+import { WorkspaceRow, type Workspace } from "./workspace-row"
 import "@/settings/settings.css"
-
-type Workspace = {
-  directory: string
-  project: Project
-}
 
 export const SettingsWorkspaces: Component<{
   activeDirectory?: string
@@ -66,14 +60,12 @@ export const SettingsWorkspaces: Component<{
     deleting: [] as string[],
     removing: [] as string[],
   })
-  createEffect(() => {
-    if (props.projectID) {
-      setStore("project", props.projectID)
-      return
-    }
-    props.resetProjectFilter?.()
-    setStore("project", "all")
-  })
+  createEffect(
+    on(
+      () => [props.projectID, props.resetProjectFilter?.()] as const,
+      ([projectID]) => setStore("project", projectID ?? "all"),
+    ),
+  )
 
   const projectQuery = useQuery(() => ({
     ...workspaceInventoryQuery(server.ctx, queryClient, props.projectID),
@@ -413,70 +405,19 @@ export const SettingsWorkspaces: Component<{
             </div>
             <Key each={filtered()} by={(workspace) => `${workspace.project.id}:${pathKey(workspace.directory)}`}>
               {(workspace) => {
-                const linked = () => workspaceSessions(workspace())
                 const key = () => String(pathKey(workspace().directory))
-                const deleting = () => store.deleting.includes(key())
                 return (
-                  <div class="settings-workspaces-row-motion" data-removing={store.removing.includes(key())}>
-                    <div class="settings-workspaces-row">
-                      <div class="settings-workspaces-row-header">
-                        <div class="settings-workspaces-copy">
-                          <div class="settings-workspaces-main">
-                            <WorkspacePath directory={workspace().directory} />
-                          </div>
-                          <span class="settings-workspaces-meta">{sessionCount(workspace())}</span>
-                        </div>
-                        <div class="settings-workspaces-row-actions">
-                          <Show
-                            when={deleting()}
-                            fallback={
-                              <>
-                                <Show when={lastActive(workspace())}>
-                                  {(value) => (
-                                    <Tooltip
-                                      value={language.t("settings.workspaces.lastActiveSession")}
-                                      placement="top-end"
-                                    >
-                                      <span tabIndex={0} class="settings-workspaces-active">
-                                        {value()}
-                                      </span>
-                                    </Tooltip>
-                                  )}
-                                </Show>
-                                <IconButton
-                                  type="button"
-                                  variant="ghost-muted"
-                                  size="small"
-                                  aria-label={language.t("workspace.delete.confirm", {
-                                    name: getFilename(workspace().directory),
-                                  })}
-                                  disabled={!!store.transaction}
-                                  icon={<Icon name="outline-trash" size="small" />}
-                                  onClick={() => confirmDelete(workspace())}
-                                />
-                              </>
-                            }
-                          >
-                            <span class="settings-workspaces-active">{language.t("workspace.lifecycle.deleting")}</span>
-                          </Show>
-                        </div>
-                      </div>
-                      <Show when={linked().length > 0}>
-                        <div class="settings-workspaces-sessions">
-                          <For each={linked()}>
-                            {(session) => (
-                              <div class="settings-workspaces-session">
-                                <span>{sessionLabel(session)}</span>
-                                <Show when={linked().length > 1 ? sessionTime(session) : undefined}>
-                                  {(time) => <span class="settings-workspaces-session-time">{time()}</span>}
-                                </Show>
-                              </div>
-                            )}
-                          </For>
-                        </div>
-                      </Show>
-                    </div>
-                  </div>
+                  <WorkspaceRow
+                    workspace={workspace()}
+                    sessions={workspaceSessions(workspace())}
+                    count={sessionCount(workspace())}
+                    lastActive={lastActive(workspace())}
+                    sessionTime={sessionTime}
+                    deleting={store.deleting.includes(key())}
+                    removing={store.removing.includes(key())}
+                    disabled={!!store.transaction}
+                    onDelete={() => confirmDelete(workspace())}
+                  />
                 )
               }}
             </Key>
@@ -484,70 +425,6 @@ export const SettingsWorkspaces: Component<{
         </div>
       </div>
     </>
-  )
-}
-
-function WorkspacePath(props: { directory: string }) {
-  const [truncated, setTruncated] = createSignal(false)
-  const name = () => getFilename(props.directory)
-
-  return (
-    <Tooltip
-      value={props.directory}
-      placement="top-start"
-      disabled={!truncated()}
-      contentClass="max-w-[calc(100vw-32px)] break-all"
-    >
-      <span
-        ref={(element) => createResizeObserver(element, () => setTruncated(element.scrollWidth > element.clientWidth))}
-        tabIndex={truncated() ? 0 : undefined}
-        dir="ltr"
-        aria-label={props.directory}
-        class="settings-workspaces-path"
-      >
-        <span>{props.directory.slice(0, -name().length)}</span>
-        <span class="settings-workspaces-path-name">{name()}</span>
-      </span>
-    </Tooltip>
-  )
-}
-
-function DialogDeleteWorkspaces(props: {
-  title: string
-  confirmation: string
-  warning: string
-  onDelete: () => Promise<void>
-}) {
-  const dialog = useDialog()
-  const language = useLanguage()
-  const remove = () => {
-    const deleting = props.onDelete()
-    dialog.close()
-    void deleting
-  }
-
-  return (
-    <Dialog fit>
-      <DialogHeader>
-        <DialogTitleGroup
-          title={props.title}
-          description={
-            <div class="flex flex-col gap-2">
-              <div>{props.confirmation}</div>
-              <div>{props.warning}</div>
-            </div>
-          }
-        />
-      </DialogHeader>
-      <DialogFooter>
-        <Button type="button" variant="neutral" onClick={() => dialog.close()}>
-          {language.t("common.cancel")}
-        </Button>
-        <Button type="button" variant="danger" onClick={remove}>
-          {language.t("settings.workspaces.delete.button")}
-        </Button>
-      </DialogFooter>
-    </Dialog>
   )
 }
 

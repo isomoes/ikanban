@@ -10,7 +10,6 @@ import {
   Suspense,
   createEffect,
   createMemo,
-  createSignal,
   lazy,
   onCleanup,
   onMount,
@@ -48,23 +47,17 @@ export const DialogServer: Component<{
       props.onSave?.(server)
       dialog.close()
     },
+    onClose: () => dialog.close(),
   })
-  const [opened, setOpened] = createSignal(false)
 
   onMount(() => {
     if (props.mode === "add") form.start.add()
     if (props.mode === "edit" && props.server) form.start.edit(props.server)
-    setOpened(true)
+    if (!form.state.open()) dialog.close()
   })
 
   onCleanup(() => {
     form.reset()
-  })
-
-  createEffect(() => {
-    if (!opened()) return
-    if (form.state.open()) return
-    dialog.close()
   })
 
   const keyDown = (event: KeyboardEvent) => {
@@ -199,7 +192,9 @@ export const DialogServer: Component<{
   )
 }
 
-function createFormController(options: { onSelect?: (server: ServerConnection.Http) => void } = {}) {
+function createFormController(
+  options: { onSelect?: (server: ServerConnection.Http) => void; onClose?: () => void } = {},
+) {
   const server = useServers()
   const tabs = useTabs()
   const global = useGlobal()
@@ -230,6 +225,10 @@ function createFormController(options: { onSelect?: (server: ServerConnection.Ht
       status: undefined,
     })
   }
+  const close = () => {
+    reset()
+    options.onClose?.()
+  }
   const allServers = () => {
     return server.list
   }
@@ -248,7 +247,7 @@ function createFormController(options: { onSelect?: (server: ServerConnection.Ht
     mutationFn: async () => {
       const normalized = normalizeServerUrl(store.values.url)
       if (!normalized) {
-        reset()
+        close()
         return
       }
 
@@ -262,7 +261,7 @@ function createFormController(options: { onSelect?: (server: ServerConnection.Ht
         name === original.displayName &&
         password === original.http.password
       ) {
-        reset()
+        close()
         return
       }
 
@@ -344,7 +343,7 @@ function createFormController(options: { onSelect?: (server: ServerConnection.Ht
   createEffect(() => {
     if (store.mode !== "edit") return
     if (editing()) return
-    reset()
+    close()
   })
 
   return {
