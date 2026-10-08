@@ -9,7 +9,6 @@ import { useLocation, useNavigate, useParams } from "@solidjs/router"
 import { usePlatform } from "@/runtime/platform/platform"
 import { uuid } from "@/runtime/persistence/uuid"
 import { SessionTabsRemovedDetail } from "@/shell/titlebar/session-events"
-import { sessionHref } from "@/shell/routes/session"
 import { createTabMemory } from "./memory"
 import { nextTabAfterClose, pushClosedTab, removeClosedTabs, takeClosedTab, type ClosedTab } from "./closed"
 import {
@@ -21,47 +20,10 @@ import {
 import { appendPrompt, promptLength } from "@/composer/prompt-parts"
 import { TabStorage } from "./schema"
 import { useCurrentRoute } from "@/shell/state/layout"
+import { createTabPanes } from "./panes"
+import { draftHref, tabHref, tabKey, type DraftTab, type PendingSession, type SessionTab, type Tab } from "./tab"
 
-export type SessionTab = typeof TabStorage.Session.Type
-export type DraftTab = typeof TabStorage.Draft.Type
-export type Tab = typeof TabStorage.Tab.Type
-
-export type PendingSession = {
-  draft: DraftTab
-  message: SessionMessageUser
-  selection: ComposerSelection
-  composer: ComposerState
-}
-
-export type TabInfo = typeof TabStorage.Info.Type
-
-export type TabPane = "terminal" | "review"
-export type TabPaneSize = "terminalHeight" | "sessionWidth"
-
-export const draftHref = (draftID: string) => `/new-session?draftId=${encodeURIComponent(draftID)}`
-
-export const tabHref = (tab: Tab) =>
-  tab.type === "draft" ? draftHref(tab.draftID) : sessionHref(tab.server, tab.routeSessionId ?? tab.sessionId)
-
-export const tabKey = (tab: Tab) =>
-  tab.type === "draft" ? `draft:${tab.draftID}` : `${tab.server}\n${sessionHref(tab.server, tab.sessionId)}`
-
-export function sessionHasOpenTab(tabs: Tab[], server: ServerConnection.Key, session: SessionInfo) {
-  return sessionIDHasOpenTab(tabs, server, session.id)
-}
-
-export function findSessionTab(tabs: Tab[], server: ServerConnection.Key, sessionID: string) {
-  return tabs.find(
-    (tab) =>
-      tab.type === "session" &&
-      tab.server === server &&
-      (tab.sessionId === sessionID || tab.routeSessionId === sessionID),
-  )
-}
-
-export function sessionIDHasOpenTab(tabs: Tab[], server: ServerConnection.Key, sessionID: string) {
-  return !!findSessionTab(tabs, server, sessionID)
-}
+export * from "./tab"
 
 export const { use: useTabs, provider: TabsProvider } = createSimpleContext({
   name: "Tabs",
@@ -501,36 +463,7 @@ export const { use: useTabs, provider: TabsProvider } = createSimpleContext({
       stateValue<T>(tab: Tab, name: string) {
         return memory.get<T>(tabKey(tab), name)
       },
-      pane(tab: Tab | undefined, pane: TabPane) {
-        if (!tab) return false
-        return panes[tabKey(tab)]?.[pane] ?? false
-      },
-      setPane(tab: Tab | undefined, pane: TabPane, opened: boolean) {
-        if (!tab) return
-        const key = tabKey(tab)
-        const current = panes[key]
-        if (current?.[pane] === opened) return
-        if (!current) {
-          setPanes(key, { [pane]: opened })
-          return
-        }
-        setPanes(key, pane, opened)
-      },
-      paneSize(tab: Tab | undefined, size: TabPaneSize) {
-        if (!tab) return
-        return panes[tabKey(tab)]?.[size]
-      },
-      setPaneSize(tab: Tab | undefined, size: TabPaneSize, value: number) {
-        if (!tab) return
-        const key = tabKey(tab)
-        const current = panes[key]
-        if (current?.[size] === value) return
-        if (!current) {
-          setPanes(key, { [size]: value })
-          return
-        }
-        setPanes(key, size, value)
-      },
+      ...createTabPanes(panes, setPanes),
     }
 
     return { ...actions, store, info, ready, infoReady, recentReady, panesReady }
