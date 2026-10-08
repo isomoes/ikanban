@@ -3,7 +3,7 @@ import { useSettingsSurface } from "@/settings/surface"
 import { useTabs, type DraftTab } from "@/shell/tabs/tabs"
 import { useSettingsServers } from "@/settings/servers/inventory"
 import { useSearchParams } from "@solidjs/router"
-import { createEffect, createMemo, createResource, untrack } from "solid-js"
+import { createEffect, createMemo, createResource, on } from "solid-js"
 import { createComposerModel } from "@/composer/model"
 import { useComposerCommands } from "@/composer/commands"
 import { createNewSessionComposerAdapter } from "./composer-adapter"
@@ -69,15 +69,14 @@ export default function NewSessionPage(props: { draftId: string }) {
     if (!composer.ready()) return
     model.restoreFocus()
   })
-  createEffect(() => {
-    if (!composer.ready()) return
-    untrack(() => {
+  createEffect(
+    on(composer.ready, (ready) => {
       const text = search.prompt
-      if (!text) return
+      if (!ready || !text) return
       composer.adapter.state.set([{ type: "text", content: text, start: 0, end: text.length }], text.length)
       setSearch({ ...search, prompt: undefined })
-    })
-  })
+    }),
+  )
   const ready = Promise.resolve()
   const [suspendUntilPromptReady] = createResource(
     () => composer.ready.promise ?? ready,
