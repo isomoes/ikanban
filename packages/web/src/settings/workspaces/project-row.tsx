@@ -57,7 +57,7 @@ export function SettingsProjectRow(props: {
     const saved = await (props.project.id && props.project.id !== "global"
       ? context.sdk.api.project
           .update({ projectID: props.project.id, name: value })
-          .then((project) => context.sync.project.update(project))
+          .then(() => context.sync.project.update())
       : Promise.resolve(context.sync.project.meta(props.project.worktree, { name: value }))
     )
       .then(() => true)

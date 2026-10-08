@@ -1,5 +1,12 @@
-import type { AgentListOutput, ModelListOutput, ProviderListOutput } from "@opencode/client/promise"
-import type { Agent, Project, Provider, ProviderListResponse } from "@/runtime/server/types"
+import type {
+  AgentListOutput,
+  LocationPublicInfo,
+  ModelListOutput,
+  ProviderListOutput,
+  WorktreeDirectory,
+} from "@opencode/client/promise"
+import type { Agent, Path, Project, Provider, ProviderListResponse } from "@/runtime/server/types"
+import { withWorktreeInventory } from "@/workspaces/inventory"
 import type { Project as CurrentProject } from "@opencode/client/promise"
 import { unwrap } from "solid-js/store"
 export { pathKey as directoryKey, type PathKey as DirectoryKey } from "@/workspaces/path-key"
@@ -138,11 +145,24 @@ export function normalizeProjectInfo(project: Project | CurrentProject): Project
   }
 }
 
-export function updateProjectInfo(project: Project, update: CurrentProject): Project {
+export function projectList(
+  projects: readonly CurrentProject[],
+  inventory: (projectID: string) => readonly WorktreeDirectory[] | undefined,
+): Project[] {
+  return projects
+    .filter((project) => !!project?.id)
+    .map(normalizeProjectInfo)
+    .filter((project) => !!project.worktree && !project.worktree.includes("opencode-test"))
+    .sort((a, b) => cmp(a.id, b.id))
+    .map((project) => withWorktreeInventory(project, inventory(project.id)))
+}
+
+export function locationPath(location: Pick<LocationPublicInfo, "directory" | "project"> | undefined): Path {
   return {
-    ...project,
-    ...update,
-    worktree: update.canonical,
-    worktrees: project.worktrees,
+    state: "",
+    config: "",
+    worktree: location?.project.directory ?? "",
+    directory: location?.directory ?? "",
+    home: "",
   }
 }

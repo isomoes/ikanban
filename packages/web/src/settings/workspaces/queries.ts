@@ -1,22 +1,19 @@
-import { queryOptions, useQueryClient, type QueryClient } from "@tanstack/solid-query"
+import { queryOptions, useQueryClient } from "@tanstack/solid-query"
 import type { Accessor } from "solid-js"
-import type { ServerSDK } from "@/runtime/server/client"
 import type { ServerConnection } from "@/runtime/server/registry"
 import { useServerCtx, type ServerCtx } from "@/runtime/server/runtime"
 import { normalizeProjectInfo } from "@/runtime/server/global-sync/utils"
 import { worktreeInventoryViewKey } from "@/workspaces/inventory"
 
-function workspaceProjectsQuery(sdk: ServerSDK) {
-  return queryOptions({
-    queryKey: [sdk.scope, "settings-workspace-project-metadata"],
-    queryFn: () => sdk.api.project.list(),
-    staleTime: 30_000,
-  })
+// Projects are owned by `Data`; this waits for the first load, or reloads when the view needs fresh metadata.
+async function loadProjects(context: ServerCtx, fresh = false) {
+  if (fresh) context.data.project.invalidate()
+  await context.data.project.sync()
+  return context.data.project.list()
 }
 
 export function workspaceInventoryQuery(
   context: ServerCtx,
-  client: QueryClient,
   projectID?: string,
   shouldRefresh = projectID !== undefined,
 ) {
@@ -24,7 +21,7 @@ export function workspaceInventoryQuery(
     queryKey: worktreeInventoryViewKey(context.sdk.scope, projectID),
     queryFn: async () =>
       Promise.all(
-        (await client.fetchQuery(workspaceProjectsQuery(context.sdk)))
+        (await loadProjects(context, true))
           .filter((project) => projectID === undefined || project.id === projectID)
           .map(async (project) => {
             const worktrees = (await context.sync.worktrees.list(project.id)) ?? [
@@ -50,10 +47,10 @@ export function useWorkspacesPrefetch(
     if (!current || current.sdk.connection.status() !== "connected") return
     const project = projectID?.()
     if (project) {
-      void client.prefetchQuery(workspaceInventoryQuery(current, client, project, false))
+      void client.prefetchQuery(workspaceInventoryQuery(current, project, false))
       return
     }
     // Server-level hover warms metadata without booting every project's Location.
-    void client.prefetchQuery(workspaceProjectsQuery(current.sdk))
+    void loadProjects(current).catch(() => undefined)
   }
 }

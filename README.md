@@ -21,7 +21,8 @@ iKanban 是面向 **OpenCode V2** 的独立静态前端，直接采用上游共�
 - 使用原生 V2 类型、`@opencode/client` 及其 Solid 数据层，替换旧 v0.3.18 UI 和适配层。
 - 提供商设置区分 OAuth 与 API 密钥，并显示服务器报告的认证失败。
 - 保留上游项目 / 会话导航、消息时间线、输入框、文件与 Diff、终端、模型选择和设置；
-  桌面专属功能由上游 Web 平台能力判断控制。
+  iKanban 仅支持 Web / PWA，已移除上游桌面专属功能（更新器、SSH、WSL、原生浏览器面板）。
+- 服务器数据的分层方式见 [docs/data-layer.md](./docs/data-layer.md)。
 
 会话、执行、工具、模型供应商及其凭据均由独立 OpenCode 后端管理。
 

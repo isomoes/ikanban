@@ -1,5 +1,5 @@
 import type { Component } from "solid-js"
-import { For, Show, createEffect, createMemo, on } from "solid-js"
+import { For, Show, createEffect, createMemo, on, onCleanup } from "solid-js"
 import { createStore } from "solid-js/store"
 import { Key } from "@solid-primitives/keyed"
 import type { SessionInfo } from "@opencode/client/promise"
@@ -16,7 +16,6 @@ import { useServer } from "@/runtime/server/current"
 import { showToast } from "@/shell/notifications/toast"
 import { getRelativeTime } from "@/shell/time"
 import { pathKey } from "@/workspaces/path-key"
-import { worktreeInventoryKey } from "@/workspaces/inventory"
 import { SettingsList } from "@/settings/list"
 import { useTabs } from "@/shell/tabs/tabs"
 import { usePlatform } from "@/runtime/platform/platform"
@@ -68,10 +67,15 @@ export const SettingsWorkspaces: Component<{
   )
 
   const projectQuery = useQuery(() => ({
-    ...workspaceInventoryQuery(server.ctx, queryClient, props.projectID),
+    ...workspaceInventoryQuery(server.ctx, props.projectID),
     enabled: serverSDK.connection.status() === "connected",
     refetchOnMount: true,
   }))
+  onCleanup(
+    serverSDK.event.on("worktree.updated", () => {
+      void queryClient.invalidateQueries({ queryKey: [serverSDK.scope, "settings-workspace-inventory"] })
+    }),
+  )
   const inventory = createMemo(() => (projectQuery.isPending ? [] : (projectQuery.data ?? [])))
   const workspaces = createMemo(() => workspaceInventory(inventory()))
   const projects = createMemo(() => inventory().filter((project) => managedWorkspaceDirectories(project).length > 0))
@@ -234,9 +238,6 @@ export const SettingsWorkspaces: Component<{
         })
       })
       clearWorkspaceTerminals(workspace.directory, platform, context.sdk.scope)
-      await queryClient.invalidateQueries({
-        queryKey: worktreeInventoryKey(context.sdk.scope, workspace.project.id),
-      })
       await queryClient.invalidateQueries({ queryKey: [context.sdk.scope, "settings-workspace-inventory"] })
     } finally {
       setStore("deleting", (items) => items.filter((item) => item !== key))

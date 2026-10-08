@@ -23,32 +23,12 @@ describe("pickDirectoriesToEvict", () => {
 })
 
 describe("canDisposeDirectory", () => {
-  test("rejects pinned or inflight directories", () => {
+  test("rejects pinned directories", () => {
     expect(
       canDisposeDirectory({
         directory: "dir",
         hasStore: true,
         pinned: true,
-        booting: false,
-        loadingSessions: false,
-      }),
-    ).toBe(false)
-    expect(
-      canDisposeDirectory({
-        directory: "dir",
-        hasStore: true,
-        pinned: false,
-        booting: true,
-        loadingSessions: false,
-      }),
-    ).toBe(false)
-    expect(
-      canDisposeDirectory({
-        directory: "dir",
-        hasStore: true,
-        pinned: false,
-        booting: false,
-        loadingSessions: true,
       }),
     ).toBe(false)
   })
@@ -59,8 +39,6 @@ describe("canDisposeDirectory", () => {
         directory: "dir",
         hasStore: true,
         pinned: false,
-        booting: false,
-        loadingSessions: false,
       }),
     ).toBe(true)
   })

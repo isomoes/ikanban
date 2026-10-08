@@ -14,8 +14,9 @@ The frontend is imported from OpenCode's `v2` shared desktop/web application.
 - Native V2 types, `@opencode/client`, and its Solid data layer replace the old
   v0.3.18 UI and adapters.
 - The upstream project/session navigation, timeline, composer, file and diff views,
-  terminal, model selection, and settings are included. Desktop-only features are
-  gated by the upstream web platform's capabilities.
+  terminal, model selection, and settings are included. iKanban is web/PWA only;
+  upstream desktop-only features (updater, SSH, WSL, native browser pane) are removed.
+- Server data follows the layering described in [docs/data-layer.md](./docs/data-layer.md).
 
 An independent OpenCode backend owns sessions, execution, tools, providers, and
 provider credentials.

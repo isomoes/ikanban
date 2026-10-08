@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import { Schema } from "effect"
-import { IconState, ModelState, ProjectState, VcsState, serverState } from "./persistence"
+import { IconState, ModelState, ProjectState, serverState } from "./persistence"
 import { createRoot } from "solid-js"
 import { isServer } from "solid-js/web"
 import { Persist, persisted } from "@/runtime/persistence/storage"
@@ -161,17 +161,6 @@ describe("model persistence schema", () => {
 })
 
 describe("directory cache schemas", () => {
-  test("defaults missing and malformed VCS caches but retains optional branch metadata", () => {
-    const decode = Schema.decodeUnknownSync(Persistence.withInitial(VcsState, { value: undefined }))
-    expect(decode({})).toEqual({ value: undefined })
-    expect(decode({ value: null })).toEqual({ value: undefined })
-    expect(decode({ value: { branch: 1 } })).toEqual({ value: undefined })
-    expect(decode({ value: { default_branch: "main" } })).toEqual({ value: { default_branch: "main" } })
-    const state = decode({ value: { branch: "feature", default_branch: "main", obsolete: true } })
-    expect(state).toEqual({ value: { branch: "feature", default_branch: "main" } })
-    expect(Schema.encodeSync(VcsState)(state)).toEqual(state)
-  })
-
   test("validates project name, icon overrides and startup commands", () => {
     const decode = Schema.decodeUnknownSync(Persistence.withInitial(ProjectState, { value: undefined }))
     expect(decode({})).toEqual({ value: undefined })

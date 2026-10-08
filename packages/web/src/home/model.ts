@@ -98,7 +98,7 @@ export function createHomeController() {
               // TODO: Initialize empty directories when V2 exposes a native Git init API.
               return ctx.sdk.api.location.get({ location }).then((result) => result.project)
             })
-            .then((project) => ctx.sync.child(item, { bootstrap: false })[1]("project", project.id))
+            .then((project) => ctx.sync.child(item)[1]("project", project.id))
             .catch(() => undefined)
           ctx.projects.open(item)
         })

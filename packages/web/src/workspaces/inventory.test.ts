@@ -1,19 +1,13 @@
 import { describe, expect, test } from "bun:test"
-import { QueryClient } from "@tanstack/solid-query"
 import type { WorktreeDirectory } from "@opencode/client/promise"
-import { createWorktreeInventory, withWorktreeInventory, worktreeInventoryKey } from "./inventory"
-import { ServerScope } from "@/runtime/server/scope"
-import { normalizeProjectInfo, updateProjectInfo } from "@/runtime/server/global-sync/utils"
+import { createWorktreeInventory, withWorktreeInventory } from "./inventory"
+import { normalizeProjectInfo } from "@/runtime/server/global-sync/utils"
 
 function setup(list: (directory: string) => Promise<WorktreeDirectory[]>) {
-  const client = new QueryClient()
   const refreshed = Promise.withResolvers<void>()
   const refreshes: string[] = []
   const calls: string[] = []
-  const updates: Array<[string, WorktreeDirectory[]]> = []
   const inventory = createWorktreeInventory({
-    scope: ServerScope.local,
-    queryClient: client,
     api: () => ({
       list: (input) => {
         const directory = input.projectID
@@ -25,15 +19,12 @@ function setup(list: (directory: string) => Promise<WorktreeDirectory[]>) {
         return refreshed.promise
       },
     }),
-    updated: (directory, items) => {
-      updates.push([directory, items])
-    },
   })
-  return { client, calls, updates, inventory, refreshed, refreshes }
+  return { calls, inventory, refreshed, refreshes }
 }
 
 describe("createWorktreeInventory", () => {
-  test("lists a project, shares in-flight work, and publishes each result", async () => {
+  test("lists a project, shares in-flight work, and stores each result", async () => {
     const gate = Promise.withResolvers<void>()
     const setupResult = setup(async (directory) => {
       await gate.promise
@@ -42,18 +33,14 @@ describe("createWorktreeInventory", () => {
     const first = setupResult.inventory.list("/repo")
     const second = setupResult.inventory.list("/repo")
     expect(setupResult.calls).toEqual(["/repo"])
+    expect(setupResult.inventory.cached("/repo")).toBeUndefined()
     gate.resolve()
     expect(await first).toHaveLength(2)
     expect(await second).toHaveLength(2)
+    expect(setupResult.inventory.cached("/repo")).toHaveLength(2)
     await setupResult.inventory.list("/repo")
     expect(setupResult.calls).toEqual(["/repo", "/repo"])
-    expect(setupResult.updates).toEqual([
-      ["/repo", [{ directory: "/repo" }, { directory: "/repo/feature", strategy: "git" }]],
-      ["/repo", [{ directory: "/repo" }, { directory: "/repo/feature", strategy: "git" }]],
-    ])
-    expect(setupResult.inventory.cached("/repo")).toHaveLength(2)
     expect(setupResult.refreshes).toEqual([])
-    setupResult.client.clear()
   })
 
   test("list reads saved inventory without discovery", async () => {
@@ -61,7 +48,6 @@ describe("createWorktreeInventory", () => {
     await setupResult.inventory.list("/opened")
     expect(setupResult.calls).toEqual(["/opened"])
     expect(setupResult.refreshes).toEqual([])
-    setupResult.client.clear()
   })
 
   test("a failed list is not cached and never rejects the caller", async () => {
@@ -75,15 +61,6 @@ describe("createWorktreeInventory", () => {
     fail = false
     expect(await setupResult.inventory.list("/repo")).toEqual([{ directory: "/repo" }])
     expect(setupResult.calls).toEqual(["/repo", "/repo"])
-    setupResult.client.clear()
-  })
-
-  test("keys are partitioned by server and use opaque project IDs", () => {
-    const remote = "https://remote.example" as typeof ServerScope.local
-    expect(worktreeInventoryKey(ServerScope.local, "project")).not.toEqual(
-      worktreeInventoryKey(ServerScope.local, "project/"),
-    )
-    expect(worktreeInventoryKey(ServerScope.local, "/repo")).not.toEqual(worktreeInventoryKey(remote, "/repo"))
   })
 
   test("refresh discovers without changing cached inventory until the next list", async () => {
@@ -98,7 +75,7 @@ describe("createWorktreeInventory", () => {
     expect(result.calls).toEqual(["project"])
     expect(result.refreshes).toEqual(["project"])
     expect(await result.inventory.list("project")).toEqual(rows)
-    result.client.clear()
+    expect(result.inventory.cached("project")).toEqual(rows)
   })
 })
 
@@ -128,7 +105,7 @@ describe("withWorktreeInventory", () => {
     const project = normalizeProjectInfo(metadata)
     expect(withWorktreeInventory(project, undefined)).toBe(project)
     const cached = [{ directory: "/repo" }, { directory: "/repo/feature", strategy: "git" }]
-    const updated = updateProjectInfo(withWorktreeInventory(project, cached), { ...metadata, name: "After" })
+    const updated = normalizeProjectInfo({ ...metadata, name: "After" })
     expect(withWorktreeInventory(updated, cached)).toMatchObject({ name: "After", sandboxes: ["/repo/feature"] })
   })
 })

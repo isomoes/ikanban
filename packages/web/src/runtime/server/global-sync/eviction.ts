@@ -22,7 +22,5 @@ export function canDisposeDirectory(input: DisposeCheck) {
   if (!input.directory) return false
   if (!input.hasStore) return false
   if (input.pinned) return false
-  if (input.booting) return false
-  if (input.loadingSessions) return false
   return true
 }

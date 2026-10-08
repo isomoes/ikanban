@@ -39,8 +39,8 @@ export function createEditProjectModel(props: { project: LocalProject; server: S
     queue = queue
       .then(async () => {
         if (props.project.id && props.project.id !== "global") {
-          const project = await serverCtx().sdk.api.project.update({ projectID: props.project.id, ...patch })
-          serverCtx().sync.project.update(project)
+          await serverCtx().sdk.api.project.update({ projectID: props.project.id, ...patch })
+          await serverCtx().sync.project.update()
           return
         }
         serverCtx().sync.project.meta(props.project.worktree, patch)

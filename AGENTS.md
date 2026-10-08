@@ -3,6 +3,10 @@
 - Base the frontend on the OpenCode `v2` branch's shared desktop/web application.
   `packages/web` is the only application; `packages/ui` and `packages/session-ui`
   contain its upstream shared components.
+- Web/PWA only: desktop support is not planned; don't reintroduce desktop-only
+  platform capabilities (updater, SSH, WSL, native browser pane, etc.).
+- Follow `docs/data-layer.md` for server data: `Data` from `@opencode/client/solid`
+  for covered resources, `solid-query` only for uncovered reads and mutations.
 - Use native OpenCode V2 types and `@opencode/client` (including its Solid data
   layer). Follow the upstream server connection and authentication implementation.
 - Keep backend sessions, execution, providers, and credentials owned by OpenCode.
