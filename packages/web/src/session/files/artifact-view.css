@@ -5,7 +5,7 @@
 
 [data-slot="artifact-toolbar"] [data-slot="segmented-control-v2-item"] {
   flex: 0 0 auto;
-  padding: 0 14px;
+  padding: 0 10px;
 }
 
 /* Shrink-wrapped segments round the label box down a fraction; the ellipsis overflow then clips glyph edges. */

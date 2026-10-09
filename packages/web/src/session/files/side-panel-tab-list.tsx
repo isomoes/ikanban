@@ -34,7 +34,7 @@ export function SessionSideTabList(props: {
   const closeTabKeybind = createMemo(() => command.keybindParts("file.close"))
 
   return (
-    <Tabs.List ref={props.listRef}>
+    <Tabs.List ref={props.listRef} class="min-w-0 flex-1">
       <div class="session-review-v2-sidebar-toggle-slot h-full shrink-0 sticky start-0 z-10 flex items-center justify-center bg-v2-background-bg-base">
         {props.sidebarToggle}
       </div>

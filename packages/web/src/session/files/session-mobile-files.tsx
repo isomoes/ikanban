@@ -1,13 +1,14 @@
 import { Button } from "@ikanban/ui/button"
 import { Tabs } from "@ikanban/ui/tabs"
 import { getFilename } from "@opencode/util/path"
-import { createMemo, For } from "solid-js"
+import { createMemo, For, Show } from "solid-js"
 import { createStore } from "solid-js/store"
 import { useLanguage } from "@/runtime/i18n/language"
 import { useSessionLayout } from "@/session/session-layout"
 import { createSessionTabs, SESSION_OPEN_FILE_TAB } from "@/session/helpers"
 import { useFile } from "@/workspaces/files/model"
 import { SessionFileBrowserTab } from "./session-file-browser-tab"
+import { SessionFileRefresh } from "./file-refresh"
 import type { Kind } from "./file-tree-v2"
 import "./session-mobile-files.css"
 
@@ -32,7 +33,7 @@ export function SessionMobileFiles() {
 
   return (
     <div data-slot="session-mobile-files" data-browsing={browsing()} class="flex h-full min-h-0 flex-col">
-      <div data-slot="session-mobile-files-header" class="relative flex h-10 shrink-0 items-center">
+      <div data-slot="session-mobile-files-header" class="relative flex h-11 min-w-0 shrink-0 items-center">
         <Button
           size="small"
           variant="ghost"
@@ -53,7 +54,7 @@ export function SessionMobileFiles() {
           variant="line"
           class="min-w-0 flex-1 !h-auto"
         >
-          <Tabs.List aria-label={language.t("session.files.openTabs")} class="!h-10 !px-0 overflow-x-auto">
+          <Tabs.List aria-label={language.t("session.files.openTabs")} class="!h-11 !px-0 overflow-x-auto">
             <For each={tabs.openedTabs()}>
               {(tab) => (
                 <Tabs.Trigger
@@ -76,6 +77,11 @@ export function SessionMobileFiles() {
             </For>
           </Tabs.List>
         </Tabs>
+        <Show when={!browsing()}>
+          <div data-slot="session-mobile-file-actions" class="flex h-full shrink-0 items-center pe-1">
+            <SessionFileRefresh path={active()} />
+          </div>
+        </Show>
       </div>
       <div class="min-h-0 flex-1">
         <SessionFileBrowserTab

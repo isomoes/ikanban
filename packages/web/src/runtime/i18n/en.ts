@@ -481,6 +481,7 @@ export const dict = {
   "toast.file.listFailed.title": "Failed to list files",
   "file.view.preview": "Preview",
   "file.view.source": "Source",
+  "file.view.refresh": "Refresh file",
   "file.view.binary": "Binary file · {{size}}",
   "file.view.table.rows.one": "{{count}} row",
   "file.view.table.rows.other": "{{count}} rows",

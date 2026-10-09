@@ -11,6 +11,7 @@ import { Mark } from "@ikanban/ui/logo"
 import type { FileDiffInfo } from "@opencode/client/promise"
 
 import { SessionContextTab } from "@/session/files/session-context-tab"
+import { SessionFileRefresh } from "@/session/files/file-refresh"
 import { fileTreeKinds } from "@/session/files/side-panel-kinds"
 import { SessionSideFileTree, FILE_TREE_WIDTH_MIN } from "@/session/files/side-panel-file-tree"
 import { SessionSideTabList, reviewTabID, reviewTabPanelID } from "@/session/files/side-panel-tab-list"
@@ -288,6 +289,9 @@ export function SessionSidePanel(props: {
                           onPointerDown={(event) => event.stopPropagation()}
                           onClick={(event) => event.stopPropagation()}
                         >
+                          <SessionFileRefresh path={file.pathFromTab(activeTab() ?? "")} />
+                          {/* The header mask and floating panel toggle occupy the final 40px.
+                              Keep that space after the refresh button, never in its slot. */}
                           <Show when={reviewVisible()}>
                             <div class="size-7 shrink-0" aria-hidden />
                           </Show>

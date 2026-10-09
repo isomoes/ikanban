@@ -18,6 +18,7 @@ import {
   type ArtifactKind,
 } from "@/workspaces/files/artifact"
 import { useArtifactOpener } from "@/session/files/open-artifact"
+import { formatBytes } from "@/workspaces/files/size"
 import "./artifact-view.css"
 
 type ArtifactMode = "preview" | "source"
@@ -40,7 +41,12 @@ const previewableKinds = new Set<ArtifactKind>(["svg", "html", "markdown", "merm
  * Renders a loaded non-text file: media, documents, and data get a dedicated viewer with a toolbar;
  * previewable text kinds can switch to `source`, which the host supplies (its code view).
  */
-export function ArtifactView(props: { path: string; content: FileContent; cacheKey?: string; source: JSX.Element }) {
+export function ArtifactView(props: {
+  path: string
+  content: FileContent
+  cacheKey?: string
+  source: JSX.Element
+}) {
   const language = useLanguage()
   const [state, setState] = createStore({
     mode: "preview" as ArtifactMode,
@@ -77,7 +83,6 @@ export function ArtifactView(props: { path: string; content: FileContent; cacheK
       info.duration ? formatDuration(info.duration) : undefined,
       info.rows !== undefined ? language.plural("file.view.table.rows", Math.max(0, info.rows - 1)) : undefined,
       info.columns !== undefined ? language.plural("file.view.table.columns", info.columns) : undefined,
-      formatBytes(language.intl(), contentBytes(props.content)),
     ].filter((item): item is string => !!item)
   })
 
@@ -95,11 +100,13 @@ export function ArtifactView(props: { path: string; content: FileContent; cacheK
 
   return (
     <>
-      <ArtifactToolbar
-        mode={state.mode}
-        onModeChange={previewable() ? (mode) => setState("mode", mode) : undefined}
-        meta={meta()}
-      />
+      <Show when={previewable() || meta().length > 0}>
+        <ArtifactToolbar
+          mode={state.mode}
+          onModeChange={previewable() ? (mode) => setState("mode", mode) : undefined}
+          meta={meta()}
+        />
+      </Show>
       <Show when={!previewable() || state.mode === "preview"} fallback={props.source}>
         <Switch>
           <Match when={kind() === "image" || kind() === "svg"}>
@@ -130,19 +137,6 @@ export function ArtifactView(props: { path: string; content: FileContent; cacheK
   )
 }
 
-function formatBytes(locale: string, bytes: number) {
-  const units = ["byte", "kilobyte", "megabyte", "gigabyte"] as const
-  const index = Math.min(units.length - 1, bytes > 0 ? Math.floor(Math.log10(bytes) / 3) : 0)
-  const value = bytes / 1000 ** index
-  return new Intl.NumberFormat(locale, {
-    style: "unit",
-    unit: units[index],
-    // "short" bytes render as the singular "byte"; the long form pluralizes correctly.
-    unitDisplay: index === 0 ? "long" : "short",
-    maximumFractionDigits: value >= 100 || index === 0 ? 0 : 1,
-  }).format(value)
-}
-
 function formatDuration(seconds: number) {
   const total = Math.round(seconds)
   const minutes = Math.floor(total / 60)
@@ -156,7 +150,7 @@ function ArtifactToolbar(props: {
 }) {
   const language = useLanguage()
   return (
-    <div data-slot="artifact-toolbar" class="flex h-10 shrink-0 items-center gap-3 px-4">
+    <div data-slot="artifact-toolbar" class="flex h-10 shrink-0 items-center gap-2 px-3">
       <Show when={props.onModeChange}>
         <SegmentedControl
           value={props.mode ?? "preview"}
@@ -168,7 +162,7 @@ function ArtifactToolbar(props: {
           <SegmentedControlItem value="source">{language.t("file.view.source")}</SegmentedControlItem>
         </SegmentedControl>
       </Show>
-      <div class="ms-auto flex min-w-0 items-center gap-3">
+      <div class="ms-auto flex min-w-0 items-center gap-2">
         <div class="flex min-w-0 items-center gap-2 text-12-regular text-text-weak">
           <For each={props.meta}>
             {(item, index) => (

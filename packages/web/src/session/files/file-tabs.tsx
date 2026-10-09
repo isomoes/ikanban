@@ -454,7 +454,7 @@ export function SessionFileView(props: SessionFileViewProps) {
   )
 
   const content = () => (
-    <div class="mt-3 relative h-full min-h-0 flex flex-col">
+    <div class="relative h-full min-h-0 flex flex-col" classList={{ "mt-3": !artifact() }}>
       <Switch>
         <Match when={state()?.loaded ? state()?.content : undefined}>
           {(value) => (

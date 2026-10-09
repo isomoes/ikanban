@@ -20,6 +20,25 @@ describe("shouldShowFileTree", () => {
 })
 
 describe("createOpenReviewFile", () => {
+  test("allows cached PDF content on reopen", () => {
+    const options: unknown[] = []
+    const open = createOpenReviewFile({
+      showAllFiles: () => undefined,
+      tabForPath: (path) => `file://${path}`,
+      openTab: () => undefined,
+      setActive: () => undefined,
+      loadFile: (...args) => options.push(args),
+    })
+
+    open("report.pdf")
+    open("report.pdf")
+
+    expect(options).toEqual([
+      ["report.pdf"],
+      ["report.pdf"],
+    ])
+  })
+
   test("opens and loads selected review file", () => {
     const calls: string[] = []
     const openReviewFile = createOpenReviewFile({
@@ -62,6 +81,28 @@ describe("createOpenReviewFile", () => {
 })
 
 describe("createOpenSessionFileTab", () => {
+  test("allows cached PDF content on reopen", () => {
+    const options: unknown[] = []
+    const open = createOpenSessionFileTab({
+      normalizeTab: (tab) => tab,
+      openTab: () => undefined,
+      pathFromTab: (tab) => tab.slice("file://".length),
+      loadFile: (...args) => {
+        options.push(args)
+      },
+      openReviewPanel: () => undefined,
+      setActive: () => undefined,
+    })
+
+    open("file://report.pdf")
+    open("file://report.pdf")
+
+    expect(options).toEqual([
+      ["report.pdf"],
+      ["report.pdf"],
+    ])
+  })
+
   test("activates the opened file tab", () => {
     const calls: string[] = []
     const openTab = createOpenSessionFileTab({
