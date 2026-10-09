@@ -38,7 +38,7 @@
   },
   "dependencies": {
     "@kobalte/core": "catalog:",
-    "@opencode/client": "2.0.22",
+    "@opencode/client": "2.0.26",
     "@ikanban/ui": "workspace:*",
     "@opencode/util": "2.0.22",
     "@pierre/diffs": "catalog:",

@@ -7,11 +7,11 @@
     },
     "packages/session-ui": {
       "name": "@ikanban/session-ui",
-      "version": "0.6.7",
+      "version": "0.6.9",
       "dependencies": {
         "@ikanban/ui": "workspace:*",
         "@kobalte/core": "catalog:",
-        "@opencode/client": "2.0.22",
+        "@opencode/client": "2.0.26",
         "@opencode/util": "2.0.22",
         "@pierre/diffs": "catalog:",
         "@shikijs/stream": "catalog:",
@@ -39,7 +39,7 @@
     },
     "packages/ui": {
       "name": "@ikanban/ui",
-      "version": "0.6.7",
+      "version": "0.6.9",
       "dependencies": {
         "@kobalte/core": "catalog:",
         "@pierre/diffs": "catalog:",
@@ -66,7 +66,7 @@
     },
     "packages/web": {
       "name": "@ikanban/web",
-      "version": "0.6.7",
+      "version": "0.6.9",
       "dependencies": {
         "@corvu/drawer": "catalog:",
         "@dnd-kit/abstract": "0.5.0",
@@ -77,8 +77,8 @@
         "@ikanban/session-ui": "workspace:*",
         "@ikanban/ui": "workspace:*",
         "@kobalte/core": "catalog:",
-        "@opencode/client": "2.0.22",
-        "@opencode/schema": "2.0.22",
+        "@opencode/client": "2.0.26",
+        "@opencode/schema": "2.0.26",
         "@opencode/util": "2.0.22",
         "@pierre/trees": "1.0.0-beta.4",
         "@sentry/solid": "catalog:",
@@ -488,11 +488,11 @@
 
     "@npmcli/run-script": ["@npmcli/run-script@10.0.4", "https://registry.npmmirror.com/@npmcli/run-script/-/run-script-10.0.4.tgz", { "dependencies": { "@npmcli/node-gyp": "^5.0.0", "@npmcli/package-json": "^7.0.0", "@npmcli/promise-spawn": "^9.0.0", "node-gyp": "^12.1.0", "proc-log": "^6.0.0" } }, "sha512-mGUWr1uMnf0le2TwfOZY4SFxZGXGfm4Jtay/nwAa2FLNAKXUoUwaGwBMNH36UHPtinWfTSJ3nqFQr0091CxVGg=="],
 
-    "@opencode/client": ["@opencode/client@2.0.22", "https://registry.npmmirror.com/@opencode/client/-/client-2.0.22.tgz", { "dependencies": { "@opencode/protocol": "2.0.22", "@opencode/schema": "2.0.22" }, "peerDependencies": { "effect": "4.0.0-rc.112", "solid-js": ">=1.9.0" }, "optionalPeers": ["effect", "solid-js"] }, "sha512-FJKugH301QHlV/rGL8TvgL3ly+toVlww+TP+YdVTKQWytQvjLoUdYtvvm+Iq5k6pN6Ki3ybE/08E8Cg+e6Opbg=="],
+    "@opencode/client": ["@opencode/client@2.0.26", "https://registry.npmmirror.com/@opencode/client/-/client-2.0.26.tgz", { "dependencies": { "@opencode/protocol": "2.0.26", "@opencode/schema": "2.0.26" }, "peerDependencies": { "effect": "4.0.0-rc.112", "solid-js": ">=1.9.0" }, "optionalPeers": ["effect", "solid-js"] }, "sha512-0uqhXq6DJYjas3mc4roTyWAmhJpyO2gJaMcenoiA22RXJSOSIwPFho5K4qGmYDJGd5Fvvswh++Nr/wfjaHAYyg=="],
 
-    "@opencode/protocol": ["@opencode/protocol@2.0.22", "https://registry.npmmirror.com/@opencode/protocol/-/protocol-2.0.22.tgz", { "dependencies": { "@opencode/schema": "2.0.22", "effect": "4.0.0-rc.112" } }, "sha512-Ws3DKQW/rlBDwNz2cPE9+nGwbw7pgnZ+5bzgoHWCWxgTZmxdFulmLP05lxR+PPwMklUwzOGoUXFIzODPZ27WfA=="],
+    "@opencode/protocol": ["@opencode/protocol@2.0.26", "https://registry.npmmirror.com/@opencode/protocol/-/protocol-2.0.26.tgz", { "dependencies": { "@opencode/schema": "2.0.26", "effect": "4.0.0-rc.112" } }, "sha512-Q+kbu0zTneh0RC4jhiuB19WeP8et9dWXGJVjb5EbUdJ8E1j5Eh0lAyqLXlM2tzTxfMfK3gos9ss6mxMVsvDFIg=="],
 
-    "@opencode/schema": ["@opencode/schema@2.0.22", "https://registry.npmmirror.com/@opencode/schema/-/schema-2.0.22.tgz", { "dependencies": { "@standard-schema/spec": "1.1.0", "effect": "4.0.0-rc.112" } }, "sha512-PTqTrx3QHhlRL5ypfoMnSzXDU8XB2+vtKX8QKwIHP7B1F1yw90LN0XTmGP82k9rYoEcERq0TLuL+ykAsYJXJdA=="],
+    "@opencode/schema": ["@opencode/schema@2.0.26", "https://registry.npmmirror.com/@opencode/schema/-/schema-2.0.26.tgz", { "dependencies": { "@standard-schema/spec": "1.1.0", "effect": "4.0.0-rc.112" } }, "sha512-DZ09xXCTkTI3Y9VzuQHsm5AMGh67EqkUM13lC0LGKvD12RAYaVmRX5lDv5AnD3OkmUmPPWLYWjicT18CDloy6Q=="],
 
     "@opencode/util": ["@opencode/util@2.0.22", "https://registry.npmmirror.com/@opencode/util/-/util-2.0.22.tgz", { "dependencies": { "@effect/opentelemetry": "4.0.0-rc.112", "@effect/platform-node": "4.0.0-rc.112", "@effect/platform-node-shared": "4.0.0-rc.112", "@npmcli/arborist": "9.4.0", "@npmcli/config": "10.8.1", "@opentelemetry/api": "1.9.0", "@opentelemetry/api-logs": "0.219.0", "@opentelemetry/context-async-hooks": "2.8.0", "@opentelemetry/exporter-trace-otlp-http": "0.219.0", "@opentelemetry/resources": "2.8.0", "@opentelemetry/sdk-logs": "0.219.0", "@opentelemetry/sdk-metrics": "2.8.0", "@opentelemetry/sdk-trace-base": "2.8.0", "@opentelemetry/sdk-trace-node": "2.8.0", "cross-spawn": "7.0.6", "effect": "4.0.0-rc.112", "glob": "13.0.5", "mime-types": "3.0.2", "minimatch": "10.2.5", "npm-package-arg": "13.0.2", "open": "11.0.4", "pacote": "21.5.1" } }, "sha512-nipMu7ZAM9gCOKwH06eqAUVgATR+5XbqXEKSN+ECYLgm9PStsmxraxDN93gJLV3bYzpR+9Ow0Be/s0ZYKUxPKg=="],
 
