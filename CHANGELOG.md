@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.10] - 2026-10-10
+
+- Files: Added manual refresh controls to wide-screen and mobile file tabs, with loading indicators and localized file-size tooltips. (@isomoes) [e82d9f9](https://github.com/isomoes/ikanban/commit/e82d9f9014f5439aededd1b9dcd87d41d8c451f5)
+- Integration: Updated the native OpenCode V2 client and schema packages to 2.0.26. (@isomoes) [84ebc0b](https://github.com/isomoes/ikanban/commit/84ebc0b37b279811f2abbf69dc92912bdac2b5b7)
+
 ## [0.6.9] - 2026-10-08
 
 - Web: Removed desktop-only capabilities, including SSH, WSL, native browser panes, application launching, and desktop updates, keeping the shared OpenCode V2 frontend focused on web/PWA use. (@isomoes) [bc37219](https://github.com/isomoes/ikanban/commit/bc37219f6e8b1ee6e24533e286bf707a39c7decf)
