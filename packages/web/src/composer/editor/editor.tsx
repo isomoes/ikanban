@@ -1,10 +1,9 @@
-import { createEffect, createMemo, Show, type JSX } from "solid-js"
+import { createMemo, Show, type JSX } from "solid-js"
 import { Button } from "@ikanban/ui/button"
 import { Keybind } from "@ikanban/ui/keybind"
 import { useI18n } from "@ikanban/ui/context/i18n"
 import { ScrollView } from "@ikanban/ui/scroll-view"
 import type { ComposerEditorModel } from "./interaction"
-import { isAttachment } from "../prompt-parts"
 import { ComposerAttachments } from "./attachment-strip"
 import {
   ComposerEditorAddMenu,
@@ -12,7 +11,8 @@ import {
   ComposerEditorConfiguredSelect,
   ComposerEditorSubmitButton,
 } from "./controls"
-import { composerCursor, parseComposerEditor, removeAdjacentMention, renderComposerEditor, revealCaret } from "./content"
+import { composerCursor, removeAdjacentMention, revealCaret } from "./content"
+import { createComposerEditorInput } from "./input"
 import { createControlsOverflow } from "./overflow"
 import { ComposerEditorPopover } from "./popover"
 import "./editor.css"
@@ -51,7 +51,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
   let viewport: HTMLDivElement | undefined
   const controls = createControlsOverflow()
   const overflow = controls.overflow
-  let localInput = false
+  const input = createComposerEditorInput(() => editor, props.controller)
   const updateCursor = () => {
     if (!editor || !window.getSelection()?.isCollapsed) return
     props.controller.onCursor(composerCursor(editor))
@@ -62,16 +62,6 @@ export function ComposerEditor(props: ComposerEditorProps) {
     "pointer-events": mode() === "normal" ? ("auto" as const) : ("none" as const),
     transition: "opacity 200ms ease",
   }))
-
-  createEffect(() => {
-    const parts = props.controller.parts()
-    if (!editor) return
-    if (localInput) {
-      localInput = false
-      return
-    }
-    renderComposerEditor(editor, parts)
-  })
 
   return (
     <div class={`relative size-full flex flex-col gap-0 ${props.class ?? ""}`}>
@@ -167,14 +157,11 @@ export function ComposerEditor(props: ComposerEditorProps) {
               "unicode-bidi": state.mode === "normal" ? "plaintext" : undefined,
               "text-align": "start",
             }}
-            onInput={(event) => {
-              const cursor = composerCursor(event.currentTarget)
-              const prompt = parseComposerEditor(event.currentTarget)
-              const attachments = props.controller.parts().filter(isAttachment)
-              localInput = true
-              props.controller.onInput(prompt.map((part) => part.content).join(""), [...prompt, ...attachments], cursor)
-            }}
+            onInput={input.onInput}
+            onCompositionStart={input.onCompositionStart}
+            onCompositionEnd={input.onCompositionEnd}
             onKeyDown={(event) => {
+              if (input.composing() || event.isComposing || event.keyCode === 229) return
               if (!view.draftOnly && props.controller.onKeyDown(event)) return
               if (
                 (event.key === "Backspace" || event.key === "Delete") &&
