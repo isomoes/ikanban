@@ -130,6 +130,19 @@ const createModelsController = (directory: Accessor<string | undefined>) => {
     find,
     visible,
     setVisibility,
+    favorite: {
+      list: () => store.user.filter((item) => item.favorite),
+      has: (model: ModelKey) =>
+        store.user.some((item) => modelKey(item) === modelKey(model) && item.favorite),
+      set(model: ModelKey, favorite: boolean) {
+        const index = store.user.findIndex((item) => modelKey(item) === modelKey(model))
+        if (index >= 0) {
+          setStore("user", index, "favorite", favorite)
+          return
+        }
+        setStore("user", store.user.length, { ...model, visibility: visible(model) ? "show" : "hide", favorite })
+      },
+    },
     recent: {
       list: models.recent,
       push,

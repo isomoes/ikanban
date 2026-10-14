@@ -62,7 +62,7 @@ mock.module("@/runtime/platform/platform", () => ({
 }))
 
 const { LocalProvider, useLocal } = await import("@/providers/models/selection")
-const { ModelsProvider } = await import("@/providers/models/models")
+const { ModelsProvider, useModels } = await import("@/providers/models/models")
 const { Persist } = await import("@/runtime/persistence/storage")
 const { createMemoryComposerState } = await import("@/composer/state")
 const { createComposerModelSelection } = await import("@/composer/selection")
@@ -103,7 +103,7 @@ function fixture(input: { session?: Commit; agents?: Agent[]; config?: ConfigMod
     })),
   })
   const [preferences, setPreferences] = createStore({
-    user: [] as Array<ModelKey & { visibility: "show" | "hide" }>,
+    user: [] as Array<ModelKey & { visibility: "show" | "hide"; favorite?: boolean }>,
     recent: [] as ModelKey[],
     variant: (input.preferred ? { "provider/a": input.preferred } : {}) as Record<string, string>,
   })
@@ -150,6 +150,7 @@ function fixture(input: { session?: Commit; agents?: Agent[]; config?: ConfigMod
     mount(draft = false) {
       active = result
       let local!: ReturnType<typeof useLocal>
+      let models!: ReturnType<typeof useModels>
       let composer: ReturnType<typeof createComposerModelSelection> | undefined
       const dispose = createRoot((dispose) => {
         createComponent(ModelsProvider, {
@@ -158,6 +159,7 @@ function fixture(input: { session?: Commit; agents?: Agent[]; config?: ConfigMod
             return createComponent(LocalProvider, {
               get children() {
                 local = useLocal()
+                models = useModels()
                 if (draft) composer = createComposerModelSelection({ agent: local.agent.current })
                 return null
               },
@@ -167,7 +169,7 @@ function fixture(input: { session?: Commit; agents?: Agent[]; config?: ConfigMod
         return dispose
       })
       cleanups.push(dispose)
-      return { local, composer, dispose }
+      return { local, models, composer, dispose }
     },
   }
   const target = Persist.serverWorkspace(ServerScope.local, directory, "model-selection")
@@ -182,6 +184,35 @@ function selection(local: ReturnType<typeof useLocal>) {
     variant: local.model.variant.current(),
   }
 }
+
+test("favorites update preferences without changing the selected model or recent history", () => {
+  const f = fixture({ session: durable("a", "high") })
+  const { local, models } = f.mount()
+  models.favorite.set(key("b"), true)
+  expect(models.favorite.has(key("b"))).toBe(true)
+  expect(models.favorite.list().map((item) => item.modelID)).toEqual(["b"])
+  expect(selection(local)).toEqual({ agent: "build", model: "a", variant: "high" })
+  expect(f.preferences.store.recent).toEqual([])
+  models.favorite.set(key("b"), false)
+  expect(models.favorite.has(key("b"))).toBe(false)
+  expect(models.favorite.list()).toEqual([])
+  expect(f.preferences.store.user).toHaveLength(1)
+})
+
+test("favorites preserve visibility settings and survive provider remounts", () => {
+  const f = fixture()
+  const { models, dispose } = f.mount()
+  models.setVisibility(key("b"), false)
+  models.favorite.set(key("b"), true)
+  expect(models.visible(key("b"))).toBe(false)
+  models.setVisibility(key("b"), true)
+  expect(models.favorite.has(key("b"))).toBe(true)
+  dispose()
+  const remounted = f.mount().models
+  expect(remounted.favorite.has(key("b"))).toBe(true)
+  remounted.favorite.set(key("b"), false)
+  expect(remounted.visible(key("b"))).toBe(true)
+})
 
 test("restores durable agents even when the agent selector is hidden", () => {
   const f = fixture({ session: durable("b", "high", "plan") })
