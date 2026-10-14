@@ -133,6 +133,8 @@ export const dict = {
   "dialog.model.search.placeholder": "Search models",
   "dialog.model.empty": "No model results",
   "dialog.model.favorites": "Favorites",
+  "dialog.model.hideAll": "Hide all",
+  "dialog.model.provider.hideAll": "Hide all {{provider}} models",
   "dialog.model.recent": "Recently used",
   "dialog.model.favorite.add": "Favorite {{model}} · {{provider}}",
   "dialog.model.favorite.remove": "Unfavorite {{model}} · {{provider}}",

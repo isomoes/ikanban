@@ -1,4 +1,4 @@
-import { type Accessor, createMemo } from "solid-js"
+import { type Accessor, batch, createMemo } from "solid-js"
 import { filter, firstBy, flat, groupBy, mapValues, pipe, uniqueBy, values } from "remeda"
 import { createSimpleContext } from "@ikanban/ui/context"
 import { useProviders } from "@/providers/catalog/providers"
@@ -130,6 +130,14 @@ const createModelsController = (directory: Accessor<string | undefined>) => {
     find,
     visible,
     setVisibility,
+    setProviderVisibility(providerID: string, visible: boolean) {
+      batch(() => {
+        for (const item of list()) {
+          if (item.provider.id !== providerID) continue
+          setVisibility({ providerID, modelID: item.id }, visible)
+        }
+      })
+    },
     favorite: {
       list: () => store.user.filter((item) => item.favorite),
       has: (model: ModelKey) =>

@@ -4,6 +4,7 @@ import { Switch } from "@ikanban/ui/switch"
 import { Icon } from "@ikanban/ui/icon"
 import { IconButton } from "@ikanban/ui/icon-button"
 import { TextInput } from "@ikanban/ui/text-input"
+import { Button } from "@ikanban/ui/button"
 import { type Component, createEffect, For, on, onCleanup, Show } from "solid-js"
 import { Schema } from "effect"
 import { Persistence } from "@/runtime/persistence/schema"
@@ -138,7 +139,7 @@ export const SettingsModels: Component<{ active?: boolean; autofocus?: boolean }
                     data-component="settings-models-provider"
                     data-expanded={expanded() ? "" : undefined}
                   >
-                    <h3 class="settings-models-group-header">
+                    <div class="settings-models-group-header justify-between">
                       <button
                         type="button"
                         class="settings-models-group-trigger"
@@ -176,7 +177,26 @@ export const SettingsModels: Component<{ active?: boolean; autofocus?: boolean }
                           <span class="settings-models-group-title">{group.items[0].provider.name}</span>
                         </span>
                       </button>
-                    </h3>
+                      <Button
+                        type="button"
+                        variant="ghost-muted"
+                        size="small"
+                        class="shrink-0"
+                        disabled={
+                          !models.list().some(
+                            (item) =>
+                              item.provider.id === group.category &&
+                              models.visible({ providerID: item.provider.id, modelID: item.id }),
+                          )
+                        }
+                        aria-label={language.t("dialog.model.provider.hideAll", {
+                          provider: group.items[0].provider.name,
+                        })}
+                        onClick={() => models.setProviderVisibility(group.category, false)}
+                      >
+                        {language.t("dialog.model.hideAll")}
+                      </Button>
+                    </div>
                     <Show when={expanded()}>
                       <SettingsList variant="catalog">
                         <For each={group.items}>

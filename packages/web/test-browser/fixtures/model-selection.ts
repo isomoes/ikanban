@@ -214,6 +214,24 @@ test("favorites preserve visibility settings and survive provider remounts", () 
   expect(remounted.visible(key("b"))).toBe(true)
 })
 
+test("provider visibility updates every model without changing favorites, other providers or the active model", () => {
+  const f = fixture({ session: durable("a", "high") })
+  const { models, local } = f.mount()
+  f.setPreferences("user", [{ providerID: "other", modelID: "a", visibility: "show" }])
+  models.favorite.set(key("b"), true)
+  models.setProviderVisibility("provider", false)
+  expect(["a", "b", "c"].map((id) => models.visible(key(id)))).toEqual([false, false, false])
+  expect(models.favorite.has(key("b"))).toBe(true)
+  expect(f.preferences.store.user.find((item) => item.providerID === "other")?.visibility).toBe("show")
+  expect(selection(local)).toEqual({ agent: "build", model: "a", variant: "high" })
+  models.setProviderVisibility("provider", true)
+  expect(["a", "b", "c"].map((id) => models.visible(key(id)))).toEqual([true, true, true])
+  expect(models.favorite.has(key("b"))).toBe(true)
+  const count = f.preferences.store.user.length
+  models.setProviderVisibility("missing", false)
+  expect(f.preferences.store.user).toHaveLength(count)
+})
+
 test("restores durable agents even when the agent selector is hidden", () => {
   const f = fixture({ session: durable("b", "high", "plan") })
   f.set("visible", false)

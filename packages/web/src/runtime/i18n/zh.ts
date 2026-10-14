@@ -151,6 +151,8 @@ export const dict = {
   "dialog.model.search.placeholder": "搜索模型",
   "dialog.model.empty": "未找到模型",
   "dialog.model.favorites": "收藏",
+  "dialog.model.hideAll": "全部隐藏",
+  "dialog.model.provider.hideAll": "隐藏 {{provider}} 的全部模型",
   "dialog.model.recent": "最近使用",
   "dialog.model.favorite.add": "收藏 {{model}} · {{provider}}",
   "dialog.model.favorite.remove": "取消收藏 {{model}} · {{provider}}",

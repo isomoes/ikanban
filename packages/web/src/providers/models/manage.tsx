@@ -9,6 +9,7 @@ import { useFilteredList } from "@ikanban/ui/hooks"
 import { For, Show, type Component } from "solid-js"
 import { createStore } from "solid-js/store"
 import { useLocal } from "@/providers/models/selection"
+import { useModels } from "./models"
 import { popularProviders } from "@/providers/catalog/providers"
 import { useLanguage } from "@/runtime/i18n/language"
 import { useDialog } from "@ikanban/ui/context/dialog"
@@ -22,6 +23,7 @@ type ModelItem = ReturnType<ReturnType<typeof useLocal>["model"]["list"]>[number
 
 export const DialogManageModels: Component = () => {
   const local = useLocal()
+  const models = useModels()
   const language = useLanguage()
   const dialog = useDialog()
   const [store, setStore] = createStore({ collapsed: {} as Record<string, boolean> })
@@ -34,9 +36,7 @@ export const DialogManageModels: Component = () => {
   const providerVisible = (providerID: string) =>
     providerList(providerID).every((x) => local.model.visible({ modelID: x.id, providerID: x.provider.id }))
   const setProviderVisibility = (providerID: string, checked: boolean) => {
-    providerList(providerID).forEach((x) => {
-      local.model.setVisibility({ modelID: x.id, providerID: x.provider.id }, checked)
-    })
+    models.setProviderVisibility(providerID, checked)
   }
   const setModelVisibility = (item: ModelItem, checked: boolean) => {
     local.model.setVisibility({ modelID: item.id, providerID: item.provider.id }, checked)
@@ -152,14 +152,32 @@ export const DialogManageModels: Component = () => {
                               <span class="settings-models-group-title">{group.items[0].provider.name}</span>
                             </span>
                           </button>
-                          <Switch
-                            class="me-6"
-                            checked={providerVisible(group.category)}
-                            onChange={(checked) => setProviderVisibility(group.category, checked)}
-                            hideLabel
-                          >
-                            {group.items[0].provider.name}
-                          </Switch>
+                          <div class="flex shrink-0 items-center gap-3">
+                            <Button
+                              type="button"
+                              variant="ghost-muted"
+                              size="small"
+                              disabled={
+                                !providerList(group.category).some((item) =>
+                                  local.model.visible({ providerID: item.provider.id, modelID: item.id }),
+                                )
+                              }
+                              aria-label={language.t("dialog.model.provider.hideAll", {
+                                provider: group.items[0].provider.name,
+                              })}
+                              onClick={() => setProviderVisibility(group.category, false)}
+                            >
+                              {language.t("dialog.model.hideAll")}
+                            </Button>
+                            <Switch
+                              class="me-6"
+                              checked={providerVisible(group.category)}
+                              onChange={(checked) => setProviderVisibility(group.category, checked)}
+                              hideLabel
+                            >
+                              {group.items[0].provider.name}
+                            </Switch>
+                          </div>
                         </div>
                         <Show when={expanded()}>
                           <SettingsList variant="catalog">
