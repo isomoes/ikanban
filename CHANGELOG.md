@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.12] - 2026-10-14
+
+- Models: Added a per-provider Hide all action to the model manager and model settings, hiding every model from a provider in one step while preserving favorites and the active selection. (@isomoes) [2c002d5](https://github.com/isomoes/ikanban/commit/2c002d5acef4c4068e46129e0e18f2133e54cb3d)
+- Timeline: Preserved smooth scrolling during row resizes by deferring scroll compensation while native scrolling or touch momentum is active and applying it once scrolling settles. (@isomoes) [2da7c12](https://github.com/isomoes/ikanban/commit/2da7c12bf9ae3edf4a80076a6205575c7ce59e31)
+
 ## [0.6.11] - 2026-10-14
 
 - Composer: Preserved native text input and protected IME composition from editor interactions. (@isomoes) [b15415b](https://github.com/isomoes/ikanban/commit/b15415b1879a09e81eed8efa3aa0c20b206798c2)
