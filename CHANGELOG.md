@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.11] - 2026-10-14
+
+- Composer: Preserved native text input and protected IME composition from editor interactions. (@isomoes) [b15415b](https://github.com/isomoes/ikanban/commit/b15415b1879a09e81eed8efa3aa0c20b206798c2)
+- Models: Prioritized favorite and recently used models in the selector, with grouped navigation and localized section labels. (@isomoes) [ea024f4](https://github.com/isomoes/ikanban/commit/ea024f44cf87d50c3fd0caca319e77ee01b23d3d)
+
 ## [0.6.10] - 2026-10-10
 
 - Files: Added manual refresh controls to wide-screen and mobile file tabs, with loading indicators and localized file-size tooltips. (@isomoes) [e82d9f9](https://github.com/isomoes/ikanban/commit/e82d9f9014f5439aededd1b9dcd87d41d8c451f5)
