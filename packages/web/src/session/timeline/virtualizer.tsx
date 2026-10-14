@@ -27,6 +27,7 @@ import { createMediaQuery } from "@solid-primitives/media"
 import type { createTimelineProjection } from "./projection"
 import { observeElementOffsetReconnectAware } from "./observe-element-offset"
 import { filterVirtualIndexes } from "./virtual-items"
+import { createTimelineScrollAdjustment } from "./scroll-adjustment"
 
 const fallbackItemSize = 60
 const pendingMarkdown = '[data-component="markdown"]:not([data-markdown-ready])'
@@ -157,7 +158,11 @@ export function createTimelineVirtualizer(input: Input) {
   let touchTarget: EventTarget | null = null
   let touchNested = false
   let touchScrolling = false
-  let touchAdjustment = 0
+  const scrollAdjustment = createTimelineScrollAdjustment({
+    pinned: input.pinned,
+    touching: () => touchScrolling,
+    addedKeys,
+  })
   let maxScroll = 0
   let virtualContent: HTMLDivElement | undefined
   let scrollTop = 0
@@ -180,8 +185,8 @@ export function createTimelineVirtualizer(input: Input) {
     observeElementOffset: (instance, callback) => {
       reportOffset = (offset, scrolling) => {
         if (!active()) return
-        // Rows and the sizer use the opposite translation while native touch
-        // scrolling keeps its own offset. Range selection uses the logical offset.
+        // Rows and the sizer use the opposite translation while native scrolling
+        // keeps its own offset. Range selection uses the logical offset.
         batch(() => {
           const logicalOffset = offset + rendering.scrollAdjustment
           callback(rendering.scrollAdjustment ? Math.max(0, logicalOffset) : offset, scrolling)
@@ -194,8 +199,8 @@ export function createTimelineVirtualizer(input: Input) {
             root &&
             (logicalOffset <= 0 || offset <= 0 || (touchStart !== undefined && offset <= root.clientHeight))
           )
-            flushTouchAdjustment()
-          if (!scrolling && touchStart === undefined) finishTouchScroll()
+            flushScrollAdjustment()
+          if (!scrolling && touchStart === undefined) finishScroll()
         })
         settleColdBottom()
       }
@@ -291,9 +296,9 @@ export function createTimelineVirtualizer(input: Input) {
           resizeItem(index, value.size)
           // TanStack recalculates its range after each resize. Advance the
           // logical fold before deciding whether the next row needs anchoring.
-          if (!touchAdjustment) return
-          setRendering("scrollAdjustment", (value) => value + touchAdjustment)
-          touchAdjustment = 0
+          const adjustment = scrollAdjustment.take()
+          if (!adjustment) return
+          setRendering("scrollAdjustment", (value) => value + adjustment)
           const root = listRoot()
           if (root) reportOffset?.(root.scrollTop, virtualizer.isScrolling)
         })
@@ -310,31 +315,19 @@ export function createTimelineVirtualizer(input: Input) {
     })
   }
   onCleanup(() => pendingSizes.clear())
-  virtualizer.shouldAdjustScrollPositionOnItemSizeChange = (item, delta, instance) => {
-    // Prepended rows can resize more than once as deferred content mounts. Keep
-    // compensating while they remain entirely above the visible content fold.
-    const first = instance.range?.startIndex
-    const adjust = addedKeys.has(String(item.key))
-      ? item.end <= (instance.scrollOffset ?? 0) + instance.scrollAdjustments + instance.options.scrollMargin
-      : first !== undefined && item.index < first
-    if (!touchScrolling || input.pinned()) return adjust
-    // iOS defers native scroll writes until momentum ends. Keep the same visual
-    // anchor now, rather than moving rows now and snapping the viewport back later.
-    if (adjust) touchAdjustment += delta
-    return false
-  }
+  virtualizer.shouldAdjustScrollPositionOnItemSizeChange = scrollAdjustment.shouldAdjust
 
-  function finishTouchScroll() {
+  function finishScroll() {
     touchScrolling = false
-    flushTouchAdjustment()
+    flushScrollAdjustment()
   }
 
   function prepareNavigation() {
     if (touchStart === undefined) touchScrolling = false
-    flushTouchAdjustment()
+    flushScrollAdjustment()
   }
 
-  function flushTouchAdjustment() {
+  function flushScrollAdjustment() {
     const adjustment = rendering.scrollAdjustment
     const root = listRoot()
     if (!adjustment || !root) return
@@ -520,7 +513,7 @@ export function createTimelineVirtualizer(input: Input) {
   const handleListTouchEnd = () => {
     clearTouchTarget()
     touchStart = undefined
-    if (!virtualizer.isScrolling) finishTouchScroll()
+    if (!virtualizer.isScrolling) finishScroll()
   }
 
   function clearTouchTarget() {
