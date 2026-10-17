@@ -15,3 +15,7 @@
   `bun install --frozen-lockfile`.
 - Check changes with `bun run typecheck`,
   `bun run --cwd packages/web test:unit`, and `bun run build:web`.
+- Use the Chrome DevTools MCP for browser checks, and open
+  `http://localhost:3000/ikanban/` first — a dev server is usually already
+  running locally. Only if that page does not load, start it with `bun run dev`
+  (from the repo root); the Vite dev server always runs on port 3000.
