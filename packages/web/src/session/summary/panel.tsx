@@ -10,6 +10,7 @@ import { SessionWorkspaceMenu } from "../timeline/session-workspace-menu"
 import { BackgroundWorkSummary, type BackgroundTask } from "./background"
 import { SessionServerPanel } from "./server-panel"
 import { ProjectSummaryCard } from "./project-card"
+import { SessionMetricsPanel } from "@/session/metrics/session-metrics-popover"
 import "./summary.css"
 
 export function SessionSummaryPanel(props: {
@@ -136,6 +137,9 @@ export function SessionSummaryPanel(props: {
               <Icon name="xmark-small" />
             </button>
           </div>
+        </Show>
+        <Show when={props.mobile}>
+          <SessionMetricsPanel sessionID={props.sessionID} embedded />
         </Show>
       </div>
       <SessionServerPanel directory={props.directory} shown={props.shown !== false} mobile={props.mobile} />

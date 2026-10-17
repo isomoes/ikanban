@@ -1,0 +1,206 @@
+.session-metrics-popover {
+  transform-origin: var(--kb-popover-content-transform-origin);
+  animation: menu-v2-in 120ms ease-out;
+}
+
+[data-component="session-metrics"] {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 320px;
+  max-width: calc(100vw - 32px);
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--v2-background-bg-base);
+  box-shadow: var(--v2-elevation-raised);
+  color: var(--v2-text-text-base);
+}
+
+[data-color-scheme="dark"] [data-component="session-metrics"] {
+  background: var(--v2-background-bg-layer-01);
+}
+
+[data-component="session-metrics"][data-embedded] {
+  width: auto;
+  max-width: none;
+  margin-top: 8px;
+  padding: 12px;
+  border-radius: 6px;
+  box-shadow: var(--v2-elevation-raised);
+}
+
+.session-metrics-trigger {
+  height: 28px;
+  gap: 6px;
+  padding-inline: 8px;
+  font-size: 11px;
+  font-weight: 530;
+  font-variant-numeric: tabular-nums;
+}
+
+.session-metrics-trigger-unit {
+  color: var(--v2-text-text-faint);
+}
+
+.session-metrics-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.session-metrics-value {
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.session-metrics-unit {
+  margin-top: 6px;
+  font-size: 11px;
+  line-height: 1.2;
+  color: var(--v2-text-text-faint);
+}
+
+.session-metrics-spark {
+  display: flex;
+  flex: 1;
+  align-items: flex-end;
+  gap: 2px;
+  max-width: 132px;
+  height: 38px;
+}
+
+.session-metrics-spark-bar {
+  flex: 1;
+  min-width: 2px;
+  min-height: 2px;
+  border-radius: 1px;
+  background: var(--v2-icon-icon-muted);
+  opacity: 0.55;
+}
+
+.session-metrics-spark-bar[data-current] {
+  background: var(--v2-icon-icon-accent);
+  opacity: 1;
+}
+
+.session-metrics-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.session-metrics-stat {
+  min-width: 0;
+  padding: 8px;
+  border-radius: 6px;
+  background: var(--v2-background-bg-layer-02);
+}
+
+.session-metrics-stat-value {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.session-metrics-stat-label {
+  margin-top: 2px;
+  overflow: hidden;
+  color: var(--v2-text-text-faint);
+  font-size: 11px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-metrics-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.session-metrics-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--v2-text-text-faint);
+  font-size: 11px;
+  font-weight: 530;
+}
+
+.session-metrics-section-head strong {
+  color: var(--v2-text-text-base);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.session-metrics-split {
+  display: flex;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--v2-background-bg-layer-02);
+}
+
+.session-metrics-split-llm {
+  background: var(--v2-icon-icon-accent);
+}
+
+.session-metrics-split-tools {
+  background: var(--v2-icon-icon-muted);
+}
+
+.session-metrics-legend {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--v2-text-text-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.session-metrics-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.session-metrics-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.session-metrics-dot-llm {
+  background: var(--v2-icon-icon-accent);
+}
+
+.session-metrics-dot-tools {
+  background: var(--v2-icon-icon-muted);
+}
+
+.session-metrics-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.session-metrics-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--v2-text-text-muted);
+  font-size: 12px;
+}
+
+.session-metrics-row strong {
+  color: var(--v2-text-text-base);
+  font-weight: 530;
+  font-variant-numeric: tabular-nums;
+}

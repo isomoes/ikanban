@@ -8,6 +8,7 @@ import { useLanguage } from "@/runtime/i18n/language"
 import { useServer } from "@/runtime/server/current"
 import { useWorkspaceLocation } from "@/workspaces/location"
 import { SessionContextUsage } from "@/session/timeline/session-context-usage"
+import { SessionMetricsPopover } from "@/session/metrics/session-metrics-popover"
 import { SessionHeaderSpacer } from "@/session/header/session-header"
 import { SessionProjectMenu, SessionTitleHeader } from "../session-identity-header"
 import { SummaryPopover } from "../summary/popover"
@@ -226,6 +227,7 @@ export function TimelineHeader(props: {
           {(id) => (
             <div class="shrink-0 flex items-center gap-2">
               {props.search}
+              <SessionMetricsPopover sessionID={id} />
               <SessionContextUsage placement="bottom" />
               <Show when={!parentID() && project()}>
                 {(project) => (
