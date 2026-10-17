@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.13] - 2026-10-17
+
+- Session: Added a live output-throughput pill to the session header with a popover breaking down turns, steps, tool calls, LLM and tool time, tokens, and per-step TPS, also embedded in the mobile session details sheet. Metrics derive from the existing native Data layer. (@isomoes) [6ccc8d4](https://github.com/isomoes/ikanban/commit/6ccc8d40181b932bdcb8ab588968c0418305f015)
+- Markdown: Colorized headings, links, emphasis, list markers, blockquotes, and inline code in rendered markdown, and strengthened bold text, matching the TUI renderer's accent colors. (@isomoes) [e9e9a99](https://github.com/isomoes/ikanban/commit/e9e9a99e5aed58ce46ee86066db692d7f7c34ae6)
+- Docs: Noted the Chrome DevTools MCP local dev URL for browser checks in the agent notes. (@isomoes) [a39fc42](https://github.com/isomoes/ikanban/commit/a39fc42de43caffad7eb53fbf50c6157846cfd0c)
+
 ## [0.6.12] - 2026-10-14
 
 - Models: Added a per-provider Hide all action to the model manager and model settings, hiding every model from a provider in one step while preserving favorites and the active selection. (@isomoes) [2c002d5](https://github.com/isomoes/ikanban/commit/2c002d5acef4c4068e46129e0e18f2133e54cb3d)
