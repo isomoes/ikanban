@@ -2,95 +2,52 @@
 
 中文 | [English](./README.en.md)
 
-iKanban 是面向 **OpenCode V2** 的独立静态前端，直接采用上游共享的桌面 / Web 应用。
+iKanban 是面向 **OpenCode V2** 的独立静态前端，直接采用上游共享的桌面 / Web 应用。浏览器直连后端，无需安装桌面客户端。
 
-<img width="900" alt="iKanban 界面截图" src="https://github.com/user-attachments/assets/f5a98723-c730-4cf9-9129-5c5a79dd0de6" />
+<img width="900" alt="iKanban 界面截图" src="https://github.com/user-attachments/assets/034542d2-c944-4821-ab2d-8085bcdf45b2" />
+
+## 功能
+
+| 模块 | 说明 |
+| --- | --- |
+| 项目与会话 | 最近项目、worktree 工作区、按时间分组的会话、项目和会话搜索、多标签页。 |
+| 会话工作台 | 流式消息、待办、提问、权限请求、后台任务、消息搜索，以及实时会话指标（tok/s、轮次、步数、工具调用、耗时和 Token）。 |
+| 输入框 | 拖入图片、PDF 或文本文件，`@` 引用文件，`/` 执行命令，切换模型、智能体与 MCP，支持 Shell 模式。 |
+| 审查与文件 | 基于 Git 的 Diff 审查、文件树和文件预览、手动刷新，以及将选中行加入上下文；未初始化 Git 时可一键创建仓库。 |
+| 终端 | 侧边或底部布局、多标签，通过 WebSocket 直连后端。 |
+| 提供商与模型 | OAuth 或 API 密钥连接，并提示认证失败；支持模型收藏、最近使用和按提供商批量隐藏。 |
+| 多服务器 | 运行时添加、编辑和切换服务器，无需重新构建。 |
+| Web / PWA | 响应式移动布局、安装到桌面或主屏幕、深浅色与色盲主题、通知与音效、中英文界面。 |
+| 效率 | 命令面板、可自定义快捷键、撤销/重做、Fork、压缩会话和导出 JSON。 |
+
+## 快速开始
+
+1. **启动 OpenCode V2 后端**。在能访问项目目录的机器上运行：
+
+   ```sh
+   opencode serve --hostname 127.0.0.1 --port 4096 --cors https://isomoes.github.io
+   ```
+
+   记下服务输出的密码。远程访问还需要 HTTPS 和正确的 CORS。
+
+2. **连接 iKanban**。打开 <https://isomoes.github.io/ikanban/>，填写 OpenCode V2 服务地址和密码。
+   也可以运行 `opencode pair`，在连接页面扫码配对；之后可在“设置 > 服务器”中管理多个后端。
+
+3. **添加项目**。在主页点击“添加项目”，选择 OpenCode 后端上的项目目录。
+
+4. **新建会话**。选择项目和工作区（主分支或新建 worktree），确认模型与智能体，输入提示词并发送。
+   使用 `@` 引用文件，拖入图片、PDF 或文本文件，或用 `/` 调用命令。
+
+5. **审查与运行**。打开“审查”面板查看本次会话的 Diff；在文件树中打开文件、刷新内容，或把选中行加入上下文。
+   通过命令面板（默认 `Ctrl/Cmd+P`）执行“切换终端”，在侧边或底部运行命令。
+
+6. **配置提供商与模型**。进入“设置 > 提供商”，用 OAuth 或 API 密钥连接服务；
+   在“设置 > 模型”中管理或隐藏模型。模型选择器会优先显示收藏和最近使用。
+
+7. **安装 PWA（可选）**。通过浏览器的“安装”入口添加到桌面或主屏幕；移动端提供适配的导航和会话标签。
 
 ## 历史版本介绍视频
 
-以下 Bilibili 视频记录了 iKanban 的早期工作流与版本演进，其中的界面和安装方式对应各自历史版本；当前版本的使用方式见下文。
+以下 Bilibili 视频记录了 iKanban 的早期工作流与版本演进，其中的界面和安装方式对应各自历史版本；当前版本请以上方说明为准。
 
 **Bilibili 视频：** [为什么做它](https://www.bilibili.com/video/BV1t9AhztEjX/) · [v0.1](https://www.bilibili.com/video/BV1W3Pgz8ExJ/) · [v0.2](https://www.bilibili.com/video/BV1ZNP1znEn5/) · [v0.2.11 如何使用](https://www.bilibili.com/video/BV1Y9wMzKE2b/) · [v0.3](https://www.bilibili.com/video/BV1n9QEBSEch/) · [v0.3.14](https://www.bilibili.com/video/BV1zy3F6aEb2/) · [v0.4.2](https://www.bilibili.com/video/BV156b26eEbn/) · [v0.5.0](https://www.bilibili.com/video/BV1QC886JEts/) · [v0.6.2](https://www.bilibili.com/video/BV1Mrhn69EyS/)
-
-## 原生 V2 前端
-
-前端基于 OpenCode `v2` 分支的共享桌面 / Web 应用。
-
-- `packages/web`：唯一应用，由上游 `packages/app` 引入。
-- `packages/ui`、`packages/session-ui`：上游共享组件，作为私有 workspace 使用。
-- 使用原生 V2 类型、`@opencode/client` 及其 Solid 数据层，替换旧 v0.3.18 UI 和适配层。
-- 提供商设置区分 OAuth 与 API 密钥，并显示服务器报告的认证失败。
-- 保留上游项目 / 会话导航、消息时间线、输入框、文件与 Diff、终端、模型选择和设置；
-  iKanban 仅支持 Web / PWA，已移除上游桌面专属功能（更新器、SSH、WSL、原生浏览器面板）。
-- 服务器数据的分层方式见 [docs/data-layer.md](./docs/data-layer.md)。
-
-会话、执行、工具、模型供应商及其凭据均由独立 OpenCode 后端管理。
-
-## 连接后端
-
-打开 [iKanban](https://isomoes.github.io/ikanban/)，在连接页面填写 OpenCode V2 服务地址和密码。
-认证沿用上游 **HTTP Basic**：用户名固定为 `opencode`，密码为服务密码。
-可通过服务器管理界面在运行时添加、编辑和切换后端，无需重新构建。
-
-没有保存的服务器且未设置 `VITE_OPENCODE_URL` 时，显示上游连接页面；
-不会隐式连接 Pages 域名或本机 `localhost`。新的浏览器存储使用 iKanban 命名空间，
-旧 UI 的连接和布局状态不会自动迁入；升级后可能需要重新添加服务器。
-
-GitHub Pages 仅托管静态文件，浏览器直接连接后端。远程后端需要：
-
-- 可从浏览器访问的 **HTTPS** 地址。
-- CORS 允许来源 **`https://isomoes.github.io`**，不包含 `/ikanban/` 路径。
-- 保留认证头、事件流，以及终端使用的 WebSocket 连接。
-
-例如，在 HTTPS 反向代理后以前台模式启动后端，并允许 Pages 来源：
-
-```sh
-opencode serve --hostname 127.0.0.1 --port 4096 --cors https://isomoes.github.io
-```
-
-按实际部署配置监听地址和 HTTPS 代理，在界面中输入服务输出的密码。
-如使用已有共享服务，`opencode pair` 可显示连接地址和凭据。
-参见 [OpenCode V2 Web 文档](https://opencode.ai/v2/docs/cli/web)。
-
-## 开发
-
-需要 Bun **1.3.12**、Node **^22.19.0 或 >=24.0.0**。
-
-```sh
-bun install --frozen-lockfile
-VITE_OPENCODE_URL=http://127.0.0.1:4096 bun run dev
-```
-
-访问 Vite 输出地址下的 `/ikanban/`。另行运行 OpenCode V2 后端：
-
-```sh
-opencode serve --hostname 127.0.0.1 --port 4096
-```
-
-在界面中填写服务输出的密码；如需允许额外开发来源，为 `serve` 添加
-`--cors <Vite 来源>`，来源需包含实际端口，不包含路径。
-`4096` 是本示例显式指定的端口，不是应用的隐式默认值。
-
-```sh
-bun run typecheck
-bun run --cwd packages/web test:unit
-bun run build:web
-bun run preview:web --port 3000
-```
-
-构建后在 `http://localhost:3000/ikanban/` 预览。
-`VITE_OPENCODE_URL` 仅用于提供可选的构建默认后端地址，运行时仍可更换服务器。
-不要将密码、token 或其他凭据放入 Vite 环境变量。
-
-## 发布
-
-标签工作流运行版本检查和静态构建，然后将 `packages/web/dist`
-部署到 **GitHub Pages** 的 `/ikanban/`。仓库 Pages 来源需设置为 **GitHub Actions**。
-部署成功后，工作流从该标签的 `CHANGELOG.md` 提取对应版本条目，创建 GitHub Release；重复运行会更新同一 Release 的说明。
-工作流支持同名仓库变量 `VITE_OPENCODE_URL`；留空即可由用户在连接页面输入后端。
-
-应用使用 history 路由，`404.html` 提供深层链接的应用入口；PWA 限定在 `/ikanban/` 范围。
-根项目及三个 workspace 均为私有；根项目和 Web 应用使用 iKanban 版本号，两个共享库保留上游版本号。
-
-发布流程见 [prompts/release.md](./prompts/release.md)。`CHANGELOG.md` 及旧迁移记录描述各自历史版本，
-当前使用方式以本 README 为准。
