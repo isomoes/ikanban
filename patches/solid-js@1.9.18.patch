@@ -1,7 +1,7 @@
 diff --git a/dist/dev.cjs b/dist/dev.cjs
 --- a/dist/dev.cjs
 +++ b/dist/dev.cjs
-@@ -1009,18 +1009,21 @@ function cleanNode(node) {
+@@ -1012,18 +1012,21 @@ function cleanNode(node) {
      }
    }
    if (node.tOwned) {
@@ -29,7 +29,7 @@ diff --git a/dist/dev.cjs b/dist/dev.cjs
 diff --git a/dist/dev.js b/dist/dev.js
 --- a/dist/dev.js
 +++ b/dist/dev.js
-@@ -1007,18 +1007,21 @@ function cleanNode(node) {
+@@ -1010,18 +1010,21 @@ function cleanNode(node) {
      }
    }
    if (node.tOwned) {
@@ -97,7 +97,7 @@ diff --git a/dist/server.js b/dist/server.js
 diff --git a/dist/solid.cjs b/dist/solid.cjs
 --- a/dist/solid.cjs
 +++ b/dist/solid.cjs
-@@ -964,18 +964,21 @@ function cleanNode(node) {
+@@ -967,18 +967,21 @@ function cleanNode(node) {
      }
    }
    if (node.tOwned) {
@@ -125,7 +125,7 @@ diff --git a/dist/solid.cjs b/dist/solid.cjs
 diff --git a/dist/solid.js b/dist/solid.js
 --- a/dist/solid.js
 +++ b/dist/solid.js
-@@ -962,18 +962,21 @@ function cleanNode(node) {
+@@ -965,18 +965,21 @@ function cleanNode(node) {
      }
    }
    if (node.tOwned) {

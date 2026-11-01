@@ -38,28 +38,26 @@
       "remeda": "2.26.0",
       "remend": "1.3.1",
       "shiki": "4.4.3",
-      "solid-js": "1.9.15",
+      "solid-js": "1.9.18",
       "solid-list": "0.3.0",
       "solid-sonner": "0.3.1",
       "tailwindcss": "4.3.3",
       "typescript": "5.8.2",
-      "vite": "8.2.2",
+      "vite": "8.3.5",
       "vite-plugin-solid": "2.11.14"
     }
   },
   "overrides": {
     "effect": "4.0.0-rc.112",
     "happy-dom": "20.11.1",
-    "solid-js": "1.9.15",
+    "solid-js": "1.9.18",
     "@tanstack/virtual-core": "3.17.8"
   },
   "patchedDependencies": {
-    "@dnd-kit/dom@0.5.0": "patches/@dnd-kit%2Fdom@0.5.0.patch",
+    "@dnd-kit/dom@0.5.3": "patches/@dnd-kit%2Fdom@0.5.3.patch",
     "@pierre/trees@1.0.0-beta.4": "patches/@pierre%2Ftrees@1.0.0-beta.4.patch",
     "@tanstack/virtual-core@3.17.8": "patches/@tanstack%2Fvirtual-core@3.17.8.patch",
-    "ghostty-web@github:anomalyco/ghostty-web#83c0a07": "patches/ghostty-web@0.3.0.patch",
-    "solid-js@1.9.15": "patches/solid-js@1.9.15.patch",
-    "vite@8.2.2": "patches/vite@8.2.2.patch"
+    "solid-js@1.9.18": "patches/solid-js@1.9.18.patch"
   },
   "engines": {
     "node": "^22.19.0 || >=24.0.0"

@@ -1,6 +1,6 @@
 --- a/index.js
 +++ b/index.js
-@@ -2195,6 +2195,17 @@
+@@ -2359,6 +2359,17 @@
        sensors,
        modifiers
      }));
@@ -20,7 +20,7 @@
  var _element_dec, _handle_dec, _c, _init5, _handle, _element;
 --- a/index.cjs
 +++ b/index.cjs
-@@ -2196,6 +2196,17 @@
+@@ -2360,6 +2360,17 @@
        sensors,
        modifiers
      }));
