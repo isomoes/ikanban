@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.14] - 2026-11-02
+
+- Web: Added configurable leader-key shortcuts, using Ctrl+Space followed by a command key by default, with shortcut recording and display in settings and the command palette. (@isomoes) [e502852](https://github.com/isomoes/ikanban/commit/e5028521dfc721f0b2f9c47db1e2d102ae5d35ab)
+- Dependencies: Updated Solid, Vite, drag-and-drop packages, and the terminal renderer, refreshed remaining patches, and removed fixes now provided upstream. (@isomoes) [50dd5b9](https://github.com/isomoes/ikanban/commit/50dd5b90d0ad722e9d428362587e0e043f2fd370)
+- Docs: Refreshed README features and quick-start instructions and documented the new default keyboard shortcuts. (@isomoes) [739d50c](https://github.com/isomoes/ikanban/commit/739d50c352c945da8fb786b208a37e7b3f867037) [e502852](https://github.com/isomoes/ikanban/commit/e5028521dfc721f0b2f9c47db1e2d102ae5d35ab)
+
 ## [0.6.13] - 2026-10-17
 
 - Session: Added a live output-throughput pill to the session header with a popover breaking down turns, steps, tool calls, LLM and tool time, tokens, and per-step TPS, also embedded in the mobile session details sheet. Metrics derive from the existing native Data layer. (@isomoes) [6ccc8d4](https://github.com/isomoes/ikanban/commit/6ccc8d40181b932bdcb8ab588968c0418305f015)
