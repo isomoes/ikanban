@@ -104,4 +104,45 @@ describe("keybind settings controller", () => {
 
     state.dispose()
   })
+
+  test("records a sequence after releasing the leader and detects sequence conflicts", () => {
+    const state = setup({ "session.alpha": "<leader>w" })
+    const press = (key: string, init: KeyboardEventInit = {}) =>
+      document.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true, ...init }))
+    try {
+      state.controller.capture.toggle("session.beta")
+      press(" ", { ctrlKey: true })
+      expect(state.controller.capture.pending()).toBe(true)
+      expect(state.changes).toEqual([])
+      press("w")
+      expect(state.notifications).toHaveLength(1)
+      expect(state.controller.capture.pending()).toBe(false)
+      press(" ", { ctrlKey: true })
+      press("x")
+      expect(state.changes).toEqual([["session.beta", "<leader>x"]])
+      expect(state.suppression).toEqual([false, true])
+    } finally {
+      state.dispose()
+    }
+  })
+
+  test("records the leader itself as a chord and uses a custom leader for sequences", () => {
+    const state = setup()
+    const press = (key: string, init: KeyboardEventInit = {}) =>
+      document.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true, ...init }))
+    try {
+      state.controller.capture.toggle("leader")
+      press(" ", { altKey: true })
+      expect(state.changes).toEqual([["leader", "alt+space"]])
+      state.controller.capture.toggle("session.beta")
+      press(" ", { altKey: true })
+      press("x", { isComposing: true })
+      expect(state.controller.capture.pending()).toBe(true)
+      press("Escape")
+      expect(state.controller.capture.active()).toBeNull()
+      expect(state.changes).toHaveLength(1)
+    } finally {
+      state.dispose()
+    }
+  })
 })

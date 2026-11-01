@@ -247,7 +247,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
     sessionCommand({
       id: "session.new",
       title: language.t("command.session.new"),
-      keybind: "mod+shift+s",
+      keybind: "<leader>shift+s",
       slash: "new",
       onSelect: (source) => command.trigger("tab.new", source),
     }),
@@ -278,7 +278,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
     sessionCommand({
       id: "session.background",
       title: language.t("command.session.background"),
-      keybind: "ctrl+b",
+      keybind: "<leader>shift+b",
       disabled: !actions.background.blocking(),
       onSelect: actions.background.move,
     }),
@@ -320,7 +320,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
         fileCommand({
           id: "file.close",
           title: language.t("command.tab.close"),
-          keybind: settings.keybinds.get("tab.close") ?? "mod+w",
+          keybind: settings.keybinds.get("tab.close") ?? "<leader>w",
           when: (event) => !(event.target instanceof Element && event.target.closest('[data-component="terminal"]')),
           onSelect: closeTab,
         }),
@@ -341,7 +341,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       id: "context.addSelection",
       title: language.t("command.context.addSelection"),
       description: language.t("command.context.addSelection.description"),
-      keybind: "mod+shift+l",
+      keybind: "<leader>shift+l",
       disabled: !canAddSelectionContext(),
       onSelect: addSelection,
     }),
@@ -366,7 +366,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
     viewCommand({
       id: "review.toggle",
       title: language.t("command.review.toggle"),
-      keybind: "mod+shift+r",
+      keybind: "<leader>d",
       onSelect: () => actions.session.layout.view().reviewPanel.toggle(),
     }),
     ...(shown()
@@ -390,7 +390,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
     terminalCommand({
       id: "terminal.close",
       title: language.t("terminal.close"),
-      keybind: "mod+w",
+      keybind: settings.keybinds.get("tab.close") ?? "<leader>w",
       hidden: true,
       when: (event) => event.target instanceof Element && !!event.target.closest('[data-component="terminal"]'),
       onSelect: closeTerminal,
@@ -440,7 +440,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       title: settings.permissions.autoApprove()
         ? language.t("command.permissions.autoaccept.disable")
         : language.t("command.permissions.autoaccept.enable"),
-      keybind: "mod+shift+a",
+      keybind: "<leader>shift+a",
       disabled: false,
       onSelect: toggleAutoAccept,
     }),

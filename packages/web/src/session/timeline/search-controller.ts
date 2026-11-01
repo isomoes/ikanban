@@ -185,7 +185,7 @@ export function createTimelineSearchController(input: {
     {
       id: "session.search",
       title: language.t("session.search.placeholder"),
-      keybind: "mod+f",
+      keybind: "<leader>f",
       hidden: true,
       onSelect: () => open(),
     },

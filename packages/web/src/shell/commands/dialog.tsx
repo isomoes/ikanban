@@ -8,6 +8,8 @@ import { TextInput } from "@ikanban/ui/text-input"
 import { createEffect, createMemo, For, Match, Show, Switch } from "solid-js"
 import { createStore } from "solid-js/store"
 import { formatKeybindParts } from "@/shell/commands/command"
+import { DEFAULT_LEADER_KEYBIND } from "@/shell/commands/keybind"
+import { useSettings } from "@/settings/model"
 import { useLanguage } from "@/runtime/i18n/language"
 import { useTabs } from "@/shell/tabs/tabs"
 import { SessionTabAvatar } from "@/shell/layout/session-tab-avatar"
@@ -203,6 +205,7 @@ function PaletteRow(props: {
       ? { server: props.item.server, directory: props.item.directory, sessionID: props.item.sessionID }
       : undefined
 
+  const settings = useSettings()
   return (
     <button
       type="button"
@@ -239,7 +242,14 @@ function PaletteRow(props: {
             </div>
           </div>
           <Show when={props.item.keybind}>
-            <Keybind keys={formatKeybindParts(props.item.keybind ?? "", props.language.t)} variant="neutral" />
+            <Keybind
+              keys={formatKeybindParts(
+                props.item.keybind ?? "",
+                props.language.t,
+                settings.keybinds.get("leader") ?? DEFAULT_LEADER_KEYBIND,
+              )}
+              variant="neutral"
+            />
           </Show>
         </Match>
         <Match when={props.item.type === "session"}>

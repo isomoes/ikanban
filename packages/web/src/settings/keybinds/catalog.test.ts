@@ -16,6 +16,7 @@ describe("keybind catalog", () => {
     expect(signatures(undefined)).toEqual([])
     expect(signatures("ctrl+shift+k")).toEqual(["ctrl+shift+k"])
     expect(signatures("alt+a,meta+b")).toEqual(["alt+a", "meta+b"])
+    expect(signatures("<leader>shift+t,t")).toEqual(["<leader>shift+t", "t"])
   })
 
   test("sorts grouped ids by title and filters by query", () => {

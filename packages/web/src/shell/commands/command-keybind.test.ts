@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { formatKeybind, matchKeybind, parseKeybind } from "./command"
+import { formatKeybind, formatKeybindParts, matchKeybind, parseKeybind } from "./command"
 
 describe("command keybind helpers", () => {
   test("parseKeybind handles aliases and multiple combos", () => {
@@ -21,6 +21,22 @@ describe("command keybind helpers", () => {
   test("parseKeybind treats none and empty as disabled", () => {
     expect(parseKeybind("none")).toEqual([])
     expect(parseKeybind("")).toEqual([])
+  })
+
+  test("leader sequences stay distinct from direct alternatives and display both strokes", () => {
+    const bindings = parseKeybind("<leader>w,ctrl+alt+w")
+    expect(bindings[0]).toMatchObject({ key: "w", leader: true, ctrl: false })
+    expect(matchKeybind(bindings, new KeyboardEvent("keydown", { key: "w" }))).toBe(false)
+    expect(matchKeybind(bindings, new KeyboardEvent("keydown", { key: "w", ctrlKey: true, altKey: true }))).toBe(true)
+    expect(formatKeybind("<leader>w")).toBe(`${formatKeybind("ctrl+space")} → W`)
+    expect(formatKeybind("<leader>shift+t", undefined, "alt+space")).toBe(
+      `${formatKeybind("alt+space")} → ${formatKeybind("shift+t")}`,
+    )
+    expect(formatKeybindParts("<leader>w")).toEqual([...formatKeybindParts("ctrl+space"), "→", "W"])
+    expect(formatKeybind("arrowright")).toBe("→")
+    expect(formatKeybind("<leader>arrowright", undefined, "ctrl+arrowright")).toBe(
+      `${formatKeybind("ctrl+arrowright")} → →`,
+    )
   })
 
   test("matchKeybind normalizes punctuation keys", () => {

@@ -223,7 +223,7 @@ export function createTitlebarController(options: { mobile: Accessor<boolean> })
       id: "home.toggle",
       title: language.t("home.title"),
       category: language.t("command.category.view"),
-      keybind: "mod+b",
+      keybind: "<leader>b",
       hidden: true,
       onSelect: toggleHome,
     },
@@ -237,7 +237,7 @@ export function createTitlebarController(options: { mobile: Accessor<boolean> })
         id: "tab.new",
         category: "tab",
         title: language.t("command.session.new"),
-        keybind: "mod+t,mod+n",
+        keybind: "<leader>n",
         hidden: true,
         onSelect: openNewTab,
       },
@@ -245,7 +245,7 @@ export function createTitlebarController(options: { mobile: Accessor<boolean> })
         id: "tab.close",
         category: "tab",
         title: language.t("command.tab.close"),
-        keybind: "mod+w",
+        keybind: "<leader>w",
         hidden: true,
         onSelect: () => {
           tabsStoreActions.closeTab(tabsStore.findIndex((tab) => current === tab))
@@ -255,7 +255,7 @@ export function createTitlebarController(options: { mobile: Accessor<boolean> })
         id: "tab.reopenClosed",
         category: language.t("command.category.file"),
         title: language.t("command.tab.reopenClosed"),
-        keybind: "mod+shift+t",
+        keybind: "<leader>shift+t",
         onSelect: () => tabsStoreActions.reopenClosedTab(),
       },
     ].filter((v) => v !== undefined)

@@ -1131,6 +1131,10 @@ export const dict = {
   "settings.shortcuts.conflict.description": "{{keybind}} is already assigned to {{titles}}.",
   "settings.shortcuts.unassigned": "Unassigned",
   "settings.shortcuts.pressKeys": "Press keys",
+  "settings.shortcuts.pressLeaderKey": "Press the next key",
+  "settings.shortcuts.leader": "Leader key",
+  "settings.shortcuts.leader.description":
+    "Press {{leader}}, release it, then press the next key within 1.5 seconds. Esc cancels.",
   "settings.shortcuts.search.placeholder": "Search shortcuts",
   "settings.shortcuts.search.empty": "No shortcuts found",
 

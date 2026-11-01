@@ -9,14 +9,17 @@ import { useLanguage } from "@/runtime/i18n/language"
 import { useSettings } from "@/settings/model"
 import { Persist, persisted } from "@/runtime/persistence/storage"
 import {
+  DEFAULT_LEADER_KEYBIND,
+  LEADER_ID,
   formatKeybind,
   formatKeybindParts,
   isEditableTarget,
   parseKeybind,
-  signature,
+  keybindSignature,
   signatureFromEvent,
   type KeybindConfig,
 } from "./keybind"
+import { createCommandKeyboard } from "./keyboard"
 
 export {
   formatKeybind,
@@ -29,7 +32,7 @@ export {
 } from "./keybind"
 
 const PALETTE_ID = "command.palette"
-export const DEFAULT_PALETTE_KEYBIND = "mod+p"
+export const DEFAULT_PALETTE_KEYBIND = "<leader>p"
 const SUGGESTED_PREFIX = "suggested."
 const EDITABLE_KEYBIND_IDS = new Set(["terminal.toggle", "terminal.new", "file.attach"])
 
@@ -186,11 +189,12 @@ export const { use: useCommand, provider: CommandProvider } = createSimpleContex
     })
 
     const suspended = () => store.suspendCount > 0
+    const leader = () => settings.keybinds.get(LEADER_ID) ?? DEFAULT_LEADER_KEYBIND
 
     const palette = createMemo(() => {
       const config = settings.keybinds.get(PALETTE_ID) ?? DEFAULT_PALETTE_KEYBIND
       const keybinds = parseKeybind(config)
-      return new Set(keybinds.map((kb) => signature(kb.key, kb.ctrl, kb.meta, kb.shift, kb.alt)))
+      return new Set(keybinds.map(keybindSignature))
     })
 
     const keymap = createMemo(() => {
@@ -203,7 +207,7 @@ export const { use: useCommand, provider: CommandProvider } = createSimpleContex
         const keybinds = parseKeybind(option.keybind)
         for (const kb of keybinds) {
           if (!kb.key) continue
-          const sig = signature(kb.key, kb.ctrl, kb.meta, kb.shift, kb.alt)
+          const sig = keybindSignature(kb)
           const existing = map.get(sig)
           if (existing) {
             existing.push(option)
@@ -233,33 +237,47 @@ export const { use: useCommand, provider: CommandProvider } = createSimpleContex
       run(PALETTE_ID, "palette")
     }
 
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (suspended() || dialog.active) return
-
-      const sig = signatureFromEvent(event)
+    const resolveKeyDown = (event: KeyboardEvent, prefixed: boolean) => {
+      const sig = `${prefixed ? "<leader>" : ""}${signatureFromEvent(event)}`
       const isPalette = palette().has(sig)
       const option = resolveKeybindOption(keymap().get(sig), event)
       const modified = event.ctrlKey || event.metaKey || event.altKey
       const isTab = event.key === "Tab"
 
-      if (isEditableTarget(event.target) && !isPalette && !isAllowedEditableKeybind(option?.id) && !modified && !isTab)
+      if (
+        !prefixed &&
+        isEditableTarget(event.target) &&
+        !isPalette &&
+        !isAllowedEditableKeybind(option?.id) &&
+        !modified &&
+        !isTab
+      )
         return
 
-      if (isPalette) {
-        event.preventDefault()
-        event.stopPropagation()
-        showPalette()
-        return
-      }
+      if (isPalette) return showPalette
 
       if (!option) return
-      event.preventDefault()
-      event.stopPropagation()
-      void option.onSelect?.("keybind")
+      return () => void option.onSelect?.("keybind")
     }
 
+    const keyboard = createCommandKeyboard({
+      leader,
+      enabled: () => !suspended() && !dialog.active,
+      resolve: resolveKeyDown,
+    })
+    createEffect(() => {
+      leader()
+      suspended()
+      dialog.active
+      keyboard.reset()
+    })
+    onCleanup(keyboard.reset)
     onMount(() => {
-      makeEventListener(document, "keydown", handleKeyDown, { capture: true })
+      makeEventListener(document, "keydown", keyboard.keydown, { capture: true })
+      makeEventListener(document, "keyup", keyboard.keyup, { capture: true })
+      makeEventListener(window, "blur", keyboard.reset)
+      makeEventListener(document, "pointerdown", keyboard.reset, { capture: true })
+      makeEventListener(document, "visibilitychange", keyboard.reset)
     })
 
     function register(cb: () => CommandOption[]): void
@@ -297,11 +315,11 @@ export const { use: useCommand, provider: CommandProvider } = createSimpleContex
       keybind(id: string) {
         const config = keybindConfig(id)
         if (!config) return ""
-        return formatKeybind(config, language.t)
+        return formatKeybind(config, language.t, leader())
       },
       keybindParts(id: string) {
         const config = keybindConfig(id)
-        return config ? formatKeybindParts(config, language.t) : []
+        return config ? formatKeybindParts(config, language.t, leader()) : []
       },
       show: showPalette,
       keybinds(enabled: boolean) {

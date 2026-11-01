@@ -47,7 +47,7 @@ backend; no desktop client is required.
 
 5. **Review and run.** Open the **Review** panel to inspect this session's diff.
    Open or refresh files in the file tree, or add selected lines to context. Execute
-   **Toggle terminal** from the command palette (default `Ctrl/Cmd+P`) and use the
+    **Toggle terminal** from the command palette (default `Ctrl+Space`, then `P`) and use the
    terminal in the side or bottom pane.
 
 6. **Configure providers and models.** Go to **Settings > Providers** to connect
@@ -56,6 +56,12 @@ backend; no desktop client is required.
 
 7. **Install the PWA (optional).** Use your browser's install action to add iKanban
    to your desktop or home screen; mobile provides adapted navigation and session tabs.
+
+## Keyboard shortcuts
+
+Press and release **Ctrl+Space**, then **W** to close an app tab, **N** for a new
+session, or **P** for the command palette. Customize these in **Settings > Keyboard
+shortcuts**. See the [shortcut guide and Surfingkeys setup](./docs/keyboard-shortcuts.md).
 
 ## Historical introduction videos
 

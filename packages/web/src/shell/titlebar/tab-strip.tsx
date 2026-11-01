@@ -254,7 +254,7 @@ export function TitlebarTabStrip(props: {
       id: `tab.prev`,
       category: "tab",
       title: "",
-      keybind: `ctrl+h,mod+option+ArrowLeft,ctrl+shift+tab`,
+      keybind: `<leader>h,mod+option+ArrowLeft`,
       hidden: true,
       onSelect: () => selectAdjacentTab(-1),
     },
@@ -262,7 +262,7 @@ export function TitlebarTabStrip(props: {
       id: `tab.next`,
       category: "tab",
       title: "",
-      keybind: `ctrl+l,mod+option+ArrowRight,ctrl+tab`,
+      keybind: `<leader>l,mod+option+ArrowRight`,
       hidden: true,
       onSelect: () => selectAdjacentTab(1),
     },
@@ -415,13 +415,13 @@ function useTabShortcut(index: () => number, onSelect: () => void) {
 
   command.register(() => {
     const number = index() + 1
-    if (number < 1 || number > 9) return []
+    if (number < 1 || number > 10) return []
     return [
       {
         id: `tab.${number}`,
         category: "tab",
         title: "",
-        keybind: `mod+${number}`,
+        keybind: `<leader>${number % 10}`,
         hidden: true,
         onSelect,
       },

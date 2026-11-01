@@ -2,6 +2,10 @@ import en from "@/runtime/i18n/en"
 
 const IS_MAC = typeof navigator === "object" && /(Mac|iPod|iPhone|iPad)/.test(navigator.platform)
 
+export const LEADER_ID = "leader"
+export const DEFAULT_LEADER_KEYBIND = "ctrl+space"
+export const LEADER_TIMEOUT = 1500
+
 export type KeyLabel =
   | "common.key.ctrl"
   | "common.key.alt"
@@ -54,19 +58,31 @@ export interface Keybind {
   meta: boolean
   shift: boolean
   alt: boolean
+  leader?: boolean
+}
+
+export function keybindSignature(kb: Keybind) {
+  return `${kb.leader ? "<leader>" : ""}${signature(kb.key, kb.ctrl, kb.meta, kb.shift, kb.alt)}`
+}
+
+export function isModifierKey(key: string) {
+  return key === "Shift" || key === "Control" || key === "Alt" || key === "Meta" || key === "AltGraph"
 }
 
 export function parseKeybind(config: string): Keybind[] {
   if (!config || config === "none") return []
 
   return config.split(",").map((combo) => {
-    const parts = combo.trim().toLowerCase().split("+")
+    const value = combo.trim().toLowerCase()
+    const leader = value.startsWith("<leader>")
+    const parts = (leader ? value.slice("<leader>".length).replace(/^\+/, "") : value).split("+")
     const keybind: Keybind = {
       key: "",
       ctrl: false,
       meta: false,
       shift: false,
       alt: false,
+      ...(leader ? { leader: true } : {}),
     }
 
     for (const part of parts) {
@@ -105,6 +121,8 @@ export function matchKeybind(keybinds: Keybind[], event: KeyboardEvent): boolean
   const eventKey = keyFromKeyboardEvent(event)
 
   for (const kb of keybinds) {
+    // A sequence must be dispatched by the leader handler, never as a bare key.
+    if (kb.leader) continue
     const keyMatch = kb.key === eventKey
     const ctrlMatch = kb.ctrl === (event.ctrlKey || false)
     const metaMatch = kb.meta === (event.metaKey || false)
@@ -164,16 +182,28 @@ function displayKeybindParts(kb: Keybind, t?: (key: KeyLabel) => string) {
   return parts
 }
 
-export function formatKeybindParts(config: string, t?: (key: KeyLabel) => string): string[] {
+export function formatKeybindParts(
+  config: string,
+  t?: (key: KeyLabel) => string,
+  leader = DEFAULT_LEADER_KEYBIND,
+): string[] {
   if (!config || config === "none") return []
   const keybind = parseKeybind(config)[0]
-  return keybind ? displayKeybindParts(keybind, t) : []
+  if (!keybind) return []
+  const parts = displayKeybindParts(keybind, t)
+  if (!keybind.leader) return parts
+  const prefix = parseKeybind(leader).find((kb) => !kb.leader)
+  return [...(prefix ? displayKeybindParts(prefix, t) : ["<leader>"]), "→", ...parts]
 }
 
-export function formatKeybind(config: string, t?: (key: KeyLabel) => string): string {
-  const parts = formatKeybindParts(config, t)
-  if (parts.length === 0) return ""
-  return IS_MAC ? parts.join("") : parts.join("+")
+export function formatKeybind(config: string, t?: (key: KeyLabel) => string, leader = DEFAULT_LEADER_KEYBIND): string {
+  const keybind = parseKeybind(config)[0]
+  if (!keybind) return ""
+  const separator = IS_MAC ? "" : "+"
+  const suffix = displayKeybindParts(keybind, t).join(separator)
+  if (!keybind.leader) return suffix
+  const prefix = parseKeybind(leader).find((kb) => !kb.leader)
+  return `${prefix ? displayKeybindParts(prefix, t).join(separator) : "<leader>"} → ${suffix}`
 }
 
 export function isEditableTarget(target: EventTarget | null) {

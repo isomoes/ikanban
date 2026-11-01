@@ -59,7 +59,7 @@ export const useComposerCommands = (input: { model?: ModelSelection } = {}) => {
       id: "model.variant.cycle",
       title: language.t("command.model.variant.cycle"),
       description: language.t("command.model.variant.cycle.description"),
-      keybind: "shift+mod+d",
+      keybind: "<leader>v",
       onSelect: () => model.variant.cycle(),
     }),
     agentCommand({

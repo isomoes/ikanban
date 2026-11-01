@@ -1,5 +1,6 @@
 import fuzzysort from "fuzzysort"
 import { parseKeybind, type useCommand } from "@/shell/commands/command"
+import { LEADER_ID } from "@/shell/commands/keybind"
 
 export const PALETTE_ID = "command.palette"
 
@@ -45,7 +46,7 @@ export function signatures(config: string | undefined) {
     if (kb.meta) parts.push("meta")
     if (kb.key) parts.push(kb.key)
     if (parts.length === 0) continue
-    sigs.push(parts.join("+"))
+    sigs.push(`${kb.leader ? "<leader>" : ""}${parts.join("+")}`)
   }
 
   return sigs
@@ -56,8 +57,14 @@ export function keybinds(value: unknown): KeybindMap {
   return value as KeybindMap
 }
 
-export function listFor(command: Pick<CommandContext, "catalog" | "options">, map: KeybindMap, palette: string) {
+export function listFor(
+  command: Pick<CommandContext, "catalog" | "options">,
+  map: KeybindMap,
+  palette: string,
+  leader: string,
+) {
   const out = new Map<string, KeybindMeta>()
+  out.set(LEADER_ID, { title: leader, group: "General" })
   out.set(PALETTE_ID, { title: palette, group: "General" })
 
   for (const opt of command.catalog) {

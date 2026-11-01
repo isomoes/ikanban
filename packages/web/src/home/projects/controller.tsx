@@ -65,7 +65,7 @@ export function createHomeProjectsController(home: HomeController) {
       id: "project.select",
       title: language.t("session.new.project.search"),
       category: language.t("command.category.project"),
-      keybind: "mod+o",
+      keybind: "<leader>o",
       onSelect: async () => {
         const { HomeProjectSearch } = await import("./search-dialog")
         void dialog.show(() => (

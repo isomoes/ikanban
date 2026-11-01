@@ -3,6 +3,14 @@ import { createStore } from "solid-js/store"
 import { makeEventListener } from "@solid-primitives/event-listener"
 import { showToast } from "@/shell/notifications/toast"
 import { DEFAULT_PALETTE_KEYBIND, formatKeybind, keyFromKeyboardEvent, useCommand } from "@/shell/commands/command"
+import {
+  DEFAULT_LEADER_KEYBIND,
+  LEADER_ID,
+  LEADER_TIMEOUT,
+  isModifierKey,
+  matchKeybind,
+  parseKeybind,
+} from "@/shell/commands/keybind"
 import { useLanguage } from "@/runtime/i18n/language"
 import type { useSettings } from "@/settings/model"
 import { GROUPS, PALETTE_ID, filteredFor, groupedFor, keybinds, listFor, signatures } from "./catalog"
@@ -13,12 +21,8 @@ type CommandContext = ReturnType<typeof useCommand>
 type LanguageContext = ReturnType<typeof useLanguage>
 type SettingsContext = ReturnType<typeof useSettings>
 
-function isModifier(key: string) {
-  return key === "Shift" || key === "Control" || key === "Alt" || key === "Meta"
-}
-
 function recordKeybind(event: KeyboardEvent) {
-  if (isModifier(event.key)) return
+  if (isModifierKey(event.key)) return
 
   const parts: string[] = []
 
@@ -49,15 +53,23 @@ export function createKeybindSettingsController(
   },
   language: Pick<LanguageContext, "locale" | "t"> = useLanguage(),
 ) {
-  const [store, setStore] = createStore({ active: null as string | null })
+  const [store, setStore] = createStore({ active: null as string | null, pending: false })
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const leader = () => input.settings.keybinds.get(LEADER_ID) ?? DEFAULT_LEADER_KEYBIND
   const overrides = createMemo(() => keybinds(input.settings.current.keybinds))
   const list = createMemo(() => {
     language.locale()
-    return listFor(input.command, overrides(), language.t("command.palette"))
+    return listFor(
+      input.command,
+      overrides(),
+      language.t("command.palette"),
+      language.t("settings.shortcuts.leader"),
+    )
   })
   const grouped = createMemo(() => groupedFor(list()))
   const title = (id: string) => list().get(id)?.title ?? ""
   const effective = (id: string) => {
+    if (id === LEADER_ID) return leader()
     if (id === PALETTE_ID) return input.settings.keybinds.get(id) ?? DEFAULT_PALETTE_KEYBIND
 
     const custom = input.settings.keybinds.get(id)
@@ -84,8 +96,9 @@ export function createKeybindSettingsController(
     return value
   })
   const stop = () => {
+    clearTimeout(timer)
     if (!store.active) return
-    setStore("active", null)
+    setStore({ active: null, pending: false })
     input.command.keybinds(true)
   }
   const toggle = (id: string) => {
@@ -102,10 +115,12 @@ export function createKeybindSettingsController(
   const handle = (event: KeyboardEvent) => {
     const id = store.active
     if (!id) return
+    if (event.defaultPrevented || event.isComposing || event.keyCode === 229) return
 
     event.preventDefault()
     event.stopPropagation()
     event.stopImmediatePropagation()
+    if (event.repeat) return
 
     if (event.key === "Escape") {
       stop()
@@ -118,14 +133,24 @@ export function createKeybindSettingsController(
       !event.metaKey &&
       !event.altKey &&
       !event.shiftKey
-    if (clear) {
+    if (clear && !store.pending) {
       input.settings.keybinds.set(id, "none")
       stop()
       return
     }
 
-    const next = recordKeybind(event)
-    if (!next) return
+    if (id !== LEADER_ID && matchKeybind(parseKeybind(leader()), event)) {
+      clearTimeout(timer)
+      setStore("pending", true)
+      timer = setTimeout(() => setStore("pending", false), LEADER_TIMEOUT)
+      return
+    }
+
+    const key = recordKeybind(event)
+    if (!key) return
+    const next = `${store.pending ? "<leader>" : ""}${key}`
+    clearTimeout(timer)
+    setStore("pending", false)
 
     const conflicts = new Map<string, string>()
     for (const signature of signatures(next)) {
@@ -139,7 +164,7 @@ export function createKeybindSettingsController(
       notify({
         title: language.t("settings.shortcuts.conflict.title"),
         description: language.t("settings.shortcuts.conflict.description", {
-          keybind: formatKeybind(next, language.t),
+          keybind: formatKeybind(next, language.t, leader()),
           titles: [...conflicts.values()].join(", "),
         }),
       })
@@ -152,8 +177,10 @@ export function createKeybindSettingsController(
 
   const target = input.target ?? (typeof document === "object" ? document : undefined)
   if (target) makeEventListener(target, "keydown", handle, { capture: true })
+  if (target?.defaultView) makeEventListener(target.defaultView, "blur", stop)
 
   onCleanup(() => {
+    clearTimeout(timer)
     if (store.active) input.command.keybinds(true)
   })
 
@@ -161,12 +188,13 @@ export function createKeybindSettingsController(
     catalog: {
       groups: GROUPS,
       filtered: (query: string) =>
-        filteredFor(query, list(), grouped(), (id) => formatKeybind(effective(id) ?? "", language.t)),
+        filteredFor(query, list(), grouped(), (id) => formatKeybind(effective(id) ?? "", language.t, leader())),
       title,
-      keybind: (id: string) => formatKeybind(effective(id) ?? "", language.t),
+      keybind: (id: string) => formatKeybind(effective(id) ?? "", language.t, leader()),
     },
     capture: {
       active: () => store.active,
+      pending: () => store.pending,
       toggle,
     },
     settings: {

@@ -47,6 +47,8 @@ export function SettingsKeybinds(props: { active?: boolean; autofocus?: boolean 
       title={controller.catalog.title}
       keybind={controller.catalog.keybind}
       active={controller.capture.active()}
+      pending={controller.capture.pending()}
+      leader={controller.catalog.keybind("leader")}
       onCapture={controller.capture.toggle}
       hasOverrides={controller.settings.hasOverrides()}
       onReset={controller.settings.reset}
@@ -62,6 +64,8 @@ function SettingsKeybindsView(props: {
   title: (id: string) => string
   keybind: (id: string) => string
   active: string | null
+  pending: boolean
+  leader: string
   onCapture: (id: string) => void
   hasOverrides: boolean
   onReset: () => void
@@ -92,6 +96,9 @@ function SettingsKeybindsView(props: {
           <div class="flex flex-col gap-1">
             <h2 class="settings-tab-title">{language.t("settings.shortcuts.title")}</h2>
             <span class="text-11-regular text-v2-text-text-muted">{language.t("settings.shortcuts.description")}</span>
+            <span class="text-11-regular text-v2-text-text-muted">
+              {language.t("settings.shortcuts.leader.description", { leader: props.leader })}
+            </span>
           </div>
           <Button variant="ghost" onClick={props.onReset} disabled={!props.hasOverrides}>
             {language.t("settings.shortcuts.reset.button")}
@@ -148,7 +155,9 @@ function SettingsKeybindsView(props: {
                               when={props.active === id}
                               fallback={props.keybind(id) || language.t("settings.shortcuts.unassigned")}
                             >
-                              {language.t("settings.shortcuts.pressKeys")}
+                              {language.t(
+                                props.pending ? "settings.shortcuts.pressLeaderKey" : "settings.shortcuts.pressKeys",
+                              )}
                             </Show>
                           </button>
                         </div>

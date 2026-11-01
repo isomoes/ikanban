@@ -49,7 +49,7 @@ export function SettingsSearch() {
     {
       id: "settings.search.focus",
       title: language.t("settings.search.placeholder"),
-      keybind: "mod+f",
+      keybind: "<leader>f",
       hidden: true,
       onSelect: () => {
         input?.focus({ preventScroll: true })
