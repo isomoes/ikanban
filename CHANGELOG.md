@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.15] - 2026-11-11
+
+- Web: Added a persistent full-width file preview toggle to expand the file panel across the session workspace. (@isomoes) [fc14257](https://github.com/isomoes/ikanban/commit/fc14257c177d5d789735921749fe96a233c42c81)
+- Markdown: Fixed rendering of dollar-delimited math in markdown previews. (@isomoes) [c64d6b2](https://github.com/isomoes/ikanban/commit/c64d6b2250bd12246b6e887fc3ac5711771b7da7)
+
 ## [0.6.14] - 2026-11-02
 
 - Web: Added configurable leader-key shortcuts, using Ctrl+Space followed by a command key by default, with shortcut recording and display in settings and the command palette. (@isomoes) [e502852](https://github.com/isomoes/ikanban/commit/e5028521dfc721f0b2f9c47db1e2d102ae5d35ab)
