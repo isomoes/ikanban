@@ -8,6 +8,8 @@ export function createMarkdownParser(highlight: (code: string, language: string)
 }
 
 const inlineMathRegex = /^\\\(((?:\\.|[^\\\n])*?)\\\)/
+// Keep currency and unmatched dollars as prose. Escaped dollars belong to the formula.
+const dollarMathRegex = /^\$(?!\$|\s)((?:\\[^\n]|[^\\$\n])+?)(?<!\s)\$(?!\d)/
 const blockMathRegex = /^\$\$\n([\s\S]+?)\n\$\$(?:\n|$)/
 
 const katexExtension: MarkedExtension = {
@@ -16,12 +18,12 @@ const katexExtension: MarkedExtension = {
       name: "inlineKatex",
       level: "inline",
       start(src) {
-        const index = src.indexOf("\\(")
+        const index = src.search(/\\\(|\$/)
         if (index === -1) return
         return index
       },
       tokenizer(src) {
-        const match = src.match(inlineMathRegex)
+        const match = src.match(inlineMathRegex) ?? src.match(dollarMathRegex)
         if (!match) return
         return {
           type: "inlineKatex",

@@ -15,7 +15,7 @@ let smallParser: Marked | undefined
 
 export function parseSmallMarkdown(text: string) {
   // Any possible KaTeX delimiter stays on the worker, including escaped ones.
-  if (text.length > 1024 || text.includes("\\(") || text.includes("$$")) return
+  if (text.length > 1024 || text.includes("\\(") || /\$[\s\S]*\$/.test(text)) return
   // Ordinary prose does not need the block/inline lexer's cold regular expressions.
   // Keep every possible Markdown construct, autolink, and hard break on that lexer.
   if (

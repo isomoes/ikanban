@@ -15,6 +15,21 @@ test("renders inline and block math", async () => {
   expect(await parser.parse("$$\nx^2\n$$\n")).toContain('<span class="katex-display">')
 })
 
+test.each(["$x^2$", "The equation is $E = mc^2$.", "$**$", "$x$ and $y$", "$\\frac{a}{b}$"])(
+  "renders dollar-delimited inline math: %s",
+  async (text) => {
+    expect(await parser.parse(text)).toContain('<span class="katex">')
+    expect(parseSmallMarkdown(text)).toBeUndefined()
+  },
+)
+
+test.each(["Prices are $5 and $10.", "An unmatched $x", "\\$x\\$", "`$x$`", "$ x $", "$x\ny$"])(
+  "preserves literal dollars: %s",
+  async (text) => {
+    expect(await parser.parse(text)).not.toContain('class="katex"')
+  },
+)
+
 test("uses the configured code highlighter", async () => {
   expect(await parser.parse("```ts\nconst value = 1\n```\n")).toBe('<pre data-language="ts">const value = 1</pre>\n')
 })
