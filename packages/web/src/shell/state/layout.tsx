@@ -419,6 +419,17 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
             },
           },
           reviewPanel: {
+            fullWidth: () => s().previewFullWidth ?? false,
+            toggleFullWidth() {
+              const session = key()
+              const current = store.sessionView[session]
+              if (!current) {
+                setStore("sessionView", session, { scroll: {}, previewFullWidth: true })
+              } else {
+                setStore("sessionView", session, "previewFullWidth", !current.previewFullWidth)
+              }
+              prune(session)
+            },
             opened: reviewPanelOpened,
             source: reviewPanelSource,
             width: sessionWidth,

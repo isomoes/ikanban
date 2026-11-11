@@ -99,7 +99,7 @@ function SessionScreenContent(props: { session: SessionModel }) {
   })
   const review = createSessionReview({ session, screen, deferRender: () => state.deferRender })
   const mobileView = createMemo(() => (screen.terminal.open() ? "terminal" : review.mobile.tab()))
-  const conversationVisible = createMemo(() => isDesktop() || mobileView() === "session")
+  const conversationVisible = createMemo(() => isDesktop() ? !screen.review.fullWidth() : mobileView() === "session")
   const composer = createActiveSessionRegion({
     session,
     screen,
@@ -247,6 +247,7 @@ function SessionScreenContent(props: { session: SessionModel }) {
             onTransitionEnd={trackSideWidthMotion}
             onTransitionCancel={trackSideWidthMotion}
             style={{
+              display: screen.review.fullWidth() ? "none" : undefined,
               width: screen.panel.width(),
               "--session-summary-resize-translate": paneStore.summaryResizeTranslate,
             }}

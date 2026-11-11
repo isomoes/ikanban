@@ -156,6 +156,14 @@ const icons = {
     viewBox: "0 0 16 16",
     body: `<path d="M8.25 6.17773V1.17773M11.25 4.17773L8.25 1.17773L5.25 4.17773" stroke="currentColor"/><path d="M8.25 9.17773V14.1777M11.25 11.1777L8.25 14.1777L5.25 11.1777" stroke="currentColor"/><path d="M4.25 7.67773H12.25" stroke="currentColor"/>`,
   },
+  "maximize-pane": {
+    viewBox: "0 0 16 16",
+    body: `<path d="M2 6V2H6M10 2H14V6M14 10V14H10M6 14H2V10M2 2L6 6M14 2L10 6M14 14L10 10M2 14L6 10" stroke="currentColor" stroke-linejoin="round"/>`,
+  },
+  "restore-pane": {
+    viewBox: "0 0 16 16",
+    body: `<path d="M2 6H6V2M10 2V6H14M14 10H10V14M6 14V10H2M2 2L6 6M14 2L10 6M14 14L10 10M2 14L6 10" stroke="currentColor" stroke-linejoin="round"/>`,
+  },
   filetree: {
     viewBox: "0 0 16 16",
     body: `<path d="M2.5 1.5V12.2484H6.75M2.5 4.74838H6.75" stroke="currentColor"/><rect x="8.5" y="3.2168" width="6" height="3" fill="none" stroke="currentColor"/><rect x="8.5" y="10.75" width="6" height="3" fill="none" stroke="currentColor"/>`,

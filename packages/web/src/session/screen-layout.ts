@@ -15,6 +15,7 @@ export function createSessionScreenLayout(session: SessionModel) {
   const view = session.layout.view
   const reviewOpen = createMemo(() => session.isDesktop() && session.layout.view().reviewPanel.opened())
   const reviewPanelOpen = createMemo(() => reviewOpen() && !!session.identity.params.id)
+  const previewFullWidth = createMemo(() => reviewPanelOpen() && view().reviewPanel.fullWidth())
   const terminalOpen = createMemo(() => session.layout.view().terminal.opened())
   const sideTerminal = createMemo(() => session.isDesktop() && settings.general.terminalPlacement() === "side")
   const bottomTerminal = createMemo(() => session.isDesktop() && settings.general.terminalPlacement() === "bottom")
@@ -82,6 +83,7 @@ export function createSessionScreenLayout(session: SessionModel) {
     return `${Math.max(0, height - terminalPane() - 8)}px`
   })
   const sideContentWidth = createMemo<string>((previous) => {
+    if (previewFullWidth()) return "100%"
     const width = available()
     if (resizable() && width !== undefined) return `${Math.max(0, width - resizedWidth())}px`
     if (fileTreeOpen()) return `${layout.fileTree.width()}px`
@@ -100,6 +102,8 @@ export function createSessionScreenLayout(session: SessionModel) {
       width: panelWidth,
     },
     review: {
+      fullWidth: previewFullWidth,
+      toggleFullWidth: () => view().reviewPanel.toggleFullWidth(),
       open: reviewOpen,
       panelOpen: reviewPanelOpen,
     },

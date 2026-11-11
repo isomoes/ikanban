@@ -154,6 +154,8 @@ export function SessionDesktopReview(props: {
   return (
     <Suspense>
       <SessionSidePanel
+        fullWidth={props.review.screen.review.fullWidth()}
+        onToggleFullWidth={props.review.screen.review.toggleFullWidth}
         canReview={props.review.canReview()}
         diffs={props.review.diffs()}
         diffsReady={props.review.ready()}

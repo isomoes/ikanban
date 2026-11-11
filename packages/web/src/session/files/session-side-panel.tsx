@@ -7,6 +7,9 @@ import { Accessibility, AutoScroller, Feedback, PointerActivationConstraints } f
 import { RestrictToHorizontalAxis } from "@dnd-kit/abstract/modifiers"
 import { RestrictToElement } from "@dnd-kit/dom/modifiers"
 import { Tabs } from "@ikanban/ui/tabs"
+import { Icon } from "@ikanban/ui/icon"
+import { IconButton } from "@ikanban/ui/icon-button"
+import { Tooltip } from "@ikanban/ui/tooltip"
 import { Mark } from "@ikanban/ui/logo"
 import type { FileDiffInfo } from "@opencode/client/promise"
 
@@ -42,6 +45,8 @@ function renderDiff(value: ReviewDiff): value is RenderDiff {
 }
 
 export function SessionSidePanel(props: {
+  fullWidth: boolean
+  onToggleFullWidth: () => void
   canReview: boolean
   diffs: ReviewDiff[]
   diffsReady: boolean
@@ -290,6 +295,19 @@ export function SessionSidePanel(props: {
                           onClick={(event) => event.stopPropagation()}
                         >
                           <SessionFileRefresh path={file.pathFromTab(activeTab() ?? "")} />
+                          <Show when={fileBrowserVisible() || props.fullWidth}>
+                            <Tooltip placement="bottom" value={language.t(props.fullWidth ? "file.view.restoreSplit" : "file.view.fullWidth")}>
+                              <IconButton
+                                data-slot="session-file-full-width"
+                                size="small"
+                                variant="ghost-muted"
+                                aria-label={language.t(props.fullWidth ? "file.view.restoreSplit" : "file.view.fullWidth")}
+                                aria-pressed={props.fullWidth}
+                                onClick={props.onToggleFullWidth}
+                                icon={<Icon name={props.fullWidth ? "restore-pane" : "maximize-pane"} />}
+                              />
+                            </Tooltip>
+                          </Show>
                           {/* The header mask and floating panel toggle occupy the final 40px.
                               Keep that space after the refresh button, never in its slot. */}
                           <Show when={reviewVisible()}>
