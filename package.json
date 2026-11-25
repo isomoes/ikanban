@@ -54,7 +54,6 @@
     "@tanstack/virtual-core": "3.17.8"
   },
   "patchedDependencies": {
-    "@dnd-kit/dom@0.5.3": "patches/@dnd-kit%2Fdom@0.5.3.patch",
     "@pierre/trees@1.0.0-beta.4": "patches/@pierre%2Ftrees@1.0.0-beta.4.patch",
     "@tanstack/virtual-core@3.17.8": "patches/@tanstack%2Fvirtual-core@3.17.8.patch",
     "solid-js@1.9.18": "patches/solid-js@1.9.18.patch"
