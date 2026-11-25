@@ -24,12 +24,12 @@ export function withInitial<S extends Schema.ConstraintCodec<object, unknown>>(
 ) {
   const schema = isMigrated(definition) ? definition.current : definition
   const read = isMigrated(definition)
-    ? SchemaParser.decodeUnknownResult(definition.read, { onExcessProperty: "preserve" })
+    ? SchemaParser.decodeUnknownResult(definition.read)
     : Result.succeed<unknown>
   const encode = Schema.encodeUnknownSync(schema)
   return Schema.Unknown.pipe(
     Schema.decode<Schema.Unknown>({
-      decode: SchemaGetter.transformOrFail((value) =>
+      decode: SchemaGetter.transformEffect((value) =>
         Effect.fromResult(Result.map(read(value), (stored) => merge(initial, recover(schema.ast, stored, initial)))),
       ),
       encode: SchemaGetter.transform((value) => encode(value)),
@@ -78,8 +78,19 @@ export function struct<const Fields extends Schema.Struct.Fields>(fields: Fields
   return Schema.Struct(fields).mapFields(Struct.map(Schema.mutableKey))
 }
 
+export function legacy<const Fields extends Schema.Struct.Fields>(fields: Fields) {
+  return Schema.StructWithRest(Schema.Struct(fields), [Schema.Record(Schema.String, Schema.Unknown)])
+}
+
+// Record entries in Effect 4.1 cannot be optional keys, even if the value codec supplies a default.
+export function entry<S extends Schema.ConstraintCodec<unknown, unknown>>(schema: S) {
+  return Schema.mutableKey(Schema.Unknown.pipe(Schema.decodeTo(schema, {
+    decode: SchemaGetter.passthrough(), encode: SchemaGetter.passthrough(),
+  })))
+}
+
 export function record<S extends Schema.ConstraintCodec<unknown, unknown>>(schema: S) {
-  const entries = Schema.Record(Schema.String, Schema.mutableKey(schema))
+  const entries = Schema.Record(Schema.String, entry(schema))
   return fallback(entries, () => Schema.decodeUnknownSync(entries)({}))
 }
 

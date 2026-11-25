@@ -31,7 +31,7 @@
       "@types/node": "24.12.2",
       "@typescript/native-preview": "7.0.0-dev.20251207.1",
       "diff": "8.0.4",
-      "effect": "4.0.0-rc.112",
+      "effect": "4.1.0",
       "fuzzysort": "3.1.0",
       "marked": "18.0.11",
       "marked-shiki": "1.2.1",
@@ -48,7 +48,7 @@
     }
   },
   "overrides": {
-    "effect": "4.0.0-rc.112",
+    "effect": "4.1.0",
     "happy-dom": "20.11.1",
     "solid-js": "1.9.18",
     "@tanstack/virtual-core": "3.17.8"

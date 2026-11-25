@@ -1,14 +1,13 @@
 import { Button } from "@ikanban/ui/button"
 import { Tabs } from "@ikanban/ui/tabs"
 import { getFilename } from "@opencode/util/path"
-import { createMemo, For, Show } from "solid-js"
+import { createMemo, For } from "solid-js"
 import { createStore } from "solid-js/store"
 import { useLanguage } from "@/runtime/i18n/language"
 import { useSessionLayout } from "@/session/session-layout"
 import { createSessionTabs, SESSION_OPEN_FILE_TAB } from "@/session/helpers"
 import { useFile } from "@/workspaces/files/model"
 import { SessionFileBrowserTab } from "./session-file-browser-tab"
-import { SessionFileRefresh } from "./file-refresh"
 import type { Kind } from "./file-tree-v2"
 import "./session-mobile-files.css"
 
@@ -77,11 +76,6 @@ export function SessionMobileFiles() {
             </For>
           </Tabs.List>
         </Tabs>
-        <Show when={!browsing()}>
-          <div data-slot="session-mobile-file-actions" class="flex h-full shrink-0 items-center pe-1">
-            <SessionFileRefresh path={active()} />
-          </div>
-        </Show>
       </div>
       <div class="min-h-0 flex-1">
         <SessionFileBrowserTab

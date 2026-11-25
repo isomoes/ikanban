@@ -42,18 +42,18 @@ const State = Persistence.struct({
     Schema.String,
     Schema.mutableKey(Schema.Boolean.pipe(Schema.catchDecoding(() => Effect.succeed(Option.none())))),
   ),
-  projects: Schema.Record(Schema.String, Schema.mutableKey(ProjectList)),
+  projects: Schema.Record(Schema.String, Persistence.entry(ProjectList)),
   lastProject: Schema.Record(
     Schema.String,
     Schema.mutableKey(Schema.String.pipe(Schema.catchDecoding(() => Effect.succeed(Option.none())))),
   ),
-  recentlyClosed: Schema.Record(Schema.String, Schema.mutableKey(Persistence.array(Schema.String))),
+  recentlyClosed: Schema.Record(Schema.String, Persistence.entry(Persistence.array(Schema.String))),
 })
 
 export function serverState(canonicalLocalServer: () => string | undefined = () => undefined) {
   return Persistence.migrate(
     State,
-    Schema.Struct({ projects: Projects, lastProject: LastProject }).pipe(
+    Persistence.legacy({ projects: Projects, lastProject: LastProject }).pipe(
       Schema.decode({
         decode: SchemaGetter.transform((value) => {
           const canonical = canonicalLocalServer()

@@ -199,6 +199,9 @@ export function SessionFileView(props: SessionFileViewProps) {
   }
 
   const path = createMemo(() => file.pathFromTab(props.tab))
+  createEffect(() => {
+    onCleanup(file.watch(props.tab))
+  })
   const state = createMemo(() => {
     const p = path()
     if (!p) return
@@ -468,7 +471,7 @@ export function SessionFileView(props: SessionFileViewProps) {
             </Show>
           )}
         </Match>
-        <Match when={state()?.loading}>
+        <Match when={state()?.loading && !state()?.loaded}>
           <div class="px-6 py-4 text-text-weak">{language.t("common.loading")}…</div>
         </Match>
         <Match when={state()?.notFound ? state()?.name : undefined}>

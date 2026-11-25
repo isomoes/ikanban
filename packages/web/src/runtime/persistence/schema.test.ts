@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { Effect, Schema, SchemaGetter } from "effect"
+import { Effect, Option, Schema, SchemaGetter } from "effect"
 import { Persistence } from "./schema"
 
 describe("persistence schemas", () => {
@@ -32,7 +32,7 @@ describe("persistence schemas", () => {
 
   test("legacy migration observes missing fields before initial defaults are applied", () => {
     const current = Persistence.struct({ mode: Schema.Literals(["compact", "full"]), enabled: Schema.Boolean })
-    const stored = Schema.Struct({
+    const stored = Persistence.legacy({
       mode: Schema.optional(Schema.Unknown),
       expanded: Schema.optional(Schema.Boolean),
     }).pipe(
@@ -127,7 +127,7 @@ describe("persistence schemas", () => {
     first.changed = true
     expect(decode(undefined)).toEqual({})
 
-    const recover = Persistence.record(Persistence.optional(Schema.Boolean))
+    const recover = Persistence.record(Schema.Boolean.pipe(Schema.catchDecoding(() => Effect.succeed(Option.none()))))
     const state = Schema.decodeUnknownSync(recover)({ valid: true, invalid: "true" })
     expect(state).toEqual({ valid: true })
     expect(Schema.encodeSync(recover)(state)).toEqual({ valid: true })

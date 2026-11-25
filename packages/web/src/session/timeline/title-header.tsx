@@ -4,6 +4,8 @@ import { Icon } from "@ikanban/ui/icon"
 import { IconButton } from "@ikanban/ui/icon-button"
 import { InlineInput } from "@ikanban/ui/inline-input"
 import { Menu } from "@ikanban/ui/menu"
+import { useDialog } from "@ikanban/ui/context/dialog"
+import { SessionArtifacts } from "@/session/artifacts"
 import { useLanguage } from "@/runtime/i18n/language"
 import { useServer } from "@/runtime/server/current"
 import { useWorkspaceLocation } from "@/workspaces/location"
@@ -42,6 +44,7 @@ export function TimelineHeader(props: {
 }) {
   const language = useLanguage()
   const server = useServer()
+  const dialog = useDialog()
   const data = server.ctx.data
   const sdk = useWorkspaceLocation()
   const sessionID = props.data.sessionID
@@ -227,6 +230,18 @@ export function TimelineHeader(props: {
           {(id) => (
             <div class="shrink-0 flex items-center gap-2">
               {props.search}
+              <IconButton
+                size="small"
+                variant="ghost-muted"
+                icon={<Icon name="folder" />}
+                title={language.t("session.artifacts.title")}
+                aria-label={language.t("session.artifacts.title")}
+                onClick={() => {
+                  const directory = sdk().directory
+                  const connection = server.ctx.sdk
+                  dialog.show(() => <SessionArtifacts sdk={connection} directory={directory} sessionID={id} />)
+                }}
+              />
               <SessionMetricsPopover sessionID={id} />
               <SessionContextUsage placement="bottom" />
               <Show when={!parentID() && project()}>

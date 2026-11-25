@@ -15,7 +15,8 @@ backend; no desktop client is required.
 | Projects and sessions | Recent projects, worktree workspaces, time-grouped sessions, project and session search, and multiple tabs. |
 | Session workbench | Streaming messages, todos, questions, permission requests, background tasks, message search, and live session metrics (tok/s, turns, steps, tool calls, time, and tokens). |
 | Composer | Drag in images, PDFs, or text files; `@`-mention files; run `/` commands; switch model, agent, and MCP; Shell mode. |
-| Review and files | Git-based diff review, file tree and previews, manual refresh, and adding selected lines to context; create a Git repository in one click when missing. |
+| Review and files | Git-based diff review, file tree with live previews, and adding selected lines to context; create a Git repository in one click when missing. |
+| Session outputs | Open published artifacts or inspect their source files from the session header. Requires `experimental.artifacts: true` in the workspace’s OpenCode configuration. |
 | Terminal | Side or bottom layout, multiple tabs, and a direct WebSocket connection to the backend. |
 | Providers and models | OAuth or API-key connections with authentication-failure feedback; model favorites and recently used models, plus hide all models per provider. |
 | Multiple servers | Add, edit, and switch servers at runtime without rebuilding. |
@@ -46,7 +47,7 @@ backend; no desktop client is required.
    to mention files, drag in images, PDFs, or text files, or use `/` to run commands.
 
 5. **Review and run.** Open the **Review** panel to inspect this session's diff.
-   Open or refresh files in the file tree, or add selected lines to context. Execute
+   Open a file to follow changes live, or add selected lines to context. Execute
     **Toggle terminal** from the command palette (default `Ctrl+Space`, then `P`) and use the
    terminal in the side or bottom pane.
 

@@ -1,5 +1,5 @@
 import type { OpenCodeEvent } from "@opencode/client/promise"
-import { createClientConnection, createPtyClient, type ClientConnectionStatus } from "@opencode/client/solid"
+import { createClientConnection, type ClientConnectionStatus } from "@opencode/client/solid"
 import { createGlobalEmitter } from "@solid-primitives/event-bus"
 import { type Accessor, onCleanup } from "solid-js"
 import { createApiForServer, type ServerApi } from "@/runtime/server/api"
@@ -56,6 +56,24 @@ export function createOpenCodeEventSource() {
 }
 
 export type ServerConnectionStatus = ClientConnectionStatus
+
+// The 2.4 Solid client only wraps persistent PTYs. Workspace terminals use the
+// regular PTY endpoint and its single-use websocket ticket.
+function createPtyClient(api: ServerApi, options: { url: string }) {
+  return {
+    async connect(input: { ptyID: string; location: { directory: string }; cursor?: number }) {
+      const { data } = await api.pty.connect.token({ ptyID: input.ptyID, location: input.location, "x-opencode-ticket": "1" })
+      const url = new URL(`api/pty/${encodeURIComponent(input.ptyID)}/connect`, options.url.replace(/\/?$/, "/"))
+      url.protocol = url.protocol === "https:" ? "wss:" : "ws:"
+      url.searchParams.set("location[directory]", input.location.directory)
+      url.searchParams.set("ticket", data.ticket)
+      if (input.cursor !== undefined) url.searchParams.set("cursor", String(input.cursor))
+      const socket = new WebSocket(url)
+      socket.binaryType = "arraybuffer"
+      return socket
+    },
+  }
+}
 type ServerSDKBase = {
   server: ServerConnection.Http
   scope: ServerScope

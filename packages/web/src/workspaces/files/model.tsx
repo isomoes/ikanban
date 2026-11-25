@@ -1,4 +1,4 @@
-import { batch, createEffect, createMemo, onCleanup } from "solid-js"
+import { batch, createEffect, createMemo, onCleanup, untrack } from "solid-js"
 import { createStore, produce, reconcile } from "solid-js/store"
 import { isFileNotFoundError } from "@opencode/client/promise"
 import { createSimpleContext } from "@ikanban/ui/context"
@@ -28,6 +28,7 @@ import { formatServerError } from "@/runtime/server/errors"
 import { SessionRouteKey, SessionStateKey } from "@/runtime/server/scope"
 import { createFileTreeStore } from "./tree-store"
 import { invalidateFromWatcher } from "./watcher"
+import { createFileWatchLeases } from "./watch-lease"
 import {
   selectionFromLines,
   type FileState,
@@ -65,6 +66,8 @@ export const { use: useFile, provider: FileProvider } = createSimpleContext({
     )
 
     const inflight = new Map<string, Promise<void>>()
+    const dirty = new Set<string>()
+    const lease = createFileWatchLeases()
     const [store, setStore] = createStore<{
       file: Record<string, FileState>
     }>({
@@ -109,6 +112,7 @@ export const { use: useFile, provider: FileProvider } = createSimpleContext({
     createEffect(() => {
       scope()
       inflight.clear()
+      dirty.clear()
       resetFileContentLru()
       batch(() => {
         setStore("file", reconcile({}))
@@ -170,7 +174,7 @@ export const { use: useFile, provider: FileProvider } = createSimpleContext({
       })
     }
 
-    const load = (input: string, options?: { force?: boolean }) => {
+    const load = (input: string, options?: { force?: boolean }): Promise<void> => {
       const file = path.normalize(input)
       if (!file) return Promise.resolve()
 
@@ -182,7 +186,10 @@ export const { use: useFile, provider: FileProvider } = createSimpleContext({
       if (!options?.force && current?.loaded) return Promise.resolve()
 
       const pending = inflight.get(key)
-      if (pending) return pending
+      if (pending) {
+        if (options?.force) dirty.add(key)
+        return pending
+      }
 
       setLoading(file)
 
@@ -209,7 +216,9 @@ export const { use: useFile, provider: FileProvider } = createSimpleContext({
           )
         })
         .finally(() => {
+          if (inflight.get(key) !== promise) return
           inflight.delete(key)
+          if (dirty.delete(key) && scope() === directory) return load(input, { force: true })
         })
 
       inflight.set(key, promise)
@@ -253,6 +262,43 @@ export const { use: useFile, provider: FileProvider } = createSimpleContext({
       })
       onCleanup(stop)
     })
+
+    // Watches expire after 24 hours and are lost when the server restarts.
+    const watch = (tab: string) => {
+      const file = path.pathFromTab(tab)
+      if (!file) return () => {}
+      const directory = scope()
+      const outside = path.absolute(file)
+      const parent = getDirectory(file)
+      const request = outside
+        ? { path: getFilename(file), location: { directory: /^(?:[A-Za-z]:)?[/\\]$/.test(parent) ? parent : parent.replace(/[/\\]$/, "") } }
+        : { path: file, location: { directory } }
+      let active = true
+      const registration = lease(JSON.stringify(request),
+        () => serverSDK.api.experimental.file.watch(request),
+        () => serverSDK.api.experimental.file.unwatch(request),
+      )
+      const refresh = () => {
+        if (active && scope() === directory) void untrack(() => load(tab, { force: true }))
+      }
+      const register = () => {
+        void registration.renew().then(refresh)
+      }
+      void registration.ready.then(refresh)
+      const stop = serverSDK.event.on("server.connected", register)
+      const external = outside && serverSDK.event.on("filesystem.changed", (event) => {
+        if (event.location?.directory === request.location.directory &&
+            (event.data.file === request.path || event.data.file === file)) refresh()
+      })
+      const renew = setInterval(register, 12 * 60 * 60 * 1000)
+      return () => {
+        active = false
+        stop()
+        if (external) external()
+        clearInterval(renew)
+        registration.release()
+      }
+    }
 
     const get = (input: string) => {
       const file = path.normalize(input)
@@ -299,6 +345,7 @@ export const { use: useFile, provider: FileProvider } = createSimpleContext({
       get,
       notFound: (input: string) => store.file[path.normalize(input)]?.notFound ?? false,
       load,
+      watch,
       scrollTop,
       scrollLeft,
       setScrollTop,
