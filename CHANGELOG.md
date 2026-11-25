@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.16] - 2026-11-25
+
+- Web: Updated the OpenCode integration to 2.4.1. Open file previews now refresh automatically when files change, and session artifacts are accessible from the session header. (@isomoes) [753e252](https://github.com/isomoes/ikanban/commit/753e252284479b5ffd0e225921a89a7c17f7d045)
+- Dependencies: Removed the redundant dnd-kit DOM patch. (@isomoes) [c5a0943](https://github.com/isomoes/ikanban/commit/c5a094393ed1e85fd972ae17b9e8720d6c4fe2e6)
+
 ## [0.6.15] - 2026-11-11
 
 - Web: Added a persistent full-width file preview toggle to expand the file panel across the session workspace. (@isomoes) [fc14257](https://github.com/isomoes/ikanban/commit/fc14257c177d5d789735921749fe96a233c42c81)
