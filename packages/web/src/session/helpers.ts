@@ -3,6 +3,7 @@ import { createStore } from "solid-js/store"
 import { makeEventListener } from "@solid-primitives/event-listener"
 import { same } from "@/runtime/persistence/equality"
 import { SESSION_BTW_TAB, SESSION_OPEN_FILE_TAB } from "@/shell/state/session-tabs"
+import { publishedArtifactFromTab } from "./artifact-link"
 
 export { SESSION_BTW_TAB, SESSION_OPEN_FILE_TAB } from "@/shell/state/session-tabs"
 
@@ -54,20 +55,24 @@ export const createSessionTabs = (input: TabsInput) => {
     emptyTabs,
     { equals: same },
   )
-  const openedTabs = createMemo(
+  const contentTabs = createMemo(
     () => panelTabs().filter((tab) => tab !== SESSION_OPEN_FILE_TAB && tab !== SESSION_BTW_TAB),
     emptyTabs,
     { equals: same },
   )
+  const openedTabs = createMemo(() => contentTabs().filter((tab) => !publishedArtifactFromTab(tab)), emptyTabs, {
+    equals: same,
+  })
   const activeTab = createMemo(() => {
     const active = input.tabs().active()
     if (active === "context") return active
     if (active === SESSION_BTW_TAB) return active
+    if (active && publishedArtifactFromTab(active) && contentTabs().includes(active)) return active
     if (active === SESSION_OPEN_FILE_TAB && openFileOpen()) return active
     if (active === "review" && review()) return active
     if (active && input.pathFromTab(active)) return input.normalizeTab(active)
 
-    const first = openedTabs()[0]
+    const first = contentTabs()[0]
     if (first) return first
     if (contextOpen()) return "context"
     if (review() && hasReview()) return "review"
@@ -83,7 +88,7 @@ export const createSessionTabs = (input: TabsInput) => {
     if (active === "context") return active
     if (active === SESSION_BTW_TAB) return active
     if (active === SESSION_OPEN_FILE_TAB && openFileOpen()) return active
-    if (!openedTabs().includes(active)) return
+    if (!contentTabs().includes(active)) return
     return active
   })
 
@@ -91,6 +96,7 @@ export const createSessionTabs = (input: TabsInput) => {
     contextOpen,
     openFileOpen,
     panelTabs,
+    contentTabs,
     openedTabs,
     activeTab,
     activeFileTab,

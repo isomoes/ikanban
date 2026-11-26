@@ -33,7 +33,7 @@ import { ActiveSessionComposerRegion, createActiveSessionRegion } from "./compos
 import { SessionIdentityHeader } from "./session-identity-header"
 import { SessionReviewToggle } from "./header/session-header-actions"
 import { createTimelineCache } from "./timeline/cache"
-import { ArtifactMarkdownProvider, ArtifactOpenerProvider } from "./files/open-artifact"
+import { ArtifactMarkdownProvider, ArtifactOpenerProvider, useArtifactOpener } from "./files/open-artifact"
 import { createSessionBtw } from "./btw/model"
 
 const SessionMobileFiles = lazy(async () => {
@@ -98,6 +98,14 @@ function SessionScreenContent(props: { session: SessionModel }) {
     return key
   })
   const review = createSessionReview({ session, screen, deferRender: () => state.deferRender })
+  const artifacts = useArtifactOpener()
+  createEffect(
+    on(artifacts.publishedOpens, () => {
+      if (isDesktop()) return
+      if (screen.terminal.open()) session.layout.view().terminal.close()
+      review.mobile.setTab("files")
+    }, { defer: true }),
+  )
   const mobileView = createMemo(() => (screen.terminal.open() ? "terminal" : review.mobile.tab()))
   const conversationVisible = createMemo(() => isDesktop() ? !screen.review.fullWidth() : mobileView() === "session")
   const composer = createActiveSessionRegion({

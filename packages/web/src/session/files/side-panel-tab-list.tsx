@@ -10,6 +10,8 @@ import { useCommand } from "@/shell/commands/command"
 import { useLanguage } from "@/runtime/i18n/language"
 import { SESSION_OPEN_FILE_TAB, SESSION_BTW_TAB } from "@/session/helpers"
 import { useSessionLayout } from "@/session/session-layout"
+import { publishedArtifactFromTab } from "../artifact-link"
+import { PublishedArtifactTabLabel } from "./published-artifact-tab"
 
 export const reviewTabID = "session-side-panel-review-tab"
 export const reviewTabPanelID = "session-side-panel-review-tabpanel"
@@ -100,6 +102,16 @@ export function SessionSideTabList(props: {
                   <span>{language.t("session.tab.btw")}</span>
                 </div>
               </SortableTab>
+            </Match>
+            <Match when={publishedArtifactFromTab(tab)}>
+              {(artifact) => (
+                <SortableTab tab={tab} index={tabs().all().indexOf(tab)} onTabClose={tabs().close}>
+                  <div class="flex min-w-0 max-w-48 items-center gap-1.5">
+                    <Icon name="folder" size="small" class="shrink-0" />
+                    <PublishedArtifactTabLabel artifact={artifact()} />
+                  </div>
+                </SortableTab>
+              )}
             </Match>
             <Match when={tab === SESSION_OPEN_FILE_TAB}>
               <Tabs.Trigger

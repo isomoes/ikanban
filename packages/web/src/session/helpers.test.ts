@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import { createMemo, createRoot } from "solid-js"
 import { createStore } from "solid-js/store"
+import { publishedArtifactTab } from "./artifact-link"
 import {
   SESSION_BTW_TAB,
   SESSION_OPEN_FILE_TAB,
@@ -11,6 +12,24 @@ import {
   getTabReorderIndex,
   shouldShowFileTree,
 } from "./helpers"
+
+test("published outputs can be selected and closed without becoming workspace file tabs", () => {
+  createRoot((dispose) => {
+    const output = publishedArtifactTab({ id: "art_output", file: "index.html" })
+    const file = "file://src/app.ts"
+    const tabs = createSessionTabs({
+      tabs: () => ({ active: () => output, all: () => [file, output] }),
+      pathFromTab: (tab) => tab.startsWith("file://") ? tab.slice(7) : undefined,
+      normalizeTab: (tab) => tab,
+    })
+    expect(tabs.contentTabs()).toEqual([file, output])
+    expect(tabs.openedTabs()).toEqual([file])
+    expect(tabs.activeTab()).toBe(output)
+    expect(tabs.closableTab()).toBe(output)
+    expect(tabs.activeFileTab()).toBeUndefined()
+    dispose()
+  })
+})
 
 describe("shouldShowFileTree", () => {
   test("does not reserve space for a disabled file tree", () => {

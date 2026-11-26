@@ -33,6 +33,8 @@ import {
 import { setSessionHandoff } from "@/session/handoff"
 import { useSessionLayout } from "@/session/session-layout"
 import { SessionFileBrowserTab, type SessionFileBrowserState } from "@/session/files/session-file-browser-tab"
+import { publishedArtifactFromTab } from "../artifact-link"
+import { PublishedArtifactTab } from "./published-artifact-tab"
 
 const fileBrowserTabPanelID = "session-side-panel-file-browser-tabpanel"
 
@@ -134,6 +136,7 @@ export function SessionSidePanel(props: {
   const openedTabs = tabState.openedTabs
   const activeTab = tabState.activeTab
   const activeFileTab = tabState.activeFileTab
+  const activeArtifact = createMemo(() => publishedArtifactFromTab(activeTab()))
 
   const fileTreeTab = () => layout.fileTree.tab()
 
@@ -293,7 +296,7 @@ export function SessionSidePanel(props: {
                           onPointerDown={(event) => event.stopPropagation()}
                           onClick={(event) => event.stopPropagation()}
                         >
-                          <Show when={fileBrowserVisible() || props.fullWidth}>
+                           <Show when={fileBrowserVisible() || activeArtifact() || props.fullWidth}>
                             <Tooltip placement="bottom" value={language.t(props.fullWidth ? "file.view.restoreSplit" : "file.view.fullWidth")}>
                               <IconButton
                                 data-slot="session-file-full-width"
@@ -348,11 +351,19 @@ export function SessionSidePanel(props: {
                         </Tabs.Content>
                       </Show>
 
-                      <Show when={activeTab() === SESSION_BTW_TAB}>
+                       <Show when={activeTab() === SESSION_BTW_TAB}>
                         <Tabs.Content value={SESSION_BTW_TAB} class="flex h-full min-h-0 flex-col overflow-hidden">
                           {props.btwPanel()}
                         </Tabs.Content>
-                      </Show>
+                       </Show>
+
+                       <Show when={activeArtifact()} keyed>
+                         {(artifact) => (
+                           <Tabs.Content value={activeTab() ?? ""} class="h-full min-h-0 overflow-hidden">
+                             <PublishedArtifactTab artifact={artifact} />
+                           </Tabs.Content>
+                         )}
+                       </Show>
 
                       <Show when={fileBrowserMounted()}>
                         <div

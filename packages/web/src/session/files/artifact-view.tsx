@@ -45,7 +45,7 @@ export function ArtifactView(props: {
   path: string
   content: FileContent
   cacheKey?: string
-  source: JSX.Element
+  source?: JSX.Element
 }) {
   const language = useLanguage()
   const [state, setState] = createStore({
@@ -71,6 +71,7 @@ export function ArtifactView(props: {
     const value = kind()
     return value !== "binary" && previewableKinds.has(value)
   })
+  const canShowSource = () => previewable() && "source" in props
   const table = createMemo(() => {
     if (kind() !== "table") return undefined
     return parseDelimited(props.content.content, props.path.toLowerCase().endsWith(".tsv") ? "\t" : ",")
@@ -100,14 +101,14 @@ export function ArtifactView(props: {
 
   return (
     <>
-      <Show when={previewable() || meta().length > 0}>
+      <Show when={canShowSource() || meta().length > 0}>
         <ArtifactToolbar
           mode={state.mode}
-          onModeChange={previewable() ? (mode) => setState("mode", mode) : undefined}
+          onModeChange={canShowSource() ? (mode) => setState("mode", mode) : undefined}
           meta={meta()}
         />
       </Show>
-      <Show when={!previewable() || state.mode === "preview"} fallback={props.source}>
+      <Show when={!canShowSource() || state.mode === "preview"} fallback={props.source}>
         <Switch>
           <Match when={kind() === "image" || kind() === "svg"}>
             <ArtifactImage path={props.path} content={props.content} {...media} />

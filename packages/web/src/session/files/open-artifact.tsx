@@ -1,11 +1,13 @@
-import type { ParentProps } from "solid-js"
+import { createSignal, type ParentProps } from "solid-js"
 import { createSimpleContext } from "@ikanban/ui/context"
 import { MarkdownProvider, useMarkdown } from "@ikanban/session-ui/context/markdown"
+import { useServerSDK } from "@/runtime/server/client"
 import { useFile } from "@/workspaces/files/model"
 import { resolveArtifactPath } from "@/workspaces/files/artifact"
 import { useWorkspaceLocation } from "@/workspaces/location"
 import { useSessionLayout } from "@/session/session-layout"
 import { createOpenSessionFileTab } from "@/session/helpers"
+import { publishedArtifactLink, publishedArtifactTab } from "../artifact-link"
 
 /** Routes local links in timeline markdown to the artifact opener while keeping image loading. */
 export function ArtifactMarkdownProvider(props: ParentProps) {
@@ -26,7 +28,14 @@ export const { use: useArtifactOpener, provider: ArtifactOpenerProvider } = crea
   init: () => {
     const file = useFile()
     const location = useWorkspaceLocation()
+    const sdk = useServerSDK()
     const { tabs, view } = useSessionLayout()
+    const [publishedOpens, setPublishedOpens] = createSignal(0)
+    const openPublished = (artifact: { id: string; file?: string }) => {
+      tabs().open(publishedArtifactTab(artifact))
+      if (!view().reviewPanel.opened()) view().reviewPanel.open()
+      setPublishedOpens((count) => count + 1)
+    }
 
     const root = () => location().directory.replaceAll("\\", "/").replace(/\/+$/, "")
 
@@ -66,11 +75,16 @@ export const { use: useArtifactOpener, provider: ArtifactOpenerProvider } = crea
 
     /** Open `href` as referenced from `base` (a workspace-relative directory, "" for the root). */
     const open = (href: string, base?: string) => {
+      const published = publishedArtifactLink(href, sdk.url)
+      if (published) {
+        openPublished(published)
+        return
+      }
       const path = resolve(href, base)
       if (!path) return
       openTab(path)
     }
 
-    return { open }
+    return { open, openPublished, publishedOpens }
   },
 })
