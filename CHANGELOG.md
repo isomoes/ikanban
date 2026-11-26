@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.17] - 2026-11-26
+
+- Web: Added keyboard-accessible tabs for previewing session artifacts. (@isomoes) [762e92a](https://github.com/isomoes/ikanban/commit/762e92a1cb123e865253b79728c0ce33378aedc7)
+
 ## [0.6.16] - 2026-11-25
 
 - Web: Updated the OpenCode integration to 2.4.1. Open file previews now refresh automatically when files change, and session artifacts are accessible from the session header. (@isomoes) [753e252](https://github.com/isomoes/ikanban/commit/753e252284479b5ffd0e225921a89a7c17f7d045)
